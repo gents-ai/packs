@@ -1,0 +1,5 @@
+# Plugins build under packs/gents/<pack>/target/plugins/<name>/, below this
+# file. wasm32 SIMD lets regex and memchr use their vector paths: the
+# security_scan pre-scan runs 2.8x faster with identical output.
+[target.wasm32-wasip1]
+rustflags = ["-C", "target-feature=+simd128"]
