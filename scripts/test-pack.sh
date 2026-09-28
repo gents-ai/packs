@@ -12,7 +12,8 @@
 #                            deletes exactly what the install created
 #        {"install": {"assets": [...]}}
 #                            an assets pack installed into a fresh home
-#                            materializes exactly these files
+#                            materializes exactly these files, and a
+#                            remove releases them
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -65,26 +66,26 @@ else
   fail "gents pack verify rejected the built pack"
 fi
 
+# Initializes a fresh home and prints its path; its init report is <home>.json.
 fresh_home() {
   local home="$work/home-$1"
-  "$gents" init --home "$home" >/dev/null
+  "$gents" init --home "$home" >"$home.json"
   printf '%s' "$home"
 }
 
 install_documents() {
   local case="$1" home args=() profile slot
   home="$(fresh_home "$(basename "$case" .json)")"
-  "$gents" pack install "$dir" --home "$home" --preview >"$work/preview.json"
-  expect_set "$(basename "$case"): inference slots" \
-    "$(jq -c '.install.slots // []' "$case")" \
-    "$(jq -c '[.inference.slots[].name]' "$work/preview.json")"
-  # Bind every declared slot to the fresh home's one usable profile.
-  profile="$(jq -r '[.inference.profiles[] | select(.usable)][0].profile_id' "$work/preview.json")"
+  # Bind every slot the manifest declares to the fresh home's own profile.
+  profile="$(jq -r '.inference_profile_id' "$home.json")"
   while read -r slot; do
     args+=(--inference-slot "$slot=$profile")
-  done < <(jq -r '.inference.slots[].name' "$work/preview.json")
+  done < <(jq -r '.inference_slots // [] | .[].name' "$dir/manifest.json")
 
   "$gents" pack install "$dir" --home "$home" "${args[@]}" >"$work/install.json"
+  expect_set "$(basename "$case"): inference slots" \
+    "$(jq -c '.install.slots // []' "$case")" \
+    "$(jq -c '.inference.bindings | keys' "$work/install.json")"
   local want
   want="$(jq -c '.install.documents' "$case")"
   expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
@@ -108,7 +109,13 @@ install_assets() {
   root="$(jq -r '.installed_assets' "$work/install.json")"
   expect_set "$(basename "$case"): install materializes" \
     "$(jq -c '.install.assets' "$case")" \
-    "$(cd "$root" && find . -type f | sed 's|^\./||' | jq -Rsc 'split("\n") | map(select(. != ""))')"
+    "$(cd "$root" && find . -type f ! -name '.*' | sed 's|^\./||' | jq -Rsc 'split("\n") | map(select(. != ""))')"
+
+  if "$gents" pack remove "$pack" --home "$home" >"$work/remove.json" && [[ ! -e "$root" ]]; then
+    pass "$(basename "$case"): remove releases the assets"
+  else
+    fail "$(basename "$case"): gents pack remove did not release $root"
+  fi
 }
 
 shopt -s nullglob
