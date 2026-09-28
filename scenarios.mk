@@ -1,0 +1,129 @@
+# Scenario runs of the packs that drive a real repository through a model.
+# Each needs an OpenAI-compatible endpoint and the repository it works on:
+#   make maintain MAINTENANCE_ROOT=<repo>
+#   make defend DEFENDING_ROOT=<repo>
+# Runs land under packs/gents/<pack>/runs/<job-id>/.
+
+MAINTENANCE_ROOT ?=
+MAINTENANCE_BRANCH ?=
+MAINTENANCE_HEAD ?= HEAD
+MAINTENANCE_PR_BASE ?= main
+MAINTENANCE_PROMPT ?= Find the next small, behavior-preserving repository cleanup wave and package the strongest work into focused 1-3 finding commits on one shared branch and worktree.
+MAINTENANCE_AREAS ?= auto
+MAINTENANCE_MIN_AREAS ?= 5
+MAINTENANCE_MAX_AREAS ?= 10
+MAINTENANCE_HISTORY_DEPTH ?= 250
+MAINTENANCE_PORT ?= 19192
+MAINTENANCE_JOB_ID ?=
+MAINTENANCE_KEEP_HOME ?=
+MAINTENANCE_CONTEXT_WINDOW ?= 262144
+MAINTENANCE_MAX_OUTPUT_TOKENS ?= 65536
+MAINTENANCE_MAX_TURNS ?= 1000000
+MAINTENANCE_TEMPERATURE ?= 1.0
+MAINTENANCE_TOP_P ?= 0.95
+MAINTENANCE_COMPACTION_THRESHOLD ?= 0.85
+MAINTENANCE_DEADLINE_SECS ?= 86400
+MAINTENANCE_AWAIT_TIMEOUT_SECS ?= 86400
+MAINTENANCE_STREAM_LIVENESS_SECS ?= 1800
+MAINTENANCE_STREAM_BATCH_MS ?= 5000
+MAINTENANCE_RETRY_MAX_TRANSPORT ?= 720
+MAINTENANCE_RETRY_MAX_RESAMPLE ?= 32
+DEFENDING_ROOT ?=
+DEFENDING_PROMPT ?= Map the repository's trust boundaries, find plausible exploitable vulnerabilities, adversarially verify them, and draft minimal reviewable fixes for confirmed findings.
+DEFENDING_ENDPOINT ?= http://127.0.0.1:8080/v1
+DEFENDING_MODEL ?= GLM-5.2
+DEFENDING_MIN_AREAS ?= 4
+DEFENDING_MAX_AREAS ?= 10
+DEFENDING_MAX_CONCURRENT ?= 8
+DEFENDING_PORT ?= 19193
+DEFENDING_JOB_ID ?=
+DEFENDING_KEEP_HOME ?=
+DEFENDING_CONTEXT_WINDOW ?= 262144
+DEFENDING_MAX_OUTPUT_TOKENS ?= 65536
+DEFENDING_MAX_TURNS ?= 1000000
+DEFENDING_TEMPERATURE ?= 1.0
+DEFENDING_TOP_P ?= 0.95
+DEFENDING_COMPACTION_THRESHOLD ?= 0.762939453125
+DEFENDING_DEADLINE_SECS ?= 86400
+DEFENDING_AWAIT_TIMEOUT_SECS ?= 86400
+DEFENDING_STREAM_LIVENESS_SECS ?= 1800
+DEFENDING_STREAM_BATCH_MS ?= 5000
+DEFENDING_RETRY_MAX_TRANSPORT ?= 720
+DEFENDING_RETRY_MAX_RESAMPLE ?= 32
+
+.PHONY: maintain
+maintain:
+	@test -d "$(MAINTENANCE_ROOT)" || { echo "set MAINTENANCE_ROOT to the repository to maintain (got: $(MAINTENANCE_ROOT))" >&2; exit 2; }
+	@case "$(MAINTENANCE_AREAS)" in auto) ;; ''|*[!0-9]*) echo "MAINTENANCE_AREAS must be auto or a positive integer: $(MAINTENANCE_AREAS)" >&2; exit 2;; *) test "$(MAINTENANCE_AREAS)" -gt 0 || { echo "MAINTENANCE_AREAS must be greater than zero" >&2; exit 2; };; esac
+	@case "$(MAINTENANCE_MIN_AREAS)" in ''|*[!0-9]*) echo "MAINTENANCE_MIN_AREAS must be a positive integer: $(MAINTENANCE_MIN_AREAS)" >&2; exit 2;; esac
+	@case "$(MAINTENANCE_MAX_AREAS)" in ''|*[!0-9]*) echo "MAINTENANCE_MAX_AREAS must be a positive integer: $(MAINTENANCE_MAX_AREAS)" >&2; exit 2;; esac
+	@case "$(MAINTENANCE_HISTORY_DEPTH)" in ''|*[!0-9]*) echo "MAINTENANCE_HISTORY_DEPTH must be a positive integer: $(MAINTENANCE_HISTORY_DEPTH)" >&2; exit 2;; esac
+	@test "$(MAINTENANCE_MIN_AREAS)" -ge 5 && test "$(MAINTENANCE_MAX_AREAS)" -ge "$(MAINTENANCE_MIN_AREAS)" || { echo "maintenance area bounds must satisfy 5 <= MAINTENANCE_MIN_AREAS <= MAINTENANCE_MAX_AREAS" >&2; exit 2; }
+	@if test "$(MAINTENANCE_AREAS)" != auto; then test "$(MAINTENANCE_AREAS)" -ge "$(MAINTENANCE_MIN_AREAS)" && test "$(MAINTENANCE_AREAS)" -le "$(MAINTENANCE_MAX_AREAS)" || { echo "MAINTENANCE_AREAS must satisfy MAINTENANCE_MIN_AREAS <= MAINTENANCE_AREAS <= MAINTENANCE_MAX_AREAS" >&2; exit 2; }; fi
+	@test "$(MAINTENANCE_HISTORY_DEPTH)" -gt 0 || { echo "MAINTENANCE_HISTORY_DEPTH must be greater than zero" >&2; exit 2; }
+	@cd "$(MAINTENANCE_ROOT)" && git rev-parse --verify "$(MAINTENANCE_HEAD)^{commit}" >/dev/null || { echo "MAINTENANCE_HEAD is not a commit: $(MAINTENANCE_HEAD)" >&2; exit 2; }
+	@command -v rust-analyzer >/dev/null 2>&1 || echo "warning: rust-analyzer not found on PATH; maintenance will fall back to file/search tools" >&2
+	@maintenance_job_id="$(MAINTENANCE_JOB_ID)"; \
+	if test -z "$$maintenance_job_id"; then maintenance_job_id="maintenance-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	maintenance_branch="$(MAINTENANCE_BRANCH)"; \
+	if test -z "$$maintenance_branch"; then maintenance_branch="agent/$$maintenance_job_id"; fi; \
+	GENTS_MAINTENANCE_ROOT="$(abspath $(MAINTENANCE_ROOT))" \
+	GENTS_MAINTENANCE_BRANCH="$$maintenance_branch" \
+	GENTS_MAINTENANCE_HEAD_REF="$(MAINTENANCE_HEAD)" \
+	GENTS_MAINTENANCE_PR_BASE="$(MAINTENANCE_PR_BASE)" \
+	GENTS_MAINTENANCE_PROMPT="$(MAINTENANCE_PROMPT)" \
+	GENTS_MAINTENANCE_AREA_COUNT="$(MAINTENANCE_AREAS)" \
+	GENTS_MAINTENANCE_MIN_AREAS="$(MAINTENANCE_MIN_AREAS)" \
+	GENTS_MAINTENANCE_MAX_AREAS="$(MAINTENANCE_MAX_AREAS)" \
+	GENTS_MAINTENANCE_HISTORY_DEPTH="$(MAINTENANCE_HISTORY_DEPTH)" \
+	GENTS_MAINTENANCE_CONTEXT_WINDOW="$(MAINTENANCE_CONTEXT_WINDOW)" \
+	GENTS_MAINTENANCE_MAX_OUTPUT_TOKENS="$(MAINTENANCE_MAX_OUTPUT_TOKENS)" \
+	GENTS_MAINTENANCE_MAX_TURNS="$(MAINTENANCE_MAX_TURNS)" \
+	GENTS_MAINTENANCE_TEMPERATURE="$(MAINTENANCE_TEMPERATURE)" \
+	GENTS_MAINTENANCE_TOP_P="$(MAINTENANCE_TOP_P)" \
+	GENTS_MAINTENANCE_COMPACTION_THRESHOLD="$(MAINTENANCE_COMPACTION_THRESHOLD)" \
+	GENTS_MAINTENANCE_DEADLINE_SECS="$(MAINTENANCE_DEADLINE_SECS)" \
+	GENTS_MAINTENANCE_AWAIT_TIMEOUT_SECS="$(MAINTENANCE_AWAIT_TIMEOUT_SECS)" \
+	GENTS_MAINTENANCE_STREAM_LIVENESS_SECS="$(MAINTENANCE_STREAM_LIVENESS_SECS)" \
+	GENTS_MAINTENANCE_STREAM_BATCH_MS="$(MAINTENANCE_STREAM_BATCH_MS)" \
+	GENTS_MAINTENANCE_RETRY_MAX_TRANSPORT="$(MAINTENANCE_RETRY_MAX_TRANSPORT)" \
+	GENTS_MAINTENANCE_RETRY_MAX_RESAMPLE="$(MAINTENANCE_RETRY_MAX_RESAMPLE)" \
+	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/repo_maintenance" \
+		--http-port "$(MAINTENANCE_PORT)" \
+		--job-id "$$maintenance_job_id" \
+		$(if $(MAINTENANCE_KEEP_HOME),--keep-home,)
+
+.PHONY: defend
+defend:
+	@test -d "$(DEFENDING_ROOT)" || { echo "set DEFENDING_ROOT to the repository to defend (got: $(DEFENDING_ROOT))" >&2; exit 2; }
+	@case "$(DEFENDING_MIN_AREAS)" in ''|*[!0-9]*) echo "DEFENDING_MIN_AREAS must be a positive integer: $(DEFENDING_MIN_AREAS)" >&2; exit 2;; esac
+	@case "$(DEFENDING_MAX_AREAS)" in ''|*[!0-9]*) echo "DEFENDING_MAX_AREAS must be a positive integer: $(DEFENDING_MAX_AREAS)" >&2; exit 2;; esac
+	@case "$(DEFENDING_MAX_CONCURRENT)" in ''|*[!0-9]*) echo "DEFENDING_MAX_CONCURRENT must be a positive integer: $(DEFENDING_MAX_CONCURRENT)" >&2; exit 2;; esac
+	@test "$(DEFENDING_MIN_AREAS)" -gt 0 && test "$(DEFENDING_MAX_AREAS)" -ge "$(DEFENDING_MIN_AREAS)" || { echo "defending area bounds must satisfy 0 < DEFENDING_MIN_AREAS <= DEFENDING_MAX_AREAS" >&2; exit 2; }
+	@test "$(DEFENDING_MAX_CONCURRENT)" -gt 0 || { echo "DEFENDING_MAX_CONCURRENT must be greater than zero" >&2; exit 2; }
+	@command -v rust-analyzer >/dev/null 2>&1 || echo "warning: rust-analyzer not found on PATH; defending-code will fall back to file/search tools" >&2
+	@defending_job_id="$(DEFENDING_JOB_ID)"; \
+	if test -z "$$defending_job_id"; then defending_job_id="defending-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	GENTS_DEFENDING_ROOT="$(abspath $(DEFENDING_ROOT))" \
+	GENTS_DEFENDING_PROMPT="$(DEFENDING_PROMPT)" \
+	GENTS_DEFENDING_ENDPOINT="$(DEFENDING_ENDPOINT)" \
+	GENTS_DEFENDING_MODEL="$(DEFENDING_MODEL)" \
+	GENTS_DEFENDING_MIN_AREAS="$(DEFENDING_MIN_AREAS)" \
+	GENTS_DEFENDING_MAX_AREAS="$(DEFENDING_MAX_AREAS)" \
+	GENTS_DEFENDING_MAX_CONCURRENT="$(DEFENDING_MAX_CONCURRENT)" \
+	GENTS_DEFENDING_CONTEXT_WINDOW="$(DEFENDING_CONTEXT_WINDOW)" \
+	GENTS_DEFENDING_MAX_OUTPUT_TOKENS="$(DEFENDING_MAX_OUTPUT_TOKENS)" \
+	GENTS_DEFENDING_MAX_TURNS="$(DEFENDING_MAX_TURNS)" \
+	GENTS_DEFENDING_TEMPERATURE="$(DEFENDING_TEMPERATURE)" \
+	GENTS_DEFENDING_TOP_P="$(DEFENDING_TOP_P)" \
+	GENTS_DEFENDING_COMPACTION_THRESHOLD="$(DEFENDING_COMPACTION_THRESHOLD)" \
+	GENTS_DEFENDING_DEADLINE_SECS="$(DEFENDING_DEADLINE_SECS)" \
+	GENTS_DEFENDING_AWAIT_TIMEOUT_SECS="$(DEFENDING_AWAIT_TIMEOUT_SECS)" \
+	GENTS_DEFENDING_STREAM_LIVENESS_SECS="$(DEFENDING_STREAM_LIVENESS_SECS)" \
+	GENTS_DEFENDING_STREAM_BATCH_MS="$(DEFENDING_STREAM_BATCH_MS)" \
+	GENTS_DEFENDING_RETRY_MAX_TRANSPORT="$(DEFENDING_RETRY_MAX_TRANSPORT)" \
+	GENTS_DEFENDING_RETRY_MAX_RESAMPLE="$(DEFENDING_RETRY_MAX_RESAMPLE)" \
+	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/defending_code" \
+		--http-port "$(DEFENDING_PORT)" \
+		--job-id "$$defending_job_id" \
+		$(if $(DEFENDING_KEEP_HOME),--keep-home,)
