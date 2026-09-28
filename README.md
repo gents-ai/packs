@@ -308,3 +308,4 @@ pack's suite as its own job, on every push, pull request and daily.
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
 | [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |
 | [security_scan](packs/gents/security_scan/README.md) | Whole-codebase discovery and verification |
+| [web_deep_research](packs/gents/web_deep_research/README.md) | Reusable research graph |
