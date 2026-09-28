@@ -12,6 +12,68 @@ prompt sidecars needed to install the pack; there are no per-collection JSON
 document fragments. AgentContext, Tools, Task, EventSource, and Trigger
 documents in that bundle define all four stages.
 
+## Installation
+
+```sh
+gents pack install ./packs/gents/security_scan --home <home> \
+  --inference-slot coordinator=<profile_id> \
+  --inference-slot scanner=<profile_id> \
+  --inference-slot verifier=<profile_id>
+gents pack install gents/security_scan --home <home> \
+  --inference-slot coordinator=<profile_id> \
+  --inference-slot scanner=<profile_id> \
+  --inference-slot verifier=<profile_id>   # once published to the registry
+```
+
+Exercise the scenario directly with `gents pack scenario run security_scan`
+(see Run it below).
+
+## Bindings and prerequisites
+
+```bash
+export GENTS_SCAN_ROOT=/path/to/repo
+export GENTS_SCAN_MIN_BATCHES=4
+export GENTS_SCAN_MAX_BATCHES=24
+export GENTS_SCAN_MAX_PAYLOAD_CHARS=49152
+```
+
+`GENTS_SCAN_ROOT` roots the pre-scan, the file tools, and bash for the
+investigate/revalidate stages, and defaults to `.`. Install binds the declared
+`coordinator`, `scanner`, and `verifier` slots to existing user profiles;
+their backends own connectivity and concurrency. `GENTS_SCAN_MIN_BATCHES` /
+`GENTS_SCAN_MAX_BATCHES` bound how many `InvestigationBatch` rows the
+planner may create; `GENTS_SCAN_MAX_PAYLOAD_CHARS` bounds the pre-scan
+payload embedded in the seed `ScanJob` before excerpts truncate and,
+beyond that, inventory itself drops to path-only lines counted in
+`overflow_count`.
+
+## Authority
+
+Per stage, from the Tools documents in `pack_config.json`:
+
+- **scan-plan** (`scan-plan-tools`): read-only file tools only, rooted at
+  `${GENTS_SCAN_ROOT:-.}`; no bash, no network. Writes only through the
+  `scan-plan-writes` datastore surface.
+- **scan-investigate** (`scan-investigate-tools`, run once per batch):
+  read-only file tools, native `lsp` (rust-analyzer), and unrestricted bash
+  rooted at the scan root with network enabled and background processes
+  allowed. Writes only through `scan-investigate-writes`.
+- **scan-revalidate** (`scan-revalidate-tools`): read-only file tools,
+  native `lsp`, and unrestricted bash rooted at the scan root with network
+  disabled; no `defra_query`. Reads and writes only through
+  `scan-revalidate-io`.
+- **scan-report** (`scan-report-tools`): no host files, no bash, no
+  network, no `defra_query`. Reads and writes only through
+  `scan-report-io`.
+
+No subagents are granted to any stage.
+
+## Inputs and outputs
+
+Input: a `ScanJob` document (`run_id`, a `focus` prompt, `scan_root`,
+`batch_min`, `batch_max`). Output: confirmed `Finding` rows and one
+`ScanReport`.
+
 ```text
 [runner kickoff: ported scan engine runs, output embedded in the single seed doc]
 
@@ -40,6 +102,35 @@ same trigger-edge shape `code_review` established: closed cardinality
 stamped at fan-out, a sentinel-gated barrier, a write-last summary
 contract, and an exact candidate-to-verdict bijection enforced by the
 runner.
+
+## Completion and failure
+
+A run completes when exactly one `RevalidationSummary` and one `ScanReport`
+exist for the `run_id`, and the runner has enforced an exact
+candidate-to-verdict bijection: every `CandidateFinding` from
+`scan-investigate` gets exactly one `FindingVerdict` from `scan-revalidate`,
+and `RevalidationSummary`'s `confirmed_count` + `refuted_count` balance the
+candidate set. `scan-plan` must create between `GENTS_SCAN_MIN_BATCHES`
+(default 4) and `GENTS_SCAN_MAX_BATCHES` (default 24) `InvestigationBatch`
+rows, each stamping its own `expected_total`; `scan-revalidate` fires only
+once every one of a batch set's `InvestigationResult` sentinels exists.
+Request-version provenance is signed end to end. A run's `await_timeout_secs`
+is 86400 (24h).
+
+## Validation
+
+```sh
+gents pack check ./packs/gents/security_scan
+gents pack test ./packs/gents/security_scan
+make test-security_scan        # from the repository root
+```
+
+`tests/install.json` pins the `coordinator`, `scanner`, `verifier` slots and
+the 29 documents an install creates, reinstalls without change and removes.
+
+## Operational history
+
+None recorded yet.
 
 ## Self-sufficient carrier documents
 
@@ -115,25 +206,6 @@ tells investigators to treat violations as real findings.
   publishes one `Finding` row per confirmed verdict plus exactly one
   `ScanReport`. No shell, no file tools, no network, no `defra_query`.
 
-## Env retargeting
-
-```bash
-export GENTS_SCAN_ROOT=/path/to/repo
-export GENTS_SCAN_MIN_BATCHES=4
-export GENTS_SCAN_MAX_BATCHES=24
-export GENTS_SCAN_MAX_PAYLOAD_CHARS=49152
-```
-
-`GENTS_SCAN_ROOT` roots the pre-scan, the file tools, and bash for the
-investigate/revalidate stages, and defaults to `.`. Install binds the declared
-`coordinator`, `scanner`, and `verifier` slots to existing user profiles;
-their backends own connectivity and concurrency. `GENTS_SCAN_MIN_BATCHES` /
-`GENTS_SCAN_MAX_BATCHES` bound how many `InvestigationBatch` rows the
-planner may create; `GENTS_SCAN_MAX_PAYLOAD_CHARS` bounds the pre-scan
-payload embedded in the seed `ScanJob` before excerpts truncate and,
-beyond that, inventory itself drops to path-only lines counted in
-`overflow_count`.
-
 ## Run it
 
 ```bash
@@ -175,9 +247,3 @@ flowchart LR
     n6 -->|"scan-revalidate"| n7
 ```
 <!-- pack-topology:end -->
-
-## Tests
-
-`tests/install.json` pins the `coordinator`, `scanner`, `verifier` slots and the 29 documents an
-install creates, reinstalls without change and removes. Run it with
-`make test-security_scan` from the repository root.
