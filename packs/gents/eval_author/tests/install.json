@@ -1,0 +1,12 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/eval-author",
+      "AgentContext/eval-author-context",
+      "Tools/eval-author-tools"
+    ],
+    "slots": [
+      "author"
+    ]
+  }
+}
