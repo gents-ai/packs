@@ -24,6 +24,46 @@ create BackgroundContinuationJob
                                      exact snapshot acknowledged
 ```
 
+## Installation
+
+```bash
+gents pack install ./packs/gents/background_continuation --home <home> \
+  --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id>
+gents pack install gents/background_continuation --home <home> \
+  --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id>   # once published to the registry
+```
+
+## Bindings and prerequisites
+
+The pack declares two inference slots: `coordinator`, bound to the
+`background-parent` behavior (owns the durable continuation and synthesizes
+worker results), and `worker`, bound to `background-worker` (runs bounded
+background investigations). Bind both at install time as shown above.
+
+## Authority
+
+`background-parent-tools` grants background subagent orchestration only: it
+may target the `background-parent-tools:worker` subagent
+(`background-worker` behavior, "Returns one concise analysis result") and
+nothing else. `background-worker-tools` grants no tools at all.
+
+## Inputs and outputs
+
+Input: create a `BackgroundContinuationJob` document, which fires the
+`background-parent` trigger. Output: the parent task delegates to two
+background `worker` subagent invocations and, once both complete, a coalesced
+continuation wake with an exactly-acknowledged snapshot; no other document is
+written by this pack.
+
+## Completion and failure
+
+A complete run reaches two completed depth-positive child requests, at least
+one completed canonical background-completion wake, at least two acknowledged
+notification keys, and zero pending or stranded notifications (see Validation
+for the scenario runner that checks this).
+
+## Validation
+
 Run it with a fresh home:
 
 ```bash
@@ -43,6 +83,20 @@ restart cases; the queue tests exercise restart recovery, persisted-response
 repair, failed-wake redrive, and exact successor acknowledgement against the
 real store.
 
+```bash
+gents pack check ./packs/gents/background_continuation
+gents pack test ./packs/gents/background_continuation
+make test-background_continuation
+```
+
+`tests/install.json` pins the `coordinator`, `worker` slots and the 10
+documents an install creates, reinstalls without change and removes.
+
+## Operational history
+
+None recorded yet beyond the scenario runner's own pass/fail gate described
+above.
+
 ## Declared topology
 
 Document-trigger edges; task writes and host callbacks are described above.
@@ -55,9 +109,3 @@ flowchart LR
     n0 -->|"background-parent"| n1
 ```
 <!-- pack-topology:end -->
-
-## Tests
-
-`tests/install.json` pins the `coordinator`, `worker` slots and the 10 documents an
-install creates, reinstalls without change and removes. Run it with
-`make test-background_continuation` from the repository root.
