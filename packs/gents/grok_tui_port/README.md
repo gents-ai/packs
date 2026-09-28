@@ -10,11 +10,118 @@ full **code-review** graph, proves that exact reviewed head with live GLM turns,
 and opens one GitHub PR. Small sealed slices use one direct reviewer; the final
 combined edge starts the full multi-stage embedded graph.
 
+Gents is the leader-socket server in this port. It binds the Unix socket and
+stock `grok --leader --leader-socket <path>` connects as the pager client. The
+shim reads Grok `ClientMessage` frames, writes `ServerMessage` frames, and maps
+ACP traffic onto Gents documents; it does not launch Grok's own leader process.
+
+## Installation
+
+```bash
+gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id>
+gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id>   # once published to the registry
+```
+
 Runtime configuration is authored once in `pack_config.json`. The distribution
 `manifest.json` points to that canonical bundle and lists it with the schema and
 prompt sidecars needed to install the pack; there are no per-collection JSON
 document fragments. The bundled code-review dependency is configured through
 the scenario's dependency environment instead of copied configuration rows.
+
+## Bindings and prerequisites
+
+The manifest declares three inference slots; bind all three on install:
+
+- `coordinator`: `port-recon`, `port-plan`, `port-plan-skip`, `port-integrate`,
+  `port-integrate-record`, `port-live`, `port-publish`
+- `worker`: `port-implement`, `port-retry`, `port-converge`, `port-live-worker`
+- `reviewer`: `port-recon-audit`, `port-review`, `port-final-review`,
+  `port-live-review`
+
+(from `manifest.json`'s `inference_slots`). The pack also declares a
+dependency on the `code_review` pack for the bundled full-review graph.
+
+Run `make grok-port` from the root of this repository. `GROK_PORT_GENTS_ROOT`
+is the gents checkout the port lands in and `GROK_PORT_CEILING` the operator
+tool ceiling; neither has a default.
+
+The live stages still resolve `./packs/grok_tui_port/recon_input` and
+`packs/grok_tui_port/scripts/` inside that gents checkout, so the live scenario
+needs a gents checkout that carries this pack at that path until those paths
+are rewired to this repository. Pin the workspace base with
+`GROK_PORT_BASE_SHA`. The PR head is `GROK_PORT_BRANCH` (default
+`agent/grok-tui-port-pack9`).
+
+The portable default inference endpoint is
+`http://127.0.0.1:8000/v1`, with one shared 16-request concurrency cap
+across coordinators, the eight concurrent implementers, the eight concurrent
+sealed reviewers, convergence, and the final review graph.
+
+`make grok-port` verifies its `/models` endpoint advertises
+`GLM-5.3-Flash-NVFP4` with at least 524288 context tokens before it seeds any
+documents.
+
+Bind `coordinator`, `worker`, and `reviewer` explicitly and query the selected
+profiles' backends before launching live probes. The job's immutable
+`live_endpoint` must equal the effective backend used by the live behavior.
+Run the checked-in vacancy preflight before launching the live server.
+
+## Authority
+
+This pack does not add DefraDB access-control policy and does not implement
+Grok permission UI. Threat model is reachability of the Gents server / leader
+socket. Workers never `make worktree` or `git commit`; the host creates,
+seals, and integrates worktrees.
+
+Per-behavior tool grants, derived from the `tools` documents in
+`pack_config.json` (`tools_id`, host bash/files/network mode, subagent
+grants, bound datastore surface):
+
+| Behavior tools | Bash | Files | Network | Subagents | Datastore surface |
+|---|---|---|---|---|---|
+| `port-converge-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-converge-io` |
+| `port-final-review-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-final-review-io` |
+| `port-implement-tools` | unrestricted, workspace_write | ReadWrite (`.`) | disabled | none | `port-implement-io` |
+| `port-integrate-record-tools` | none | none | - | none | `port-integrate-record-io` |
+| `port-integrate-tools` | none | none | - | none | none (acknowledgement only) |
+| `port-live-review-tools` | none | none | - | none | `port-live-review-io` |
+| `port-live-tools` | unrestricted | ReadWrite (`.`) | enabled | grants `port-live-tools:port-live-worker` | `port-live-io` |
+| `port-live-worker-tools` | none | none | - | none (no shell/files/subagents) | none |
+| `port-plan-skip-tools` | none | none | - | none | `port-plan-skip-writes` |
+| `port-plan-tools` | none | none | - | none | `port-plan-io` |
+| `port-publish-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-publish-writes` |
+| `port-recon-audit-tools` | none | none | - | none | `port-recon-audit-io` |
+| `port-recon-tools` | none | ReadOnly (`./packs/grok_tui_port/recon_input`) | - | none | `port-recon-writes` |
+| `port-retry-tools` | none | none | - | none | `port-retry-io` |
+| `port-review-tools` | read-only, allowlisted to `git status`/`rev-parse`/`diff`/`ls-files` and `rust-analyzer` | ReadOnly (`.`) | disabled | none | `port-review-io` |
+
+## Inputs and outputs
+
+Recon is required to emit at least `attach`, `session`, `model`, `context`,
+`tool_call`, `subprocess`, `subagent`, and `interrupt`. Each `PortSurface`
+carries a self-contained packet split, when needed, across `grok_wire` and
+`grok_wire_continuation`; later stages cannot open grok-build.
+
+Useful controls:
+
+```bash
+export GROK_PORT_MIN_SURFACES=13
+export GROK_PORT_MAX_SURFACES=13
+export GROK_PORT_BASE_SHA=$(git rev-parse HEAD)
+export GROK_PORT_PR_BASE=main
+export GROK_PORT_BRANCH=agent/grok-tui-port-pack9
+export GROK_PORT_PROMPT='Prioritize subagents, interrupts, and model name.'
+export GROK_PORT_REASONING_EFFORT=high
+```
+
+`high` is the pack default for GLM-5.3-Flash stages; override the environment
+variable only for an intentional experiment. The embedded code-review graph
+uses `GROK_PORT_CODE_REVIEW_REASONING_EFFORT`, which inherits the same value by
+default.
+
+Every run lands under `packs/gents/grok_tui_port/runs/<job-id>/`.
+
+## Completion and failure
 
 Every model-driven Task also provisions a controller-owned durable goal. Its
 tool surface exposes only `get_goal` and `update_goal` - never model-side goal
@@ -24,15 +131,48 @@ same stage instead of allowing an apparently successful request to strand the
 graph edge. Budgets are stage-specific: implementation, convergence, and final
 review receive the largest continuation envelopes.
 
-This pack does not add DefraDB access-control policy and does not implement
-Grok permission UI. Threat model is reachability of the Gents server / leader
-socket. Workers never `make worktree` or `git commit`; the host creates,
-seals, and integrates worktrees.
+A healthy run therefore has one durable Goal per fired Task invocation. The
+goal is a completion controller, not a replacement for edge evidence: green,
+blocked, rejected, retry, and needs-attention outputs still follow each stage's
+existing schema and trigger rules, and the goal closes only after that terminal
+output is persisted.
 
-Gents is the leader-socket server in this port. It binds the Unix socket and
-stock `grok --leader --leader-socket <path>` connects as the pager client. The
-shim reads Grok `ClientMessage` frames, writes `ServerMessage` frames, and maps
-ACP traffic onto Gents documents; it does not launch Grok's own leader process.
+### Recovery invariants
+
+The resolved pack environment is part of the run. Do not repair a live run by
+applying this directory directly: use `gents pack install` with the original
+slot bindings so inference remains on the user's existing profiles. Restore the
+original environment first, wait until the affected behavior is runnable, and
+only then reactivate paused goals. Requests retain the tool-policy snapshot they were
+created with, so a policy correction takes effect on a continuation request,
+not an already-processing request.
+
+Do not manually seal or integrate an abandoned workspace. Those transitions
+belong to the host: a stage output without its writer receipt must remain
+incomplete until runtime recovery has terminalized the request and produced a
+host-owned seal. The exact eight integrator receipts remain the convergence
+barrier.
+
+## Validation
+
+`tests/install.json` pins the `coordinator`, `reviewer`, `worker` slots and the
+106 documents an install creates, reinstalls without change and removes.
+
+```bash
+gents pack check ./packs/gents/grok_tui_port
+gents pack test ./packs/gents/grok_tui_port
+make test-grok_tui_port
+```
+
+Run `make test-grok_tui_port` from the repository root.
+
+## Operational history
+
+See [the worked-run case study](run_history.md) for the merged output, known
+interventions, lessons and issue links. This package records supervised runs;
+it does not claim an intervention-free completion of the whole graph.
+
+## Architecture
 
 ```text
 GrokPortJob
@@ -72,11 +212,6 @@ Attempt identity is separate from logical-unit identity: failed seals remain
 immutable audit evidence, while only one host-confirmed integration can close
 each of the eight logical slots. There is no arbitrary attempt ceiling.
 
-Recon is required to emit at least `attach`, `session`, `model`, `context`,
-`tool_call`, `subprocess`, `subagent`, and `interrupt`. Each `PortSurface`
-carries a self-contained packet split, when needed, across `grok_wire` and
-`grok_wire_continuation`; later stages cannot open grok-build.
-
 ## Run
 
 ```bash
@@ -84,82 +219,7 @@ make grok-port GROK_PORT_GENTS_ROOT=/path/to/gents GROK_PORT_CEILING=/path/to/ge
 ```
 
 Run it from the root of this repository. The checked-in audited ledger is the
-recon source; a grok-build checkout is not required. `GROK_PORT_GENTS_ROOT` is
-the gents checkout the port lands in and `GROK_PORT_CEILING` the operator tool
-ceiling; neither has a default.
-
-The live stages still resolve `./packs/grok_tui_port/recon_input` and
-`packs/grok_tui_port/scripts/` inside that gents checkout, so the live scenario
-needs a gents checkout that carries this pack at that path until those paths
-are rewired to this repository. Pin the
-workspace base with `GROK_PORT_BASE_SHA`. The PR head is `GROK_PORT_BRANCH`
-(default `agent/grok-tui-port-pack9`).
-
-The portable default inference endpoint is
-`http://127.0.0.1:8000/v1`, with one shared 16-request concurrency cap
-across coordinators, the eight concurrent implementers, the eight concurrent
-sealed reviewers, convergence, and the final review graph.
-
-`make grok-port` verifies its `/models` endpoint advertises
-`GLM-5.3-Flash-NVFP4` with at least 524288 context tokens before it seeds any
-documents.
-
-Useful controls:
-
-```bash
-export GROK_PORT_MIN_SURFACES=13
-export GROK_PORT_MAX_SURFACES=13
-export GROK_PORT_BASE_SHA=$(git rev-parse HEAD)
-export GROK_PORT_PR_BASE=main
-export GROK_PORT_BRANCH=agent/grok-tui-port-pack9
-export GROK_PORT_PROMPT='Prioritize subagents, interrupts, and model name.'
-export GROK_PORT_REASONING_EFFORT=high
-```
-
-`high` is the pack default for GLM-5.3-Flash stages; override the environment
-variable only for an intentional experiment. The embedded code-review graph
-uses `GROK_PORT_CODE_REVIEW_REASONING_EFFORT`, which inherits the same value by
-default.
-
-Every run lands under `packs/gents/grok_tui_port/runs/<job-id>/`.
-
-A healthy run therefore has one durable Goal per fired Task invocation. The
-goal is a completion controller, not a replacement for edge evidence: green,
-blocked, rejected, retry, and needs-attention outputs still follow each stage's
-existing schema and trigger rules, and the goal closes only after that terminal
-output is persisted.
-
-### Recovery invariants
-
-The resolved pack environment is part of the run. Do not repair a live run by
-applying this directory directly: use `gents pack install` with the original
-slot bindings so inference remains on the user's existing profiles. Restore the
-original environment first, wait until the affected behavior is runnable, and
-only then reactivate paused goals. Requests retain the tool-policy snapshot they were
-created with, so a policy correction takes effect on a continuation request,
-not an already-processing request.
-
-In particular, bind `coordinator`, `worker`, and `reviewer` explicitly and query
-the selected profiles' backends before launching live probes. The job's
-immutable `live_endpoint` must equal the effective backend used by the live
-behavior. Run the checked-in vacancy preflight before launching the live
-server. For stock-pager PTY evidence, use a fresh random marker, require its exact echo in the
-correlated durable assistant message, and require a second distinct completed
-turn in the same stock-client session while the pager remains alive. The framed
-probe separately verifies the exact ACP output wire. The checked-in
-`scripts/grok_stock_pty_probe.py` enforces those boundaries and emits the
-structured `PortLiveEnvironmentProof` that independent live review requires.
-A deep worktree can make the absolute socket exceed the platform Unix-socket
-pathname ceiling; both probes retain the job's exact socket identity in
-evidence but bridge `connect(2)` through a short alias inside a private
-temporary directory.
-Terminal repaint bytes and local input echo are not model-response evidence.
-
-Do not manually seal or integrate an abandoned workspace. Those transitions
-belong to the host: a stage output without its writer receipt must remain
-incomplete until runtime recovery has terminalized the request and produced a
-host-owned seal. The exact eight integrator receipts remain the convergence
-barrier.
+recon source; a grok-build checkout is not required.
 
 ## Live edge probes
 
@@ -194,6 +254,18 @@ python3 packs/gents/grok_tui_port/scripts/grok_edge_probe.py \
   --graphql http://127.0.0.1:19205/api/v0/graphql \
   --edge cancel
 ```
+
+For stock-pager PTY evidence, use a fresh random marker, require its exact
+echo in the correlated durable assistant message, and require a second
+distinct completed turn in the same stock-client session while the pager
+remains alive. The framed probe separately verifies the exact ACP output wire.
+The checked-in `scripts/grok_stock_pty_probe.py` enforces those boundaries and
+emits the structured `PortLiveEnvironmentProof` that independent live review
+requires. A deep worktree can make the absolute socket exceed the platform
+Unix-socket pathname ceiling; both probes retain the job's exact socket
+identity in evidence but bridge `connect(2)` through a short alias inside a
+private temporary directory. Terminal repaint bytes and local input echo are
+not model-response evidence.
 
 Subagent lifecycle (extension rail `x.ai/session_notification`, camelCase
 `sessionId`/`update`/`_meta` envelope, snake_case variant fields under the
@@ -284,14 +356,3 @@ flowchart LR
     n8 -->|"port-review"| n25
 ```
 <!-- pack-topology:end -->
-## Run history
-
-See [the worked-run case study](run_history.md) for the merged output, known
-interventions, lessons and issue links. This package records supervised runs;
-it does not claim an intervention-free completion of the whole graph.
-
-## Tests
-
-`tests/install.json` pins the `coordinator`, `reviewer`, `worker` slots and the 106 documents an
-install creates, reinstalls without change and removes. Run it with
-`make test-grok_tui_port` from the repository root.
