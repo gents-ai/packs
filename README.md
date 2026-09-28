@@ -300,6 +300,7 @@ pack's suite as its own job, on every push, pull request and daily.
 | Pack | Purpose |
 | --- | --- |
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
+| [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
