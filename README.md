@@ -1,0 +1,302 @@
+# Gents packs
+
+The official Gents packs. Every pack here publishes under the `gents`
+namespace and lives at `packs/gents/<name>/`, with its tests inside it.
+
+A pack distributes behaviors, tasks, datastore tools, schemas, prompts and
+supporting assets. It may contain a compiled graph, a document-driven worked
+scenario, or reusable assets alone.
+
+```sh
+gents pack list
+gents pack show code_review
+gents pack install code_review --home <initialized-home>
+gents graph run code_review --repo . --base origin/main --head HEAD
+gents pack install mailbox --home <initialized-home>
+gents pack remove mailbox --home <initialized-home>
+gents pack prune mailbox
+gents pack scenario run pipeline --http-port 19191 --keep-home
+```
+
+## What a pack is made of
+
+A pack directory holds `manifest.json` and the assets that manifest declares.
+Nothing that is not declared travels, so the manifest is the whole description
+of the pack, and the pack's digest is computed over exactly what it declares.
+
+```json
+{
+  "manifest_version": 1,
+  "name": "shipping_plugins",
+  "namespace": "acme",
+  "version": "0.1.0",
+  "description": "What this pack is for",
+  "authors": ["you"],
+  "tags": ["plugins"],
+  "kind": "plugins",
+  "assets": ["README.md", "plugins/format_check.afb"],
+  "plugins": [
+    {
+      "name": "format_check",
+      "description": "What the model is told this does",
+      "artifact": "plugins/format_check.afb",
+      "source": "plugins/format_check",
+      "language": "rust",
+      "input_schema": { "type": "object", "properties": {} },
+      "manifold": { "fs": { "ReadOnly": ["/workspace"] }, "net": "None" }
+    }
+  ]
+}
+```
+
+`namespace` is the registry namespace this pack publishes under, and the
+other half of its coordinate (`acme/shipping_plugins`). It is optional and
+`gents` when absent, so a first-party pack does not repeat it. A pack's
+plugins install under the pack's namespace, so two packs from different
+namespaces may each carry a `format_check` without one replacing the other.
+Within one namespace, a plugin record is owned by the pack coordinate that
+installed it: installing a same-named plugin from a different pack is
+refused, naming both packs, and only that pack's own reinstall or update
+replaces its record. `gents pack remove` releases only what its own
+coordinate owns.
+
+`kind` is `documents`, `graph`, `assets`, or `plugins`. A `plugins` pack
+installs no documents of its own: it exists to ship capabilities. Its plugins
+land in the same store `gents plugin install` uses, one store per home, so
+they are callable by name whichever pack put them there and one pack can
+build on another's capabilities instead of vendoring a copy.
+
+## Plugins
+
+A plugin is a complete Afterburner `.afb`: publishable and installable on its
+own, and also carried inside a pack as one of its declared assets. It is the
+one artifact every language Afterburner compiles down to, since some of them
+(Python to an emscripten-pyodide bundle, for instance) have no bare-`.wasm`
+form to ship instead, and only Afterburner's own runtime knows how to
+dispatch every one of those shapes.
+
+Today a plugin is called directly, by name (`gents plugin run`). Offering the
+same admitted plugin to a graph stage and to a model as an ordinary tool is
+the reason it is one definition rather than two, and neither of those call
+paths is wired yet. A plugin declares:
+
+- `artifact`, the compiled `.afb` inside the pack, under `plugins/`. It must
+  also appear in `assets`, so the pack's own digest covers it and nothing can
+  be swapped underneath the name it was admitted under.
+- `source`, optionally, where the artifact is built from. `gents pack build`
+  compiles it through Afterburner, whatever language `language` names.
+- `language`, the source language `source` is written in: `rust`, `go`,
+  `c`, `cpp`, `python`, `ruby`, `js`, or `ts` (see
+  `afterburner::cli::compile::lang::SourceLang` for the exact accepted
+  spellings). Required even for a plugin that ships only a compiled artifact.
+  Every one of them compiles, and every one of them runs under the bounds a
+  call applies. What decides that is the compiled artifact, not the language
+  name: whether a given `.afb` can be run with `stdin`, fuel, memory, a wall
+  clock and its manifold grants all enforced is asked of Afterburner itself
+  at admission, and a plugin that cannot be is refused by name rather than
+  run with a bound silently missing.
+- `input_schema`, which is what a model is shown.
+- `manifold`, what the plugin asks the sandbox to allow. Absent means it asks
+  for nothing, which is right for a pure transform. At admission the grant
+  is narrowed to what the plugin declared and to gents' fixed ceiling, which
+  is sealed today: an admitted plugin gets no filesystem, network or
+  environment access, whatever it declares. A plugin may not listen on a
+  port: a pack's plugins are called, never served.
+
+The call ABI is deliberately narrow: canonical JSON arguments arrive on
+standard input, one JSON value is written to standard output, and standard
+error is diagnostics.
+
+## Building and publishing
+
+```sh
+gents pack build packs/shipping_plugins                # compile the plugins, write one .pack
+gents pack verify acme.shipping_plugins-0.1.0.pack     # check it against its digest
+gents pack publish acme.shipping_plugins-0.1.0.pack    # push it to the registry
+gents pack install acme/shipping_plugins               # from the registry, anywhere
+gents pack install ./acme.shipping_plugins-0.1.0.pack  # or from the file
+gents pack install sha256:<hex>                        # or from this home's store
+```
+
+A plugin is also managed on its own, without a pack around it:
+
+```sh
+gents plugin build ./format_check          # compile one .afb
+gents plugin publish format_check-0.1.0.afb
+gents plugin install acme/format_check
+gents plugin list
+gents plugin run acme/format_check --input '{"path":"src"}'
+gents plugin remove acme/format_check
+```
+
+Installing a pack of any kind installs the plugins it declares into the same
+store `gents plugin install` uses, so a plugin that arrived inside a pack is
+runnable by name exactly like one installed alone. `documents` and `graph`
+packs install their plugins the same way `assets` and `plugins` packs do,
+before writing their own documents or graph. If that later write fails, the
+plugin records this install just wrote are restored to what they were
+before it, so the pack install is all-or-nothing from the operator's view.
+
+A built pack is one `.pack` file: a gzip-compressed tar any archive tool can
+list. Its first entry, `pack.json`, states the format version, the pack digest,
+coordinate, version and kind; then come `manifest.json` and every asset the
+manifest declares, including each plugin's compiled `.afb`, in the order the
+digest is computed over. A pack is named by its digest, `sha256:<hex>`, and a
+home keeps the packs it has seen under `packs/store/sha256/`. A path is local
+only when written as one (`./dir`, `../dir`, `/abs`, or a `.pack` file); a
+bare name always means the bundled or registry pack. The registry serves
+packs only: `gents plugin publish` wraps a plugin in a single-plugin pack, so
+a pack that ships plugins is one artifact rather than an archive plus a pile
+of modules.
+
+The default registry is `https://registry.dev.gents.xyz`, overridable per
+command with `--registry` and by `GENTS_REGISTRY`.
+
+A pack installed from a registry is the same pack as the one compiled into a
+binary: the digest is over the declared contents, never over the container, so
+neither the route a pack took nor the compression it arrived under changes
+what it is. A download is checked against the digest the registry advertised
+before it is opened.
+
+## Installation and execution
+
+`pack install` resolves bundled assets by name, without a source checkout.
+Graph packs use the runtime graph installer; document packs use schema-first
+desired-state application. Neither submits scenario seed documents nor prunes
+unrelated configuration. Enabled schedules and triggers can execute when their
+configuration is applied to a serving node; installation is not a dry run.
+Asset-only packs are materialized beneath `<home>/packs/`.
+Declared graph dependencies are installed before the document pack; this is
+not an atomic multi-package transaction. Failures remain visible and installs
+can be retried through the existing owners.
+Only document packs currently declare package dependencies, and those must be
+graph packs. Graph/asset dependency lists are rejected; recursive installation
+is not silently implied.
+
+Graph and document packs declare named inference slots in `manifest.json`.
+Inspect them with `pack show`, then use `pack install --preview` to see the
+principal's existing profiles and the effective slot map without writing.
+Bind ambiguous installs explicitly with repeated
+`--inference-slot name=profile_id`. Only a one-slot/one-usable-profile install
+auto-binds. Packs do not author inference backends, profiles, endpoints,
+credentials, models, sampling, or execution settings; the bound user profile
+remains their sole owner. Packs bind to the target node through existing
+identity checks. Review plugin declarations and host authority before
+installing untrusted content. External dependency commands are documentation,
+never automatically executed.
+
+`pack scenario run`, `init`, and `seed` operate `experiment.json` scenarios. A lexically
+normalized source directory with a snake_case leaf name can be used while
+authoring; bundled names are materialized into the local pack cache when no
+source directory is selected. Run artifacts are under the resolved pack's
+`runs/<job_id>/`. Repository-specific scenarios still need their documented
+checkout, tools and bindings; bundling does not provision a compiler or an
+external model endpoint.
+
+`manifest.json` is the sole package dependency declaration, including for
+scenario runs. `experiment.json` may configure scenario-specific graph model
+bindings, but cannot declare another dependency list.
+
+The bundled scenario asset cache is separate from the runtime home selected
+with `pack scenario run --home`: it lives under the default Gents home's `packs/` tree.
+The distribution digest covers all declared assets, including documentation;
+the graph execution digest covers only the graph's referenced inputs. Both use
+the existing graph asset hashing routine. Filesystem cache names use the hex
+portion of the shared `sha256:` digest format. `pack prune <name> [--home <home>]`
+removes superseded generated versions with no `runs/`. It takes the exclusive
+per-pack cache lock; scenario operations retain a shared lock for their full
+lifetime. Versions holding run history and directories without Gents'
+ownership marker are retained.
+Omit `--home` to prune the same default cache used by named scenario runs; pass
+the same explicit `--home` used to install an asset pack when pruning that
+cache.
+
+`gents graph run/watch/result/cancel/enable/disable` remain graph operations.
+The former `graph install/catalog` and `demo` pack subcommands are removed.
+`gents demo` is removed; there is no alternate demo shell or compatibility command.
+
+## Authoring standard
+
+Each `packs/gents/<snake_case_name>/manifest.json` declares:
+
+- `manifest_version`, `name`, `"namespace": "gents"`, semantic `version`, and
+  `description`;
+- `authors`, `tags`, and `kind` (`graph`, `documents`, or `assets`);
+- explicit `assets` and package-name `dependencies`;
+- `inference_slots`, with a stable name, description, and the behavior IDs
+  assigned to each slot, for every pack that installs behaviors;
+- for graph packs, compiler version, roles, schemas, intent and capabilities.
+
+Use snake_case directories and filenames, except conventional ecosystem names
+such as `README.md` and `Cargo.toml`. No old-name aliases are provided. Changing
+filesystem handles does not require renaming Task IDs or database collections.
+Desired-state roots and export use snake_case collection directories too.
+Every authored behavior references its slot as
+`gents:inference-slot:<name>`. Do not ship `InferenceBackend`,
+`InferenceProfile`, sampling, execution, or retry documents and do not use
+endpoint/model environment substitutions as a second inference owner.
+
+Installation stamps `gents:pack:<pack_name>` onto every pack-authored document
+whose canonical type has tags, merging it with authored discovery tags. This
+tag supports UI filtering and provenance inspection only: references determine
+execution and tags grant no deletion or authorization authority. User profiles
+and backends referenced by slot bindings are never stamped.
+
+A README must explain purpose, installation, bindings/prerequisites, tool and
+workspace authority, inputs/outputs, completion/failure semantics, validation,
+and operational history. Graphs must include a Mermaid diagram. Refresh a
+graph pack's generated topology section, and check a pack the way an install
+would, with:
+
+```sh
+gents pack graph packs/gents/<name> --write-readme
+gents pack check packs/gents/<name>
+```
+
+`gents pack check` reports missing and undeclared files, configuration and
+graph errors, event-source filters the schemas reject, and a stale README
+diagram, each by name, and writes nothing. The diagram reflects compiled
+capability edges; document writes and callbacks must additionally be explained
+in prose. A diagram is not proof of runtime completion behavior.
+
+Keep concise run summaries, reviewed outputs and issue links. Never bundle
+`runs/`, node homes, credentials, build caches or raw logs. Package embedding
+uses declared assets, not recursive discovery of an operator's workspace.
+`gents pack install <name>` resolves a pack compiled into the binary first and
+falls back to the registry. A graph pack installs only from the binary today,
+and there is no GitHub source.
+
+## Tests
+
+Every pack carries its own suite in `tests/`, declared in its `assets` like
+any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
+
+1. `gents pack test`: the check an install runs, a build, and every plugin's
+   cases (`plugins/<name>/tests/*.json`);
+2. the built `.pack` verified against its digest;
+3. every `tests/*.json` case, each one expectation:
+
+| Case | Asserts |
+| --- | --- |
+| `{"graphs": [...]}` | the graph ids the pack compiles to |
+| `{"install": {"documents": [...], "slots": [...]}}` | installed from its directory into a fresh `gents init` home, the pack declares these inference slots and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
+| `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files |
+
+A graph pack installs only from the binary today, so its suite asserts its
+compiled graphs rather than an install. Scenarios (`experiment.json`) need a
+model endpoint and run only on request (`gents pack test --scenario`).
+
+```sh
+make test               # every pack
+make test-pipeline      # one pack
+make test GENTS=path/to/gents
+```
+
+CI builds the gents CLI from gents `main` (cached per commit), then runs each
+pack's suite as its own job, on every push, pull request and daily.
+
+## Packs
+
+| Pack | Purpose |
+| --- | --- |
+| [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |

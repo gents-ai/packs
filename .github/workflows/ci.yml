@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+  # Packs are tested against gents main; a daily run catches gents drifting
+  # underneath packs that did not change.
+  schedule:
+    - cron: "17 6 * * *"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Pushes to master queue behind the running build so its cache is kept.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+jobs:
+  gents:
+    name: Build gents CLI (main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      sha: ${{ steps.main.outputs.sha }}
+      packs: ${{ steps.packs.outputs.packs }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: List packs
+        id: packs
+        run: |
+          set -euo pipefail
+          packs="$(find packs/gents -mindepth 2 -maxdepth 2 -name manifest.json -printf '%h\n' \
+            | xargs -n1 basename | sort | jq -Rsc 'split("\n") | map(select(. != ""))')"
+          [[ "$packs" != "[]" ]] || { echo "::error::No packs under packs/gents."; exit 1; }
+          echo "packs=$packs" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve gents main
+        id: main
+        run: |
+          set -euo pipefail
+          sha="$(git ls-remote https://github.com/gents-ai/gents.git refs/heads/main | cut -f1)"
+          [[ -n "$sha" ]] || { echo "::error::Could not resolve gents main."; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "gents main is $sha"
+
+      - name: Restore gents CLI
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: gents-bin
+          key: gents-cli-${{ runner.os }}-${{ runner.arch }}-${{ steps.main.outputs.sha }}
+
+      - name: Check out gents
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: gents-ai/gents
+          ref: ${{ steps.main.outputs.sha }}
+          path: gents
+          persist-credentials: false
+
+      - name: Free disk space
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      - name: Install build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang cmake libclang-dev libssl-dev pkg-config protobuf-compiler
+          # rustup reads gents' rust-toolchain.toml, so the pin follows gents main.
+          cd gents
+          rustup show active-toolchain || rustup toolchain install
+          rustup target add wasm32-unknown-unknown
+
+      - name: Build gents CLI
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: gents
+        env:
+          GENTS_BUILD_GIT_SHA: ${{ steps.main.outputs.sha }}
+        run: |
+          set -euo pipefail
+          cargo build -p gents-cli --release --locked
+          mkdir -p ../gents-bin
+          cp target/release/gents ../gents-bin/gents
+
+      - name: Report gents version
+        run: gents-bin/gents version
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gents-cli
+          path: gents-bin/gents
+          retention-days: 1
+
+  pack:
+    name: ${{ matrix.pack }}
+    needs: gents
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: ${{ fromJSON(needs.gents.outputs.packs) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: gents-cli
+          path: gents-bin
+
+      - name: Test ${{ matrix.pack }} against gents ${{ needs.gents.outputs.sha }}
+        env:
+          GENTS: ${{ github.workspace }}/gents-bin/gents
+        run: |
+          chmod +x "$GENTS"
+          scripts/test-pack.sh packs/gents/${{ matrix.pack }}
