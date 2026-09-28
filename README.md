@@ -303,6 +303,7 @@ pack's suite as its own job, on every push, pull request and daily.
 | [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
+| [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |

@@ -16,6 +16,7 @@ help:
 	@echo "Scenarios (need a model endpoint; see each pack's README):"
 	@echo "make maintain MAINTENANCE_ROOT=<repo>   repo_maintenance"
 	@echo "make defend DEFENDING_ROOT=<repo>       defending_code"
+	@echo "make grok-port GROK_PORT_GENTS_ROOT=<gents> GROK_PORT_CEILING=<dir>  grok_tui_port"
 
 list:
 	@printf '%s\n' $(PACKS)

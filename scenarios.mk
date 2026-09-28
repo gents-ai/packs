@@ -2,6 +2,7 @@
 # Each needs an OpenAI-compatible endpoint and the repository it works on:
 #   make maintain MAINTENANCE_ROOT=<repo>
 #   make defend DEFENDING_ROOT=<repo>
+#   make grok-port GROK_PORT_GENTS_ROOT=<gents checkout> GROK_PORT_CEILING=<dir>
 # Runs land under packs/gents/<pack>/runs/<job-id>/.
 
 MAINTENANCE_ROOT ?=
@@ -50,6 +51,35 @@ DEFENDING_STREAM_LIVENESS_SECS ?= 1800
 DEFENDING_STREAM_BATCH_MS ?= 5000
 DEFENDING_RETRY_MAX_TRANSPORT ?= 720
 DEFENDING_RETRY_MAX_RESAMPLE ?= 32
+
+GROK_PORT_CEILING ?=
+GROK_PORT_GENTS_ROOT ?=
+GROK_PORT_GROK_ROOT ?= $(CURDIR)/packs/gents/grok_tui_port/recon_input
+GROK_PORT_PROMPT ?= Map the Grok TUI wire from grok-build and implement a Gents-only thin client. Do not add DefraDB ACP or Grok permission UI. Prove model name, context window, tool-call semantics, subprocesses, subagents, and interrupts with live GLM turns.
+GROK_PORT_BASE_SHA ?= HEAD
+GROK_PORT_PR_BASE ?= main
+GROK_PORT_BRANCH ?= agent/grok-tui-port-pack9
+GROK_PORT_ENDPOINT_1 ?= http://127.0.0.1:8000/v1
+GROK_PORT_MODEL ?= GLM-5.3-Flash-NVFP4
+GROK_PORT_MIN_SURFACES ?= 13
+GROK_PORT_MAX_SURFACES ?= 13
+GROK_PORT_MAX_CONCURRENT_1 ?= 16
+GROK_PORT_PORT ?= 19195
+GROK_PORT_LIVE_PORT ?= 19196
+GROK_PORT_JOB_ID ?=
+GROK_PORT_KEEP_HOME ?=
+GROK_PORT_CONTEXT_WINDOW ?= 524288
+GROK_PORT_MAX_OUTPUT_TOKENS ?= 65536
+GROK_PORT_MAX_TURNS ?= 1000000
+GROK_PORT_TEMPERATURE ?= 1.0
+GROK_PORT_RECON_TEMPERATURE ?= $(GROK_PORT_TEMPERATURE)
+GROK_PORT_IMPLEMENT_TEMPERATURE ?= $(GROK_PORT_TEMPERATURE)
+GROK_PORT_REVIEW_TEMPERATURE ?= $(GROK_PORT_TEMPERATURE)
+GROK_PORT_CODE_REVIEW_TEMPERATURE ?= $(GROK_PORT_TEMPERATURE)
+GROK_PORT_TOP_P ?= 0.95
+GROK_PORT_REASONING_EFFORT ?= high
+GROK_PORT_CODE_REVIEW_REASONING_EFFORT ?= $(GROK_PORT_REASONING_EFFORT)
+GROK_PORT_COMPACTION_THRESHOLD ?= 0.762939453125
 
 .PHONY: maintain
 maintain:
@@ -127,3 +157,60 @@ defend:
 		--http-port "$(DEFENDING_PORT)" \
 		--job-id "$$defending_job_id" \
 		$(if $(DEFENDING_KEEP_HOME),--keep-home,)
+
+.PHONY: grok-port
+grok-port:
+	@test -d "$(GROK_PORT_GENTS_ROOT)" || { echo "set GROK_PORT_GENTS_ROOT to the gents checkout to port into (got: $(GROK_PORT_GENTS_ROOT))" >&2; exit 2; }
+	@test -d "$(GROK_PORT_CEILING)" || { echo "set GROK_PORT_CEILING to the operator tool ceiling (got: $(GROK_PORT_CEILING))" >&2; exit 2; }
+	@case "$(GROK_PORT_MIN_SURFACES)" in ''|*[!0-9]*) echo "GROK_PORT_MIN_SURFACES must be a positive integer: $(GROK_PORT_MIN_SURFACES)" >&2; exit 2;; esac
+	@case "$(GROK_PORT_MAX_SURFACES)" in ''|*[!0-9]*) echo "GROK_PORT_MAX_SURFACES must be a positive integer: $(GROK_PORT_MAX_SURFACES)" >&2; exit 2;; esac
+	@case "$(GROK_PORT_MAX_CONCURRENT_1)" in ''|*[!0-9]*) echo "GROK_PORT_MAX_CONCURRENT_1 must be a positive integer: $(GROK_PORT_MAX_CONCURRENT_1)" >&2; exit 2;; esac
+	@test "$(GROK_PORT_MIN_SURFACES)" -gt 0 && test "$(GROK_PORT_MAX_SURFACES)" -ge "$(GROK_PORT_MIN_SURFACES)" || { echo "grok-port surface bounds must satisfy 0 < GROK_PORT_MIN_SURFACES <= GROK_PORT_MAX_SURFACES" >&2; exit 2; }
+	@test "$(GROK_PORT_MAX_CONCURRENT_1)" -gt 0 || { echo "GROK_PORT_MAX_CONCURRENT_1 must be greater than zero" >&2; exit 2; }
+	@command -v rust-analyzer >/dev/null 2>&1 || echo "warning: rust-analyzer not found on PATH; grok-tui-port will fall back to file/search tools" >&2
+	@grok_port_job_id="$(GROK_PORT_JOB_ID)"; \
+	if test -z "$$grok_port_job_id"; then grok_port_job_id="grok-port-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	grok_port_base_sha="$$(git -C "$(abspath $(GROK_PORT_GENTS_ROOT))" rev-parse --verify "$(GROK_PORT_BASE_SHA)^{commit}")" || exit 2; \
+	grok_port_models="$$(curl --fail --silent --show-error --max-time 10 "$(GROK_PORT_ENDPOINT_1)/models")" || { echo "GLM preflight failed: $(GROK_PORT_ENDPOINT_1)/models" >&2; exit 2; }; \
+	case "$$grok_port_models" in *'"id":"$(GROK_PORT_MODEL)"'*) ;; *) echo "GLM preflight did not advertise $(GROK_PORT_MODEL): $(GROK_PORT_ENDPOINT_1)" >&2; exit 2;; esac; \
+	grok_port_max_context="$$(printf '%s' "$$grok_port_models" | python3 -c 'import json,sys; model=sys.argv[1]; rows=json.load(sys.stdin).get("data", []); print(max((int(row.get("max_model_len", 0)) for row in rows if row.get("id") == model), default=0))' "$(GROK_PORT_MODEL)")" || exit 2; \
+	test "$$grok_port_max_context" -ge "$(GROK_PORT_CONTEXT_WINDOW)" || { echo "GLM preflight context $$grok_port_max_context is smaller than required $(GROK_PORT_CONTEXT_WINDOW): $(GROK_PORT_ENDPOINT_1)" >&2; exit 2; }; \
+	GENTS_GROK_PORT_CEILING="$(abspath $(GROK_PORT_CEILING))" \
+	GENTS_GROK_PORT_GENTS_ROOT="$(abspath $(GROK_PORT_GENTS_ROOT))" \
+	GENTS_GROK_PORT_GROK_ROOT="$(abspath $(GROK_PORT_GROK_ROOT))" \
+	GENTS_GROK_PORT_PROMPT="$(GROK_PORT_PROMPT)" \
+	GENTS_GROK_PORT_BASE_SHA="$$grok_port_base_sha" \
+	GENTS_GROK_PORT_PR_BASE="$(GROK_PORT_PR_BASE)" \
+	GENTS_GROK_PORT_BRANCH="$(GROK_PORT_BRANCH)" \
+	GENTS_GROK_PORT_ENDPOINT_1="$(GROK_PORT_ENDPOINT_1)" \
+	GENTS_GROK_PORT_MODEL="$(GROK_PORT_MODEL)" \
+	GENTS_GROK_PORT_MIN_SURFACES="$(GROK_PORT_MIN_SURFACES)" \
+	GENTS_GROK_PORT_MAX_SURFACES="$(GROK_PORT_MAX_SURFACES)" \
+	GENTS_GROK_PORT_MAX_CONCURRENT_1="$(GROK_PORT_MAX_CONCURRENT_1)" \
+	GENTS_GROK_PORT_ORCHESTRATOR_HOME="$(CURDIR)/packs/gents/grok_tui_port/runs/$$grok_port_job_id/home" \
+	GENTS_GROK_PORT_ORCHESTRATOR_GRAPHQL="http://127.0.0.1:$(GROK_PORT_PORT)/api/v0/graphql" \
+	GENTS_GROK_PORT_LIVE_HOME="$(CURDIR)/packs/gents/grok_tui_port/runs/$$grok_port_job_id/live-home" \
+	GENTS_GROK_PORT_LIVE_GRAPHQL="http://127.0.0.1:$(GROK_PORT_LIVE_PORT)/api/v0/graphql" \
+	GENTS_GROK_PORT_LIVE_SOCKET="$(CURDIR)/packs/gents/grok_tui_port/runs/$$grok_port_job_id/grok-leader.sock" \
+	GENTS_GROK_PORT_CONTEXT_WINDOW="$(GROK_PORT_CONTEXT_WINDOW)" \
+	GENTS_GROK_PORT_MAX_OUTPUT_TOKENS="$(GROK_PORT_MAX_OUTPUT_TOKENS)" \
+	GENTS_GROK_PORT_MAX_TURNS="$(GROK_PORT_MAX_TURNS)" \
+	GENTS_GROK_PORT_TEMPERATURE="$(GROK_PORT_TEMPERATURE)" \
+	GENTS_GROK_PORT_RECON_TEMPERATURE="$(GROK_PORT_RECON_TEMPERATURE)" \
+	GENTS_GROK_PORT_IMPLEMENT_TEMPERATURE="$(GROK_PORT_IMPLEMENT_TEMPERATURE)" \
+	GENTS_GROK_PORT_REVIEW_TEMPERATURE="$(GROK_PORT_REVIEW_TEMPERATURE)" \
+	GENTS_GROK_PORT_CODE_REVIEW_TEMPERATURE="$(GROK_PORT_CODE_REVIEW_TEMPERATURE)" \
+	GENTS_GROK_PORT_TOP_P="$(GROK_PORT_TOP_P)" \
+	GENTS_GROK_PORT_REASONING_EFFORT="$(GROK_PORT_REASONING_EFFORT)" \
+	GENTS_GROK_PORT_CODE_REVIEW_REASONING_EFFORT="$(GROK_PORT_CODE_REVIEW_REASONING_EFFORT)" \
+	GENTS_GROK_PORT_COMPACTION_THRESHOLD="$(GROK_PORT_COMPACTION_THRESHOLD)" \
+	GENTS_GROK_PORT_DEADLINE_SECS="$(GROK_PORT_DEADLINE_SECS)" \
+	GENTS_GROK_PORT_AWAIT_TIMEOUT_SECS="$(GROK_PORT_AWAIT_TIMEOUT_SECS)" \
+	GENTS_GROK_PORT_STREAM_LIVENESS_SECS="$(GROK_PORT_STREAM_LIVENESS_SECS)" \
+	GENTS_GROK_PORT_STREAM_BATCH_MS="$(GROK_PORT_STREAM_BATCH_MS)" \
+	GENTS_GROK_PORT_RETRY_MAX_TRANSPORT="$(GROK_PORT_RETRY_MAX_TRANSPORT)" \
+	GENTS_GROK_PORT_RETRY_MAX_RESAMPLE="$(GROK_PORT_RETRY_MAX_RESAMPLE)" \
+	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/grok_tui_port" \
+		--http-port "$(GROK_PORT_PORT)" \
+		--job-id "$$grok_port_job_id" \
+		$(if $(GROK_PORT_KEEP_HOME),--keep-home,)
