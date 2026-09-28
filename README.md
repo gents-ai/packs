@@ -302,3 +302,4 @@ pack's suite as its own job, on every push, pull request and daily.
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
+| [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
