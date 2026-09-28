@@ -65,6 +65,10 @@ Per stage, from the Tools documents in `pack_config.json`:
 - **scan-report** (`scan-report-tools`): no host files, no bash, no
   network, no `defra_query`. Reads and writes only through
   `scan-report-io`.
+- **secscan** (the pre-scan plugin, `plugins/secscan`): no host access
+  declared. `gents` cannot yet bind a per-run directory to a plugin's
+  manifold, so its `root` mode only runs once a caller installs the pack
+  with its own explicit `fs.ReadOnly` grant; its `files` mode needs none.
 
 No subagents are granted to any stage.
 
@@ -121,12 +125,18 @@ is 86400 (24h).
 
 ```sh
 gents pack check ./packs/gents/security_scan
+gents pack build ./packs/gents/security_scan
 gents pack test ./packs/gents/security_scan
 make test-security_scan        # from the repository root
+(cd packs/gents/security_scan/plugins/secscan && cargo test)
 ```
 
 `tests/install.json` pins the `coordinator`, `scanner`, `verifier` slots and
 the 29 documents an install creates, reinstalls without change and removes.
+`cargo test` in the plugin crate covers what `gents pack test`'s JSON
+fixtures cannot express: rejected malformed input (bad JSON, neither or both
+of `root`/`files`, a non-absolute or unreadable `root`, a malformed `files`
+entry).
 
 ## Operational history
 
@@ -155,11 +165,20 @@ as an overflow count in the same document.
 
 ## Matchers
 
-The pre-scan is a Rust port of deepsec's regex matcher registry
-(gents `crates/gents-cli/src/commands/pack/secscan/matchers.rs`), curated for a
-Rust/polyglot repo. Each matcher has a noise tier - `precise` sorts first
-into the candidate payload, `noisy` last - and its own discovery test that
-asserts its example snippet fires.
+The pre-scan is a Rust port of deepsec's regex matcher registry, shipped as
+this pack's own `secscan` plugin (`plugins/secscan/source/`). `gents pack
+scenario run` still calls the copy compiled into gents until gents runs the
+pack's plugin for the scan step; both produce byte-identical output.
+
+Measured on the gents repository (about 5,000 files, 39 MB), best of 3:
+native 0.19 s; the plugin 0.51 s (wasm32 SIMD on, set in the repository's
+`.cargo/config.toml`; 1.43 s without it). Line numbers are resolved in one
+forward sweep, so a 20 MB file with 3,000 matches takes 24 ms instead of the
+16.5 s the per-match recount took. A whole-repository `root` scan needs
+several billion units of fuel, above the default plugin call budget; running
+it through `gents plugin run` needs gents to grant a larger budget. Curated for a Rust/polyglot repo, each matcher has a
+noise tier - `precise` sorts first into the candidate payload, `noisy` last -
+and its own discovery test that asserts its example snippet fires.
 
 | Slug | Tier | Flags |
 | --- | --- | --- |

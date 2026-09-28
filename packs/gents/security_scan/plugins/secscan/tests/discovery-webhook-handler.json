@@ -1,0 +1,22 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "example.rs",
+        "content": "async fn webhook_handler(body: Bytes) -> StatusCode {"
+      }
+    ]
+  },
+  "expect": {
+    "payload": "files: 1  candidates: 1\nslugs: webhook-handler=1(normal)\nexample.rs\n  [normal]  webhook-handler L1: async fn webhook_handler(body: Bytes) -> StatusCode {\n",
+    "candidate_total": 1,
+    "candidate_files": 1,
+    "slug_counts": [
+      {
+        "slug": "webhook-handler",
+        "count": 1
+      }
+    ],
+    "overflow_count": 0
+  }
+}

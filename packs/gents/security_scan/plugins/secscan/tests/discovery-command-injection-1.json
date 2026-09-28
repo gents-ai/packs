@@ -1,0 +1,22 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "example.rs",
+        "content": "Command::new(\"sh\").arg(\"-c\").arg(user_input)"
+      }
+    ]
+  },
+  "expect": {
+    "payload": "files: 1  candidates: 1\nslugs: command-injection=1(normal)\nexample.rs\n  [normal]  command-injection L1: Command::new(\"sh\").arg(\"-c\").arg(user_input)\n",
+    "candidate_total": 1,
+    "candidate_files": 1,
+    "slug_counts": [
+      {
+        "slug": "command-injection",
+        "count": 1
+      }
+    ],
+    "overflow_count": 0
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "src/f00.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f01.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f02.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f03.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f04.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f05.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f06.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f07.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f08.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      },
+      {
+        "path": "src/f09.rs",
+        "content": "console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\nconsole.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\n"
+      }
+    ],
+    "max_payload_chars": 1227
+  },
+  "expect": {
+    "payload": "files: 10  candidates: 30\nslugs: secret-in-log=30(normal)\nsrc/f00.rs\n  [normal]  secret-in-log L1: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\n  [normal]  secret-in-log L2: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\n  [normal]  secret-in-log L3: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\nsrc/f01.rs\n  [normal]  secret-in-log L1: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 0\n  [normal]  secret-in-log L2: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1\n  [normal]  secret-in-log L3: console.log(\"token\", apiToken); // yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2\nsrc/f02.rs (slugs: secret-in-log)\nsrc/f03.rs (slugs: secret-in-log)\nsrc/f04.rs (slugs: secret-in-log)\nsrc/f05.rs (slugs: secret-in-log)\nsrc/f06.rs (slugs: secret-in-log)\nsrc/f07.rs (slugs: secret-in-log)\nsrc/f08.rs (slugs: secret-in-log)\nsrc/f09.rs (slugs: secret-in-log)\n",
+    "candidate_total": 30,
+    "candidate_files": 10,
+    "slug_counts": [
+      {
+        "slug": "secret-in-log",
+        "count": 30
+      }
+    ],
+    "overflow_count": 8
+  }
+}

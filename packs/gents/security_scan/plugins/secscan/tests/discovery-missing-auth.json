@@ -1,0 +1,22 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "example.rs",
+        "content": "let app = Router::new().route(\"/admin/reset\", post(reset_handler));"
+      }
+    ]
+  },
+  "expect": {
+    "payload": "files: 1  candidates: 1\nslugs: missing-auth=1(noisy)\nexample.rs\n  [noisy]   missing-auth L1: let app = Router::new().route(\"/admin/reset\", post(reset_handler));\n",
+    "candidate_total": 1,
+    "candidate_files": 1,
+    "slug_counts": [
+      {
+        "slug": "missing-auth",
+        "count": 1
+      }
+    ],
+    "overflow_count": 0
+  }
+}

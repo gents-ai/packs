@@ -1,0 +1,31 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "z/noisy.rs",
+        "content": "let target = root.join(user_path);\n"
+      },
+      {
+        "path": "a/precise.rs",
+        "content": "format!(\"mutation {{ create_Job(input: {{ run_id: \\\"{a}\\\" }}) }}\")\nformat!(\"query {{ get_Job(input: {{ run_id: \\\"{b}\\\" }}) }}\")\n"
+      }
+    ],
+    "max_payload_chars": 100000
+  },
+  "expect": {
+    "payload": "files: 2  candidates: 3\nslugs: graphql-injection=2(precise) path-traversal=1(noisy)\na/precise.rs\n  [precise] graphql-injection L1: format!(\"mutation {{ create_Job(input: {{ run_id: \\\"{a}\\\" }}) }}\")\n  [precise] graphql-injection L2: format!(\"query {{ get_Job(input: {{ run_id: \\\"{b}\\\" }}) }}\")\nz/noisy.rs\n  [noisy]   path-traversal L1: let target = root.join(user_path);\n",
+    "candidate_total": 3,
+    "candidate_files": 2,
+    "slug_counts": [
+      {
+        "slug": "graphql-injection",
+        "count": 2
+      },
+      {
+        "slug": "path-traversal",
+        "count": 1
+      }
+    ],
+    "overflow_count": 0
+  }
+}

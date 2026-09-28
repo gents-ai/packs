@@ -1,0 +1,22 @@
+{
+  "input": {
+    "files": [
+      {
+        "path": "example.rs",
+        "content": "format!(\"mutation {{ create_Job(input: {{ run_id: \\\"{run_id}\\\" }}) }}\")"
+      }
+    ]
+  },
+  "expect": {
+    "payload": "files: 1  candidates: 1\nslugs: graphql-injection=1(precise)\nexample.rs\n  [precise] graphql-injection L1: format!(\"mutation {{ create_Job(input: {{ run_id: \\\"{run_id}\\\" }}) }}\")\n",
+    "candidate_total": 1,
+    "candidate_files": 1,
+    "slug_counts": [
+      {
+        "slug": "graphql-injection",
+        "count": 1
+      }
+    ],
+    "overflow_count": 0
+  }
+}
