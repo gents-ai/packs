@@ -17,17 +17,70 @@ create ExperimentJob
                                                      stage-2 (no tools)
 ```
 
-## Layout
+## Installation
 
-| Path | Role |
-| --- | --- |
-| `schemas/` | Pack-scoped SDL (`ExperimentJob`, `ExperimentFinding`) - applied by `config apply` |
-| `pack_config.json` | Canonical behaviors, contexts, Tools, surfaces, tasks, EventSources, Triggers, and inference settings |
-| `tasks/*/prompt.md` | Prompt sidecars referenced by canonical Task documents |
-| `agent_behaviors/*/system_prompt.md` | System-prompt sidecars referenced by canonical AgentContext documents |
-| `runs/` | Gitignored exports |
+```bash
+gents pack install ./packs/gents/pipeline --home <home> --inference-slot worker=<profile_id>
+gents pack install gents/pipeline --home <home> --inference-slot worker=<profile_id>   # once published to the registry
+```
 
-## Tools (least privilege)
+Equivalent, applying the pack against a running server instead (recommended
+for this pack, since it also validates the schema first):
+
+```bash
+gents config validate --root packs/gents/pipeline
+gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim \
+  --apply-root packs/gents/pipeline
+```
+
+After ready, the server applies this pack against the **in-process** node
+(`schemas/` first, then desired-state; home DID rebind). The serving JSON
+includes an `apply_root` field with the apply report.
+
+Add `--apply-prune` only on a home dedicated to this pack: it makes the
+pack the complete desired state for that home's agent and deletes any
+config the pack does not declare (other behaviors, contexts, Tools documents, skills,
+surfaces, and their reachable tasks/schedules/triggers).
+
+Equivalent without folding into server:
+
+```bash
+gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim
+gents config apply --root packs/gents/pipeline --home <home> \
+  --graphql http://127.0.0.1:19191/api/v0/graphql \
+  --bind-agent-did home --force-rebind-concrete-did --prune
+```
+
+## Bindings and prerequisites
+
+The pack declares one inference slot, `worker`, bound to both the `exp-stage1`
+and `exp-stage2` behaviors: it executes both stages of the example pipeline.
+Bind it at install time as shown above, against an already-initialized
+inference owner (example uses the GLM-5.3 Flash vLLM deployment on
+workstation-1):
+
+```bash
+gents init --home <home> --inference-url http://127.0.0.1:8080/v1 \
+  --backend-preset vllm --openai-wire-api chat-completions --model-name GLM-5.3-Flash-NVFP4 \
+  --tool-package minimal
+```
+
+**Verify the profile bound to the pack's `worker` slot is usable, then wait
+for EventSource to observe the collections.** Both matter, in that order.
+The pack creates no backend or profile; readiness comes from the user's
+existing inference owner, and a disabled or missing binding fails before
+installation writes:
+
+```text
+runtime reconcile applied generation=3 ... proposed_unavailable_behavior_count=0
+event source now observing source collection source_collection=ExperimentJob
+```
+
+Seeding before the observe log is the one way to get a silent no-op:
+triggers are `created`/first-seen only, so a doc written earlier is seeded
+as already-seen and never fires.
+
+## Authority
 
 | Behavior | Tools | Why |
 | --- | --- | --- |
@@ -42,90 +95,60 @@ declare a goal objective template and optional token budget, while its Tools
 document grants only lifecycle access to that controller-owned goal. The
 graph DSL still supplies the event topology; it does not own goal creation.
 
-## Run (anyone with a gents install + a model endpoint)
+## Inputs and outputs
 
-1. Init once (example uses the GLM-5.3 Flash vLLM deployment on workstation-1):
+Input: create an `ExperimentJob` to kick a run:
 
-   ```bash
-   gents init --home <home> --inference-url http://127.0.0.1:8080/v1 \
-     --backend-preset vllm --openai-wire-api chat-completions --model-name GLM-5.3-Flash-NVFP4 \
-     --tool-package minimal
-   ```
+```graphql
+mutation {
+  create_ExperimentJob(input: {
+    job_id: "exp-…"
+    prompt: "Your research question"
+    suite: "pipeline"
+    arm: "pipeline"
+  }) { _docID job_id }
+}
+```
 
-2. **Validate + start server with pack apply** (recommended):
+Output: stage-1's `write_experiment_finding` surface tool creates one
+`ExperimentFinding` document; stage-2 reads it via `{{ doc.* }}` in its task
+prompt and completes with no further write.
 
-   ```bash
-   gents config validate --root packs/gents/pipeline
-   gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim \
-     --apply-root packs/gents/pipeline
-   ```
+## Completion and failure
 
-   After ready, the server applies this pack against the **in-process** node
-   (`schemas/` first, then desired-state; home DID rebind). The serving JSON
-   includes an `apply_root` field with the apply report.
+Await both stages, then export:
 
-   Add `--apply-prune` only on a home dedicated to this pack: it makes the
-   pack the complete desired state for that home's agent and deletes any
-   config the pack does not declare (other behaviors, contexts, Tools documents, skills,
-   surfaces, and their reachable tasks/schedules/triggers).
+```bash
+curl -s -X POST http://127.0.0.1:19191/api/v0/graphql -H 'content-type: application/json' \
+  -d '{"query":"{ AgentRequest { caused_by_trigger_id caused_by_trigger_kind lifecycle_state } }"}'
+```
 
-   Equivalent without folding into server:
+A complete run has two `AgentRequest` rows - `exp-stage1` and `exp-stage2`,
+both `caused_by_trigger_kind: "event"`, both `completed` - plus one
+`ExperimentFinding` written by stage-1's surface tool. The automated runner
+also requires every provider request to pin a signed `AgentRequest` commit,
+then reconstructs the timeline and all four adapter projections from the
+persisted documents.
 
-   ```bash
-   gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim
-   gents config apply --root packs/gents/pipeline --home <home> \
-     --graphql http://127.0.0.1:19191/api/v0/graphql \
-     --bind-agent-did home --force-rebind-concrete-did --prune
-   ```
+```bash
+gents trace timeline --request-id <id> --home <home>
+```
 
-3. **Verify the profile bound to the pack's `worker` slot is usable, then wait
-   for EventSource to observe the collections.** Both matter, in that order.
-   The pack creates no backend or profile; readiness comes from the user's
-   existing inference owner, and a disabled or missing binding fails before
-   installation writes:
+For cost, query `InferenceCall { prompt_tokens completion_tokens }` - not
+`AgentResponse.token_count`, which is a streaming word-count proxy.
 
-   ```text
-   runtime reconcile applied generation=3 ... proposed_unavailable_behavior_count=0
-   event source now observing source collection source_collection=ExperimentJob
-   ```
+## Validation
 
-   Seeding before the observe log is the one way to get a silent no-op:
-   triggers are `created`/first-seen only, so a doc written earlier is seeded
-   as already-seen and never fires.
+```bash
+gents pack check ./packs/gents/pipeline
+gents pack test ./packs/gents/pipeline
+make test-pipeline
+```
 
-4. Kick:
+`tests/install.json` pins the `worker` slot and the 13 documents an install
+creates, reinstalls without change and removes.
 
-   ```graphql
-   mutation {
-     create_ExperimentJob(input: {
-       job_id: "exp-…"
-       prompt: "Your research question"
-       suite: "pipeline"
-       arm: "pipeline"
-     }) { _docID job_id }
-   }
-   ```
-
-5. Await both stages, then export:
-
-   ```bash
-   curl -s -X POST http://127.0.0.1:19191/api/v0/graphql -H 'content-type: application/json' \
-     -d '{"query":"{ AgentRequest { caused_by_trigger_id caused_by_trigger_kind lifecycle_state } }"}'
-   ```
-
-   A complete run has two `AgentRequest` rows - `exp-stage1` and `exp-stage2`,
-   both `caused_by_trigger_kind: "event"`, both `completed` - plus one
-   `ExperimentFinding` written by stage-1's surface tool. The automated runner
-   also requires every provider request to pin a signed `AgentRequest` commit,
-   then reconstructs the timeline and all four adapter projections from the
-   persisted documents.
-
-   ```bash
-   gents trace timeline --request-id <id> --home <home>
-   ```
-
-   For cost, query `InferenceCall { prompt_tokens completion_tokens }` - not
-   `AgentResponse.token_count`, which is a streaming word-count proxy.
+## Operational history
 
 ### Verified run
 
@@ -136,11 +159,15 @@ create fired stage-2; both requests reached `completed`; 3 inference calls,
 complete was a few seconds - the 60s backend probe is the only slow step, and
 it happens once at startup.
 
-## Tests
+## Layout
 
-`tests/install.json` pins the `worker` slot and the 13 documents an install
-creates, reinstalls without change and removes. Run it with
-`make test-pipeline` from the repository root.
+| Path | Role |
+| --- | --- |
+| `schemas/` | Pack-scoped SDL (`ExperimentJob`, `ExperimentFinding`) - applied by `config apply` |
+| `pack_config.json` | Canonical behaviors, contexts, Tools, surfaces, tasks, EventSources, Triggers, and inference settings |
+| `tasks/*/prompt.md` | Prompt sidecars referenced by canonical Task documents |
+| `agent_behaviors/*/system_prompt.md` | System-prompt sidecars referenced by canonical AgentContext documents |
+| `runs/` | Gitignored exports |
 
 ## Declared topology
 
