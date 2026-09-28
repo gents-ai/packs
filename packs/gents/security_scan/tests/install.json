@@ -1,0 +1,40 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/scan-investigate",
+      "AgentBehavior/scan-plan",
+      "AgentBehavior/scan-report",
+      "AgentBehavior/scan-revalidate",
+      "AgentContext/scan-investigate-context",
+      "AgentContext/scan-plan-context",
+      "AgentContext/scan-report-context",
+      "AgentContext/scan-revalidate-context",
+      "CompactionConfig/security-scan-compaction",
+      "DatastoreToolSurface/scan-investigate-writes",
+      "DatastoreToolSurface/scan-plan-writes",
+      "DatastoreToolSurface/scan-report-io",
+      "DatastoreToolSurface/scan-revalidate-io",
+      "EventSource/scan-investigate",
+      "EventSource/scan-plan",
+      "EventSource/scan-report",
+      "EventSource/scan-revalidate",
+      "Task/scan-investigate-task",
+      "Task/scan-plan-task",
+      "Task/scan-report-task",
+      "Task/scan-revalidate-task",
+      "Tools/scan-investigate-tools",
+      "Tools/scan-plan-tools",
+      "Tools/scan-report-tools",
+      "Tools/scan-revalidate-tools",
+      "Trigger/scan-investigate",
+      "Trigger/scan-plan",
+      "Trigger/scan-report",
+      "Trigger/scan-revalidate"
+    ],
+    "slots": [
+      "coordinator",
+      "scanner",
+      "verifier"
+    ]
+  }
+}
