@@ -1,0 +1,20 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/exp-stage1",
+      "AgentBehavior/exp-stage2",
+      "AgentContext/exp-stage1-context",
+      "AgentContext/exp-stage2-context",
+      "DatastoreToolSurface/experiment-writes",
+      "EventSource/exp-stage1",
+      "EventSource/exp-stage2",
+      "Task/exp-stage1-task",
+      "Task/exp-stage2-task",
+      "Tools/exp-tools-stage1",
+      "Tools/exp-tools-stage2",
+      "Trigger/exp-stage1",
+      "Trigger/exp-stage2"
+    ],
+    "slots": ["worker"]
+  }
+}
