@@ -294,7 +294,10 @@ make test GENTS=path/to/gents
 
 CI builds the gents CLI from gents `main` (cached per commit), then runs each
 pack's suite as its own job, on every push, pull request and daily. A pack
-with plugins compiles them to `wasm32-wasip1` in its job.
+with plugins compiles them to `wasm32-wasip1` in its job, with the compiler
+`rust-toolchain.toml` pins. Compiled plugins embed build paths, so a pack's
+digest is stable per build machine; the artifact to publish is the one CI
+builds.
 
 ## Packs
 
