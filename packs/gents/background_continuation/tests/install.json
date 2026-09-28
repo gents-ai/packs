@@ -1,0 +1,20 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/background-parent",
+      "AgentBehavior/background-worker",
+      "AgentContext/background-parent-context",
+      "AgentContext/background-worker-context",
+      "EventSource/background-parent",
+      "SubagentTarget/background-parent-tools:worker",
+      "Task/background-parent-task",
+      "Tools/background-parent-tools",
+      "Tools/background-worker-tools",
+      "Trigger/background-parent"
+    ],
+    "slots": [
+      "coordinator",
+      "worker"
+    ]
+  }
+}
