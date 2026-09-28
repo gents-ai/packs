@@ -271,9 +271,9 @@ and there is no GitHub source.
 Every pack carries its own suite in `tests/`, declared in its `assets` like
 any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 
-1. `gents pack test`: the check an install runs, a build, and every plugin's
-   cases (`plugins/<name>/tests/*.json`);
-2. the built `.pack` verified against its digest;
+1. `gents pack build`, and the built `.pack` verified against its digest;
+2. `gents pack test`: the check an install runs and every plugin's cases
+   (`plugins/<name>/tests/*.json`);
 3. every `tests/*.json` case, each one expectation:
 
 | Case | Asserts |
@@ -293,7 +293,8 @@ make test GENTS=path/to/gents
 ```
 
 CI builds the gents CLI from gents `main` (cached per commit), then runs each
-pack's suite as its own job, on every push, pull request and daily.
+pack's suite as its own job, on every push, pull request and daily. A pack
+with plugins compiles them to `wasm32-wasip1` in its job.
 
 ## Packs
 

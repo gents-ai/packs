@@ -120,6 +120,12 @@ jobs:
           name: gents-cli
           path: gents-bin
 
+      - name: Add the plugin compile target
+        run: |
+          if jq -e '(.plugins // []) | length > 0' packs/gents/${{ matrix.pack }}/manifest.json >/dev/null; then
+            rustup target add wasm32-wasip1
+          fi
+
       - name: Test ${{ matrix.pack }} against gents ${{ needs.gents.outputs.sha }}
         env:
           GENTS: ${{ github.workspace }}/gents-bin/gents

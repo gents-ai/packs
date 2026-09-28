@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs one pack's self-contained suite:
-#   1. gents pack test: the install-time check, a build, every plugin case;
-#   2. the built .pack verified against its digest;
+#   1. gents pack build, then the built .pack verified against its digest;
+#   2. gents pack test: the install-time check and every plugin's cases;
 #   3. every case in <pack>/tests/*.json, each holding one expectation:
 #        {"graphs": [...]}   graph ids the pack's graph compiles to
 #        {"install": {"documents": [...], "slots": [...], "dependencies": [...]}}
@@ -53,19 +53,32 @@ expect_set() {
 
 [[ "$namespace" == "gents" ]] || fail "namespace is $namespace, not gents"
 
-"$gents" pack test "$dir" >"$work/test.json"
-digest="$(jq -r '.digest' "$work/test.json")"
-pass "gents pack test ($digest)"
-graphs="$(jq -c '.graphs' "$work/test.json")"
-
+# Built first: pack check refuses a documents or graph pack whose plugins
+# are not compiled yet.
 "$gents" pack build "$dir" --out "$work/built.pack" >"$work/build.json"
 built="$(jq -r '.digest' "$work/build.json")"
-[[ "$built" == "$digest" ]] || fail "build digest $built differs from test digest $digest"
 if "$gents" pack verify "$work/built.pack" >"$work/verify.json"; then
-  pass "gents pack verify"
+  pass "gents pack build and verify ($built)"
 else
   fail "gents pack verify rejected the built pack"
 fi
+
+if "$gents" pack test "$dir" >"$work/test.json"; then
+  pass "gents pack test"
+else
+  fail "gents pack test failed"
+fi
+digest="$(jq -r '.digest // empty' "$work/test.json")"
+[[ -z "$digest" || "$digest" == "$built" ]] || fail "test digest $digest differs from build digest $built"
+while read -r plugin passed failed; do
+  if ((failed == 0)); then
+    pass "plugin $plugin: $passed cases"
+  else
+    fail "plugin $plugin: $failed of $((passed + failed)) cases failed"
+  fi
+done < <(jq -r '.plugins // [] | .[] | "\(.plugin) \(.passed) \(.failures | length)"' "$work/test.json")
+jq -r '.plugins // [] | .[].failures[]' "$work/test.json" >&2
+graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
 # Initializes a fresh home and prints its path; its init report is <home>.json.
 fresh_home() {
