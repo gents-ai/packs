@@ -88,7 +88,24 @@ rather than in-place mutations. This
 keeps the full audit history in the graph and avoids introducing free-form
 GraphQL merely to simulate status updates.
 
-## Safety boundary
+## Installation
+
+```bash
+gents pack install ./packs/gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
+gents pack install gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
+```
+
+## Bindings and prerequisites
+
+The pack declares three inference slots, bound at install time:
+
+- `coordinator`: threat modeling, planning, triage, clustering, and reporting (`defend-cluster`, `defend-plan`, `defend-remediation-plan`, `defend-report`, `defend-threat-model`, `defend-triage`).
+- `worker`: bounded security scans and patch execution (`defend-patch`, `defend-patch-integrate`, `defend-patch-skip`, `defend-scan`).
+- `verifier`: contract, patch, validation, and adversarial verification review (`defend-contract-review`, `defend-patch-review`, `defend-patch-security-review`, `defend-patch-validation`, `defend-verification-plan`, `defend-verifier`).
+
+The one prerequisite is the trust boundary spelled out in Authority below: run this pack only against an authorized, trusted checkout and network environment.
+
+## Authority
 
 This is the reference harness's **static mode**. Threat-model, planning,
 scanning and verifier agents receive native LSP plus an unrestricted shell so
@@ -115,6 +132,51 @@ excerpts, command output, and diffs are treated as untrusted evidence by
 downstream prompts, not as instructions. This remains an authorized source
 review pack, not the reference harness's two-container untrusted-target
 execution boundary.
+
+By tool group: the coordinator's `defend-cluster`, `defend-remediation-plan`,
+`defend-report`, and `defend-triage` are document-only reducers with no host
+tools, holding a single graph-bound datastore surface each. `defend-plan` and
+`defend-threat-model` add the same unrestricted-shell, read-only-files,
+`rust-analyzer` grant described above. The worker's `defend-scan` and
+`defend-patch` share that grant, except `defend-patch` binds `ReadWrite` to
+its provisioned workspace; `defend-patch-skip` is document-only; and
+`defend-patch-integrate` is read-only everywhere with network disabled (bash
+`read_only`, files `ReadOnly`), applying the sealed diff without a shell
+write. The verifier's `defend-contract-review`, `defend-patch-review`,
+`defend-patch-security-review`, and `defend-patch-validation` all get the
+unrestricted-shell/read-only-files/LSP grant; `defend-verification-plan` is
+document-only. No stage calls `agent_new`; DefraDB documents and event
+triggers own the fan-out, counting, retries, and audit trail (see Run below).
+
+## Inputs and outputs
+
+Input: a repository checkout named by `GENTS_DEFENDING_ROOT` (or `DEFENDING_ROOT` for the Make target), started with `gents pack scenario run defending_code` or `make defend` (see Run below).
+
+Output: one `DefenseReport` per campaign, with a typed audit status of `complete`, `blocked_provenance`, `inconsistent`, or `partial` (see above). Results and all four trace projections land under `runs/<job_id>/`.
+
+## Completion and failure
+
+The runner verifies the closed review-area/result ledger, declared scan counts,
+exact
+candidate-to-verdict coverage, balanced confirmed/refuted counts, root-cause
+membership, contract-to-patch lineage, patch/base/diff-bound validation
+receipts, the single final report, stage tool contracts, and signed request
+provenance before a campaign counts as done.
+
+## Validation
+
+`tests/install.json` pins the `coordinator`, `verifier`, `worker` slots and the 116 documents an
+install creates, reinstalls without change and removes.
+
+```bash
+gents pack check ./packs/gents/defending_code
+gents pack test ./packs/gents/defending_code
+make test-defending_code
+```
+
+## Operational history
+
+None recorded yet.
 
 ## Run
 
@@ -166,13 +228,6 @@ per-document triggers create contract reviewers, patch authors, validators,
 maintainer reviewers, and re-attackers, with group barriers only where a closed
 ledger must be joined. No model calls `agent_new`; DefraDB documents and
 event triggers own the fan-out, counting, retries, and audit trail.
-
-The runner verifies the closed review-area/result ledger, declared scan counts,
-exact
-candidate-to-verdict coverage, balanced confirmed/refuted counts, root-cause
-membership, contract-to-patch lineage, patch/base/diff-bound validation
-receipts, the single final report, stage tool contracts, and signed request
-provenance. Results and all four trace projections land under `runs/<job_id>/`.
 
 ## Upstream lineage
 
@@ -241,9 +296,3 @@ flowchart LR
     n29 -->|"defend-verifier"| n30
 ```
 <!-- pack-topology:end -->
-
-## Tests
-
-`tests/install.json` pins the `coordinator`, `verifier`, `worker` slots and the 116 documents an
-install creates, reinstalls without change and removes. Run it with
-`make test-defending_code` from the repository root.
