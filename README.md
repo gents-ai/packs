@@ -299,4 +299,5 @@ pack's suite as its own job, on every push, pull request and daily.
 
 | Pack | Purpose |
 | --- | --- |
+| [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
