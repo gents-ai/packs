@@ -1,7 +1,7 @@
 GENTS ?= gents
 
 include scenarios.mk
-PACKS := $(notdir $(wildcard packs/gents/*))
+PACKS := $(sort $(notdir $(wildcard packs/gents/*)))
 
 .DEFAULT_GOAL := help
 
@@ -20,7 +20,12 @@ help:
 list:
 	@printf '%s\n' $(PACKS)
 
-test: $(addprefix test-,$(PACKS))
+# Runs every suite, even after a failure, then fails naming the packs that did.
+test:
+	@failed=""; for pack in $(PACKS); do \
+		GENTS="$(GENTS)" scripts/test-pack.sh packs/gents/$$pack || failed="$$failed $$pack"; \
+	done; \
+	test -z "$$failed" || { echo "failed:$$failed" >&2; exit 1; }
 
 $(addprefix test-,$(PACKS)): test-%:
 	GENTS="$(GENTS)" scripts/test-pack.sh packs/gents/$*

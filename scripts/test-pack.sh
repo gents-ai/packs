@@ -4,10 +4,11 @@
 #   2. the built .pack verified against its digest;
 #   3. every case in <pack>/tests/*.json, each holding one expectation:
 #        {"graphs": [...]}   graph ids the pack's graph compiles to
-#        {"install": {"documents": [...], "slots": [...]}}
+#        {"install": {"documents": [...], "slots": [...], "dependencies": [...]}}
 #                            a documents pack installed from its directory
 #                            into a fresh home creates exactly these
-#                            documents and declares these inference slots;
+#                            documents, binds these inference slots and
+#                            installs these dependency packs;
 #                            a reinstall creates nothing new, and a remove
 #                            deletes exactly what the install created
 #        {"install": {"assets": [...]}}
@@ -76,16 +77,24 @@ fresh_home() {
 install_documents() {
   local case="$1" home args=() profile slot
   home="$(fresh_home "$(basename "$case" .json)")"
-  # Bind every slot the manifest declares to the fresh home's own profile.
+  # Bind every slot the pack and its dependencies (sibling gents packs)
+  # declare to the fresh home's own profile.
   profile="$(jq -r '.inference_profile_id' "$home.json")"
+  local manifests=("$dir/manifest.json") dep
+  while read -r dep; do
+    manifests+=("$(dirname "$dir")/$dep/manifest.json")
+  done < <(jq -r '.dependencies // [] | .[]' "$dir/manifest.json")
   while read -r slot; do
     args+=(--inference-slot "$slot=$profile")
-  done < <(jq -r '.inference_slots // [] | .[].name' "$dir/manifest.json")
+  done < <(jq -rs '[.[] | .inference_slots // [] | .[].name] | unique | .[]' "${manifests[@]}")
 
   "$gents" pack install "$dir" --home "$home" "${args[@]}" >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
     "$(jq -c '.install.slots // []' "$case")" \
     "$(jq -c '.inference.bindings | keys' "$work/install.json")"
+  expect_set "$(basename "$case"): installs dependencies" \
+    "$(jq -c '.install.dependencies // []' "$case")" \
+    "$(jq -c '[.dependencies[] | if type == "object" then .name else . end]' "$work/install.json")"
   local want
   want="$(jq -c '.install.documents' "$case")"
   expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"

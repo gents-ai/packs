@@ -279,7 +279,7 @@ any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 | Case | Asserts |
 | --- | --- |
 | `{"graphs": [...]}` | the graph ids the pack compiles to |
-| `{"install": {"documents": [...], "slots": [...]}}` | installed from its directory into a fresh `gents init` home, the pack declares these inference slots and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
+| `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
 | `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents pack remove` releases them |
 
 A graph pack installs only from the binary today, so its suite asserts its
