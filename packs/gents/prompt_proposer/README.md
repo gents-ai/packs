@@ -8,19 +8,32 @@ training run produced against it, and answers with one rewritten
 instruction and the rationale for it. The optimization driver, never the
 proposer, decides whether the candidate is worth a validation run.
 
-## Configuration
+## Installation
+
+```bash
+gents pack install ./packs/gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>
+gents pack install gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>   # once published to the registry
+```
+
+`gents optimization run` installs the pack into the operator's home once,
+idempotently, and binds that slot to `--proposer-profile` or the home's
+default profile.
+
+## Bindings and prerequisites
 
 The pack declares one inference slot, `proposer`, bound to the
-`prompt-proposer` behavior. `gents optimization run` installs the pack into
-the operator's home once, idempotently, and binds that slot to
-`--proposer-profile` or the home's default profile. Nothing else is
-configurable: the behavior's context is the proposing contract in
+`prompt-proposer` behavior. Nothing else is configurable: the behavior's
+context is the proposing contract in
 `agent_behaviors/prompt_proposer/system_prompt.md` (what the turn carries,
 what to carry over from the feedback, the rules a candidate is held to, and
-the reply format), and its tools document grants no host bash and no file,
-datastore or self-config tools.
+the reply format).
 
-## Usage
+## Authority
+
+`prompt-proposer-tools` grants no host bash and no file, datastore or
+self-config tools.
+
+## Inputs and outputs
 
 ```
 gents optimization run <definition_id> --subject <pack>[:<behavior>] --proposer behavior:prompt_proposer[:<behavior>] [--proposer-profile <profile_id>]
@@ -29,18 +42,32 @@ gents optimization run <definition_id> --subject <pack>[:<behavior>] --proposer 
 The command opens a fresh session against the served home, sends the
 subject's dossier (its prompt, tools, surfaces, tasks and schemas) as the
 first user turn, and then sends the proposer one user turn per round: the
-current instruction, every feedback
-line from the train run, the candidates already rejected, the rules, and the
-reply shape. A reply that contains exactly one fenced `json` block holding
-`text` and `rationale` is the round's proposal; a reply that does not gets
-one corrective turn, and a second failure fails the run; rerun with the
-same `--job-id` to resume. The driver's
-structural gate, not the proposer, enforces the byte cap and the
-no-repeat rule. `--proposer scripted:<file>` replays a fixed list of
-proposals instead and installs nothing.
+current instruction, every feedback line from the train run, the candidates
+already rejected, the rules, and the reply shape. A reply that contains
+exactly one fenced `json` block holding `text` and `rationale` is the round's
+proposal.
 
-## Tests
+`--proposer scripted:<file>` replays a fixed list of proposals instead and
+installs nothing.
 
-`tests/install.json` pins the `proposer` slots and the 3 documents an
-install creates, reinstalls without change and removes. Run it with
-`make test-prompt_proposer` from the repository root.
+## Completion and failure
+
+A reply that does not contain exactly one fenced `json` block with `text` and
+`rationale` gets one corrective turn, and a second failure fails the run;
+rerun with the same `--job-id` to resume. The driver's structural gate, not
+the proposer, enforces the byte cap and the no-repeat rule.
+
+## Validation
+
+```bash
+gents pack check ./packs/gents/prompt_proposer
+gents pack test ./packs/gents/prompt_proposer
+make test-prompt_proposer
+```
+
+`tests/install.json` pins the `proposer` slot and the 3 documents an install
+creates, reinstalls without change and removes.
+
+## Operational history
+
+None recorded yet.
