@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "pipeline",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Job -> finding (written by a DatastoreToolSurface create tool) -> stage-2",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/exp_stage1/system_prompt.md",
@@ -23,16 +11,28 @@
     "tasks/exp_stage2_task/prompt.md",
     "tests/install.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Job -> finding (written by a DatastoreToolSurface create tool) -> stage-2",
   "inference_slots": [
     {
-      "name": "worker",
-      "description": "Executes both stages of the example pipeline.",
       "behaviors": [
         "exp-stage1",
         "exp-stage2"
-      ]
+      ],
+      "description": "Executes both stages of the example pipeline.",
+      "name": "worker"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "pipeline",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

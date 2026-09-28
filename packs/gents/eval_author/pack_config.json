@@ -1,14 +1,14 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "eval-author",
-      "display_name": "Eval author",
-      "description": "Interviews the operator and drafts eval cases for one subject behavior.",
       "context_id": "eval-author-context",
+      "description": "Interviews the operator and drafts eval cases for one subject behavior.",
+      "display_name": "Eval author",
       "inference_profile_id": "gents:inference-slot:author"
     }
   ],
+  "agent_principal": {},
   "contexts": [
     {
       "context_id": "eval-author-context",
@@ -19,13 +19,13 @@
   ],
   "tools": [
     {
-      "tools_id": "eval-author-tools",
       "display_name": "Eval author: no tools",
       "host": {
         "bash": {
           "mode": "Off"
         }
-      }
+      },
+      "tools_id": "eval-author-tools"
     }
   ]
 }

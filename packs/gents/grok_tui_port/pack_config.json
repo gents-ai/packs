@@ -1,217 +1,138 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "port-converge",
-      "display_name": "Converge parallel Grok port slices",
-      "description": "Semantically stitch, compile, test, and commit the serially applied path-disjoint slices.",
       "context_id": "port-converge-context",
+      "description": "Semantically stitch, compile, test, and commit the serially applied path-disjoint slices.",
+      "display_name": "Converge parallel Grok port slices",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "port-final-review",
-      "display_name": "Full review of the combined Grok port trunk",
-      "description": "Run the bundled four-stage review graph after the combined convergence commit and repair confirmed findings.",
       "context_id": "port-final-review-context",
+      "description": "Run the bundled four-stage review graph after the combined convergence commit and repair confirmed findings.",
+      "display_name": "Full review of the combined Grok port trunk",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
       "behavior_id": "port-implement",
-      "display_name": "Implement one Grok wire surface in a bound workspace",
-      "description": "Edit the Gents tree to speak the mapped Grok surface.",
       "context_id": "port-implement-context",
+      "description": "Edit the Gents tree to speak the mapped Grok surface.",
+      "display_name": "Implement one Grok wire surface in a bound workspace",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "port-integrate",
-      "display_name": "Integration acknowledgement for an accepted unit",
-      "description": "Acknowledge a reviewed sealed workspace; the host applies the diff.",
       "context_id": "port-integrate-context",
+      "description": "Acknowledge a reviewed sealed workspace; the host applies the diff.",
+      "display_name": "Integration acknowledgement for an accepted unit",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-integrate-record",
-      "display_name": "Record a durable host integration",
-      "description": "Close one logical integration slot from an integrator receipt.",
       "context_id": "port-integrate-record-context",
+      "description": "Close one logical integration slot from an integrator receipt.",
+      "display_name": "Record a durable host integration",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-live",
-      "display_name": "Live GLM probes through the Grok wire",
-      "description": "Drive real prompts at the integrated shim and record wire plus Gents observations.",
       "context_id": "port-live-context",
+      "description": "Drive real prompts at the integrated shim and record wire plus Gents observations.",
+      "display_name": "Live GLM probes through the Grok wire",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-live-review",
-      "display_name": "Adversarial live-report",
-      "description": "Fail closed unless each non-ignore surface has wire and document evidence.",
       "context_id": "port-live-review-context",
+      "description": "Fail closed unless each non-ignore surface has wire and document evidence.",
+      "display_name": "Adversarial live-report",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
       "behavior_id": "port-live-worker",
-      "display_name": "Live GLM subagent worker",
-      "description": "Deterministic same-principal subagent target for the live subagent edge.",
       "context_id": "port-live-worker-context",
+      "description": "Deterministic same-principal subagent target for the live subagent edge.",
+      "display_name": "Live GLM subagent worker",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "port-plan",
-      "display_name": "Cluster surfaces into work units",
-      "description": "Reducer over the closed PortSurface ledger.",
       "context_id": "port-plan-context",
+      "description": "Reducer over the closed PortSurface ledger.",
+      "display_name": "Cluster surfaces into work units",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-plan-skip",
-      "display_name": "Close a non-executable Grok port plan",
-      "description": "Write sentinel closure and integrate rows without provisioning a workspace.",
       "context_id": "port-plan-skip-context",
+      "description": "Write sentinel closure and integrate rows without provisioning a workspace.",
+      "display_name": "Close a non-executable Grok port plan",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-publish",
-      "display_name": "Open one PR from the integrated trunk",
-      "description": "Unbound on the operator checkout. Host already applied accepted sealed diffs.",
       "context_id": "port-publish-context",
+      "description": "Unbound on the operator checkout. Host already applied accepted sealed diffs.",
+      "display_name": "Open one PR from the integrated trunk",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-recon",
-      "display_name": "Map Grok TUI feature surfaces",
-      "description": "Read grok-build call sites and emit PortSurface rows.",
       "context_id": "port-recon-context",
+      "description": "Read grok-build call sites and emit PortSurface rows.",
+      "display_name": "Map Grok TUI feature surfaces",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "port-recon-audit",
-      "display_name": "Audit the closed Grok wire ledger",
-      "description": "Reject incomplete, path-only, or out-of-bounds reconnaissance before planning.",
       "context_id": "port-recon-audit-context",
+      "description": "Reject incomplete, path-only, or out-of-bounds reconnaissance before planning.",
+      "display_name": "Audit the closed Grok wire ledger",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
       "behavior_id": "port-retry",
-      "display_name": "Plan a fresh repair attempt",
-      "description": "Preserve a rejected seal and create a new attempt workspace request.",
       "context_id": "port-retry-context",
+      "description": "Preserve a rejected seal and create a new attempt workspace request.",
+      "display_name": "Plan a fresh repair attempt",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "port-review",
-      "display_name": "Adversarial Grok call-site review",
-      "description": "Accept or reject an implementation against grok-build evidence.",
       "context_id": "port-review-context",
+      "description": "Accept or reject an implementation against grok-build evidence.",
+      "display_name": "Adversarial Grok call-site review",
       "inference_profile_id": "gents:inference-slot:reviewer"
     }
   ],
-  "contexts": [
+  "agent_principal": {},
+  "callback_bindings": [
     {
-      "context_id": "port-converge-context",
-      "display_name": "Converge parallel Grok port slices",
-      "system_prompt": "./agent_behaviors/port_converge/system_prompt.md",
-      "tools_id": "port-converge-tools",
-      "compaction_id": "grok-port-compaction"
-    },
+      "binding_id": "port-implement-workspace",
+      "callback_id": "port-implement-workspace",
+      "event_source_id": "port-implement-workspace",
+      "input_fields": [
+        "work_unit_id",
+        "repository_id",
+        "base_sha",
+        "caused_by_correlation"
+      ]
+    }
+  ],
+  "callbacks": [
     {
-      "context_id": "port-final-review-context",
-      "display_name": "Full review of the combined Grok port trunk",
-      "system_prompt": "./agent_behaviors/port_final_review/system_prompt.md",
-      "tools_id": "port-final-review-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-implement-context",
-      "display_name": "Implement one Grok wire surface in a bound workspace",
-      "system_prompt": "./agent_behaviors/port_implement/system_prompt.md",
-      "tools_id": "port-implement-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-integrate-context",
-      "display_name": "Integration acknowledgement for an accepted unit",
-      "system_prompt": "./agent_behaviors/port_integrate/system_prompt.md",
-      "tools_id": "port-integrate-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-integrate-record-context",
-      "display_name": "Record a durable host integration",
-      "system_prompt": "./agent_behaviors/port_integrate_record/system_prompt.md",
-      "tools_id": "port-integrate-record-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-live-context",
-      "display_name": "Live GLM probes through the Grok wire",
-      "system_prompt": "./agent_behaviors/port_live/system_prompt.md",
-      "tools_id": "port-live-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-live-review-context",
-      "display_name": "Adversarial live-report",
-      "system_prompt": "./agent_behaviors/port_live_review/system_prompt.md",
-      "tools_id": "port-live-review-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-live-worker-context",
-      "display_name": "Live GLM subagent worker",
-      "system_prompt": "./agent_behaviors/port_live_worker/system_prompt.md",
-      "tools_id": "port-live-worker-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-plan-context",
-      "display_name": "Cluster surfaces into work units",
-      "system_prompt": "./agent_behaviors/port_plan/system_prompt.md",
-      "tools_id": "port-plan-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-plan-skip-context",
-      "display_name": "Close a non-executable Grok port plan",
-      "system_prompt": "./agent_behaviors/port_plan_skip/system_prompt.md",
-      "tools_id": "port-plan-skip-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-publish-context",
-      "display_name": "Open one PR from the integrated trunk",
-      "system_prompt": "./agent_behaviors/port_publish/system_prompt.md",
-      "tools_id": "port-publish-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-recon-context",
-      "display_name": "Map Grok TUI feature surfaces",
-      "system_prompt": "./agent_behaviors/port_recon/system_prompt.md",
-      "tools_id": "port-recon-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-recon-audit-context",
-      "display_name": "Audit the closed Grok wire ledger",
-      "system_prompt": "./agent_behaviors/port_recon_audit/system_prompt.md",
-      "tools_id": "port-recon-audit-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-retry-context",
-      "display_name": "Plan a fresh repair attempt",
-      "system_prompt": "./agent_behaviors/port_retry/system_prompt.md",
-      "tools_id": "port-retry-tools",
-      "compaction_id": "grok-port-compaction"
-    },
-    {
-      "context_id": "port-review-context",
-      "display_name": "Adversarial Grok call-site review",
-      "system_prompt": "./agent_behaviors/port_review/system_prompt.md",
-      "tools_id": "port-review-tools",
-      "compaction_id": "grok-port-compaction"
+      "callback_id": "port-implement-workspace",
+      "capabilities": [
+        "create_workspace",
+        "observe_dirty_base",
+        "clone_artifacts"
+      ],
+      "display_name": "Create implementation workspace",
+      "handler": {
+        "emitter": "create_workspace",
+        "kind": "built_in"
+      }
     }
   ],
   "compactions": [
@@ -222,328 +143,118 @@
       "threshold": 0.762939453125
     }
   ],
-  "tools": [
+  "contexts": [
     {
-      "tools_id": "port-converge-tools",
-      "display_name": "Converge: operator checkout semantic merge and gates",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-converge-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-converge-context",
+      "display_name": "Converge parallel Grok port slices",
+      "system_prompt": "./agent_behaviors/port_converge/system_prompt.md",
+      "tools_id": "port-converge-tools"
     },
     {
-      "tools_id": "port-final-review-tools",
-      "display_name": "Final review: full graph plus focused trunk repair",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-final-review-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-final-review-context",
+      "display_name": "Full review of the combined Grok port trunk",
+      "system_prompt": "./agent_behaviors/port_final_review/system_prompt.md",
+      "tools_id": "port-final-review-tools"
     },
     {
-      "tools_id": "port-implement-tools",
-      "display_name": "Implement: bound ReadWrite gents workspace, no git commit",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "workspace_write",
-          "network_mode": "disabled"
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-implement-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-implement-context",
+      "display_name": "Implement one Grok wire surface in a bound workspace",
+      "system_prompt": "./agent_behaviors/port_implement/system_prompt.md",
+      "tools_id": "port-implement-tools"
     },
     {
-      "tools_id": "port-integrate-record-tools",
-      "display_name": "Record host integration receipt",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-integrate-record-io"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-integrate-context",
+      "display_name": "Integration acknowledgement for an accepted unit",
+      "system_prompt": "./agent_behaviors/port_integrate/system_prompt.md",
+      "tools_id": "port-integrate-tools"
     },
     {
-      "tools_id": "port-integrate-tools",
-      "display_name": "Integrate: acknowledge sealed tree; host applies the diff",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-integrate-record-context",
+      "display_name": "Record a durable host integration",
+      "system_prompt": "./agent_behaviors/port_integrate_record/system_prompt.md",
+      "tools_id": "port-integrate-record-tools"
     },
     {
-      "tools_id": "port-live-review-tools",
-      "display_name": "Live review: document-only adversarial report",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-live-review-io"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-live-context",
+      "display_name": "Live GLM probes through the Grok wire",
+      "system_prompt": "./agent_behaviors/port_live/system_prompt.md",
+      "tools_id": "port-live-tools"
     },
     {
-      "tools_id": "port-live-tools",
-      "display_name": "Live: run real GLM prompts through the Grok wire",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled"
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-live-io"
-        ]
-      },
-      "subagents": {
-        "target_ids": [
-          "port-live-tools:port-live-worker"
-        ],
-        "enabled": true
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-live-review-context",
+      "display_name": "Adversarial live-report",
+      "system_prompt": "./agent_behaviors/port_live_review/system_prompt.md",
+      "tools_id": "port-live-review-tools"
     },
     {
-      "tools_id": "port-live-worker-tools",
-      "display_name": "Live worker: deterministic subagent target, no shell/files/subagents"
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-live-worker-context",
+      "display_name": "Live GLM subagent worker",
+      "system_prompt": "./agent_behaviors/port_live_worker/system_prompt.md",
+      "tools_id": "port-live-worker-tools"
     },
     {
-      "tools_id": "port-plan-skip-tools",
-      "display_name": "Plan skip: sentinel writes only",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": false
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-plan-skip-writes"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-plan-context",
+      "display_name": "Cluster surfaces into work units",
+      "system_prompt": "./agent_behaviors/port_plan/system_prompt.md",
+      "tools_id": "port-plan-tools"
     },
     {
-      "tools_id": "port-plan-tools",
-      "display_name": "Plan: document-only clustering of PortSurface into work units",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-plan-io"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-plan-skip-context",
+      "display_name": "Close a non-executable Grok port plan",
+      "system_prompt": "./agent_behaviors/port_plan_skip/system_prompt.md",
+      "tools_id": "port-plan-skip-tools"
     },
     {
-      "tools_id": "port-publish-tools",
-      "display_name": "Publish: unbound ReadWrite on the operator checkout, open one PR",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-publish-writes"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-publish-context",
+      "display_name": "Open one PR from the integrated trunk",
+      "system_prompt": "./agent_behaviors/port_publish/system_prompt.md",
+      "tools_id": "port-publish-tools"
     },
     {
-      "tools_id": "port-recon-audit-tools",
-      "display_name": "Recon audit: document-only closed-ledger validation",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-recon-audit-io"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-recon-context",
+      "display_name": "Map Grok TUI feature surfaces",
+      "system_prompt": "./agent_behaviors/port_recon/system_prompt.md",
+      "tools_id": "port-recon-tools"
     },
     {
-      "tools_id": "port-recon-tools",
-      "display_name": "Recon: read audited ledger, write PortSurface",
-      "host": {
-        "root": "./packs/grok_tui_port/recon_input",
-        "files": {
-          "mode": "ReadOnly"
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-recon-writes"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-recon-audit-context",
+      "display_name": "Audit the closed Grok wire ledger",
+      "system_prompt": "./agent_behaviors/port_recon_audit/system_prompt.md",
+      "tools_id": "port-recon-audit-tools"
     },
     {
-      "tools_id": "port-retry-tools",
-      "display_name": "Read rejected attempt and write next attempt",
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-retry-io"
-        ]
-      }
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-retry-context",
+      "display_name": "Plan a fresh repair attempt",
+      "system_prompt": "./agent_behaviors/port_retry/system_prompt.md",
+      "tools_id": "port-retry-tools"
     },
     {
-      "tools_id": "port-review-tools",
-      "display_name": "Review: bound ReadOnly workspace plus Grok call-site checks",
-      "host": {
-        "root": ".",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "ReadOnly",
-          "execution_mode": "read_only",
-          "network_mode": "disabled",
-          "allowed_argv_prefixes": [
-            [
-              "git",
-              "status"
-            ],
-            [
-              "git",
-              "rev-parse"
-            ],
-            [
-              "git",
-              "diff"
-            ],
-            [
-              "git",
-              "ls-files"
-            ],
-            [
-              "rust-analyzer"
-            ]
-          ]
-        }
-      },
-      "built_ins": {
-        "enable_goal_tools": true,
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "port-review-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
-    }
-  ],
-  "subagent_targets": [
-    {
-      "target_id": "port-live-tools:port-live-worker",
-      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
-      "behavior_id": "port-live-worker",
-      "name": "port-live-worker",
-      "description": "Deterministic one-sentence subagent for the live subagent edge"
+      "compaction_id": "grok-port-compaction",
+      "context_id": "port-review-context",
+      "display_name": "Adversarial Grok call-site review",
+      "system_prompt": "./agent_behaviors/port_review/system_prompt.md",
+      "tools_id": "port-review-tools"
     }
   ],
   "datastore_tool_surfaces": [
     {
-      "surface_id": "port-converge-io",
       "display_name": "Converge: inspect applied slices and write stitched result",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load the pinned base and repository authority.",
           "fields": [
@@ -552,14 +263,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_integrate_result",
           "collection": "PortIntegrateResult",
           "description": "Load the complete serial integration ledger.",
           "fields": [
@@ -576,14 +287,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_integrate_result"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_implementation",
           "collection": "PortImplementation",
           "description": "Load exact slice paths, tests, and contract notes.",
           "fields": [
@@ -599,14 +310,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_implementation"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load audited combined protocol and document requirements.",
           "fields": [
@@ -620,23 +331,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_convergence_report",
           "collection": "PortConvergenceReport",
           "description": "Pin the compiled and tested semantic merge head.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "status",
@@ -662,17 +370,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_convergence_report"
         }
-      ]
+      ],
+      "surface_id": "port-converge-io"
     },
     {
-      "surface_id": "port-final-review-io",
       "display_name": "Full combined review and repair",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load pinned review and orchestration authority.",
           "fields": [
@@ -683,14 +394,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_convergence_report",
           "collection": "PortConvergenceReport",
           "description": "Load the exact compiled semantic-merge head.",
           "fields": [
@@ -703,14 +414,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_convergence_report"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Count exact live coverage required after review.",
           "fields": [
@@ -722,23 +433,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_final_review_report",
           "collection": "PortFinalReviewReport",
           "description": "Close the full combined review and pin the live-tested head.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "status",
@@ -768,17 +476,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_final_review_report"
         }
-      ]
+      ],
+      "surface_id": "port-final-review-io"
     },
     {
-      "surface_id": "port-implement-io",
       "display_name": "Implement: read surfaces, write implementation receipt",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Load the work unit bound to this workspace.",
           "fields": [
@@ -808,14 +519,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_work_unit"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load mapped surfaces so the implementer can target Grok call sites, not Codex files.",
           "fields": [
@@ -832,23 +543,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_implementation",
           "collection": "PortImplementation",
           "description": "Close one implementation attempt with the paths and tests that landed in the bound workspace.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "implementation_id",
@@ -871,10 +579,10 @@
               "required": true
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
               "name": "changed_paths",
@@ -892,17 +600,20 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_implementation"
         }
-      ]
+      ],
+      "surface_id": "port-implement-io"
     },
     {
-      "surface_id": "port-integrate-record-io",
       "display_name": "Record only durable host integration receipts",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Resolve the attempt-specific receipt to its logical unit.",
           "fields": [
@@ -913,14 +624,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_work_unit"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_implementation",
           "collection": "PortImplementation",
           "description": "Verify that the integrated attempt has a writer receipt.",
           "fields": [
@@ -934,43 +645,40 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_implementation"
         },
         {
-          "tool_name": "write_port_integrate_result",
           "collection": "PortIntegrateResult",
           "description": "Record an applied logical unit only after an integrator WorkspaceReceipt exists.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "integrate_id",
               "required": true
             },
             {
-              "name": "work_unit_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "work_unit_id"
             },
             {
               "name": "logical_unit_id",
               "required": true
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
               "name": "status",
@@ -985,32 +693,35 @@
               "required": true
             },
             {
-              "name": "head_sha",
               "fill": {
                 "source_field": "head_sha"
-              }
+              },
+              "name": "head_sha"
             },
             {
-              "name": "seal_hash",
               "fill": {
                 "source_field": "seal_hash"
-              }
+              },
+              "name": "seal_hash"
             },
             {
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_integrate_result"
         }
-      ]
+      ],
+      "surface_id": "port-integrate-record-io"
     },
     {
-      "surface_id": "port-live-io",
       "display_name": "Live GLM probes against the integrated shim",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load this run's gents_root, grok_root, live model, endpoint, and PR branch.",
           "fields": [
@@ -1029,14 +740,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_final_review_report",
           "collection": "PortFinalReviewReport",
           "description": "Load the exact reviewed head and fixed probe cardinality.",
           "fields": [
@@ -1049,14 +760,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_final_review_report"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load implement and shaped-stub surfaces and their live probes.",
           "fields": [
@@ -1072,23 +783,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_live_result",
           "collection": "PortLiveResult",
           "description": "Record one live GLM probe through the Grok wire against Gents documents.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "probe_id",
@@ -1119,21 +827,25 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "live_result_count"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_live_result"
         },
         {
-          "tool_name": "write_port_live_environment_proof",
           "collection": "PortLiveEnvironmentProof",
           "description": "Record the structured endpoint, listener, stock-PTY, and cleanup proof before surface results.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "final_review_head",
@@ -1255,17 +967,16 @@
               "name": "proof_json_continuation",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_port_live_environment_proof"
         }
-      ]
+      ],
+      "surface_id": "port-live-io"
     },
     {
-      "surface_id": "port-live-review-io",
       "display_name": "Adversarial live-report over probe results",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load the immutable expected live endpoint for global-proof verification.",
           "fields": [
@@ -1276,14 +987,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_final_review_report",
           "collection": "PortFinalReviewReport",
           "description": "Load the reviewed head and expected implement-surface coverage.",
           "fields": [
@@ -1294,14 +1005,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_final_review_report"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load the exact non-ignore surface IDs and expectations.",
           "fields": [
@@ -1312,14 +1023,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_live_result",
           "collection": "PortLiveResult",
           "description": "Load every live probe result for this run.",
           "fields": [
@@ -1334,14 +1045,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_live_result"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_live_environment_proof",
           "collection": "PortLiveEnvironmentProof",
           "description": "Load the singleton structured endpoint, listener, stock-PTY, and cleanup proof.",
           "fields": [
@@ -1378,23 +1089,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_live_environment_proof"
         },
         {
-          "tool_name": "write_port_live_report",
           "collection": "PortLiveReport",
           "description": "Close the live campaign. Fail closed on missing wire or Gents-document evidence.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "passed_count",
@@ -1428,17 +1136,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_live_report"
         }
-      ]
+      ],
+      "surface_id": "port-live-review-io"
     },
     {
-      "surface_id": "port-plan-io",
       "display_name": "Plan: read surfaces, write work units",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_port_recon_audit",
           "collection": "PortReconAudit",
           "description": "Load the closed-ledger acceptance decision.",
           "fields": [
@@ -1452,14 +1163,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_recon_audit"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load every mapped Grok TUI surface for this run.",
           "fields": [
@@ -1479,24 +1190,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Create one path-disjoint implementation slice from PortSurface rows.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "work_unit_id",
@@ -1563,16 +1270,16 @@
               "required": true
             },
             {
-              "name": "repository_id",
               "fill": {
                 "source_field": "repository_id"
-              }
+              },
+              "name": "repository_id"
             },
             {
-              "name": "base_sha",
               "fill": {
                 "source_field": "base_sha"
-              }
+              },
+              "name": "base_sha"
             },
             {
               "name": "branch",
@@ -1591,27 +1298,28 @@
               "required": true
             },
             {
-              "name": "caused_by_correlation",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "caused_by_correlation"
             },
             {
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_work_unit"
         },
         {
-          "tool_name": "write_port_plan",
           "collection": "PortPlan",
           "description": "Close the work-unit ledger for this run.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "work_unit_count",
@@ -1637,26 +1345,26 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_plan"
         }
-      ]
+      ],
+      "surface_id": "port-plan-io"
     },
     {
-      "surface_id": "port-plan-skip-writes",
       "display_name": "Close a zero-work plan",
       "entries": [
         {
-          "tool_name": "write_port_unit_closure",
           "collection": "PortUnitClosure",
           "description": "Write the non-workspace closure sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "work_unit_id",
@@ -1686,20 +1394,20 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_unit_closure"
         },
         {
-          "tool_name": "write_port_integrate_result",
           "collection": "PortIntegrateResult",
           "description": "Write the zero-work integrate sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "integrate_id",
@@ -1741,17 +1449,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_integrate_result"
         }
-      ]
+      ],
+      "surface_id": "port-plan-skip-writes"
     },
     {
-      "surface_id": "port-publish-writes",
       "display_name": "Publish one PR from the integrated trunk",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load pr_base, branch, and checkout paths for this run.",
           "fields": [
@@ -1763,14 +1474,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_live_report",
           "collection": "PortLiveReport",
           "description": "Load the live-review totals before opening a PR.",
           "fields": [
@@ -1785,14 +1496,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_live_report"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_final_review_report",
           "collection": "PortFinalReviewReport",
           "description": "Load the exact reviewed head, rounds, and remaining findings.",
           "fields": [
@@ -1804,23 +1515,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_final_review_report"
         },
         {
-          "tool_name": "write_port_pull_request",
           "collection": "PortPullRequest",
           "description": "Record the GitHub PR opened from the integrated operator checkout, or skipped.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "branch",
@@ -1866,17 +1574,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_pull_request"
         }
-      ]
+      ],
+      "surface_id": "port-publish-writes"
     },
     {
-      "surface_id": "port-recon-audit-io",
       "display_name": "Audit the closed Grok surface ledger",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_grok_port_job",
           "collection": "GrokPortJob",
           "description": "Load the immutable reconnaissance bounds.",
           "fields": [
@@ -1887,14 +1598,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_grok_port_job"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load the complete mapped Grok wire ledger.",
           "fields": [
@@ -1914,23 +1625,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "tool_name": "write_port_recon_audit",
           "collection": "PortReconAudit",
           "description": "Accept or reject the closed reconnaissance ledger.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "status",
@@ -1949,42 +1657,41 @@
               "required": true
             },
             {
-              "name": "repository_id",
               "fill": {
                 "source_field": "repository_id"
-              }
+              },
+              "name": "repository_id"
             },
             {
-              "name": "base_sha",
               "fill": {
                 "source_field": "base_sha"
-              }
+              },
+              "name": "base_sha"
             },
             {
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_recon_audit"
         }
-      ]
+      ],
+      "surface_id": "port-recon-audit-io"
     },
     {
-      "surface_id": "port-recon-writes",
       "display_name": "Recon: PortSurface writes",
       "entries": [
         {
-          "tool_name": "write_port_surface",
           "collection": "PortSurface",
           "description": "Record one Grok TUI feature surface mapped from grok-build, with a live prompt that must later pass.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "surface_id",
@@ -2026,32 +1733,36 @@
               "required": true
             },
             {
-              "name": "repository_id",
               "fill": {
                 "source_field": "repository_id"
-              }
+              },
+              "name": "repository_id"
             },
             {
-              "name": "base_sha",
               "fill": {
                 "source_field": "base_sha"
-              }
+              },
+              "name": "base_sha"
             },
             {
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_surface"
         }
-      ]
+      ],
+      "surface_id": "port-recon-writes"
     },
     {
-      "surface_id": "port-retry-io",
       "display_name": "Turn a rejected sealed attempt into a fresh work unit",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Load prior attempts and the immutable logical-unit contract.",
           "fields": [
@@ -2080,14 +1791,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_work_unit"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_review",
           "collection": "PortReview",
           "description": "Load the exact rejected review and its actionable evidence.",
           "fields": [
@@ -2105,23 +1816,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_review"
         },
         {
-          "tool_name": "write_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Create the next attempt in a new host-owned writable workspace.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "work_unit_id",
@@ -2212,24 +1920,27 @@
               "required": true
             },
             {
-              "name": "caused_by_correlation",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "caused_by_correlation"
             },
             {
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_work_unit"
         }
-      ]
+      ],
+      "surface_id": "port-retry-io"
     },
     {
-      "surface_id": "port-review-io",
       "display_name": "Review: sealed-tree code-review then close the unit",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_port_work_unit",
           "collection": "PortWorkUnit",
           "description": "Load the immutable structured path ownership for the exact work unit.",
           "fields": [
@@ -2241,14 +1952,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_work_unit"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_surface",
           "collection": "PortSurface",
           "description": "Load the mapped Grok wire packets for this run.",
           "fields": [
@@ -2265,14 +1976,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_surface"
         },
         {
-          "kind": "query",
-          "tool_name": "read_port_implementation",
           "collection": "PortImplementation",
           "description": "Load the writer receipt for this work unit.",
           "fields": [
@@ -2288,33 +1999,30 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_port_implementation"
         },
         {
-          "tool_name": "write_port_review",
           "collection": "PortReview",
           "description": "Accept or reject the sealed unit after the code-review graph.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "review_id",
               "required": true
             },
             {
-              "name": "work_unit_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "work_unit_id"
             },
             {
               "name": "logical_unit_id",
@@ -2325,10 +2033,10 @@
               "required": true
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
               "name": "attempt",
@@ -2354,26 +2062,26 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_review"
         },
         {
-          "tool_name": "write_port_unit_closure",
           "collection": "PortUnitClosure",
           "description": "Close this attempt. status=accepted only with zero findings; otherwise status=retry creates a fresh attempt.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "work_unit_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "work_unit_id"
             },
             {
               "name": "logical_unit_id",
@@ -2384,10 +2092,10 @@
               "required": true
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
               "name": "status",
@@ -2401,434 +2109,726 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_port_unit_closure"
         }
-      ]
-    }
-  ],
-  "tasks": [
-    {
-      "task_id": "port-converge-task",
-      "display_name": "port-converge-task",
-      "behavior_id": "port-converge",
-      "prompt_template": "./tasks/port_converge_task/prompt.md",
-      "goal_objective_template": "Complete combined Grok TUI port convergence for run {{ event.correlation }}, repair confirmed defects, and persist the convergence report.",
-      "goal_token_budget": 2000000
-    },
-    {
-      "task_id": "port-final-review-task",
-      "display_name": "port-final-review-task",
-      "behavior_id": "port-final-review",
-      "prompt_template": "./tasks/port_final_review_task/prompt.md",
-      "goal_objective_template": "Complete the final combined Grok TUI port review for run {{ event.correlation }} and persist its reviewed terminal report.",
-      "goal_token_budget": 2000000
-    },
-    {
-      "task_id": "port-implement-task",
-      "display_name": "port-implement-task",
-      "behavior_id": "port-implement",
-      "prompt_template": "./tasks/port_implement_task/prompt.md",
-      "goal_objective_template": "Complete the assigned Grok TUI port implementation unit {{ event.correlation }} and persist its implementation receipt.",
-      "goal_token_budget": 2000000
-    },
-    {
-      "task_id": "port-integrate-record-task",
-      "display_name": "port-integrate-record-task",
-      "description": "Record an applied slice from its host integrator receipt",
-      "behavior_id": "port-integrate-record",
-      "prompt_template": "./tasks/port_integrate_record_task/prompt.md",
-      "goal_objective_template": "Complete integration receipt recording for Grok TUI port unit {{ event.correlation }} and persist its durable result.",
-      "goal_token_budget": 200000
-    },
-    {
-      "task_id": "port-integrate-task",
-      "display_name": "port-integrate-task",
-      "behavior_id": "port-integrate",
-      "prompt_template": "./tasks/port_integrate_task/prompt.md",
-      "goal_objective_template": "Complete integration authorization for Grok TUI port unit {{ event.correlation }} and persist the required callback result.",
-      "goal_token_budget": 200000
-    },
-    {
-      "task_id": "port-live-review-task",
-      "display_name": "port-live-review-task",
-      "behavior_id": "port-live-review",
-      "prompt_template": "./tasks/port_live_review_task/prompt.md",
-      "goal_objective_template": "Complete live-result review for Grok TUI port run {{ event.correlation }} and persist its coverage verdict.",
-      "goal_token_budget": 500000
-    },
-    {
-      "task_id": "port-live-task",
-      "display_name": "port-live-task",
-      "behavior_id": "port-live",
-      "prompt_template": "./tasks/port_live_task/prompt.md",
-      "goal_objective_template": "Complete live Grok pager edge verification for run {{ event.correlation }} and persist every required probe result.",
-      "goal_token_budget": 500000
-    },
-    {
-      "task_id": "port-plan-skip-task",
-      "display_name": "port-plan-skip-task",
-      "behavior_id": "port-plan-skip",
-      "prompt_template": "./tasks/port_plan_skip_task/prompt.md",
-      "goal_objective_template": "Complete the Grok TUI port skip-plan stage for run {{ event.correlation }} and persist its required terminal records.",
-      "goal_token_budget": 100000
-    },
-    {
-      "task_id": "port-plan-task",
-      "display_name": "port-plan-task",
-      "behavior_id": "port-plan",
-      "prompt_template": "./tasks/port_plan_task/prompt.md",
-      "goal_objective_template": "Complete Grok TUI port planning for run {{ event.correlation }} and persist every required work unit and plan record.",
-      "goal_token_budget": 300000
-    },
-    {
-      "task_id": "port-publish-task",
-      "display_name": "port-publish-task",
-      "behavior_id": "port-publish",
-      "prompt_template": "./tasks/port_publish_task/prompt.md",
-      "goal_objective_template": "Complete publication of the reviewed Grok TUI port run {{ event.correlation }} as an unmerged pull request and persist its receipt.",
-      "goal_token_budget": 300000
-    },
-    {
-      "task_id": "port-recon-audit-task",
-      "display_name": "port-recon-audit-task",
-      "behavior_id": "port-recon-audit",
-      "prompt_template": "./tasks/port_recon_audit_task/prompt.md",
-      "goal_objective_template": "Complete the Grok TUI port reconnaissance audit for run {{ event.correlation }} and persist its required durable output.",
-      "goal_token_budget": 500000
-    },
-    {
-      "task_id": "port-recon-task",
-      "display_name": "port-recon-task",
-      "behavior_id": "port-recon",
-      "prompt_template": "./tasks/port_recon_task/prompt.md",
-      "goal_objective_template": "Complete Grok TUI port reconnaissance for run {{ event.correlation }} and persist its required durable output.",
-      "goal_token_budget": 1000000
-    },
-    {
-      "task_id": "port-retry-task",
-      "display_name": "port-retry-task",
-      "description": "Create a fresh workspace attempt from a rejected sealed slice",
-      "behavior_id": "port-retry",
-      "prompt_template": "./tasks/port_retry_task/prompt.md",
-      "goal_objective_template": "Complete retry preparation for rejected Grok TUI port unit {{ event.correlation }} and persist the next work-unit attempt.",
-      "goal_token_budget": 200000
-    },
-    {
-      "task_id": "port-review-task",
-      "display_name": "port-review-task",
-      "behavior_id": "port-review",
-      "prompt_template": "./tasks/port_review_task/prompt.md",
-      "goal_objective_template": "Complete the sealed Grok TUI port unit review {{ event.correlation }} and persist its review and closure records.",
-      "goal_token_budget": 750000
+      ],
+      "surface_id": "port-review-io"
     }
   ],
   "event_sources": [
     {
-      "event_source_id": "port-converge",
-      "display_name": "port-converge",
-      "source_collection": "PortIntegrateResult",
-      "event_kind": "created",
       "correlation_field": "run_id",
+      "display_name": "port-converge",
+      "event_kind": "created",
+      "event_source_id": "port-converge",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "PortIntegrateResult"
     },
     {
-      "event_source_id": "port-final-review",
+      "correlation_field": "run_id",
       "display_name": "port-final-review",
-      "source_collection": "PortConvergenceReport",
       "event_kind": "created",
-      "correlation_field": "run_id"
+      "event_source_id": "port-final-review",
+      "source_collection": "PortConvergenceReport"
     },
     {
-      "event_source_id": "port-implement",
-      "display_name": "port-implement",
-      "source_collection": "CallbackResult",
-      "event_kind": "created",
-      "filter": "{ binding_id: { _eq: \"port-implement-workspace\" } }",
       "correlation_field": "caused_by_correlation",
+      "display_name": "port-implement",
+      "event_kind": "created",
+      "event_source_id": "port-implement",
+      "filter": "{ binding_id: { _eq: \"port-implement-workspace\" } }",
+      "source_collection": "CallbackResult",
       "workspace_authority": "readWrite"
     },
     {
-      "event_source_id": "port-integrate",
-      "display_name": "port-integrate",
-      "source_collection": "PortUnitClosure",
-      "event_kind": "created",
-      "filter": "{ status: { _eq: \"accepted\" } }",
       "correlation_field": "run_id",
+      "display_name": "port-integrate",
+      "event_kind": "created",
+      "event_source_id": "port-integrate",
+      "filter": "{ status: { _eq: \"accepted\" } }",
+      "source_collection": "PortUnitClosure",
       "workspace_authority": "integrate"
     },
     {
+      "correlation_field": "caused_by_correlation",
+      "display_name": "port-integrate-record",
+      "event_kind": "created",
       "event_source_id": "port-integrate-record",
-      "display_name": "port-integrate-record",
-      "source_collection": "WorkspaceReceipt",
-      "event_kind": "created",
       "filter": "{ kind: { _eq: \"integrator\" } }",
-      "correlation_field": "caused_by_correlation",
-      "workspace_authority": "readOnly"
-    },
-    {
-      "event_source_id": "port-live",
-      "display_name": "port-live",
-      "source_collection": "PortFinalReviewReport",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-live-review",
-      "display_name": "port-live-review",
-      "source_collection": "PortLiveResult",
-      "event_kind": "created",
-      "correlation_field": "run_id",
-      "group": {
-        "expected_count": {
-          "source_field": "expected_total"
-        }
-      }
-    },
-    {
-      "event_source_id": "port-plan",
-      "display_name": "port-plan",
-      "source_collection": "PortReconAudit",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-plan-skip",
-      "display_name": "port-plan-skip",
-      "source_collection": "PortPlan",
-      "event_kind": "created",
-      "filter": "{ work_unit_count: { _eq: \"0\" } }",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-publish",
-      "display_name": "port-publish",
-      "source_collection": "PortLiveReport",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-recon",
-      "display_name": "port-recon",
-      "source_collection": "GrokPortJob",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-recon-audit",
-      "display_name": "port-recon-audit",
-      "source_collection": "PortSurface",
-      "event_kind": "created",
-      "correlation_field": "run_id",
-      "group": {
-        "expected_count": {
-          "source_field": "expected_total"
-        }
-      }
-    },
-    {
-      "event_source_id": "port-retry",
-      "display_name": "port-retry",
-      "source_collection": "PortUnitClosure",
-      "event_kind": "created",
-      "filter": "{ status: { _eq: \"retry\" } }",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "port-review",
-      "display_name": "port-review",
       "source_collection": "WorkspaceReceipt",
-      "event_kind": "created",
-      "filter": "{ kind: { _eq: \"writer\" } }",
-      "correlation_field": "caused_by_correlation",
       "workspace_authority": "readOnly"
     },
     {
-      "event_source_id": "port-implement-workspace",
-      "display_name": "Implementation workspace request",
-      "source_collection": "PortWorkUnit",
-      "event_kind": "created",
-      "filter": "{ status: { _eq: \"ready\" } }",
-      "correlation_field": "run_id"
-    }
-  ],
-  "triggers": [
-    {
-      "trigger_id": "port-converge",
-      "display_name": "port-converge",
-      "task_id": "port-converge-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-converge"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "port-final-review",
-      "display_name": "port-final-review",
-      "task_id": "port-final-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-final-review"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "port-implement",
-      "display_name": "port-implement",
-      "task_id": "port-implement-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-implement"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "port-integrate",
-      "display_name": "port-integrate",
-      "task_id": "port-integrate-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-integrate"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "port-integrate-record",
-      "display_name": "port-integrate-record",
-      "task_id": "port-integrate-record-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-integrate-record"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "port-live",
+      "correlation_field": "run_id",
       "display_name": "port-live",
-      "task_id": "port-live-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-live"
-      },
-      "concurrency": "serial"
+      "event_kind": "created",
+      "event_source_id": "port-live",
+      "source_collection": "PortFinalReviewReport"
     },
     {
-      "trigger_id": "port-live-review",
+      "correlation_field": "run_id",
       "display_name": "port-live-review",
-      "task_id": "port-live-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-live-review"
+      "event_kind": "created",
+      "event_source_id": "port-live-review",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
       },
-      "concurrency": "serial"
+      "source_collection": "PortLiveResult"
     },
     {
-      "trigger_id": "port-plan",
+      "correlation_field": "run_id",
       "display_name": "port-plan",
-      "task_id": "port-plan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-plan"
-      },
-      "concurrency": "serial"
+      "event_kind": "created",
+      "event_source_id": "port-plan",
+      "source_collection": "PortReconAudit"
     },
     {
-      "trigger_id": "port-plan-skip",
+      "correlation_field": "run_id",
       "display_name": "port-plan-skip",
-      "task_id": "port-plan-skip-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-plan-skip"
-      },
-      "concurrency": "serial"
+      "event_kind": "created",
+      "event_source_id": "port-plan-skip",
+      "filter": "{ work_unit_count: { _eq: \"0\" } }",
+      "source_collection": "PortPlan"
     },
     {
-      "trigger_id": "port-publish",
+      "correlation_field": "run_id",
       "display_name": "port-publish",
-      "task_id": "port-publish-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-publish"
-      },
-      "concurrency": "serial"
+      "event_kind": "created",
+      "event_source_id": "port-publish",
+      "source_collection": "PortLiveReport"
     },
     {
-      "trigger_id": "port-recon",
+      "correlation_field": "run_id",
       "display_name": "port-recon",
-      "task_id": "port-recon-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-recon"
-      },
-      "concurrency": "serial"
+      "event_kind": "created",
+      "event_source_id": "port-recon",
+      "source_collection": "GrokPortJob"
     },
     {
-      "trigger_id": "port-recon-audit",
+      "correlation_field": "run_id",
       "display_name": "port-recon-audit",
-      "task_id": "port-recon-audit-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-recon-audit"
+      "event_kind": "created",
+      "event_source_id": "port-recon-audit",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
       },
-      "concurrency": "serial"
+      "source_collection": "PortSurface"
     },
     {
-      "trigger_id": "port-retry",
+      "correlation_field": "run_id",
       "display_name": "port-retry",
-      "task_id": "port-retry-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-retry"
-      },
-      "concurrency": "parallel"
+      "event_kind": "created",
+      "event_source_id": "port-retry",
+      "filter": "{ status: { _eq: \"retry\" } }",
+      "source_collection": "PortUnitClosure"
     },
     {
-      "trigger_id": "port-review",
+      "correlation_field": "caused_by_correlation",
       "display_name": "port-review",
-      "task_id": "port-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "port-review"
-      },
-      "concurrency": "parallel"
-    }
-  ],
-  "callbacks": [
+      "event_kind": "created",
+      "event_source_id": "port-review",
+      "filter": "{ kind: { _eq: \"writer\" } }",
+      "source_collection": "WorkspaceReceipt",
+      "workspace_authority": "readOnly"
+    },
     {
-      "callback_id": "port-implement-workspace",
-      "display_name": "Create implementation workspace",
-      "handler": {
-        "kind": "built_in",
-        "emitter": "create_workspace"
-      },
-      "capabilities": [
-        "create_workspace",
-        "observe_dirty_base",
-        "clone_artifacts"
-      ]
-    }
-  ],
-  "callback_bindings": [
-    {
-      "binding_id": "port-implement-workspace",
+      "correlation_field": "run_id",
+      "display_name": "Implementation workspace request",
+      "event_kind": "created",
       "event_source_id": "port-implement-workspace",
-      "callback_id": "port-implement-workspace",
-      "input_fields": [
-        "work_unit_id",
-        "repository_id",
-        "base_sha",
-        "caused_by_correlation"
-      ]
+      "filter": "{ status: { _eq: \"ready\" } }",
+      "source_collection": "PortWorkUnit"
     }
   ],
   "repository_placements": [
     {
-      "repository_id": "gents-checkout",
-      "host_path": "."
+      "host_path": ".",
+      "repository_id": "gents-checkout"
+    }
+  ],
+  "subagent_targets": [
+    {
+      "behavior_id": "port-live-worker",
+      "description": "Deterministic one-sentence subagent for the live subagent edge",
+      "name": "port-live-worker",
+      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
+      "target_id": "port-live-tools:port-live-worker"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "port-converge",
+      "display_name": "port-converge-task",
+      "goal_objective_template": "Complete combined Grok TUI port convergence for run {{ event.correlation }}, repair confirmed defects, and persist the convergence report.",
+      "goal_token_budget": 2000000,
+      "prompt_template": "./tasks/port_converge_task/prompt.md",
+      "task_id": "port-converge-task"
+    },
+    {
+      "behavior_id": "port-final-review",
+      "display_name": "port-final-review-task",
+      "goal_objective_template": "Complete the final combined Grok TUI port review for run {{ event.correlation }} and persist its reviewed terminal report.",
+      "goal_token_budget": 2000000,
+      "prompt_template": "./tasks/port_final_review_task/prompt.md",
+      "task_id": "port-final-review-task"
+    },
+    {
+      "behavior_id": "port-implement",
+      "display_name": "port-implement-task",
+      "goal_objective_template": "Complete the assigned Grok TUI port implementation unit {{ event.correlation }} and persist its implementation receipt.",
+      "goal_token_budget": 2000000,
+      "prompt_template": "./tasks/port_implement_task/prompt.md",
+      "task_id": "port-implement-task"
+    },
+    {
+      "behavior_id": "port-integrate-record",
+      "description": "Record an applied slice from its host integrator receipt",
+      "display_name": "port-integrate-record-task",
+      "goal_objective_template": "Complete integration receipt recording for Grok TUI port unit {{ event.correlation }} and persist its durable result.",
+      "goal_token_budget": 200000,
+      "prompt_template": "./tasks/port_integrate_record_task/prompt.md",
+      "task_id": "port-integrate-record-task"
+    },
+    {
+      "behavior_id": "port-integrate",
+      "display_name": "port-integrate-task",
+      "goal_objective_template": "Complete integration authorization for Grok TUI port unit {{ event.correlation }} and persist the required callback result.",
+      "goal_token_budget": 200000,
+      "prompt_template": "./tasks/port_integrate_task/prompt.md",
+      "task_id": "port-integrate-task"
+    },
+    {
+      "behavior_id": "port-live-review",
+      "display_name": "port-live-review-task",
+      "goal_objective_template": "Complete live-result review for Grok TUI port run {{ event.correlation }} and persist its coverage verdict.",
+      "goal_token_budget": 500000,
+      "prompt_template": "./tasks/port_live_review_task/prompt.md",
+      "task_id": "port-live-review-task"
+    },
+    {
+      "behavior_id": "port-live",
+      "display_name": "port-live-task",
+      "goal_objective_template": "Complete live Grok pager edge verification for run {{ event.correlation }} and persist every required probe result.",
+      "goal_token_budget": 500000,
+      "prompt_template": "./tasks/port_live_task/prompt.md",
+      "task_id": "port-live-task"
+    },
+    {
+      "behavior_id": "port-plan-skip",
+      "display_name": "port-plan-skip-task",
+      "goal_objective_template": "Complete the Grok TUI port skip-plan stage for run {{ event.correlation }} and persist its required terminal records.",
+      "goal_token_budget": 100000,
+      "prompt_template": "./tasks/port_plan_skip_task/prompt.md",
+      "task_id": "port-plan-skip-task"
+    },
+    {
+      "behavior_id": "port-plan",
+      "display_name": "port-plan-task",
+      "goal_objective_template": "Complete Grok TUI port planning for run {{ event.correlation }} and persist every required work unit and plan record.",
+      "goal_token_budget": 300000,
+      "prompt_template": "./tasks/port_plan_task/prompt.md",
+      "task_id": "port-plan-task"
+    },
+    {
+      "behavior_id": "port-publish",
+      "display_name": "port-publish-task",
+      "goal_objective_template": "Complete publication of the reviewed Grok TUI port run {{ event.correlation }} as an unmerged pull request and persist its receipt.",
+      "goal_token_budget": 300000,
+      "prompt_template": "./tasks/port_publish_task/prompt.md",
+      "task_id": "port-publish-task"
+    },
+    {
+      "behavior_id": "port-recon-audit",
+      "display_name": "port-recon-audit-task",
+      "goal_objective_template": "Complete the Grok TUI port reconnaissance audit for run {{ event.correlation }} and persist its required durable output.",
+      "goal_token_budget": 500000,
+      "prompt_template": "./tasks/port_recon_audit_task/prompt.md",
+      "task_id": "port-recon-audit-task"
+    },
+    {
+      "behavior_id": "port-recon",
+      "display_name": "port-recon-task",
+      "goal_objective_template": "Complete Grok TUI port reconnaissance for run {{ event.correlation }} and persist its required durable output.",
+      "goal_token_budget": 1000000,
+      "prompt_template": "./tasks/port_recon_task/prompt.md",
+      "task_id": "port-recon-task"
+    },
+    {
+      "behavior_id": "port-retry",
+      "description": "Create a fresh workspace attempt from a rejected sealed slice",
+      "display_name": "port-retry-task",
+      "goal_objective_template": "Complete retry preparation for rejected Grok TUI port unit {{ event.correlation }} and persist the next work-unit attempt.",
+      "goal_token_budget": 200000,
+      "prompt_template": "./tasks/port_retry_task/prompt.md",
+      "task_id": "port-retry-task"
+    },
+    {
+      "behavior_id": "port-review",
+      "display_name": "port-review-task",
+      "goal_objective_template": "Complete the sealed Grok TUI port unit review {{ event.correlation }} and persist its review and closure records.",
+      "goal_token_budget": 750000,
+      "prompt_template": "./tasks/port_review_task/prompt.md",
+      "task_id": "port-review-task"
+    }
+  ],
+  "tools": [
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-converge-io"
+        ]
+      },
+      "display_name": "Converge: operator checkout semantic merge and gates",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "."
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "port-converge-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-final-review-io"
+        ]
+      },
+      "display_name": "Final review: full graph plus focused trunk repair",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "."
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "port-final-review-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-implement-io"
+        ]
+      },
+      "display_name": "Implement: bound ReadWrite gents workspace, no git commit",
+      "host": {
+        "bash": {
+          "execution_mode": "workspace_write",
+          "mode": "Unrestricted",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "."
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "port-implement-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-integrate-record-io"
+        ]
+      },
+      "display_name": "Record host integration receipt",
+      "tools_id": "port-integrate-record-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "display_name": "Integrate: acknowledge sealed tree; host applies the diff",
+      "tools_id": "port-integrate-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-live-review-io"
+        ]
+      },
+      "display_name": "Live review: document-only adversarial report",
+      "tools_id": "port-live-review-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-live-io"
+        ]
+      },
+      "display_name": "Live: run real GLM prompts through the Grok wire",
+      "host": {
+        "bash": {
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "."
+      },
+      "subagents": {
+        "enabled": true,
+        "target_ids": [
+          "port-live-tools:port-live-worker"
+        ]
+      },
+      "tools_id": "port-live-tools"
+    },
+    {
+      "display_name": "Live worker: deterministic subagent target, no shell/files/subagents",
+      "tools_id": "port-live-worker-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": false,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-plan-skip-writes"
+        ]
+      },
+      "display_name": "Plan skip: sentinel writes only",
+      "tools_id": "port-plan-skip-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-plan-io"
+        ]
+      },
+      "display_name": "Plan: document-only clustering of PortSurface into work units",
+      "tools_id": "port-plan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-publish-writes"
+        ]
+      },
+      "display_name": "Publish: unbound ReadWrite on the operator checkout, open one PR",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "."
+      },
+      "tools_id": "port-publish-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-recon-audit-io"
+        ]
+      },
+      "display_name": "Recon audit: document-only closed-ledger validation",
+      "tools_id": "port-recon-audit-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-recon-writes"
+        ]
+      },
+      "display_name": "Recon: read audited ledger, write PortSurface",
+      "host": {
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "./packs/grok_tui_port/recon_input"
+      },
+      "tools_id": "port-recon-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-retry-io"
+        ]
+      },
+      "display_name": "Read rejected attempt and write next attempt",
+      "tools_id": "port-retry-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "port-review-io"
+        ]
+      },
+      "display_name": "Review: bound ReadOnly workspace plus Grok call-site checks",
+      "host": {
+        "bash": {
+          "allowed_argv_prefixes": [
+            [
+              "git",
+              "status"
+            ],
+            [
+              "git",
+              "rev-parse"
+            ],
+            [
+              "git",
+              "diff"
+            ],
+            [
+              "git",
+              "ls-files"
+            ],
+            [
+              "rust-analyzer"
+            ]
+          ],
+          "execution_mode": "read_only",
+          "mode": "ReadOnly",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "."
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "port-review-tools"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "port-converge",
+      "source": {
+        "event_source_id": "port-converge",
+        "kind": "event"
+      },
+      "task_id": "port-converge-task",
+      "trigger_id": "port-converge"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-final-review",
+      "source": {
+        "event_source_id": "port-final-review",
+        "kind": "event"
+      },
+      "task_id": "port-final-review-task",
+      "trigger_id": "port-final-review"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "port-implement",
+      "source": {
+        "event_source_id": "port-implement",
+        "kind": "event"
+      },
+      "task_id": "port-implement-task",
+      "trigger_id": "port-implement"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "port-integrate",
+      "source": {
+        "event_source_id": "port-integrate",
+        "kind": "event"
+      },
+      "task_id": "port-integrate-task",
+      "trigger_id": "port-integrate"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "port-integrate-record",
+      "source": {
+        "event_source_id": "port-integrate-record",
+        "kind": "event"
+      },
+      "task_id": "port-integrate-record-task",
+      "trigger_id": "port-integrate-record"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-live",
+      "source": {
+        "event_source_id": "port-live",
+        "kind": "event"
+      },
+      "task_id": "port-live-task",
+      "trigger_id": "port-live"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-live-review",
+      "source": {
+        "event_source_id": "port-live-review",
+        "kind": "event"
+      },
+      "task_id": "port-live-review-task",
+      "trigger_id": "port-live-review"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-plan",
+      "source": {
+        "event_source_id": "port-plan",
+        "kind": "event"
+      },
+      "task_id": "port-plan-task",
+      "trigger_id": "port-plan"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-plan-skip",
+      "source": {
+        "event_source_id": "port-plan-skip",
+        "kind": "event"
+      },
+      "task_id": "port-plan-skip-task",
+      "trigger_id": "port-plan-skip"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-publish",
+      "source": {
+        "event_source_id": "port-publish",
+        "kind": "event"
+      },
+      "task_id": "port-publish-task",
+      "trigger_id": "port-publish"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-recon",
+      "source": {
+        "event_source_id": "port-recon",
+        "kind": "event"
+      },
+      "task_id": "port-recon-task",
+      "trigger_id": "port-recon"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "port-recon-audit",
+      "source": {
+        "event_source_id": "port-recon-audit",
+        "kind": "event"
+      },
+      "task_id": "port-recon-audit-task",
+      "trigger_id": "port-recon-audit"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "port-retry",
+      "source": {
+        "event_source_id": "port-retry",
+        "kind": "event"
+      },
+      "task_id": "port-retry-task",
+      "trigger_id": "port-retry"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "port-review",
+      "source": {
+        "event_source_id": "port-review",
+        "kind": "event"
+      },
+      "task_id": "port-review-task",
+      "trigger_id": "port-review"
     }
   ]
 }

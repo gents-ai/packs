@@ -1,65 +1,35 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "scan-investigate",
-      "display_name": "Batch investigator",
-      "description": "Investigates one candidate batch in depth and records findings.",
       "context_id": "scan-investigate-context",
+      "description": "Investigates one candidate batch in depth and records findings.",
+      "display_name": "Batch investigator",
       "inference_profile_id": "gents:inference-slot:scanner"
     },
     {
       "behavior_id": "scan-plan",
-      "display_name": "Scan batch planner",
-      "description": "Batches pre-scan candidates into investigation assignments.",
       "context_id": "scan-plan-context",
+      "description": "Batches pre-scan candidates into investigation assignments.",
+      "display_name": "Scan batch planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "scan-report",
-      "display_name": "Scan reporter",
-      "description": "Publishes confirmed findings and the run report.",
       "context_id": "scan-report-context",
+      "description": "Publishes confirmed findings and the run report.",
+      "display_name": "Scan reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "scan-revalidate",
-      "display_name": "Adversarial revalidator",
-      "description": "Re-checks every candidate finding and stamps verdicts.",
       "context_id": "scan-revalidate-context",
+      "description": "Re-checks every candidate finding and stamps verdicts.",
+      "display_name": "Adversarial revalidator",
       "inference_profile_id": "gents:inference-slot:verifier"
     }
   ],
-  "contexts": [
-    {
-      "context_id": "scan-investigate-context",
-      "display_name": "Batch investigator",
-      "system_prompt": "./agent_behaviors/scan_investigate/system_prompt.md",
-      "tools_id": "scan-investigate-tools",
-      "compaction_id": "security-scan-compaction"
-    },
-    {
-      "context_id": "scan-plan-context",
-      "display_name": "Scan batch planner",
-      "system_prompt": "./agent_behaviors/scan_plan/system_prompt.md",
-      "tools_id": "scan-plan-tools",
-      "compaction_id": "security-scan-compaction"
-    },
-    {
-      "context_id": "scan-report-context",
-      "display_name": "Scan reporter",
-      "system_prompt": "./agent_behaviors/scan_report/system_prompt.md",
-      "tools_id": "scan-report-tools",
-      "compaction_id": "security-scan-compaction"
-    },
-    {
-      "context_id": "scan-revalidate-context",
-      "display_name": "Adversarial revalidator",
-      "system_prompt": "./agent_behaviors/scan_revalidate/system_prompt.md",
-      "tools_id": "scan-revalidate-tools",
-      "compaction_id": "security-scan-compaction"
-    }
-  ],
+  "agent_principal": {},
   "compactions": [
     {
       "compaction_id": "security-scan-compaction",
@@ -68,109 +38,47 @@
       "threshold": 0.85
     }
   ],
-  "tools": [
+  "contexts": [
     {
-      "tools_id": "scan-investigate-tools",
-      "display_name": "Scan: inspect repository deeply and write results",
-      "host": {
-        "root": "${GENTS_SCAN_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "scan-investigate-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "security-scan-compaction",
+      "context_id": "scan-investigate-context",
+      "display_name": "Batch investigator",
+      "system_prompt": "./agent_behaviors/scan_investigate/system_prompt.md",
+      "tools_id": "scan-investigate-tools"
     },
     {
-      "tools_id": "scan-plan-tools",
-      "display_name": "Plan: batch candidates and write assignments",
-      "host": {
-        "root": "${GENTS_SCAN_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "scan-plan-writes"
-        ]
-      }
+      "compaction_id": "security-scan-compaction",
+      "context_id": "scan-plan-context",
+      "display_name": "Scan batch planner",
+      "system_prompt": "./agent_behaviors/scan_plan/system_prompt.md",
+      "tools_id": "scan-plan-tools"
     },
     {
-      "tools_id": "scan-report-tools",
-      "display_name": "Scan: inspect repository deeply and write results",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "scan-report-io"
-        ]
-      }
+      "compaction_id": "security-scan-compaction",
+      "context_id": "scan-report-context",
+      "display_name": "Scan reporter",
+      "system_prompt": "./agent_behaviors/scan_report/system_prompt.md",
+      "tools_id": "scan-report-tools"
     },
     {
-      "tools_id": "scan-revalidate-tools",
-      "display_name": "Scan: inspect repository deeply and write results",
-      "host": {
-        "root": "${GENTS_SCAN_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "disabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "scan-revalidate-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "security-scan-compaction",
+      "context_id": "scan-revalidate-context",
+      "display_name": "Adversarial revalidator",
+      "system_prompt": "./agent_behaviors/scan_revalidate/system_prompt.md",
+      "tools_id": "scan-revalidate-tools"
     }
   ],
   "datastore_tool_surfaces": [
     {
-      "surface_id": "scan-investigate-writes",
       "display_name": "Candidate finding and sentinel writes",
       "entries": [
         {
-          "tool_name": "write_candidate_finding",
           "collection": "CandidateFinding",
           "description": "Record one evidenced security or bug finding for adversarial revalidation.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "finding_id",
@@ -207,30 +115,26 @@
               "name": "evidence",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_candidate_finding"
         },
         {
-          "tool_name": "write_investigation_result",
           "collection": "InvestigationResult",
           "description": "Signal that one investigation batch is complete.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "batch_id",
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             },
             {
               "name": "finding_count",
@@ -240,27 +144,26 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_investigation_result"
         }
-      ]
+      ],
+      "surface_id": "scan-investigate-writes"
     },
     {
-      "surface_id": "scan-plan-writes",
       "display_name": "Investigation batch writes",
       "entries": [
         {
-          "tool_name": "write_investigation_batch",
           "collection": "InvestigationBatch",
           "description": "Create one member of the closed investigation-batch set.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "batch_id",
@@ -286,17 +189,21 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_investigation_batch"
         }
-      ]
+      ],
+      "surface_id": "scan-plan-writes"
     },
     {
-      "surface_id": "scan-report-io",
       "display_name": "Report reads and confirmed finding writes",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "query_finding_verdict",
           "collection": "FindingVerdict",
           "description": "Load every revalidation verdict for this run.",
           "fields": [
@@ -314,19 +221,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "query_finding_verdict"
         },
         {
-          "tool_name": "write_finding",
           "collection": "Finding",
           "description": "Publish one confirmed finding.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "finding_id",
@@ -371,20 +279,16 @@
               "name": "verification",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_finding"
         },
         {
-          "tool_name": "write_scan_report",
           "collection": "ScanReport",
           "description": "Publish the final scan report.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "candidate_total",
@@ -414,17 +318,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_scan_report"
         }
-      ]
+      ],
+      "surface_id": "scan-report-io"
     },
     {
-      "surface_id": "scan-revalidate-io",
       "display_name": "Revalidation reads and verdict writes",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "query_candidate_finding",
           "collection": "CandidateFinding",
           "description": "Load every candidate finding for this run.",
           "fields": [
@@ -440,19 +347,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "query_candidate_finding"
         },
         {
-          "tool_name": "write_finding_verdict",
           "collection": "FindingVerdict",
           "description": "Persist one confirmed or refuted decision for a candidate finding.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "finding_id",
@@ -497,20 +405,16 @@
               "name": "verification",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_finding_verdict"
         },
         {
-          "tool_name": "write_revalidation_summary",
           "collection": "RevalidationSummary",
           "description": "Close the revalidation ledger and trigger the report stage.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "candidate_count",
@@ -528,112 +432,208 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_revalidation_summary"
         }
-      ]
-    }
-  ],
-  "tasks": [
-    {
-      "task_id": "scan-investigate-task",
-      "display_name": "Investigate a candidate batch",
-      "behavior_id": "scan-investigate",
-      "prompt_template": "./tasks/scan_investigate_task/prompt.md"
-    },
-    {
-      "task_id": "scan-plan-task",
-      "display_name": "Plan investigation batches",
-      "behavior_id": "scan-plan",
-      "prompt_template": "./tasks/scan_plan_task/prompt.md"
-    },
-    {
-      "task_id": "scan-report-task",
-      "display_name": "Publish the scan report",
-      "behavior_id": "scan-report",
-      "prompt_template": "./tasks/scan_report_task/prompt.md"
-    },
-    {
-      "task_id": "scan-revalidate-task",
-      "display_name": "Revalidate candidate findings",
-      "behavior_id": "scan-revalidate",
-      "prompt_template": "./tasks/scan_revalidate_task/prompt.md"
+      ],
+      "surface_id": "scan-revalidate-io"
     }
   ],
   "event_sources": [
     {
-      "event_source_id": "scan-investigate",
-      "display_name": "scan-investigate",
-      "source_collection": "InvestigationBatch",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "scan-plan",
-      "display_name": "scan-plan",
-      "source_collection": "ScanJob",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "scan-report",
-      "display_name": "scan-report",
-      "source_collection": "RevalidationSummary",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "scan-revalidate",
-      "display_name": "scan-revalidate",
-      "source_collection": "InvestigationResult",
-      "event_kind": "created",
       "correlation_field": "run_id",
+      "display_name": "scan-investigate",
+      "event_kind": "created",
+      "event_source_id": "scan-investigate",
+      "source_collection": "InvestigationBatch"
+    },
+    {
+      "correlation_field": "run_id",
+      "display_name": "scan-plan",
+      "event_kind": "created",
+      "event_source_id": "scan-plan",
+      "source_collection": "ScanJob"
+    },
+    {
+      "correlation_field": "run_id",
+      "display_name": "scan-report",
+      "event_kind": "created",
+      "event_source_id": "scan-report",
+      "source_collection": "RevalidationSummary"
+    },
+    {
+      "correlation_field": "run_id",
+      "display_name": "scan-revalidate",
+      "event_kind": "created",
+      "event_source_id": "scan-revalidate",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "InvestigationResult"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "scan-investigate",
+      "display_name": "Investigate a candidate batch",
+      "prompt_template": "./tasks/scan_investigate_task/prompt.md",
+      "task_id": "scan-investigate-task"
+    },
+    {
+      "behavior_id": "scan-plan",
+      "display_name": "Plan investigation batches",
+      "prompt_template": "./tasks/scan_plan_task/prompt.md",
+      "task_id": "scan-plan-task"
+    },
+    {
+      "behavior_id": "scan-report",
+      "display_name": "Publish the scan report",
+      "prompt_template": "./tasks/scan_report_task/prompt.md",
+      "task_id": "scan-report-task"
+    },
+    {
+      "behavior_id": "scan-revalidate",
+      "display_name": "Revalidate candidate findings",
+      "prompt_template": "./tasks/scan_revalidate_task/prompt.md",
+      "task_id": "scan-revalidate-task"
+    }
+  ],
+  "tools": [
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "scan-investigate-writes"
+        ]
+      },
+      "display_name": "Scan: inspect repository deeply and write results",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_SCAN_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "scan-investigate-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "scan-plan-writes"
+        ]
+      },
+      "display_name": "Plan: batch candidates and write assignments",
+      "host": {
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_SCAN_ROOT:-.}"
+      },
+      "tools_id": "scan-plan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "scan-report-io"
+        ]
+      },
+      "display_name": "Scan: inspect repository deeply and write results",
+      "tools_id": "scan-report-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "scan-revalidate-io"
+        ]
+      },
+      "display_name": "Scan: inspect repository deeply and write results",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_SCAN_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "scan-revalidate-tools"
     }
   ],
   "triggers": [
     {
-      "trigger_id": "scan-investigate",
+      "concurrency": "parallel",
       "display_name": "scan-investigate",
+      "source": {
+        "event_source_id": "scan-investigate",
+        "kind": "event"
+      },
       "task_id": "scan-investigate-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "scan-investigate"
-      },
-      "concurrency": "parallel"
+      "trigger_id": "scan-investigate"
     },
     {
-      "trigger_id": "scan-plan",
+      "concurrency": "serial",
       "display_name": "scan-plan",
+      "source": {
+        "event_source_id": "scan-plan",
+        "kind": "event"
+      },
       "task_id": "scan-plan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "scan-plan"
-      },
-      "concurrency": "serial"
+      "trigger_id": "scan-plan"
     },
     {
-      "trigger_id": "scan-report",
+      "concurrency": "serial",
       "display_name": "scan-report",
-      "task_id": "scan-report-task",
       "source": {
-        "kind": "event",
-        "event_source_id": "scan-report"
+        "event_source_id": "scan-report",
+        "kind": "event"
       },
-      "concurrency": "serial"
+      "task_id": "scan-report-task",
+      "trigger_id": "scan-report"
     },
     {
-      "trigger_id": "scan-revalidate",
+      "concurrency": "serial",
       "display_name": "scan-revalidate",
-      "task_id": "scan-revalidate-task",
       "source": {
-        "kind": "event",
-        "event_source_id": "scan-revalidate"
+        "event_source_id": "scan-revalidate",
+        "kind": "event"
       },
-      "concurrency": "serial"
+      "task_id": "scan-revalidate-task",
+      "trigger_id": "scan-revalidate"
     }
   ]
 }

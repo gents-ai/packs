@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "background_continuation",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Parent -> two background subagents -> durable acknowledged continuation wake",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/background_parent/system_prompt.md",
@@ -21,22 +9,34 @@
     "tasks/background_parent_task/prompt.md",
     "tests/install.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Parent -> two background subagents -> durable acknowledged continuation wake",
   "inference_slots": [
     {
-      "name": "coordinator",
-      "description": "Owns the durable continuation and synthesizes worker results.",
       "behaviors": [
         "background-parent"
-      ]
+      ],
+      "description": "Owns the durable continuation and synthesizes worker results.",
+      "name": "coordinator"
     },
     {
-      "name": "worker",
-      "description": "Runs bounded background investigations.",
       "behaviors": [
         "background-worker"
-      ]
+      ],
+      "description": "Runs bounded background investigations.",
+      "name": "worker"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "background_continuation",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

@@ -1,19 +1,19 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "background-parent",
-      "display_name": "Background delegation parent",
       "context_id": "background-parent-context",
+      "display_name": "Background delegation parent",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "background-worker",
-      "display_name": "Background worker",
       "context_id": "background-worker-context",
+      "display_name": "Background worker",
       "inference_profile_id": "gents:inference-slot:worker"
     }
   ],
+  "agent_principal": {},
   "contexts": [
     {
       "context_id": "background-parent-context",
@@ -28,57 +28,57 @@
       "tools_id": "background-worker-tools"
     }
   ],
-  "tools": [
+  "event_sources": [
     {
-      "tools_id": "background-parent-tools",
-      "display_name": "Background subagent orchestration only",
-      "subagents": {
-        "target_ids": [
-          "background-parent-tools:worker"
-        ],
-        "enabled": true
-      }
-    },
-    {
-      "tools_id": "background-worker-tools",
-      "display_name": "No tools"
+      "display_name": "background-parent",
+      "event_kind": "created",
+      "event_source_id": "background-parent",
+      "source_collection": "BackgroundContinuationJob"
     }
   ],
   "subagent_targets": [
     {
-      "target_id": "background-parent-tools:worker",
-      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
       "behavior_id": "background-worker",
+      "description": "Returns one concise analysis result",
       "name": "worker",
-      "description": "Returns one concise analysis result"
+      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
+      "target_id": "background-parent-tools:worker"
     }
   ],
   "tasks": [
     {
-      "task_id": "background-parent-task",
-      "display_name": "background-parent-task",
       "behavior_id": "background-parent",
-      "prompt_template": "./tasks/background_parent_task/prompt.md"
+      "display_name": "background-parent-task",
+      "prompt_template": "./tasks/background_parent_task/prompt.md",
+      "task_id": "background-parent-task"
     }
   ],
-  "event_sources": [
+  "tools": [
     {
-      "event_source_id": "background-parent",
-      "display_name": "background-parent",
-      "source_collection": "BackgroundContinuationJob",
-      "event_kind": "created"
+      "display_name": "Background subagent orchestration only",
+      "subagents": {
+        "enabled": true,
+        "target_ids": [
+          "background-parent-tools:worker"
+        ]
+      },
+      "tools_id": "background-parent-tools"
+    },
+    {
+      "display_name": "No tools",
+      "tools_id": "background-worker-tools"
     }
   ],
   "triggers": [
     {
-      "trigger_id": "background-parent",
+      "concurrency": "parallel",
       "display_name": "background-parent",
-      "task_id": "background-parent-task",
       "source": {
-        "kind": "event",
-        "event_source_id": "background-parent"
+        "event_source_id": "background-parent",
+        "kind": "event"
       },
-      "concurrency": "parallel"
+      "task_id": "background-parent-task",
+      "trigger_id": "background-parent"
     }
   ]
 }

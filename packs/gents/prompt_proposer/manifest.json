@@ -1,30 +1,30 @@
 {
-  "manifest_version": 1,
-  "name": "prompt_proposer",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "The prompt proposer: rewrites one behavior's system instruction from a training run's feedback. Installed by gents optimization run --proposer behavior:prompt_proposer.",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "optimization"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/prompt_proposer/system_prompt.md",
     "pack_config.json",
     "tests/install.json"
   ],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "config": "pack_config.json",
+  "description": "The prompt proposer: rewrites one behavior's system instruction from a training run's feedback. Installed by gents optimization run --proposer behavior:prompt_proposer.",
   "inference_slots": [
     {
-      "name": "proposer",
-      "description": "Runs the prompt proposer.",
       "behaviors": [
         "prompt-proposer"
-      ]
+      ],
+      "description": "Runs the prompt proposer.",
+      "name": "proposer"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "prompt_proposer",
+  "namespace": "gents",
+  "tags": [
+    "optimization"
+  ],
+  "version": "1.0.0"
 }

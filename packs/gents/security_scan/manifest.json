@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "security_scan",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Whole-codebase security scan: free regex pre-scan -> batch planner -> investigator fan-out -> adversarial revalidation -> report",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/scan_investigate/system_prompt.md",
@@ -33,7 +21,40 @@
     "tasks/scan_revalidate_task/prompt.md",
     "tests/install.json"
   ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
   "dependencies": [],
+  "description": "Whole-codebase security scan: free regex pre-scan -> batch planner -> investigator fan-out -> adversarial revalidation -> report",
+  "inference_slots": [
+    {
+      "behaviors": [
+        "scan-plan",
+        "scan-report"
+      ],
+      "description": "Plans scan batches and produces the final report.",
+      "name": "coordinator"
+    },
+    {
+      "behaviors": [
+        "scan-investigate"
+      ],
+      "description": "Investigates candidate findings in parallel.",
+      "name": "scanner"
+    },
+    {
+      "behaviors": [
+        "scan-revalidate"
+      ],
+      "description": "Adversarially revalidates candidate findings.",
+      "name": "verifier"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "security_scan",
+  "namespace": "gents",
   "schemas": [
     "schemas/candidate_finding.graphql",
     "schemas/finding.graphql",
@@ -44,29 +65,8 @@
     "schemas/scan_job.graphql",
     "schemas/scan_report.graphql"
   ],
-  "config": "pack_config.json",
-  "inference_slots": [
-    {
-      "name": "coordinator",
-      "description": "Plans scan batches and produces the final report.",
-      "behaviors": [
-        "scan-plan",
-        "scan-report"
-      ]
-    },
-    {
-      "name": "scanner",
-      "description": "Investigates candidate findings in parallel.",
-      "behaviors": [
-        "scan-investigate"
-      ]
-    },
-    {
-      "name": "verifier",
-      "description": "Adversarially revalidates candidate findings.",
-      "behaviors": [
-        "scan-revalidate"
-      ]
-    }
-  ]
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

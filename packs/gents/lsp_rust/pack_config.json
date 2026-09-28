@@ -1,13 +1,13 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "lsp-coder",
-      "display_name": "LSP rust-analyzer coder",
       "context_id": "lsp-coder-context",
+      "display_name": "LSP rust-analyzer coder",
       "inference_profile_id": "gents:inference-slot:coder"
     }
   ],
+  "agent_principal": {},
   "contexts": [
     {
       "context_id": "lsp-coder-context",
@@ -16,49 +16,49 @@
       "tools_id": "lsp-readonly"
     }
   ],
+  "event_sources": [
+    {
+      "display_name": "lsp-hover",
+      "event_kind": "created",
+      "event_source_id": "lsp-hover",
+      "source_collection": "LspDemoJob"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "lsp-coder",
+      "display_name": "lsp-hover-task",
+      "prompt_template": "./tasks/lsp_hover_task/prompt.md",
+      "task_id": "lsp-hover-task"
+    }
+  ],
   "tools": [
     {
-      "tools_id": "lsp-readonly",
       "display_name": "ReadOnly files + lsp (bash off)",
       "host": {
-        "root": "${GENTS_LSP_WORKSPACE:-.}",
         "files": {
           "mode": "ReadOnly"
-        }
+        },
+        "root": "${GENTS_LSP_WORKSPACE:-.}"
       },
       "integrations": {
         "lsp": {
           "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
         }
-      }
-    }
-  ],
-  "tasks": [
-    {
-      "task_id": "lsp-hover-task",
-      "display_name": "lsp-hover-task",
-      "behavior_id": "lsp-coder",
-      "prompt_template": "./tasks/lsp_hover_task/prompt.md"
-    }
-  ],
-  "event_sources": [
-    {
-      "event_source_id": "lsp-hover",
-      "display_name": "lsp-hover",
-      "source_collection": "LspDemoJob",
-      "event_kind": "created"
+      },
+      "tools_id": "lsp-readonly"
     }
   ],
   "triggers": [
     {
-      "trigger_id": "lsp-hover",
+      "concurrency": "parallel",
       "display_name": "lsp-hover",
-      "task_id": "lsp-hover-task",
       "source": {
-        "kind": "event",
-        "event_source_id": "lsp-hover"
+        "event_source_id": "lsp-hover",
+        "kind": "event"
       },
-      "concurrency": "parallel"
+      "task_id": "lsp-hover-task",
+      "trigger_id": "lsp-hover"
     }
   ]
 }

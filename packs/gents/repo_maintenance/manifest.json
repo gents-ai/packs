@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "repo_maintenance",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Six-stage repository maintenance round: inventory -> concern swarm -> verification -> commit planning -> serial execution -> one reviewed PR",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/maintenance_execute/system_prompt.md",
@@ -46,12 +34,14 @@
     "tasks/maintenance_verify_task/prompt.md",
     "tests/install.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Six-stage repository maintenance round: inventory -> concern swarm -> verification -> commit planning -> serial execution -> one reviewed PR",
   "inference_slots": [
     {
-      "name": "coordinator",
-      "description": "Repository inventory, triage, integration, and publication.",
       "behaviors": [
         "maintenance-execute-skip",
         "maintenance-integrate",
@@ -59,15 +49,25 @@
         "maintenance-recon",
         "maintenance-triage",
         "maintenance-verify"
-      ]
+      ],
+      "description": "Repository inventory, triage, integration, and publication.",
+      "name": "coordinator"
     },
     {
-      "name": "scanner",
-      "description": "Bounded parallel concern scans and work-package execution.",
       "behaviors": [
         "maintenance-execute",
         "maintenance-scan"
-      ]
+      ],
+      "description": "Bounded parallel concern scans and work-package execution.",
+      "name": "scanner"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "repo_maintenance",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

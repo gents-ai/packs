@@ -1,231 +1,145 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "defend-cluster",
-      "display_name": "Root-cause clusterer",
-      "description": "Collapses confirmed consequence findings into a closed remediation-unit ledger.",
       "context_id": "defend-cluster-context",
+      "description": "Collapses confirmed consequence findings into a closed remediation-unit ledger.",
+      "display_name": "Root-cause clusterer",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-contract-review",
-      "display_name": "Contract and specification reviewer",
-      "description": "Checks one remediation unit against repository intent, tests, history, and formal specifications.",
       "context_id": "defend-contract-review-context",
+      "description": "Checks one remediation unit against repository intent, tests, history, and formal specifications.",
+      "display_name": "Contract and specification reviewer",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
       "behavior_id": "defend-patch",
-      "display_name": "Static patch author",
-      "description": "Drafts one contract-aware unapplied unified diff for a root-cause cluster.",
       "context_id": "defend-patch-context",
+      "description": "Drafts one contract-aware unapplied unified diff for a root-cause cluster.",
+      "display_name": "Static patch author",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "defend-patch-integrate",
-      "display_name": "Typed integrator",
-      "description": "Inspects a sealed accepted patch; the host applies the sealed diff.",
       "context_id": "defend-patch-integrate-context",
+      "description": "Inspects a sealed accepted patch; the host applies the sealed diff.",
+      "display_name": "Typed integrator",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "defend-patch-review",
-      "display_name": "Isolated static patch reviewer",
-      "description": "Reviews a patch from its location, category, diff, and source without finder or author rationale.",
       "context_id": "defend-patch-review-context",
+      "description": "Reviews a patch from its location, category, diff, and source without finder or author rationale.",
+      "display_name": "Isolated static patch reviewer",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
       "behavior_id": "defend-patch-security-review",
-      "display_name": "Adversarial patch re-attacker",
-      "description": "Independently checks whether one reviewed patch closes the exploit family without bypasses.",
       "context_id": "defend-patch-security-review-context",
+      "description": "Independently checks whether one reviewed patch closes the exploit family without bypasses.",
+      "display_name": "Adversarial patch re-attacker",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
       "behavior_id": "defend-patch-skip",
-      "display_name": "Skipped-assignment no-patch recorder",
-      "description": "Writes an explicit no-patch sentinel for a skipped DefensePatchAssignment.",
       "context_id": "defend-patch-skip-context",
+      "description": "Writes an explicit no-patch sentinel for a skipped DefensePatchAssignment.",
+      "display_name": "Skipped-assignment no-patch recorder",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "defend-patch-validation",
-      "display_name": "Isolated patch validator",
-      "description": "Applies one draft in a disposable local checkout and records mechanical evidence.",
       "context_id": "defend-patch-validation-context",
+      "description": "Applies one draft in a disposable local checkout and records mechanical evidence.",
+      "display_name": "Isolated patch validator",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
       "behavior_id": "defend-plan",
-      "display_name": "Threat-scoped review planner",
-      "description": "Partitions the attack surface into a closed, non-overlapping review-area set.",
       "context_id": "defend-plan-context",
+      "description": "Partitions the attack surface into a closed, non-overlapping review-area set.",
+      "display_name": "Threat-scoped review planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-remediation-plan",
-      "display_name": "Remediation work planner",
-      "description": "Joins the closed cluster and contract ledgers into one patch assignment per cluster.",
       "context_id": "defend-remediation-plan-context",
+      "description": "Joins the closed cluster and contract ledgers into one patch assignment per cluster.",
+      "display_name": "Remediation work planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-report",
-      "display_name": "Defense campaign reporter",
-      "description": "Checks the closed ledgers and publishes one operator-facing report.",
       "context_id": "defend-report-context",
+      "description": "Checks the closed ledgers and publishes one operator-facing report.",
+      "display_name": "Defense campaign reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-scan",
-      "display_name": "Static vulnerability discoverer",
-      "description": "Reviews one threat-scoped area and records plausible candidates without prematurely filtering them.",
       "context_id": "defend-scan-context",
+      "description": "Reviews one threat-scoped area and records plausible candidates without prematurely filtering them.",
+      "display_name": "Static vulnerability discoverer",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
       "behavior_id": "defend-threat-model",
-      "display_name": "Threat-model bootstrapper",
-      "description": "Maps system context, assets, entry points, trust boundaries, threats, and controls from source.",
       "context_id": "defend-threat-model-context",
+      "description": "Maps system context, assets, entry points, trust boundaries, threats, and controls from source.",
+      "display_name": "Threat-model bootstrapper",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-triage",
-      "display_name": "Adversarial triage reducer",
-      "description": "Reduces a closed typed verdict ledger into exact counts and confirmed findings.",
       "context_id": "defend-triage-context",
+      "description": "Reduces a closed typed verdict ledger into exact counts and confirmed findings.",
+      "display_name": "Adversarial triage reducer",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
       "behavior_id": "defend-verification-plan",
-      "display_name": "Verification work planner",
-      "description": "Closes the candidate ledger into one durable verification assignment per candidate.",
       "context_id": "defend-verification-plan-context",
+      "description": "Closes the candidate ledger into one durable verification assignment per candidate.",
+      "display_name": "Verification work planner",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
       "behavior_id": "defend-verifier",
-      "display_name": "Independent adversarial candidate verifier",
-      "description": "Receives exactly one candidate assignment, re-derives it from source, and writes one typed verdict without seeing other verifier reasoning.",
       "context_id": "defend-verifier-context",
+      "description": "Receives exactly one candidate assignment, re-derives it from source, and writes one typed verdict without seeing other verifier reasoning.",
+      "display_name": "Independent adversarial candidate verifier",
       "inference_profile_id": "gents:inference-slot:verifier"
     }
   ],
-  "contexts": [
+  "agent_principal": {},
+  "callback_bindings": [
     {
-      "context_id": "defend-cluster-context",
-      "display_name": "Root-cause clusterer",
-      "system_prompt": "./agent_behaviors/defend_cluster/system_prompt.md",
-      "tools_id": "defend-cluster-tools",
-      "compaction_id": "defending-code-compaction"
-    },
+      "binding_id": "defense-patch-workspace",
+      "callback_id": "defense-patch-workspace",
+      "event_source_id": "defense-patch-workspace",
+      "input_fields": [
+        "assignment_id",
+        "repository_id",
+        "base_revision",
+        "owned_files"
+      ]
+    }
+  ],
+  "callbacks": [
     {
-      "context_id": "defend-contract-review-context",
-      "display_name": "Contract and specification reviewer",
-      "system_prompt": "./agent_behaviors/defend_contract_review/system_prompt.md",
-      "tools_id": "defend-contract-review-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-context",
-      "display_name": "Static patch author",
-      "system_prompt": "./agent_behaviors/defend_patch/system_prompt.md",
-      "tools_id": "defend-patch-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-integrate-context",
-      "display_name": "Typed integrator",
-      "system_prompt": "./agent_behaviors/defend_patch_integrate/system_prompt.md",
-      "tools_id": "defend-patch-integrate-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-review-context",
-      "display_name": "Isolated static patch reviewer",
-      "system_prompt": "./agent_behaviors/defend_patch_review/system_prompt.md",
-      "tools_id": "defend-patch-review-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-security-review-context",
-      "display_name": "Adversarial patch re-attacker",
-      "system_prompt": "./agent_behaviors/defend_patch_security_review/system_prompt.md",
-      "tools_id": "defend-patch-security-review-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-skip-context",
-      "display_name": "Skipped-assignment no-patch recorder",
-      "system_prompt": "./agent_behaviors/defend_patch_skip/system_prompt.md",
-      "tools_id": "defend-patch-skip-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-patch-validation-context",
-      "display_name": "Isolated patch validator",
-      "system_prompt": "./agent_behaviors/defend_patch_validation/system_prompt.md",
-      "tools_id": "defend-patch-validation-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-plan-context",
-      "display_name": "Threat-scoped review planner",
-      "system_prompt": "./agent_behaviors/defend_plan/system_prompt.md",
-      "tools_id": "defend-plan-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-remediation-plan-context",
-      "display_name": "Remediation work planner",
-      "system_prompt": "./agent_behaviors/defend_remediation_plan/system_prompt.md",
-      "tools_id": "defend-remediation-plan-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-report-context",
-      "display_name": "Defense campaign reporter",
-      "system_prompt": "./agent_behaviors/defend_report/system_prompt.md",
-      "tools_id": "defend-report-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-scan-context",
-      "display_name": "Static vulnerability discoverer",
-      "system_prompt": "./agent_behaviors/defend_scan/system_prompt.md",
-      "tools_id": "defend-scan-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-threat-model-context",
-      "display_name": "Threat-model bootstrapper",
-      "system_prompt": "./agent_behaviors/defend_threat_model/system_prompt.md",
-      "tools_id": "defend-threat-model-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-triage-context",
-      "display_name": "Adversarial triage reducer",
-      "system_prompt": "./agent_behaviors/defend_triage/system_prompt.md",
-      "tools_id": "defend-triage-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-verification-plan-context",
-      "display_name": "Verification work planner",
-      "system_prompt": "./agent_behaviors/defend_verification_plan/system_prompt.md",
-      "tools_id": "defend-verification-plan-tools",
-      "compaction_id": "defending-code-compaction"
-    },
-    {
-      "context_id": "defend-verifier-context",
-      "display_name": "Independent adversarial candidate verifier",
-      "system_prompt": "./agent_behaviors/defend_verifier/system_prompt.md",
-      "tools_id": "defend-verifier-tools",
-      "compaction_id": "defending-code-compaction"
+      "callback_id": "defense-patch-workspace",
+      "capabilities": [
+        "create_workspace",
+        "observe_dirty_base",
+        "clone_artifacts"
+      ],
+      "display_name": "defense-patch-workspace",
+      "handler": {
+        "emitter": "create_workspace",
+        "kind": "built_in"
+      }
     }
   ],
   "compactions": [
@@ -236,367 +150,125 @@
       "threshold": 0.762939453125
     }
   ],
-  "tools": [
+  "contexts": [
     {
-      "tools_id": "defend-cluster-tools",
-      "display_name": "Cluster: typed confirmed-finding read and cluster writes",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-cluster-io"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-cluster-context",
+      "display_name": "Root-cause clusterer",
+      "system_prompt": "./agent_behaviors/defend_cluster/system_prompt.md",
+      "tools_id": "defend-cluster-tools"
     },
     {
-      "tools_id": "defend-contract-review-tools",
-      "display_name": "Contract review: typed reads, source, shell, LSP, one write",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-contract-review-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-contract-review-context",
+      "display_name": "Contract and specification reviewer",
+      "system_prompt": "./agent_behaviors/defend_contract_review/system_prompt.md",
+      "tools_id": "defend-contract-review-tools"
     },
     {
-      "tools_id": "defend-patch-integrate-tools",
-      "display_name": "Integrator: sealed-tree inspect, no bash writes",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "ReadOnly",
-          "execution_mode": "read_only",
-          "network_mode": "disabled"
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-context",
+      "display_name": "Static patch author",
+      "system_prompt": "./agent_behaviors/defend_patch/system_prompt.md",
+      "tools_id": "defend-patch-tools"
     },
     {
-      "tools_id": "defend-patch-review-tools",
-      "display_name": "Patch review: typed patch read, unrestricted shell, LSP, one write",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-patch-review-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-integrate-context",
+      "display_name": "Typed integrator",
+      "system_prompt": "./agent_behaviors/defend_patch_integrate/system_prompt.md",
+      "tools_id": "defend-patch-integrate-tools"
     },
     {
-      "tools_id": "defend-patch-security-review-tools",
-      "display_name": "Security re-attack: bounded graph reads, shell, LSP, one write",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-patch-security-review-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-review-context",
+      "display_name": "Isolated static patch reviewer",
+      "system_prompt": "./agent_behaviors/defend_patch_review/system_prompt.md",
+      "tools_id": "defend-patch-review-tools"
     },
     {
-      "tools_id": "defend-patch-skip-tools",
-      "display_name": "Skipped assignment: document-only no-patch write",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-patch-skip-writes"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-security-review-context",
+      "display_name": "Adversarial patch re-attacker",
+      "system_prompt": "./agent_behaviors/defend_patch_security_review/system_prompt.md",
+      "tools_id": "defend-patch-security-review-tools"
     },
     {
-      "tools_id": "defend-patch-tools",
-      "display_name": "Patch: bound ReadWrite workspace, no git commit",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadWrite"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-patch-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-skip-context",
+      "display_name": "Skipped-assignment no-patch recorder",
+      "system_prompt": "./agent_behaviors/defend_patch_skip/system_prompt.md",
+      "tools_id": "defend-patch-skip-tools"
     },
     {
-      "tools_id": "defend-patch-validation-tools",
-      "display_name": "Patch validation: unrestricted shell, LSP, typed receipt",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-patch-validation-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-patch-validation-context",
+      "display_name": "Isolated patch validator",
+      "system_prompt": "./agent_behaviors/defend_patch_validation/system_prompt.md",
+      "tools_id": "defend-patch-validation-tools"
     },
     {
-      "tools_id": "defend-plan-tools",
-      "display_name": "Plan: inspect layout and write a closed review-area set",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-plan-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-plan-context",
+      "display_name": "Threat-scoped review planner",
+      "system_prompt": "./agent_behaviors/defend_plan/system_prompt.md",
+      "tools_id": "defend-plan-tools"
     },
     {
-      "tools_id": "defend-remediation-plan-tools",
-      "display_name": "Remediation planner: bounded graph IO only",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-remediation-plan-io"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-remediation-plan-context",
+      "display_name": "Remediation work planner",
+      "system_prompt": "./agent_behaviors/defend_remediation_plan/system_prompt.md",
+      "tools_id": "defend-remediation-plan-tools"
     },
     {
-      "tools_id": "defend-report-tools",
-      "display_name": "Report: bounded graph reads and one report write",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-report-io"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-report-context",
+      "display_name": "Defense campaign reporter",
+      "system_prompt": "./agent_behaviors/defend_report/system_prompt.md",
+      "tools_id": "defend-report-tools"
     },
     {
-      "tools_id": "defend-scan-tools",
-      "display_name": "Discover: read-only source plus candidate/sentinel writes",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-scan-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-scan-context",
+      "display_name": "Static vulnerability discoverer",
+      "system_prompt": "./agent_behaviors/defend_scan/system_prompt.md",
+      "tools_id": "defend-scan-tools"
     },
     {
-      "tools_id": "defend-threat-model-tools",
-      "display_name": "Threat model: read source, write one model document",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-threat-model-writes"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-threat-model-context",
+      "display_name": "Threat-model bootstrapper",
+      "system_prompt": "./agent_behaviors/defend_threat_model/system_prompt.md",
+      "tools_id": "defend-threat-model-tools"
     },
     {
-      "tools_id": "defend-triage-tools",
-      "display_name": "Final triage reducer: typed graph IO only",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-triage-io"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-triage-context",
+      "display_name": "Adversarial triage reducer",
+      "system_prompt": "./agent_behaviors/defend_triage/system_prompt.md",
+      "tools_id": "defend-triage-tools"
     },
     {
-      "tools_id": "defend-verification-plan-tools",
-      "display_name": "Verification planner: typed graph IO only",
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-verification-plan-io"
-        ]
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-verification-plan-context",
+      "display_name": "Verification work planner",
+      "system_prompt": "./agent_behaviors/defend_verification_plan/system_prompt.md",
+      "tools_id": "defend-verification-plan-tools"
     },
     {
-      "tools_id": "defend-verifier-tools",
-      "display_name": "Independent verifier: bounded graph IO, read-only source, shell, and LSP",
-      "host": {
-        "root": "${GENTS_DEFENDING_ROOT:-.}",
-        "files": {
-          "mode": "ReadOnly"
-        },
-        "bash": {
-          "mode": "Unrestricted",
-          "execution_mode": "unrestricted",
-          "network_mode": "enabled",
-          "background_enabled": true
-        }
-      },
-      "built_ins": {
-        "enable_context_budget": true
-      },
-      "datastore": {
-        "datastore_tool_surface_ids": [
-          "defend-verifier-io"
-        ]
-      },
-      "integrations": {
-        "lsp": {
-          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
-      }
+      "compaction_id": "defending-code-compaction",
+      "context_id": "defend-verifier-context",
+      "display_name": "Independent adversarial candidate verifier",
+      "system_prompt": "./agent_behaviors/defend_verifier/system_prompt.md",
+      "tools_id": "defend-verifier-tools"
     }
   ],
   "datastore_tool_surfaces": [
     {
-      "surface_id": "defend-cluster-io",
       "display_name": "Confirmed findings to root-cause clusters",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defending_finding",
           "collection": "DefendingFinding",
           "description": "Load the closed promoted finding ledger for this run.",
           "fields": [
@@ -640,34 +312,30 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defending_finding"
         },
         {
-          "tool_name": "write_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Persist one closed remediation unit or the no-findings sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "cluster_id",
               "required": true
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "base_revision",
@@ -725,17 +393,21 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_root_cause_cluster"
         }
-      ]
+      ],
+      "surface_id": "defend-cluster-io"
     },
     {
-      "surface_id": "defend-contract-review-io",
       "display_name": "Cluster contract review IO",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defending_finding",
           "collection": "DefendingFinding",
           "description": "Load the run-bounded confirmed ledger so the reviewer can retain every exact cluster member.",
           "fields": [
@@ -775,39 +447,36 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defending_finding"
         },
         {
-          "tool_name": "write_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Persist the independent contract and specification review.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "review_id",
               "required": true
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "status",
@@ -850,22 +519,25 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_contract_review"
         }
-      ]
+      ],
+      "surface_id": "defend-contract-review-io"
     },
     {
-      "surface_id": "defend-patch-io",
       "display_name": "Confirmed-finding read and patch write in a bound workspace",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_assignment",
           "collection": "DefensePatchAssignment",
           "description": "Load the exact patch assignment for this bound workspace.",
           "fields": [
@@ -885,20 +557,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "assignment_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "assignment_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_assignment"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load the exact root-cause cluster assigned to this patch author.",
           "fields": [
@@ -920,14 +592,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Load the contract constraints for this cluster.",
           "fields": [
@@ -948,14 +620,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_contract_review"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defending_finding",
           "collection": "DefendingFinding",
           "description": "Load confirmed findings so the author can select the cluster's exact members.",
           "fields": [
@@ -998,35 +670,32 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defending_finding"
         },
         {
-          "tool_name": "write_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Persist one patch proposal written into the bound workspace, or an explicit no-patch sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
               "name": "cluster_id",
@@ -1112,17 +781,20 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_candidate"
         }
-      ]
+      ],
+      "surface_id": "defend-patch-io"
     },
     {
-      "surface_id": "defend-patch-review-writes",
       "display_name": "Isolated patch-review writes",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load the exact remediation unit whose patch is under maintainer review.",
           "fields": [
@@ -1141,20 +813,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Load the independently established contract and compatibility constraints.",
           "fields": [
@@ -1175,20 +847,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_contract_review"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Load the exact patch associated with this validation receipt.",
           "fields": [
@@ -1216,77 +888,74 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "patch_id"
-              }
+              },
+              "name": "patch_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_candidate"
         },
         {
-          "tool_name": "write_defense_patch_review",
           "collection": "DefensePatchReview",
           "description": "Persist the independent review of one proposed patch or no-patch sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "patch_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "validation_id",
               "fill": {
                 "source_field": "validation_id"
-              }
+              },
+              "name": "validation_id"
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
-              "name": "seal_hash",
               "fill": {
                 "source_field": "seal_hash"
-              }
+              },
+              "name": "seal_hash"
             },
             {
-              "name": "reviewed_base_revision",
               "fill": {
                 "source_field": "validated_base_revision"
-              }
+              },
+              "name": "reviewed_base_revision"
             },
             {
-              "name": "reviewed_base_tree_state",
               "fill": {
                 "source_field": "base_tree_state"
-              }
+              },
+              "name": "reviewed_base_tree_state"
             },
             {
               "name": "reviewed_diff_sha256",
@@ -1317,22 +986,25 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_review"
         }
-      ]
+      ],
+      "surface_id": "defend-patch-review-writes"
     },
     {
-      "surface_id": "defend-patch-security-review-io",
       "display_name": "Adversarial patch re-attack IO",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defending_finding",
           "collection": "DefendingFinding",
           "description": "Load the run-bounded confirmed ledger so every exact cluster member can be re-attacked.",
           "fields": [
@@ -1370,14 +1042,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defending_finding"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load the exact remediation unit for this patch.",
           "fields": [
@@ -1396,20 +1068,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Load the contract constraints for this patch.",
           "fields": [
@@ -1429,20 +1101,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_contract_review"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Load the exact raw patch to re-attack.",
           "fields": [
@@ -1470,20 +1142,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "patch_id"
-              }
+              },
+              "name": "patch_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_candidate"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_validation",
           "collection": "DefensePatchValidation",
           "description": "Load the exact mechanical validation receipt.",
           "fields": [
@@ -1513,81 +1185,78 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "patch_id"
-              }
+              },
+              "name": "patch_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_validation"
         },
         {
-          "tool_name": "write_defense_patch_security_review",
           "collection": "DefensePatchSecurityReview",
           "description": "Persist one independent exploit-closure review.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "security_review_id",
               "required": true
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "patch_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "validation_id",
               "fill": {
                 "source_field": "validation_id"
-              }
+              },
+              "name": "validation_id"
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
-              "name": "seal_hash",
               "fill": {
                 "source_field": "seal_hash"
-              }
+              },
+              "name": "seal_hash"
             },
             {
-              "name": "reviewed_base_revision",
               "fill": {
                 "source_field": "reviewed_base_revision"
-              }
+              },
+              "name": "reviewed_base_revision"
             },
             {
-              "name": "reviewed_base_tree_state",
               "fill": {
                 "source_field": "reviewed_base_tree_state"
-              }
+              },
+              "name": "reviewed_base_tree_state"
             },
             {
               "name": "reviewed_diff_sha256",
@@ -1622,67 +1291,67 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_security_review"
         }
-      ]
+      ],
+      "surface_id": "defend-patch-security-review-io"
     },
     {
-      "surface_id": "defend-patch-skip-writes",
       "display_name": "Skipped-assignment no-patch write",
       "entries": [
         {
-          "tool_name": "write_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Persist one explicit no-patch sentinel for a skipped assignment.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "assignment_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "member_finding_ids",
               "fill": {
                 "source_field": "member_finding_ids"
-              }
+              },
+              "name": "member_finding_ids"
             },
             {
-              "name": "contract_review_id",
               "fill": {
                 "source_field": "contract_review_id"
-              }
+              },
+              "name": "contract_review_id"
             },
             {
-              "name": "contract_disposition",
               "fill": {
                 "source_field": "contract_disposition"
-              }
+              },
+              "name": "contract_disposition"
             },
             {
               "name": "status",
@@ -1692,22 +1361,22 @@
               "name": "workspace_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
-              "name": "base_revision",
               "fill": {
                 "source_field": "base_revision"
-              }
+              },
+              "name": "base_revision"
             },
             {
-              "name": "base_tree_state",
               "fill": {
                 "source_field": "base_tree_state"
-              }
+              },
+              "name": "base_tree_state"
             },
             {
               "name": "workspace_requirement",
@@ -1754,53 +1423,53 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_candidate"
         },
         {
-          "tool_name": "write_defense_patch_validation",
           "collection": "DefensePatchValidation",
           "description": "Persist one skipped-assignment validation sentinel so collection_counts can close.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "validation_id",
               "required": true
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "assignment_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "workspace_id"
@@ -1814,16 +1483,16 @@
               "required": true
             },
             {
-              "name": "validated_base_revision",
               "fill": {
                 "source_field": "base_revision"
-              }
+              },
+              "name": "validated_base_revision"
             },
             {
-              "name": "base_tree_state",
               "fill": {
                 "source_field": "base_tree_state"
-              }
+              },
+              "name": "base_tree_state"
             },
             {
               "name": "validated_diff_sha256",
@@ -1882,43 +1551,43 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_validation"
         },
         {
-          "tool_name": "write_defense_patch_review",
           "collection": "DefensePatchReview",
           "description": "Persist one skipped-assignment review sentinel so collection_counts can close.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "assignment_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
               "name": "validation_id",
@@ -1932,16 +1601,16 @@
               "required": true
             },
             {
-              "name": "reviewed_base_revision",
               "fill": {
                 "source_field": "base_revision"
-              }
+              },
+              "name": "reviewed_base_revision"
             },
             {
-              "name": "reviewed_base_tree_state",
               "fill": {
                 "source_field": "base_tree_state"
-              }
+              },
+              "name": "reviewed_base_tree_state"
             },
             {
               "name": "reviewed_diff_sha256",
@@ -1972,47 +1641,47 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_review"
         },
         {
-          "tool_name": "write_defense_patch_security_review",
           "collection": "DefensePatchSecurityReview",
           "description": "Persist one skipped-assignment sentinel so the report barrier can close.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "security_review_id",
               "required": true
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "assignment_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "cluster_id",
               "fill": {
                 "source_field": "cluster_id"
-              }
+              },
+              "name": "cluster_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
               "name": "validation_id",
@@ -2026,16 +1695,16 @@
               "required": true
             },
             {
-              "name": "reviewed_base_revision",
               "fill": {
                 "source_field": "base_revision"
-              }
+              },
+              "name": "reviewed_base_revision"
             },
             {
-              "name": "reviewed_base_tree_state",
               "fill": {
                 "source_field": "base_tree_state"
-              }
+              },
+              "name": "reviewed_base_tree_state"
             },
             {
               "name": "reviewed_diff_sha256",
@@ -2070,22 +1739,25 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_security_review"
         }
-      ]
+      ],
+      "surface_id": "defend-patch-skip-writes"
     },
     {
-      "surface_id": "defend-patch-validation-writes",
       "display_name": "Mechanical patch-validation receipt on a sealed workspace",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Load the exact patch written in this sealed workspace.",
           "fields": [
@@ -2115,20 +1787,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "patch_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_candidate"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load frozen base provenance for the patch's root-cause cluster.",
           "fields": [
@@ -2143,14 +1815,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Load the foundation, proof, and compatibility gates governing this patch.",
           "fields": [
@@ -2170,45 +1842,42 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_contract_review"
         },
         {
-          "tool_name": "write_defense_patch_validation",
           "collection": "DefensePatchValidation",
           "description": "Persist one exact mechanical validation receipt.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "validation_id",
               "required": true
             },
             {
-              "name": "patch_id",
               "fill": {
                 "source_field": "work_unit_id"
-              }
+              },
+              "name": "patch_id"
             },
             {
-              "name": "workspace_id",
               "fill": {
                 "source_field": "workspace_id"
-              }
+              },
+              "name": "workspace_id"
             },
             {
-              "name": "seal_hash",
               "fill": {
                 "source_field": "seal_hash"
-              }
+              },
+              "name": "seal_hash"
             },
             {
               "name": "cluster_id",
@@ -2294,49 +1963,48 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_validation"
         }
-      ]
+      ],
+      "surface_id": "defend-patch-validation-writes"
     },
     {
-      "surface_id": "defend-plan-writes",
       "display_name": "Threat-scoped review-area writes",
       "entries": [
         {
-          "tool_name": "write_defense_review_area",
           "collection": "DefenseReviewArea",
           "description": "Create one member of the closed static-review area set.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "area_id",
               "required": true
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
-              "name": "source_revision",
               "fill": {
                 "source_field": "source_revision"
-              }
+              },
+              "name": "source_revision"
             },
             {
-              "name": "source_tree_state",
               "fill": {
                 "source_field": "source_tree_state"
-              }
+              },
+              "name": "source_tree_state"
             },
             {
               "name": "status",
@@ -2370,17 +2038,21 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_review_area"
         }
-      ]
+      ],
+      "surface_id": "defend-plan-writes"
     },
     {
-      "surface_id": "defend-remediation-plan-io",
       "display_name": "Contract reviews to patch assignments",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load the closed root-cause cluster ledger.",
           "fields": [
@@ -2397,24 +2069,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "tool_name": "write_defense_patch_assignment",
           "collection": "DefensePatchAssignment",
           "description": "Create one contract-aware patch work item per root-cause cluster.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "assignment_id",
@@ -2453,10 +2121,10 @@
               "required": true
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "base_revision",
@@ -2474,17 +2142,21 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_patch_assignment"
         }
-      ]
+      ],
+      "surface_id": "defend-remediation-plan-io"
     },
     {
-      "surface_id": "defend-report-io",
       "display_name": "Closed-ledger campaign report IO",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_review_area",
           "collection": "DefenseReviewArea",
           "description": "Load the closed planned-area ledger for coverage checks.",
           "fields": [
@@ -2499,14 +2171,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_review_area"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_scan_result",
           "collection": "DefenseScanResult",
           "description": "Load every area completion and declared candidate count.",
           "fields": [
@@ -2520,14 +2192,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_scan_result"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_candidate",
           "collection": "DefenseCandidateFinding",
           "description": "Load the immutable candidate ledger for area and verification joins.",
           "fields": [
@@ -2545,14 +2217,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_candidate"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_verification_assignment",
           "collection": "DefenseVerificationAssignment",
           "description": "Load the closed candidate-to-verifier work ledger.",
           "fields": [
@@ -2566,14 +2238,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_verification_assignment"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_verification_completion",
           "collection": "DefenseVerificationCompletion",
           "description": "Load the verifier completion barrier ledger.",
           "fields": [
@@ -2586,14 +2258,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_verification_completion"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_assignment",
           "collection": "DefensePatchAssignment",
           "description": "Load the exact contract-to-remediation work ledger.",
           "fields": [
@@ -2612,14 +2284,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_assignment"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_threat_model",
           "collection": "DefenseThreatModel",
           "description": "Load the threat model.",
           "fields": [
@@ -2638,14 +2310,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_threat_model"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_triage_summary",
           "collection": "DefenseTriageSummary",
           "description": "Load exact triage counts.",
           "fields": [
@@ -2660,14 +2332,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_triage_summary"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_verdict",
           "collection": "DefenseFindingVerdict",
           "description": "Load the candidate verdict ledger.",
           "fields": [
@@ -2703,14 +2375,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_verdict"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defending_finding",
           "collection": "DefendingFinding",
           "description": "Load confirmed findings.",
           "fields": [
@@ -2749,14 +2421,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defending_finding"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_root_cause_cluster",
           "collection": "DefenseRootCauseCluster",
           "description": "Load root-cause remediation units.",
           "fields": [
@@ -2778,14 +2450,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_root_cause_cluster"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_contract_review",
           "collection": "DefenseContractReview",
           "description": "Load contract dispositions.",
           "fields": [
@@ -2806,14 +2478,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_contract_review"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_candidate",
           "collection": "DefensePatchCandidate",
           "description": "Load patch proposals.",
           "fields": [
@@ -2842,14 +2514,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_candidate"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_validation",
           "collection": "DefensePatchValidation",
           "description": "Load mechanical validation receipts.",
           "fields": [
@@ -2878,14 +2550,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_validation"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_patch_review",
           "collection": "DefensePatchReview",
           "description": "Load maintainer reviews.",
           "fields": [
@@ -2906,23 +2578,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_patch_review"
         },
         {
-          "tool_name": "write_defense_report",
           "collection": "DefenseReport",
           "description": "Publish one report over every closed defense ledger.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "audit_status",
@@ -2988,44 +2657,48 @@
               "name": "human_actions",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_report"
         }
-      ]
+      ],
+      "surface_id": "defend-report-io"
     },
     {
-      "surface_id": "defend-scan-writes",
       "display_name": "Static candidate and area-sentinel writes",
       "entries": [
         {
-          "tool_name": "write_defense_candidate",
           "collection": "DefenseCandidateFinding",
           "description": "Record one plausible, evidenced security candidate for independent verification. Classification invariant: vulnerability requires claimed_severity HIGH, MEDIUM, or LOW; hardening, correctness, operational, and specification require claimed_severity NONE.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "finding_id",
               "required": true
             },
             {
-              "name": "area_id",
               "fill": {
                 "source_field": "area_id"
-              }
+              },
+              "name": "area_id"
             },
             {
-              "name": "source_revision",
               "fill": {
                 "source_field": "source_revision"
-              }
+              },
+              "name": "source_revision"
             },
             {
-              "name": "source_tree_state",
               "fill": {
                 "source_field": "source_tree_state"
-              }
+              },
+              "name": "source_tree_state"
             },
             {
               "name": "claim_kind",
@@ -3127,38 +2800,34 @@
               "name": "threat_ids",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_defense_candidate"
         },
         {
-          "tool_name": "write_defense_scan_result",
           "collection": "DefenseScanResult",
           "description": "Close one static review area after all of its candidates are recorded.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "area_id",
               "fill": {
                 "source_field": "area_id"
-              }
+              },
+              "name": "area_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             },
             {
               "name": "status",
@@ -3176,32 +2845,32 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_scan_result"
         }
-      ]
+      ],
+      "surface_id": "defend-scan-writes"
     },
     {
-      "surface_id": "defend-threat-model-writes",
       "display_name": "Threat-model document write",
       "entries": [
         {
-          "tool_name": "write_defense_threat_model",
           "collection": "DefenseThreatModel",
           "description": "Create the single structured threat model for this defense run.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "source_revision",
@@ -3216,22 +2885,22 @@
               "required": true
             },
             {
-              "name": "focus",
               "fill": {
                 "source_field": "focus"
-              }
+              },
+              "name": "focus"
             },
             {
-              "name": "area_min",
               "fill": {
                 "source_field": "area_min"
-              }
+              },
+              "name": "area_min"
             },
             {
-              "name": "area_max",
               "fill": {
                 "source_field": "area_max"
-              }
+              },
+              "name": "area_max"
             },
             {
               "name": "system_context",
@@ -3265,17 +2934,20 @@
               "name": "provenance",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_threat_model"
         }
-      ]
+      ],
+      "surface_id": "defend-threat-model-writes"
     },
     {
-      "surface_id": "defend-triage-io",
       "display_name": "Adversarial triage reads and writes",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_candidate",
           "collection": "DefenseCandidateFinding",
           "description": "Load every static vulnerability candidate for this run.",
           "fields": [
@@ -3296,14 +2968,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_candidate"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_verdict",
           "collection": "DefenseFindingVerdict",
           "description": "Load the completed independent adjudication ledger for this run; join each row to its candidate by finding_id.",
           "fields": [
@@ -3339,19 +3011,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_verdict"
         },
         {
-          "tool_name": "write_defending_finding",
           "collection": "DefendingFinding",
           "description": "Promote one confirmed verdict into the durable operator-facing finding ledger.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "finding_id",
@@ -3501,26 +3174,22 @@
               "name": "verdict",
               "required": true
             }
-          ]
+          ],
+          "tool_name": "write_defending_finding"
         },
         {
-          "tool_name": "write_defense_triage_summary",
           "collection": "DefenseTriageSummary",
           "description": "Close the exact candidate/verdict ledger after confirmed findings are promoted.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "scan_ledger_status",
@@ -3550,17 +3219,20 @@
               "name": "summary",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_triage_summary"
         }
-      ]
+      ],
+      "surface_id": "defend-triage-io"
     },
     {
-      "surface_id": "defend-verification-plan-io",
       "display_name": "Candidate ledger to verification assignments",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_candidate",
           "collection": "DefenseCandidateFinding",
           "description": "Load the closed candidate ledger for this run.",
           "fields": [
@@ -3573,24 +3245,20 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_candidate"
         },
         {
-          "tool_name": "write_defense_verification_assignment",
           "collection": "DefenseVerificationAssignment",
           "description": "Create one member of the closed verifier work set, including the empty-set sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1,
-            "expected_count_field": "expected_total"
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
               "name": "assignment_id",
@@ -3605,10 +3273,10 @@
               "required": true
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "source_revision",
@@ -3630,17 +3298,21 @@
               "name": "expected_total",
               "required": true
             }
-          ]
+          ],
+          "output_obligation": {
+            "expected_count_field": "expected_total",
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_verification_assignment"
         }
-      ]
+      ],
+      "surface_id": "defend-verification-plan-io"
     },
     {
-      "surface_id": "defend-verifier-io",
       "display_name": "Independent candidate verification",
       "entries": [
         {
-          "kind": "query",
-          "tool_name": "read_defense_threat_model",
           "collection": "DefenseThreatModel",
           "description": "Load the threat model for this run; run_id is runtime-filled.",
           "fields": [
@@ -3660,14 +3332,14 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_threat_model"
         },
         {
-          "kind": "query",
-          "tool_name": "read_defense_candidate",
           "collection": "DefenseCandidateFinding",
           "description": "Load exactly the candidate named by the triggering assignment.",
           "fields": [
@@ -3703,59 +3375,60 @@
           ],
           "filter_fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             }
-          ]
+          ],
+          "kind": "query",
+          "tool_name": "read_defense_candidate"
         },
         {
-          "tool_name": "write_defense_verdict",
           "collection": "DefenseFindingVerdict",
           "description": "Persist exactly one adversarial confirmed/refuted verdict for the assigned candidate.",
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "area_id",
               "fill": {
                 "source_field": "area_id"
-              }
+              },
+              "name": "area_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "verdict",
               "required": true
             },
             {
-              "name": "source_revision",
               "fill": {
                 "source_field": "source_revision"
-              }
+              },
+              "name": "source_revision"
             },
             {
-              "name": "source_tree_state",
               "fill": {
                 "source_field": "source_tree_state"
-              }
+              },
+              "name": "source_tree_state"
             },
             {
               "name": "adjudicated_claim_kind",
@@ -3846,516 +3519,843 @@
               "required": true
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "tool_name": "write_defense_verdict"
         },
         {
-          "tool_name": "write_defense_verification_completion",
           "collection": "DefenseVerificationCompletion",
           "description": "Close exactly one verification assignment after its verdict is durable, or close the empty-set sentinel.",
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          },
           "fields": [
             {
-              "name": "run_id",
-              "fill": "correlation"
+              "fill": "correlation",
+              "name": "run_id"
             },
             {
-              "name": "assignment_id",
               "fill": {
                 "source_field": "assignment_id"
-              }
+              },
+              "name": "assignment_id"
             },
             {
-              "name": "finding_id",
               "fill": {
                 "source_field": "finding_id"
-              }
+              },
+              "name": "finding_id"
             },
             {
-              "name": "repository_path",
               "fill": {
                 "source_field": "repository_path"
-              }
+              },
+              "name": "repository_path"
             },
             {
               "name": "status",
               "required": true
             },
             {
-              "name": "scan_ledger_status",
               "fill": {
                 "source_field": "scan_ledger_status"
-              }
+              },
+              "name": "scan_ledger_status"
             },
             {
-              "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
+              },
+              "name": "expected_total"
             }
-          ]
+          ],
+          "output_obligation": {
+            "minimum_writes": 1,
+            "scope": "trigger"
+          },
+          "tool_name": "write_defense_verification_completion"
         }
-      ]
-    }
-  ],
-  "tasks": [
-    {
-      "task_id": "defend-cluster-task",
-      "display_name": "Cluster confirmed findings into remediation units",
-      "description": "Produces a closed root-cause ledger for parallel contract review.",
-      "behavior_id": "defend-cluster",
-      "prompt_template": "./tasks/defend_cluster_task/prompt.md"
-    },
-    {
-      "task_id": "defend-contract-review-task",
-      "display_name": "Review one finding cluster against repository contracts",
-      "description": "One document-triggered contract reviewer per root-cause cluster.",
-      "behavior_id": "defend-contract-review",
-      "prompt_template": "./tasks/defend_contract_review_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-integrate-task",
-      "display_name": "Apply a sealed accepted patch",
-      "behavior_id": "defend-patch-integrate",
-      "prompt_template": "./tasks/defend_patch_integrate_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-review-task",
-      "display_name": "Independently review one static patch",
-      "behavior_id": "defend-patch-review",
-      "prompt_template": "./tasks/defend_patch_review_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-security-review-task",
-      "display_name": "Adversarially re-attack one reviewed patch",
-      "description": "Checks exploit closure, siblings, bypasses, and contract alignment.",
-      "behavior_id": "defend-patch-security-review",
-      "prompt_template": "./tasks/defend_patch_security_review_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-skip-task",
-      "display_name": "Record an explicit no-patch sentinel",
-      "behavior_id": "defend-patch-skip",
-      "prompt_template": "./tasks/defend_patch_skip_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-task",
-      "display_name": "Draft one unapplied security patch",
-      "behavior_id": "defend-patch",
-      "prompt_template": "./tasks/defend_patch_task/prompt.md"
-    },
-    {
-      "task_id": "defend-patch-validation-task",
-      "display_name": "Mechanically validate one patch in isolation",
-      "description": "Records apply, format, compile, test, and proof evidence.",
-      "behavior_id": "defend-patch-validation",
-      "prompt_template": "./tasks/defend_patch_validation_task/prompt.md"
-    },
-    {
-      "task_id": "defend-plan-task",
-      "display_name": "Partition the threat model into review areas",
-      "behavior_id": "defend-plan",
-      "prompt_template": "./tasks/defend_plan_task/prompt.md"
-    },
-    {
-      "task_id": "defend-remediation-plan-task",
-      "display_name": "Materialize contract-aware patch assignments",
-      "description": "Creates a closed document-triggered patch work set.",
-      "behavior_id": "defend-remediation-plan",
-      "prompt_template": "./tasks/defend_remediation_plan_task/prompt.md"
-    },
-    {
-      "task_id": "defend-report-task",
-      "display_name": "Publish the closed defense campaign report",
-      "behavior_id": "defend-report",
-      "prompt_template": "./tasks/defend_report_task/prompt.md"
-    },
-    {
-      "task_id": "defend-scan-task",
-      "display_name": "Discover candidates in one threat-scoped area",
-      "behavior_id": "defend-scan",
-      "prompt_template": "./tasks/defend_scan_task/prompt.md"
-    },
-    {
-      "task_id": "defend-threat-model-task",
-      "display_name": "Bootstrap a source-derived threat model",
-      "behavior_id": "defend-threat-model",
-      "prompt_template": "./tasks/defend_threat_model_task/prompt.md"
-    },
-    {
-      "task_id": "defend-triage-task",
-      "display_name": "Reduce the closed verdict ledger and route confirmed findings",
-      "behavior_id": "defend-triage",
-      "prompt_template": "./tasks/defend_triage_task/prompt.md"
-    },
-    {
-      "task_id": "defend-verification-plan-task",
-      "display_name": "Materialize the closed candidate verification work set",
-      "description": "Writes graph-native assignments that trigger verifier requests.",
-      "behavior_id": "defend-verification-plan",
-      "prompt_template": "./tasks/defend_verification_plan_task/prompt.md"
-    },
-    {
-      "task_id": "defend-verifier-task",
-      "display_name": "Independently verify one vulnerability candidate",
-      "description": "Per-assignment event-triggered verifier; one durable verdict per request.",
-      "behavior_id": "defend-verifier",
-      "prompt_template": "./tasks/defend_verifier_task/prompt.md"
+      ],
+      "surface_id": "defend-verifier-io"
     }
   ],
   "event_sources": [
     {
-      "event_source_id": "defend-cluster",
+      "correlation_field": "run_id",
       "display_name": "defend-cluster",
-      "source_collection": "DefenseTriageSummary",
       "event_kind": "created",
-      "correlation_field": "run_id"
+      "event_source_id": "defend-cluster",
+      "source_collection": "DefenseTriageSummary"
     },
     {
-      "event_source_id": "defend-contract-review",
+      "correlation_field": "run_id",
       "display_name": "defend-contract-review",
-      "source_collection": "DefenseRootCauseCluster",
       "event_kind": "created",
-      "correlation_field": "run_id"
+      "event_source_id": "defend-contract-review",
+      "source_collection": "DefenseRootCauseCluster"
     },
     {
-      "event_source_id": "defend-patch",
-      "display_name": "defend-patch",
-      "source_collection": "CallbackResult",
-      "event_kind": "created",
-      "filter": "{ binding_id: { _eq: \"defense-patch-workspace\" } }",
       "correlation_field": "caused_by_correlation",
+      "display_name": "defend-patch",
+      "event_kind": "created",
+      "event_source_id": "defend-patch",
+      "filter": "{ binding_id: { _eq: \"defense-patch-workspace\" } }",
+      "source_collection": "CallbackResult",
       "workspace_authority": "readWrite"
     },
     {
-      "event_source_id": "defend-patch-integrate",
-      "display_name": "defend-patch-integrate",
-      "source_collection": "DefensePatchSecurityReview",
-      "event_kind": "created",
-      "filter": "{ verdict: { _eq: \"accepted\" } }",
       "correlation_field": "run_id",
+      "display_name": "defend-patch-integrate",
+      "event_kind": "created",
+      "event_source_id": "defend-patch-integrate",
+      "filter": "{ verdict: { _eq: \"accepted\" } }",
+      "source_collection": "DefensePatchSecurityReview",
       "workspace_authority": "integrate"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-patch-review",
+      "event_kind": "created",
       "event_source_id": "defend-patch-review",
-      "display_name": "defend-patch-review",
+      "filter": "{ _and: [ { workspace_id: { _neq: null } }, { workspace_id: { _ne: \"\" } } ] }",
       "source_collection": "DefensePatchValidation",
-      "event_kind": "created",
-      "filter": "{ _and: [ { workspace_id: { _neq: null } }, { workspace_id: { _ne: \"\" } } ] }",
-      "correlation_field": "run_id",
       "workspace_authority": "readOnly"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-patch-security-review",
+      "event_kind": "created",
       "event_source_id": "defend-patch-security-review",
-      "display_name": "defend-patch-security-review",
-      "source_collection": "DefensePatchReview",
-      "event_kind": "created",
       "filter": "{ _and: [ { workspace_id: { _neq: null } }, { workspace_id: { _ne: \"\" } } ] }",
-      "correlation_field": "run_id",
+      "source_collection": "DefensePatchReview",
       "workspace_authority": "readOnly"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-patch-skip",
+      "event_kind": "created",
       "event_source_id": "defend-patch-skip",
-      "display_name": "defend-patch-skip",
-      "source_collection": "DefensePatchAssignment",
-      "event_kind": "created",
       "filter": "{ status: { _eq: \"skipped\" } }",
-      "correlation_field": "run_id"
+      "source_collection": "DefensePatchAssignment"
     },
     {
-      "event_source_id": "defend-patch-validation",
-      "display_name": "defend-patch-validation",
-      "source_collection": "WorkspaceReceipt",
-      "event_kind": "created",
-      "filter": "{ kind: { _eq: \"writer\" } }",
       "correlation_field": "caused_by_correlation",
+      "display_name": "defend-patch-validation",
+      "event_kind": "created",
+      "event_source_id": "defend-patch-validation",
+      "filter": "{ kind: { _eq: \"writer\" } }",
+      "source_collection": "WorkspaceReceipt",
       "workspace_authority": "readOnly"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-plan",
+      "event_kind": "created",
       "event_source_id": "defend-plan",
-      "display_name": "defend-plan",
-      "source_collection": "DefenseThreatModel",
-      "event_kind": "created",
-      "correlation_field": "run_id"
+      "source_collection": "DefenseThreatModel"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-remediation-plan",
+      "event_kind": "created",
       "event_source_id": "defend-remediation-plan",
-      "display_name": "defend-remediation-plan",
-      "source_collection": "DefenseContractReview",
-      "event_kind": "created",
-      "correlation_field": "run_id",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "DefenseContractReview"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-report",
+      "event_kind": "created",
       "event_source_id": "defend-report",
-      "display_name": "defend-report",
-      "source_collection": "DefensePatchSecurityReview",
-      "event_kind": "created",
-      "correlation_field": "run_id",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "DefensePatchSecurityReview"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-scan",
+      "event_kind": "created",
       "event_source_id": "defend-scan",
-      "display_name": "defend-scan",
-      "source_collection": "DefenseReviewArea",
-      "event_kind": "created",
-      "correlation_field": "run_id"
+      "source_collection": "DefenseReviewArea"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-threat-model",
+      "event_kind": "created",
       "event_source_id": "defend-threat-model",
-      "display_name": "defend-threat-model",
-      "source_collection": "DefendingCodeJob",
-      "event_kind": "created",
-      "correlation_field": "run_id"
+      "source_collection": "DefendingCodeJob"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-triage",
+      "event_kind": "created",
       "event_source_id": "defend-triage",
-      "display_name": "defend-triage",
-      "source_collection": "DefenseVerificationCompletion",
-      "event_kind": "created",
-      "correlation_field": "run_id",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "DefenseVerificationCompletion"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-verification-plan",
+      "event_kind": "created",
       "event_source_id": "defend-verification-plan",
-      "display_name": "defend-verification-plan",
-      "source_collection": "DefenseScanResult",
-      "event_kind": "created",
-      "correlation_field": "run_id",
       "group": {
         "expected_count": {
           "source_field": "expected_total"
         }
-      }
+      },
+      "source_collection": "DefenseScanResult"
     },
     {
+      "correlation_field": "run_id",
+      "display_name": "defend-verifier",
+      "event_kind": "created",
       "event_source_id": "defend-verifier",
-      "display_name": "defend-verifier",
-      "source_collection": "DefenseVerificationAssignment",
-      "event_kind": "created",
-      "correlation_field": "run_id"
+      "source_collection": "DefenseVerificationAssignment"
     },
     {
-      "event_source_id": "defense-patch-workspace",
       "display_name": "defense-patch-workspace",
-      "source_collection": "DefensePatchAssignment",
       "event_kind": "created",
-      "filter": "{ status: { _eq: \"ready\" } }"
-    }
-  ],
-  "triggers": [
-    {
-      "trigger_id": "defend-cluster",
-      "display_name": "defend-cluster",
-      "task_id": "defend-cluster-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-cluster"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-contract-review",
-      "display_name": "defend-contract-review",
-      "task_id": "defend-contract-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-contract-review"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-patch",
-      "display_name": "defend-patch",
-      "task_id": "defend-patch-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-patch-integrate",
-      "display_name": "defend-patch-integrate",
-      "task_id": "defend-patch-integrate-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch-integrate"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-patch-review",
-      "display_name": "defend-patch-review",
-      "task_id": "defend-patch-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch-review"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-patch-security-review",
-      "display_name": "defend-patch-security-review",
-      "task_id": "defend-patch-security-review-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch-security-review"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-patch-skip",
-      "display_name": "defend-patch-skip",
-      "task_id": "defend-patch-skip-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch-skip"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-patch-validation",
-      "display_name": "defend-patch-validation",
-      "task_id": "defend-patch-validation-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-patch-validation"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-plan",
-      "display_name": "defend-plan",
-      "task_id": "defend-plan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-plan"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-remediation-plan",
-      "display_name": "defend-remediation-plan",
-      "task_id": "defend-remediation-plan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-remediation-plan"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-report",
-      "display_name": "defend-report",
-      "task_id": "defend-report-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-report"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-scan",
-      "display_name": "defend-scan",
-      "task_id": "defend-scan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-scan"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "defend-threat-model",
-      "display_name": "defend-threat-model",
-      "task_id": "defend-threat-model-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-threat-model"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-triage",
-      "display_name": "defend-triage",
-      "task_id": "defend-triage-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-triage"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-verification-plan",
-      "display_name": "defend-verification-plan",
-      "task_id": "defend-verification-plan-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-verification-plan"
-      },
-      "concurrency": "serial"
-    },
-    {
-      "trigger_id": "defend-verifier",
-      "display_name": "defend-verifier",
-      "task_id": "defend-verifier-task",
-      "source": {
-        "kind": "event",
-        "event_source_id": "defend-verifier"
-      },
-      "concurrency": "parallel"
-    }
-  ],
-  "callbacks": [
-    {
-      "callback_id": "defense-patch-workspace",
-      "display_name": "defense-patch-workspace",
-      "handler": {
-        "kind": "built_in",
-        "emitter": "create_workspace"
-      },
-      "capabilities": [
-        "create_workspace",
-        "observe_dirty_base",
-        "clone_artifacts"
-      ]
-    }
-  ],
-  "callback_bindings": [
-    {
-      "binding_id": "defense-patch-workspace",
       "event_source_id": "defense-patch-workspace",
-      "callback_id": "defense-patch-workspace",
-      "input_fields": [
-        "assignment_id",
-        "repository_id",
-        "base_revision",
-        "owned_files"
-      ]
+      "filter": "{ status: { _eq: \"ready\" } }",
+      "source_collection": "DefensePatchAssignment"
     }
   ],
   "repository_placements": [
     {
-      "repository_id": "defending-code",
-      "host_path": "."
+      "host_path": ".",
+      "repository_id": "defending-code"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "defend-cluster",
+      "description": "Produces a closed root-cause ledger for parallel contract review.",
+      "display_name": "Cluster confirmed findings into remediation units",
+      "prompt_template": "./tasks/defend_cluster_task/prompt.md",
+      "task_id": "defend-cluster-task"
+    },
+    {
+      "behavior_id": "defend-contract-review",
+      "description": "One document-triggered contract reviewer per root-cause cluster.",
+      "display_name": "Review one finding cluster against repository contracts",
+      "prompt_template": "./tasks/defend_contract_review_task/prompt.md",
+      "task_id": "defend-contract-review-task"
+    },
+    {
+      "behavior_id": "defend-patch-integrate",
+      "display_name": "Apply a sealed accepted patch",
+      "prompt_template": "./tasks/defend_patch_integrate_task/prompt.md",
+      "task_id": "defend-patch-integrate-task"
+    },
+    {
+      "behavior_id": "defend-patch-review",
+      "display_name": "Independently review one static patch",
+      "prompt_template": "./tasks/defend_patch_review_task/prompt.md",
+      "task_id": "defend-patch-review-task"
+    },
+    {
+      "behavior_id": "defend-patch-security-review",
+      "description": "Checks exploit closure, siblings, bypasses, and contract alignment.",
+      "display_name": "Adversarially re-attack one reviewed patch",
+      "prompt_template": "./tasks/defend_patch_security_review_task/prompt.md",
+      "task_id": "defend-patch-security-review-task"
+    },
+    {
+      "behavior_id": "defend-patch-skip",
+      "display_name": "Record an explicit no-patch sentinel",
+      "prompt_template": "./tasks/defend_patch_skip_task/prompt.md",
+      "task_id": "defend-patch-skip-task"
+    },
+    {
+      "behavior_id": "defend-patch",
+      "display_name": "Draft one unapplied security patch",
+      "prompt_template": "./tasks/defend_patch_task/prompt.md",
+      "task_id": "defend-patch-task"
+    },
+    {
+      "behavior_id": "defend-patch-validation",
+      "description": "Records apply, format, compile, test, and proof evidence.",
+      "display_name": "Mechanically validate one patch in isolation",
+      "prompt_template": "./tasks/defend_patch_validation_task/prompt.md",
+      "task_id": "defend-patch-validation-task"
+    },
+    {
+      "behavior_id": "defend-plan",
+      "display_name": "Partition the threat model into review areas",
+      "prompt_template": "./tasks/defend_plan_task/prompt.md",
+      "task_id": "defend-plan-task"
+    },
+    {
+      "behavior_id": "defend-remediation-plan",
+      "description": "Creates a closed document-triggered patch work set.",
+      "display_name": "Materialize contract-aware patch assignments",
+      "prompt_template": "./tasks/defend_remediation_plan_task/prompt.md",
+      "task_id": "defend-remediation-plan-task"
+    },
+    {
+      "behavior_id": "defend-report",
+      "display_name": "Publish the closed defense campaign report",
+      "prompt_template": "./tasks/defend_report_task/prompt.md",
+      "task_id": "defend-report-task"
+    },
+    {
+      "behavior_id": "defend-scan",
+      "display_name": "Discover candidates in one threat-scoped area",
+      "prompt_template": "./tasks/defend_scan_task/prompt.md",
+      "task_id": "defend-scan-task"
+    },
+    {
+      "behavior_id": "defend-threat-model",
+      "display_name": "Bootstrap a source-derived threat model",
+      "prompt_template": "./tasks/defend_threat_model_task/prompt.md",
+      "task_id": "defend-threat-model-task"
+    },
+    {
+      "behavior_id": "defend-triage",
+      "display_name": "Reduce the closed verdict ledger and route confirmed findings",
+      "prompt_template": "./tasks/defend_triage_task/prompt.md",
+      "task_id": "defend-triage-task"
+    },
+    {
+      "behavior_id": "defend-verification-plan",
+      "description": "Writes graph-native assignments that trigger verifier requests.",
+      "display_name": "Materialize the closed candidate verification work set",
+      "prompt_template": "./tasks/defend_verification_plan_task/prompt.md",
+      "task_id": "defend-verification-plan-task"
+    },
+    {
+      "behavior_id": "defend-verifier",
+      "description": "Per-assignment event-triggered verifier; one durable verdict per request.",
+      "display_name": "Independently verify one vulnerability candidate",
+      "prompt_template": "./tasks/defend_verifier_task/prompt.md",
+      "task_id": "defend-verifier-task"
+    }
+  ],
+  "tools": [
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-cluster-io"
+        ]
+      },
+      "display_name": "Cluster: typed confirmed-finding read and cluster writes",
+      "tools_id": "defend-cluster-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-contract-review-io"
+        ]
+      },
+      "display_name": "Contract review: typed reads, source, shell, LSP, one write",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-contract-review-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "display_name": "Integrator: sealed-tree inspect, no bash writes",
+      "host": {
+        "bash": {
+          "execution_mode": "read_only",
+          "mode": "ReadOnly",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "tools_id": "defend-patch-integrate-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-patch-review-writes"
+        ]
+      },
+      "display_name": "Patch review: typed patch read, unrestricted shell, LSP, one write",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-patch-review-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-patch-security-review-io"
+        ]
+      },
+      "display_name": "Security re-attack: bounded graph reads, shell, LSP, one write",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-patch-security-review-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-patch-skip-writes"
+        ]
+      },
+      "display_name": "Skipped assignment: document-only no-patch write",
+      "tools_id": "defend-patch-skip-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-patch-io"
+        ]
+      },
+      "display_name": "Patch: bound ReadWrite workspace, no git commit",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-patch-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-patch-validation-writes"
+        ]
+      },
+      "display_name": "Patch validation: unrestricted shell, LSP, typed receipt",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-patch-validation-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-plan-writes"
+        ]
+      },
+      "display_name": "Plan: inspect layout and write a closed review-area set",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-plan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-remediation-plan-io"
+        ]
+      },
+      "display_name": "Remediation planner: bounded graph IO only",
+      "tools_id": "defend-remediation-plan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-report-io"
+        ]
+      },
+      "display_name": "Report: bounded graph reads and one report write",
+      "tools_id": "defend-report-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-scan-writes"
+        ]
+      },
+      "display_name": "Discover: read-only source plus candidate/sentinel writes",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-scan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-threat-model-writes"
+        ]
+      },
+      "display_name": "Threat model: read source, write one model document",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-threat-model-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-triage-io"
+        ]
+      },
+      "display_name": "Final triage reducer: typed graph IO only",
+      "tools_id": "defend-triage-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-verification-plan-io"
+        ]
+      },
+      "display_name": "Verification planner: typed graph IO only",
+      "tools_id": "defend-verification-plan-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "defend-verifier-io"
+        ]
+      },
+      "display_name": "Independent verifier: bounded graph IO, read-only source, shell, and LSP",
+      "host": {
+        "bash": {
+          "background_enabled": true,
+          "execution_mode": "unrestricted",
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        },
+        "root": "${GENTS_DEFENDING_ROOT:-.}"
+      },
+      "integrations": {
+        "lsp": {
+          "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
+        }
+      },
+      "tools_id": "defend-verifier-tools"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "defend-cluster",
+      "source": {
+        "event_source_id": "defend-cluster",
+        "kind": "event"
+      },
+      "task_id": "defend-cluster-task",
+      "trigger_id": "defend-cluster"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-contract-review",
+      "source": {
+        "event_source_id": "defend-contract-review",
+        "kind": "event"
+      },
+      "task_id": "defend-contract-review-task",
+      "trigger_id": "defend-contract-review"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-patch",
+      "source": {
+        "event_source_id": "defend-patch",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-task",
+      "trigger_id": "defend-patch"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-patch-integrate",
+      "source": {
+        "event_source_id": "defend-patch-integrate",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-integrate-task",
+      "trigger_id": "defend-patch-integrate"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-patch-review",
+      "source": {
+        "event_source_id": "defend-patch-review",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-review-task",
+      "trigger_id": "defend-patch-review"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-patch-security-review",
+      "source": {
+        "event_source_id": "defend-patch-security-review",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-security-review-task",
+      "trigger_id": "defend-patch-security-review"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-patch-skip",
+      "source": {
+        "event_source_id": "defend-patch-skip",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-skip-task",
+      "trigger_id": "defend-patch-skip"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-patch-validation",
+      "source": {
+        "event_source_id": "defend-patch-validation",
+        "kind": "event"
+      },
+      "task_id": "defend-patch-validation-task",
+      "trigger_id": "defend-patch-validation"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-plan",
+      "source": {
+        "event_source_id": "defend-plan",
+        "kind": "event"
+      },
+      "task_id": "defend-plan-task",
+      "trigger_id": "defend-plan"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-remediation-plan",
+      "source": {
+        "event_source_id": "defend-remediation-plan",
+        "kind": "event"
+      },
+      "task_id": "defend-remediation-plan-task",
+      "trigger_id": "defend-remediation-plan"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-report",
+      "source": {
+        "event_source_id": "defend-report",
+        "kind": "event"
+      },
+      "task_id": "defend-report-task",
+      "trigger_id": "defend-report"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-scan",
+      "source": {
+        "event_source_id": "defend-scan",
+        "kind": "event"
+      },
+      "task_id": "defend-scan-task",
+      "trigger_id": "defend-scan"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-threat-model",
+      "source": {
+        "event_source_id": "defend-threat-model",
+        "kind": "event"
+      },
+      "task_id": "defend-threat-model-task",
+      "trigger_id": "defend-threat-model"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-triage",
+      "source": {
+        "event_source_id": "defend-triage",
+        "kind": "event"
+      },
+      "task_id": "defend-triage-task",
+      "trigger_id": "defend-triage"
+    },
+    {
+      "concurrency": "serial",
+      "display_name": "defend-verification-plan",
+      "source": {
+        "event_source_id": "defend-verification-plan",
+        "kind": "event"
+      },
+      "task_id": "defend-verification-plan-task",
+      "trigger_id": "defend-verification-plan"
+    },
+    {
+      "concurrency": "parallel",
+      "display_name": "defend-verifier",
+      "source": {
+        "event_source_id": "defend-verifier",
+        "kind": "event"
+      },
+      "task_id": "defend-verifier-task",
+      "trigger_id": "defend-verifier"
     }
   ]
 }

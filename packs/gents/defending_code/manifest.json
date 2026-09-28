@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "defending_code",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Threat-model-driven static defense campaign: discover -> verify -> cluster -> contract review -> patch -> validate -> maintainer review -> re-attack -> report",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/defend_cluster/system_prompt.md",
@@ -68,12 +56,14 @@
     "tasks/defend_verifier_task/prompt.md",
     "tests/install.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Threat-model-driven static defense campaign: discover -> verify -> cluster -> contract review -> patch -> validate -> maintainer review -> re-attack -> report",
   "inference_slots": [
     {
-      "name": "coordinator",
-      "description": "Threat modeling, planning, triage, clustering, and reporting.",
       "behaviors": [
         "defend-cluster",
         "defend-plan",
@@ -81,21 +71,21 @@
         "defend-report",
         "defend-threat-model",
         "defend-triage"
-      ]
+      ],
+      "description": "Threat modeling, planning, triage, clustering, and reporting.",
+      "name": "coordinator"
     },
     {
-      "name": "worker",
-      "description": "Bounded security scans and patch execution.",
       "behaviors": [
         "defend-patch",
         "defend-patch-integrate",
         "defend-patch-skip",
         "defend-scan"
-      ]
+      ],
+      "description": "Bounded security scans and patch execution.",
+      "name": "worker"
     },
     {
-      "name": "verifier",
-      "description": "Contract, patch, validation, and adversarial verification review.",
       "behaviors": [
         "defend-contract-review",
         "defend-patch-review",
@@ -103,7 +93,17 @@
         "defend-patch-validation",
         "defend-verification-plan",
         "defend-verifier"
-      ]
+      ],
+      "description": "Contract, patch, validation, and adversarial verification review.",
+      "name": "verifier"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "defending_code",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

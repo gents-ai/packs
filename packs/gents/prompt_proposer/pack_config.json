@@ -1,14 +1,14 @@
 {
-  "agent_principal": {},
   "agent_behaviors": [
     {
       "behavior_id": "prompt-proposer",
-      "display_name": "Prompt proposer",
-      "description": "Rewrites one behavior's system instruction from a training run's feedback.",
       "context_id": "prompt-proposer-context",
+      "description": "Rewrites one behavior's system instruction from a training run's feedback.",
+      "display_name": "Prompt proposer",
       "inference_profile_id": "gents:inference-slot:proposer"
     }
   ],
+  "agent_principal": {},
   "contexts": [
     {
       "context_id": "prompt-proposer-context",
@@ -19,13 +19,13 @@
   ],
   "tools": [
     {
-      "tools_id": "prompt-proposer-tools",
       "display_name": "Prompt proposer: no tools",
       "host": {
         "bash": {
           "mode": "Off"
         }
-      }
+      },
+      "tools_id": "prompt-proposer-tools"
     }
   ]
 }

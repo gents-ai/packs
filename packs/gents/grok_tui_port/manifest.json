@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "grok_tui_port",
-  "namespace": "gents",
-  "version": "1.0.0",
-  "description": "Map the Grok TUI wire, fan out eight path-disjoint GLM writers, retry rejected seals in fresh workspaces, record host-confirmed serial integration, semantically converge, full-review, live-prove, then open a PR",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "example"
-  ],
-  "kind": "documents",
   "assets": [
     "README.md",
     "agent_behaviors/port_converge/system_prompt.md",
@@ -73,14 +61,16 @@
     "tasks/port_review_task/prompt.md",
     "tests/install.json"
   ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
   "dependencies": [
     "code_review"
   ],
-  "config": "pack_config.json",
+  "description": "Map the Grok TUI wire, fan out eight path-disjoint GLM writers, retry rejected seals in fresh workspaces, record host-confirmed serial integration, semantically converge, full-review, live-prove, then open a PR",
   "inference_slots": [
     {
-      "name": "coordinator",
-      "description": "Reconnaissance, planning, integration, live proof, and publication.",
       "behaviors": [
         "port-integrate",
         "port-integrate-record",
@@ -89,27 +79,37 @@
         "port-plan-skip",
         "port-publish",
         "port-recon"
-      ]
+      ],
+      "description": "Reconnaissance, planning, integration, live proof, and publication.",
+      "name": "coordinator"
     },
     {
-      "name": "worker",
-      "description": "Parallel implementation, retry, convergence, and live worker tasks.",
       "behaviors": [
         "port-converge",
         "port-implement",
         "port-live-worker",
         "port-retry"
-      ]
+      ],
+      "description": "Parallel implementation, retry, convergence, and live worker tasks.",
+      "name": "worker"
     },
     {
-      "name": "reviewer",
-      "description": "Independent recon, implementation, final, and live review.",
       "behaviors": [
         "port-final-review",
         "port-live-review",
         "port-recon-audit",
         "port-review"
-      ]
+      ],
+      "description": "Independent recon, implementation, final, and live review.",
+      "name": "reviewer"
     }
-  ]
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "grok_tui_port",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
 }

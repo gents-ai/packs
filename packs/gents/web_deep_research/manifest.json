@@ -1,16 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "web_deep_research",
-  "namespace": "gents",
-  "version": "1.1.0",
-  "description": "Bounded four-stage web research with OSS retrieval-quality and typed evidence handoffs.",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "graph"
-  ],
-  "kind": "graph",
   "assets": [
     "README.md",
     "agent_behaviors/research_adjudicate/system_prompt.md",
@@ -35,16 +23,49 @@
     "tasks/research_report_task/prompt.md",
     "tests/graphs.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "compiler_version": "graph-intent-v4",
+  "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Bounded four-stage web research with OSS retrieval-quality and typed evidence handoffs.",
   "external_dependencies": [
     {
-      "service_id": "web-research-mcp",
       "description": "Real self-hosted SearXNG search, Firecrawl extraction, and durable evidence gateway.",
+      "install_command": "./scripts/stack install-mcp",
       "repository_url": "https://github.com/source-inc/web-research-mcp",
-      "install_command": "./scripts/stack install-mcp"
+      "service_id": "web-research-mcp"
     }
   ],
+  "inference_slots": [
+    {
+      "behaviors": [
+        "research-plan",
+        "research-report"
+      ],
+      "description": "Plans research and produces the evidence-grounded report.",
+      "name": "coordinator"
+    },
+    {
+      "behaviors": [
+        "research-investigate"
+      ],
+      "description": "Runs bounded parallel web investigations.",
+      "name": "researcher"
+    },
+    {
+      "behaviors": [
+        "research-adjudicate"
+      ],
+      "description": "Adjudicates claims and source quality independently.",
+      "name": "verifier"
+    }
+  ],
+  "kind": "graph",
+  "manifest_version": 1,
+  "name": "web_deep_research",
+  "namespace": "gents",
   "schemas": [
     "schemas/research_job.graphql",
     "schemas/research_plan.graphql",
@@ -57,29 +78,8 @@
     "schemas/research_draft.graphql",
     "schemas/research_result.graphql"
   ],
-  "config": "pack_config.json",
-  "inference_slots": [
-    {
-      "name": "coordinator",
-      "description": "Plans research and produces the evidence-grounded report.",
-      "behaviors": [
-        "research-plan",
-        "research-report"
-      ]
-    },
-    {
-      "name": "researcher",
-      "description": "Runs bounded parallel web investigations.",
-      "behaviors": [
-        "research-investigate"
-      ]
-    },
-    {
-      "name": "verifier",
-      "description": "Adjudicates claims and source quality independently.",
-      "behaviors": [
-        "research-adjudicate"
-      ]
-    }
-  ]
+  "tags": [
+    "graph"
+  ],
+  "version": "1.1.0"
 }

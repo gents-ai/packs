@@ -1,17 +1,4 @@
 {
-  "manifest_version": 1,
-  "name": "code_review",
-  "namespace": "gents",
-  "version": "1.6.0",
-  "description": "Host-evidenced four-stage review: deterministic dispatch, immutable paged evidence, bounded lens swarm, verification, and triage.",
-  "authors": [
-    "gents-ai contributors"
-  ],
-  "tags": [
-    "graph"
-  ],
-  "kind": "graph",
-  "config": "pack_config.json",
   "assets": [
     "README.md",
     "agent_behaviors/review_recon/system_prompt.md",
@@ -36,8 +23,41 @@
     "tasks/review_verify_task/prompt.md",
     "tests/graphs.json"
   ],
-  "dependencies": [],
+  "authors": [
+    "gents-ai contributors"
+  ],
   "compiler_version": "graph-intent-v4",
+  "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Host-evidenced four-stage review: deterministic dispatch, immutable paged evidence, bounded lens swarm, verification, and triage.",
+  "inference_slots": [
+    {
+      "behaviors": [
+        "review-recon",
+        "review-triage"
+      ],
+      "description": "Planning, evidence triage, and final review. Prefer a strong reasoning profile.",
+      "name": "coordinator"
+    },
+    {
+      "behaviors": [
+        "review-scan"
+      ],
+      "description": "Bounded parallel code-review scans. A fast, capable worker profile is appropriate.",
+      "name": "worker"
+    },
+    {
+      "behaviors": [
+        "review-verify"
+      ],
+      "description": "Adversarial verification of candidate findings. Prefer an independent high-quality profile.",
+      "name": "verifier"
+    }
+  ],
+  "kind": "graph",
+  "manifest_version": 1,
+  "name": "code_review",
+  "namespace": "gents",
   "schemas": [
     "schemas/review_job.graphql",
     "schemas/evidence_manifest.graphql",
@@ -50,28 +70,8 @@
     "schemas/verification_summary.graphql",
     "schemas/triage_report.graphql"
   ],
-  "inference_slots": [
-    {
-      "name": "coordinator",
-      "description": "Planning, evidence triage, and final review. Prefer a strong reasoning profile.",
-      "behaviors": [
-        "review-recon",
-        "review-triage"
-      ]
-    },
-    {
-      "name": "worker",
-      "description": "Bounded parallel code-review scans. A fast, capable worker profile is appropriate.",
-      "behaviors": [
-        "review-scan"
-      ]
-    },
-    {
-      "name": "verifier",
-      "description": "Adversarial verification of candidate findings. Prefer an independent high-quality profile.",
-      "behaviors": [
-        "review-verify"
-      ]
-    }
-  ]
+  "tags": [
+    "graph"
+  ],
+  "version": "1.6.0"
 }
