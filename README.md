@@ -304,4 +304,5 @@ pack's suite as its own job, on every push, pull request and daily.
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
+| [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |
 | [security_scan](packs/gents/security_scan/README.md) | Whole-codebase discovery and verification |
