@@ -37,6 +37,11 @@ export GENTS_SCAN_MAX_BATCHES=24
 export GENTS_SCAN_MAX_PAYLOAD_CHARS=49152
 ```
 
+Running the scenario from a source checkout builds the `secscan` plugin
+during the `prepare` step, so a Rust toolchain plus
+`rustup target add wasm32-wasip1` is required; a pack fetched pre-built
+(a `.pack`, the home's store, or the registry) skips the build.
+
 `GENTS_SCAN_ROOT` roots the pre-scan, the file tools, and bash for the
 investigate/revalidate stages, and defaults to `.`. Install binds the declared
 `coordinator`, `scanner`, and `verifier` slots to existing user profiles;
@@ -177,7 +182,11 @@ The pre-scan is a Rust port of deepsec's regex matcher registry, shipped as
 this pack's own `secscan` plugin (`plugins/secscan/source/`), which runs as
 a `prepare` step before the seed: `gents pack scenario run` binds
 `${GENTS_SCAN_ROOT:-.}` read-only for that one call and maps the plugin's
-own output straight onto the seed fields below.
+own output onto five seed fields (`experiment.json`'s
+`prepare[0].seed_fields`): `candidates` (`/payload`), `candidate_total`
+(`/candidate_total`), `candidate_files` (`/candidate_files`),
+`slug_counts` (`/slug_counts_line`), and `overflow_count`
+(`/overflow_count`).
 
 Measured on the gents repository (about 5,000 files, 39 MB), best of 3:
 native 0.19 s; the plugin 0.51 s (wasm32 SIMD on, set in the repository's
@@ -187,9 +196,13 @@ forward sweep, so a 20 MB file with 3,000 matches takes 24 ms instead of the
 the manifest's declared `limits` (512 MiB, a 300 s wall clock, 4 MiB of
 output - the sandbox's own fixed stdout-capture ceiling for a compiled
 plugin); fuel itself is unbounded, so a large tree's instruction count
-never trips a ceiling on its own, and `GENTS_SCAN_MAX_PAYLOAD_CHARS`
-(48 KiB by default) keeps the payload itself well under that 4 MiB.
-Curated for a Rust/polyglot repo, each matcher
+never trips a ceiling on its own. `GENTS_SCAN_MAX_PAYLOAD_CHARS`
+(48 KiB by default) bounds matched-line evidence only; the inventory line
+per candidate file (about 70 bytes each) is never capped, so output still
+grows with the number of candidate files and a tree with tens of
+thousands of them, or a `GENTS_SCAN_MAX_PAYLOAD_CHARS` set near 4 MiB,
+exceeds the fixed 4 MiB output ceiling and fails the `prepare` step
+loudly. Curated for a Rust/polyglot repo, each matcher
 has a noise tier - `precise` sorts first into the candidate payload, `noisy`
 last - and its own discovery test that asserts its example snippet fires.
 

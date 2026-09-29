@@ -76,7 +76,7 @@
                 "type": "integer"
               },
               "root": {
-                "description": "Absolute path to the directory to walk (gitignore-aware, hidden files skipped, files over 1 MiB or not valid UTF-8 skipped). A caller can only fill this with a directory it has bound for the call (see bind_dir below); a model tool call never reaches root mode on its own.",
+                "description": "Absolute path of the directory the caller bound read-only for this call; without a binding the plugin cannot read it. Gitignore-aware; hidden files, files over 1 MiB, and non-UTF-8 files are skipped.",
                 "type": "string"
               }
             },
