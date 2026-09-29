@@ -5,6 +5,11 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      gents_ref:
+        description: "gents branch to build against (default: main)"
+        required: false
+        default: main
   # Packs are tested against gents main; a daily run catches gents drifting
   # underneath packs that did not change.
   schedule:
@@ -23,10 +28,10 @@ env:
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 
 jobs:
-  gents:
-    name: Build gents CLI (main)
+  resolve:
+    name: Resolve gents ref and pack list
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 5
     outputs:
       sha: ${{ steps.main.outputs.sha }}
       packs: ${{ steps.packs.outputs.packs }}
@@ -42,44 +47,73 @@ jobs:
           [[ "$packs" != "[]" ]] || { echo "::error::No packs under packs/gents."; exit 1; }
           echo "packs=$packs" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve gents main
+      - name: Resolve gents ref
         id: main
+        env:
+          GENTS_REF: ${{ inputs.gents_ref || 'main' }}
         run: |
           set -euo pipefail
-          sha="$(git ls-remote https://github.com/gents-ai/gents.git refs/heads/main | cut -f1)"
-          [[ -n "$sha" ]] || { echo "::error::Could not resolve gents main."; exit 1; }
+          ref="$GENTS_REF"
+          git check-ref-format --branch "$ref" >/dev/null || { echo "::error::Invalid gents ref '$ref'."; exit 1; }
+          sha="$(git ls-remote https://github.com/gents-ai/gents.git "refs/heads/$ref" | cut -f1)"
+          [[ -n "$sha" ]] || { echo "::error::Could not resolve gents ref '$ref'."; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "gents main is $sha"
+          echo "gents $ref is $sha"
 
+  gents:
+    name: Build gents CLI (${{ matrix.os }})
+    needs: resolve
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    steps:
       - name: Restore gents CLI
         id: cache
         uses: actions/cache@v6
         with:
           path: gents-bin
-          key: gents-cli-${{ runner.os }}-${{ runner.arch }}-${{ steps.main.outputs.sha }}
+          key: gents-cli-${{ runner.os }}-${{ runner.arch }}-${{ needs.resolve.outputs.sha }}
 
       - name: Check out gents
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v7
         with:
           repository: gents-ai/gents
-          ref: ${{ steps.main.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           path: gents
           persist-credentials: false
 
       - name: Free disk space
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true'
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
 
-      - name: Install build dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential clang cmake libclang-dev libssl-dev pkg-config protobuf-compiler
+
+      - name: Install macOS build dependencies
+        if: runner.os == 'macOS' && steps.cache.outputs.cache-hit != 'true'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          set -euo pipefail
+          command -v protoc >/dev/null 2>&1 || brew install protobuf
+          command -v pkg-config >/dev/null 2>&1 || brew install pkg-config
+
+      - name: Configure Rust toolchain
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: gents
+        run: |
+          set -euo pipefail
           # rustup reads gents' rust-toolchain.toml, so the pin follows gents main.
-          cd gents
           rustup show active-toolchain || rustup toolchain install
           rustup target add wasm32-unknown-unknown
 
@@ -87,7 +121,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: gents
         env:
-          GENTS_BUILD_GIT_SHA: ${{ steps.main.outputs.sha }}
+          GENTS_BUILD_GIT_SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           set -euo pipefail
           cargo build -p gents-cli --release --locked
@@ -99,33 +133,40 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: gents-cli
+          name: gents-cli-${{ runner.os }}-${{ runner.arch }}
           path: gents-bin/gents
           retention-days: 1
 
   pack:
-    name: ${{ matrix.pack }}
-    needs: gents
-    runs-on: ubuntu-latest
+    name: ${{ matrix.pack }} (${{ matrix.os }})
+    needs: [resolve, gents]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        pack: ${{ fromJSON(needs.gents.outputs.packs) }}
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        pack: ${{ fromJSON(needs.resolve.outputs.packs) }}
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v7
         with:
-          name: gents-cli
+          name: gents-cli-${{ runner.os }}-${{ runner.arch }}
           path: gents-bin
 
-      - name: Test ${{ matrix.pack }} against gents ${{ needs.gents.outputs.sha }}
+      - name: Test ${{ matrix.pack }} against gents ${{ needs.resolve.outputs.sha }}
         env:
           GENTS: ${{ github.workspace }}/gents-bin/gents
         run: |
           chmod +x "$GENTS"
-          scripts/test-pack.sh packs/gents/${{ matrix.pack }}
+          # macOS ships /bin/bash 3.2; run the stock shell there so this suite
+          # exercises the same interpreter macOS users' local runs use.
+          shell_bin="bash"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            shell_bin="/bin/bash"
+          fi
+          "$shell_bin" scripts/test-pack.sh packs/gents/${{ matrix.pack }}
 
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
@@ -139,6 +180,6 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: pack-${{ matrix.pack }}
+          name: pack-${{ matrix.pack }}-${{ runner.os }}
           path: dist/gents.${{ matrix.pack }}.pack
           retention-days: 30
