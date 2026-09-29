@@ -935,6 +935,40 @@
         {
           "collection": "WebResearchJob",
           "input_contract": "web-research-input/v1",
+          "input_schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "question"
+            ],
+            "properties": {
+              "question": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "scope": {
+                "type": "string",
+                "default": "Answer the question directly; include material context, counterevidence, and uncertainty."
+              },
+              "freshness": {
+                "type": "string",
+                "default": "Prefer current sources and record publication dates; retain older primary sources when historically necessary."
+              },
+              "audience": {
+                "type": "string",
+                "default": "A technically literate reader"
+              },
+              "output_requirements": {
+                "type": "string",
+                "default": "A concise Markdown report with claim-local links, counterevidence, a source ledger, and explicit limitations."
+              },
+              "investigator_count": {
+                "type": "string",
+                "pattern": "^[2-8]$",
+                "default": "4"
+              }
+            }
+          },
           "name": "research",
           "schema": "WebResearchJob/v1",
           "to": {
