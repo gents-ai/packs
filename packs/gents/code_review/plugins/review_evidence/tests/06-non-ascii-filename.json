@@ -1,0 +1,85 @@
+{
+  "expect": {
+    "documents": [
+      {
+        "collection": "CodeReviewEvidenceManifest",
+        "fields": {
+          "evidence_byte_count": "546",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "f542bcfddcb7c140aba76ab51d072316246560d667984e43a6a71d466bf5a8ca",
+          "format_version": "1",
+          "page_count": "1"
+        }
+      },
+      {
+        "collection": "CodeReviewEvidencePage",
+        "fields": {
+          "evidence_byte_count": "546",
+          "evidence_chunk_0": "PINNED BASE: 758d5cffc5813f36e359ae25d922be3ec844ad6e\nPINNED HEAD: b7642c880e040ba8c3354e742e0c789c47a0339d\n\nCHANGED FILES:\nM\t\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n\nDIFF STAT:\n\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\" | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n\nCOMPLETE PATCH:\ndiff --git \"a/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\" \"b/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\nindex 5626abf..f719efd 100644\n--- \"a/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n+++ \"b/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n@@ -1 +1 @@\n-one\n+two\n",
+          "evidence_chunk_1": "",
+          "evidence_chunk_10": "",
+          "evidence_chunk_11": "",
+          "evidence_chunk_12": "",
+          "evidence_chunk_13": "",
+          "evidence_chunk_14": "",
+          "evidence_chunk_15": "",
+          "evidence_chunk_2": "",
+          "evidence_chunk_3": "",
+          "evidence_chunk_4": "",
+          "evidence_chunk_5": "",
+          "evidence_chunk_6": "",
+          "evidence_chunk_7": "",
+          "evidence_chunk_8": "",
+          "evidence_chunk_9": "",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "f542bcfddcb7c140aba76ab51d072316246560d667984e43a6a71d466bf5a8ca",
+          "page_count": "1",
+          "page_index": "0",
+          "page_key": "00000000-0000-0000-0000-0000000000e1:00000000"
+        }
+      }
+    ],
+    "input": {
+      "base_ref": "758d5cffc5813f36e359ae25d922be3ec844ad6e",
+      "evidence_chunk_count": "1",
+      "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+      "evidence_summary": "PINNED BASE: 758d5cffc5813f36e359ae25d922be3ec844ad6e\nPINNED HEAD: b7642c880e040ba8c3354e742e0c789c47a0339d\n\nCHANGED FILES:\nM\t\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n\nDIFF STAT:\n\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\" | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head_ref": "b7642c880e040ba8c3354e742e0c789c47a0339d",
+      "lens_count": "4",
+      "lens_max": "4",
+      "lens_min": "4",
+      "pr_number": "",
+      "repository_path": ".",
+      "workspace_authority": "readOnly",
+      "workspace_id": "00000000-0000-0000-0000-0000000000w5",
+      "workspace_owner_agent_did": "did:key:golden-owner"
+    }
+  },
+  "input": {
+    "host": {
+      "git_diff": {
+        "base_sha": "758d5cffc5813f36e359ae25d922be3ec844ad6e",
+        "head_sha": "b7642c880e040ba8c3354e742e0c789c47a0339d",
+        "name_status": "M\t\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"",
+        "patch": "diff --git \"a/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\" \"b/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\nindex 5626abf..f719efd 100644\n--- \"a/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n+++ \"b/\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\"\n@@ -1 +1 @@\n-one\n+two\n",
+        "repository": "/tmp/.tmpzWj3Se",
+        "stat": "\"\\346\\227\\245\\346\\234\\254\\350\\252\\236.txt\" | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)"
+      },
+      "workspace": {
+        "authority": "readOnly",
+        "owner_agent_did": "did:key:golden-owner",
+        "workspace_id": "00000000-0000-0000-0000-0000000000w5"
+      }
+    },
+    "input": {
+      "base": "758d5cffc5813f36e359ae25d922be3ec844ad6e",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head": "b7642c880e040ba8c3354e742e0c789c47a0339d",
+      "repository": "/tmp/.tmpzWj3Se"
+    },
+    "nonce": "00000000-0000-0000-0000-0000000000e1"
+  }
+}

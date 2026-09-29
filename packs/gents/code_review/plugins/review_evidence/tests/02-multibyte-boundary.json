@@ -1,0 +1,85 @@
+{
+  "expect": {
+    "documents": [
+      {
+        "collection": "CodeReviewEvidenceManifest",
+        "fields": {
+          "evidence_byte_count": "3108",
+          "evidence_chunk_count": "2",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "9d0d81165f28af5f12dc49753558b2844ecb3306a943f06c4a345ac6dfa05480",
+          "format_version": "1",
+          "page_count": "1"
+        }
+      },
+      {
+        "collection": "CodeReviewEvidencePage",
+        "fields": {
+          "evidence_byte_count": "3108",
+          "evidence_chunk_0": "PINNED BASE: 44481e6a44226e2ebaeb6061dafef43f207754f4\nPINNED HEAD: 1c10e2a6a316af55ecd4ad3331323f17ae83dfb6\n\nCHANGED FILES:\nM\tmultibyte.txt\n\nDIFF STAT:\nmultibyte.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n\nCOMPLETE PATCH:\ndiff --git a/multibyte.txt b/multibyte.txt\nindex e31de1f..ad57c44 100644\n--- a/multibyte.txt\n+++ b/multibyte.txt\n@@ -1 +1 @@\n-seed\n+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日日日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日",
+          "evidence_chunk_1": "é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日\n\\ No newline at end of file\n",
+          "evidence_chunk_10": "",
+          "evidence_chunk_11": "",
+          "evidence_chunk_12": "",
+          "evidence_chunk_13": "",
+          "evidence_chunk_14": "",
+          "evidence_chunk_15": "",
+          "evidence_chunk_2": "",
+          "evidence_chunk_3": "",
+          "evidence_chunk_4": "",
+          "evidence_chunk_5": "",
+          "evidence_chunk_6": "",
+          "evidence_chunk_7": "",
+          "evidence_chunk_8": "",
+          "evidence_chunk_9": "",
+          "evidence_chunk_count": "2",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "9d0d81165f28af5f12dc49753558b2844ecb3306a943f06c4a345ac6dfa05480",
+          "page_count": "1",
+          "page_index": "0",
+          "page_key": "00000000-0000-0000-0000-0000000000e1:00000000"
+        }
+      }
+    ],
+    "input": {
+      "base_ref": "44481e6a44226e2ebaeb6061dafef43f207754f4",
+      "evidence_chunk_count": "2",
+      "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+      "evidence_summary": "PINNED BASE: 44481e6a44226e2ebaeb6061dafef43f207754f4\nPINNED HEAD: 1c10e2a6a316af55ecd4ad3331323f17ae83dfb6\n\nCHANGED FILES:\nM\tmultibyte.txt\n\nDIFF STAT:\nmultibyte.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head_ref": "1c10e2a6a316af55ecd4ad3331323f17ae83dfb6",
+      "lens_count": "4",
+      "lens_max": "4",
+      "lens_min": "4",
+      "pr_number": "",
+      "repository_path": ".",
+      "workspace_authority": "readOnly",
+      "workspace_id": "00000000-0000-0000-0000-0000000000w5",
+      "workspace_owner_agent_did": "did:key:golden-owner"
+    }
+  },
+  "input": {
+    "host": {
+      "git_diff": {
+        "base_sha": "44481e6a44226e2ebaeb6061dafef43f207754f4",
+        "head_sha": "1c10e2a6a316af55ecd4ad3331323f17ae83dfb6",
+        "name_status": "M\tmultibyte.txt",
+        "patch": "diff --git a/multibyte.txt b/multibyte.txt\nindex e31de1f..ad57c44 100644\n--- a/multibyte.txt\n+++ b/multibyte.txt\n@@ -1 +1 @@\n-seed\n+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa日日日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日é日\n\\ No newline at end of file\n",
+        "repository": "/tmp/.tmppzAJLC",
+        "stat": "multibyte.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)"
+      },
+      "workspace": {
+        "authority": "readOnly",
+        "owner_agent_did": "did:key:golden-owner",
+        "workspace_id": "00000000-0000-0000-0000-0000000000w5"
+      }
+    },
+    "input": {
+      "base": "44481e6a44226e2ebaeb6061dafef43f207754f4",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head": "1c10e2a6a316af55ecd4ad3331323f17ae83dfb6",
+      "repository": "/tmp/.tmppzAJLC"
+    },
+    "nonce": "00000000-0000-0000-0000-0000000000e1"
+  }
+}

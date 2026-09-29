@@ -1,7 +1,7 @@
 {
   "compiler_version": "graph-intent-v4",
   "graph_id": "code-review",
-  "digest": "sha256:3f56f92ed645e0ceb1bf650784f3d9a6f31f7ecd56afcffabae906121a10b248",
+  "digest": "sha256:90d0e584e1d4806e1c9c9b39ffbd5b6cb3f4f44fff3a3094a9d3a4fcc5a05453",
   "nodes": [
     {
       "node_id": "recon",
@@ -105,7 +105,7 @@
       "name": "review",
       "collection": "CodeReviewJob",
       "schema": "CodeReviewJob/v1",
-      "input_contract": "review-input/v1",
+      "input_contract": "review-input/v2",
       "to": {
         "node_id": "recon",
         "port": "job"
@@ -114,7 +114,50 @@
         "kind": "task",
         "task_id": "review-recon-task"
       },
-      "correlation_field": "run_id"
+      "correlation_field": "run_id",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "base": {
+            "default": "origin/main",
+            "type": "string"
+          },
+          "focus": {
+            "default": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+            "type": "string"
+          },
+          "head": {
+            "default": "HEAD",
+            "type": "string"
+          },
+          "repository": {
+            "default": ".",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "prepare": {
+        "host": [
+          {
+            "kind": "git_diff",
+            "repository_field": "repository",
+            "base_field": "base",
+            "head_field": "head",
+            "unified_context_lines": 12,
+            "rename_similarity_percent": 50
+          },
+          {
+            "kind": "read_only_workspace"
+          }
+        ],
+        "plugin": "gents/review_evidence",
+        "digest": "sha256:a1bfc804fd7d92479bd0fdcf29f7677dfc3adb94642d2a00f51af0d5101e0ce6",
+        "writes": [
+          "CodeReviewEvidenceManifest",
+          "CodeReviewEvidencePage"
+        ]
+      }
     }
   ],
   "results": [

@@ -18,7 +18,7 @@ gents pack install code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
   --inference-slot worker=glm-worker \
   --inference-slot verifier=grok-verifier
 gents graph run code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
-  --repo . --base origin/main --head HEAD --watch
+  --field base=origin/main --watch
 ```
 
 ## Bindings and prerequisites
@@ -80,8 +80,9 @@ make test-code_review        # from the repository root
 
 `tests/graphs.json` pins the compiled graph (`code-review`). A graph pack
 installs only from the gents binary today, so the suite checks, builds,
-verifies and compiles it rather than installing it. The runtime package
-catalog/compiler tests validate the bundled assets and contracts.
+verifies and compiles it rather than installing it. `gents pack test` also
+runs the `review_evidence` plugin's byte-identity golden cases against its
+built artifact.
 
 ## Operational history
 

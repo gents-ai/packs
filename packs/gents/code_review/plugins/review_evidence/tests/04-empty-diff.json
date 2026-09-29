@@ -1,0 +1,85 @@
+{
+  "expect": {
+    "documents": [
+      {
+        "collection": "CodeReviewEvidenceManifest",
+        "fields": {
+          "evidence_byte_count": "155",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "0842316ac60e1bf8b1847700c8ca3a385850d344cb58343c6b40ad9202fbe7a3",
+          "format_version": "1",
+          "page_count": "1"
+        }
+      },
+      {
+        "collection": "CodeReviewEvidencePage",
+        "fields": {
+          "evidence_byte_count": "155",
+          "evidence_chunk_0": "PINNED BASE: b3de131a102c92e6ee8da271bd0c69b8ddbd0f75\nPINNED HEAD: b3de131a102c92e6ee8da271bd0c69b8ddbd0f75\n\nCHANGED FILES:\n\n\nDIFF STAT:\n\n\nCOMPLETE PATCH:\n",
+          "evidence_chunk_1": "",
+          "evidence_chunk_10": "",
+          "evidence_chunk_11": "",
+          "evidence_chunk_12": "",
+          "evidence_chunk_13": "",
+          "evidence_chunk_14": "",
+          "evidence_chunk_15": "",
+          "evidence_chunk_2": "",
+          "evidence_chunk_3": "",
+          "evidence_chunk_4": "",
+          "evidence_chunk_5": "",
+          "evidence_chunk_6": "",
+          "evidence_chunk_7": "",
+          "evidence_chunk_8": "",
+          "evidence_chunk_9": "",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "0842316ac60e1bf8b1847700c8ca3a385850d344cb58343c6b40ad9202fbe7a3",
+          "page_count": "1",
+          "page_index": "0",
+          "page_key": "00000000-0000-0000-0000-0000000000e1:00000000"
+        }
+      }
+    ],
+    "input": {
+      "base_ref": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+      "evidence_chunk_count": "1",
+      "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+      "evidence_summary": "PINNED BASE: b3de131a102c92e6ee8da271bd0c69b8ddbd0f75\nPINNED HEAD: b3de131a102c92e6ee8da271bd0c69b8ddbd0f75\n\nCHANGED FILES:\n\n\nDIFF STAT:\n",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head_ref": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+      "lens_count": "4",
+      "lens_max": "4",
+      "lens_min": "4",
+      "pr_number": "",
+      "repository_path": ".",
+      "workspace_authority": "readOnly",
+      "workspace_id": "00000000-0000-0000-0000-0000000000w5",
+      "workspace_owner_agent_did": "did:key:golden-owner"
+    }
+  },
+  "input": {
+    "host": {
+      "git_diff": {
+        "base_sha": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+        "head_sha": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+        "name_status": "",
+        "patch": "",
+        "repository": "/tmp/.tmpSQ5JjU",
+        "stat": ""
+      },
+      "workspace": {
+        "authority": "readOnly",
+        "owner_agent_did": "did:key:golden-owner",
+        "workspace_id": "00000000-0000-0000-0000-0000000000w5"
+      }
+    },
+    "input": {
+      "base": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head": "b3de131a102c92e6ee8da271bd0c69b8ddbd0f75",
+      "repository": "/tmp/.tmpSQ5JjU"
+    },
+    "nonce": "00000000-0000-0000-0000-0000000000e1"
+  }
+}

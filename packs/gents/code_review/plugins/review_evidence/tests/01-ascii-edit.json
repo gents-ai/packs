@@ -1,0 +1,85 @@
+{
+  "expect": {
+    "documents": [
+      {
+        "collection": "CodeReviewEvidenceManifest",
+        "fields": {
+          "evidence_byte_count": "366",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "3a93f2618d88487660888868f9f4563f4295f310a7c3ea0897bf633182c0853b",
+          "format_version": "1",
+          "page_count": "1"
+        }
+      },
+      {
+        "collection": "CodeReviewEvidencePage",
+        "fields": {
+          "evidence_byte_count": "366",
+          "evidence_chunk_0": "PINNED BASE: d204772373de3bc04f59b7832b9910a32347271b\nPINNED HEAD: 6119d3dc74ae22a3f636bed2f8f2f7f115394387\n\nCHANGED FILES:\nM\thello.txt\n\nDIFF STAT:\nhello.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n\nCOMPLETE PATCH:\ndiff --git a/hello.txt b/hello.txt\nindex 2d00bd5..08bfff1 100644\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-line one\n+line one changed\n",
+          "evidence_chunk_1": "",
+          "evidence_chunk_10": "",
+          "evidence_chunk_11": "",
+          "evidence_chunk_12": "",
+          "evidence_chunk_13": "",
+          "evidence_chunk_14": "",
+          "evidence_chunk_15": "",
+          "evidence_chunk_2": "",
+          "evidence_chunk_3": "",
+          "evidence_chunk_4": "",
+          "evidence_chunk_5": "",
+          "evidence_chunk_6": "",
+          "evidence_chunk_7": "",
+          "evidence_chunk_8": "",
+          "evidence_chunk_9": "",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "3a93f2618d88487660888868f9f4563f4295f310a7c3ea0897bf633182c0853b",
+          "page_count": "1",
+          "page_index": "0",
+          "page_key": "00000000-0000-0000-0000-0000000000e1:00000000"
+        }
+      }
+    ],
+    "input": {
+      "base_ref": "d204772373de3bc04f59b7832b9910a32347271b",
+      "evidence_chunk_count": "1",
+      "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+      "evidence_summary": "PINNED BASE: d204772373de3bc04f59b7832b9910a32347271b\nPINNED HEAD: 6119d3dc74ae22a3f636bed2f8f2f7f115394387\n\nCHANGED FILES:\nM\thello.txt\n\nDIFF STAT:\nhello.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head_ref": "6119d3dc74ae22a3f636bed2f8f2f7f115394387",
+      "lens_count": "4",
+      "lens_max": "4",
+      "lens_min": "4",
+      "pr_number": "",
+      "repository_path": ".",
+      "workspace_authority": "readOnly",
+      "workspace_id": "00000000-0000-0000-0000-0000000000w5",
+      "workspace_owner_agent_did": "did:key:golden-owner"
+    }
+  },
+  "input": {
+    "host": {
+      "git_diff": {
+        "base_sha": "d204772373de3bc04f59b7832b9910a32347271b",
+        "head_sha": "6119d3dc74ae22a3f636bed2f8f2f7f115394387",
+        "name_status": "M\thello.txt",
+        "patch": "diff --git a/hello.txt b/hello.txt\nindex 2d00bd5..08bfff1 100644\n--- a/hello.txt\n+++ b/hello.txt\n@@ -1 +1 @@\n-line one\n+line one changed\n",
+        "repository": "/tmp/.tmpzr86I4",
+        "stat": "hello.txt | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)"
+      },
+      "workspace": {
+        "authority": "readOnly",
+        "owner_agent_did": "did:key:golden-owner",
+        "workspace_id": "00000000-0000-0000-0000-0000000000w5"
+      }
+    },
+    "input": {
+      "base": "d204772373de3bc04f59b7832b9910a32347271b",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head": "6119d3dc74ae22a3f636bed2f8f2f7f115394387",
+      "repository": "/tmp/.tmpzr86I4"
+    },
+    "nonce": "00000000-0000-0000-0000-0000000000e1"
+  }
+}
