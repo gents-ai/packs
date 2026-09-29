@@ -2273,7 +2273,6 @@
       "behavior_id": "port-converge",
       "display_name": "port-converge-task",
       "goal_objective_template": "Complete combined Grok TUI port convergence for run {{ event.correlation }}, repair confirmed defects, and persist the convergence report.",
-      "goal_token_budget": 2000000,
       "prompt_template": "./tasks/port_converge_task/prompt.md",
       "task_id": "port-converge-task"
     },
@@ -2281,7 +2280,6 @@
       "behavior_id": "port-final-review",
       "display_name": "port-final-review-task",
       "goal_objective_template": "Complete the final combined Grok TUI port review for run {{ event.correlation }} and persist its reviewed terminal report.",
-      "goal_token_budget": 2000000,
       "prompt_template": "./tasks/port_final_review_task/prompt.md",
       "task_id": "port-final-review-task"
     },
@@ -2289,7 +2287,6 @@
       "behavior_id": "port-implement",
       "display_name": "port-implement-task",
       "goal_objective_template": "Complete the assigned Grok TUI port implementation unit {{ event.correlation }} and persist its implementation receipt.",
-      "goal_token_budget": 2000000,
       "prompt_template": "./tasks/port_implement_task/prompt.md",
       "task_id": "port-implement-task"
     },
@@ -2298,7 +2295,6 @@
       "description": "Record an applied slice from its host integrator receipt",
       "display_name": "port-integrate-record-task",
       "goal_objective_template": "Complete integration receipt recording for Grok TUI port unit {{ event.correlation }} and persist its durable result.",
-      "goal_token_budget": 200000,
       "prompt_template": "./tasks/port_integrate_record_task/prompt.md",
       "task_id": "port-integrate-record-task"
     },
@@ -2306,7 +2302,6 @@
       "behavior_id": "port-integrate",
       "display_name": "port-integrate-task",
       "goal_objective_template": "Complete integration authorization for Grok TUI port unit {{ event.correlation }} and persist the required callback result.",
-      "goal_token_budget": 200000,
       "prompt_template": "./tasks/port_integrate_task/prompt.md",
       "task_id": "port-integrate-task"
     },
@@ -2314,7 +2309,6 @@
       "behavior_id": "port-live-review",
       "display_name": "port-live-review-task",
       "goal_objective_template": "Complete live-result review for Grok TUI port run {{ event.correlation }} and persist its coverage verdict.",
-      "goal_token_budget": 500000,
       "prompt_template": "./tasks/port_live_review_task/prompt.md",
       "task_id": "port-live-review-task"
     },
@@ -2322,7 +2316,6 @@
       "behavior_id": "port-live",
       "display_name": "port-live-task",
       "goal_objective_template": "Complete live Grok pager edge verification for run {{ event.correlation }} and persist every required probe result.",
-      "goal_token_budget": 500000,
       "prompt_template": "./tasks/port_live_task/prompt.md",
       "task_id": "port-live-task"
     },
@@ -2330,7 +2323,6 @@
       "behavior_id": "port-plan-skip",
       "display_name": "port-plan-skip-task",
       "goal_objective_template": "Complete the Grok TUI port skip-plan stage for run {{ event.correlation }} and persist its required terminal records.",
-      "goal_token_budget": 100000,
       "prompt_template": "./tasks/port_plan_skip_task/prompt.md",
       "task_id": "port-plan-skip-task"
     },
@@ -2338,7 +2330,6 @@
       "behavior_id": "port-plan",
       "display_name": "port-plan-task",
       "goal_objective_template": "Complete Grok TUI port planning for run {{ event.correlation }} and persist every required work unit and plan record.",
-      "goal_token_budget": 300000,
       "prompt_template": "./tasks/port_plan_task/prompt.md",
       "task_id": "port-plan-task"
     },
@@ -2346,7 +2337,6 @@
       "behavior_id": "port-publish",
       "display_name": "port-publish-task",
       "goal_objective_template": "Complete publication of the reviewed Grok TUI port run {{ event.correlation }} as an unmerged pull request and persist its receipt.",
-      "goal_token_budget": 300000,
       "prompt_template": "./tasks/port_publish_task/prompt.md",
       "task_id": "port-publish-task"
     },
@@ -2354,7 +2344,6 @@
       "behavior_id": "port-recon-audit",
       "display_name": "port-recon-audit-task",
       "goal_objective_template": "Complete the Grok TUI port reconnaissance audit for run {{ event.correlation }} and persist its required durable output.",
-      "goal_token_budget": 500000,
       "prompt_template": "./tasks/port_recon_audit_task/prompt.md",
       "task_id": "port-recon-audit-task"
     },
@@ -2362,7 +2351,6 @@
       "behavior_id": "port-recon",
       "display_name": "port-recon-task",
       "goal_objective_template": "Complete Grok TUI port reconnaissance for run {{ event.correlation }} and persist its required durable output.",
-      "goal_token_budget": 1000000,
       "prompt_template": "./tasks/port_recon_task/prompt.md",
       "task_id": "port-recon-task"
     },
@@ -2371,7 +2359,6 @@
       "description": "Create a fresh workspace attempt from a rejected sealed slice",
       "display_name": "port-retry-task",
       "goal_objective_template": "Complete retry preparation for rejected Grok TUI port unit {{ event.correlation }} and persist the next work-unit attempt.",
-      "goal_token_budget": 200000,
       "prompt_template": "./tasks/port_retry_task/prompt.md",
       "task_id": "port-retry-task"
     },
@@ -2379,7 +2366,6 @@
       "behavior_id": "port-review",
       "display_name": "port-review-task",
       "goal_objective_template": "Complete the sealed Grok TUI port unit review {{ event.correlation }} and persist its review and closure records.",
-      "goal_token_budget": 750000,
       "prompt_template": "./tasks/port_review_task/prompt.md",
       "task_id": "port-review-task"
     }

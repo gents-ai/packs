@@ -78,7 +78,6 @@
       "behavior_id": "exp-stage1",
       "display_name": "exp-stage1-task",
       "goal_objective_template": "Complete pipeline stage 1 for job {{ doc.job_id }} and persist its finding.",
-      "goal_token_budget": 50000,
       "prompt_template": "./tasks/exp_stage1_task/prompt.md",
       "task_id": "exp-stage1-task"
     },
