@@ -26,6 +26,7 @@
         "count": 1
       }
     ],
+    "slug_counts_line": "graphql-injection=2 path-traversal=1",
     "overflow_count": 0
   }
 }

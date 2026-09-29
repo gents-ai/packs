@@ -1,0 +1,17 @@
+{
+  "input": {},
+  "bind": "fixtures/tree",
+  "expect": {
+    "payload": "files: 1  candidates: 1\nslugs: secrets-exposure=1(precise)\nsrc/config.rs\n  [precise] secrets-exposure L1: let api_key = \"sk_live_ABCDEF1234567890\";\n",
+    "candidate_total": 1,
+    "candidate_files": 1,
+    "slug_counts": [
+      {
+        "slug": "secrets-exposure",
+        "count": 1
+      }
+    ],
+    "slug_counts_line": "secrets-exposure=1",
+    "overflow_count": 0
+  }
+}

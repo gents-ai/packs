@@ -60,61 +60,77 @@
   "plugins": [
     {
       "artifact": "plugins/secscan.afb",
+      "bind_dir": {
+        "description": "The directory to scan",
+        "input_field": "root"
+      },
       "description": "Runs the security_scan matcher registry (the free regex pre-scan) over a directory or an explicit set of file contents, and formats the candidates block the runner seeds into ScanJob.",
       "input_schema": {
-        "type": "object",
         "oneOf": [
           {
-            "type": "object",
+            "additionalProperties": false,
             "properties": {
-              "root": {
-                "type": "string",
-                "description": "Absolute path to the directory to walk (gitignore-aware, hidden files skipped, files over 1 MiB or not valid UTF-8 skipped). Readable only when the plugin has been granted read access to it."
-              },
               "max_payload_chars": {
-                "type": "integer",
+                "description": "Caps how much matched-line evidence the payload carries before remaining files are demoted to path-only inventory lines. Defaults to 49152.",
                 "minimum": 0,
-                "description": "Caps how much matched-line evidence the payload carries before remaining files are demoted to path-only inventory lines. Defaults to 49152."
+                "type": "integer"
+              },
+              "root": {
+                "description": "Absolute path to the directory to walk (gitignore-aware, hidden files skipped, files over 1 MiB or not valid UTF-8 skipped). A caller can only fill this with a directory it has bound for the call (see bind_dir below); a model tool call never reaches root mode on its own.",
+                "type": "string"
               }
             },
-            "required": ["root"],
-            "additionalProperties": false
+            "required": [
+              "root"
+            ],
+            "type": "object"
           },
           {
-            "type": "object",
+            "additionalProperties": false,
             "properties": {
               "files": {
-                "type": "array",
                 "description": "Explicit file contents to scan; no filesystem access is used.",
                 "items": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "path": {
-                      "type": "string",
-                      "description": "Path recorded in the output, forward slashes; drives the matcher extension gate."
-                    },
                     "content": {
-                      "type": "string",
-                      "description": "The file's text content."
+                      "description": "The file's text content.",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "Path recorded in the output, forward slashes; drives the matcher extension gate.",
+                      "type": "string"
                     }
                   },
-                  "required": ["path", "content"],
-                  "additionalProperties": false
-                }
+                  "required": [
+                    "path",
+                    "content"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
               },
               "max_payload_chars": {
-                "type": "integer",
+                "description": "Caps how much matched-line evidence the payload carries before remaining files are demoted to path-only inventory lines. Defaults to 49152.",
                 "minimum": 0,
-                "description": "Caps how much matched-line evidence the payload carries before remaining files are demoted to path-only inventory lines. Defaults to 49152."
+                "type": "integer"
               }
             },
-            "required": ["files"],
-            "additionalProperties": false
+            "required": [
+              "files"
+            ],
+            "type": "object"
           }
-        ]
+        ],
+        "type": "object"
       },
       "instructions": "plugins/secscan/TOOL.md",
       "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 512,
+        "wall_clock_secs": 300
+      },
       "name": "secscan",
       "source": "plugins/secscan"
     }
@@ -132,5 +148,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
