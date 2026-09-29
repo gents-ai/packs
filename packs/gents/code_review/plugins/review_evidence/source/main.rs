@@ -1,16 +1,19 @@
 //! review_evidence plugin: the code_review pack's prepare step. It turns
 //! the host's collected `git_diff` and `read_only_workspace` facts into the
-//! entry's immutable paged evidence documents and its actual job input,
-//! ported verbatim from gents `crates/gents/src/graph_package/entry.rs`
-//! (`code_review_evidence`, `split_evidence_packet`,
-//! `evidence_page_inputs`, `prepare_code_review_run`), which stays there
-//! only as the byte-identity equivalence proof's reference implementation.
+//! entry's immutable paged evidence documents and its actual job input.
 //!
 //! One JSON envelope on stdin, `{"input": <admitted entry input>, "nonce":
 //! <per-run id>, "host": {"git_diff": {...}, "workspace": {...}}}`; one
 //! JSON result on stdout, `{"input": <entry input>, "documents": [...]}`.
 //! Diagnostics go to stderr.
-use std::io::Read;
+//!
+//! Paging invariants: the evidence packet (`PINNED BASE/HEAD`, changed
+//! files, diff stat, then the complete patch) splits into chunks of at most
+//! [`EVIDENCE_CHUNK_MAX_BYTES`] bytes, never across a multibyte character;
+//! [`EVIDENCE_CHUNKS_PER_PAGE`] chunks make one `CodeReviewEvidencePage`
+//! document, its final page's unused slots padded with empty strings; an
+//! empty packet pages to nothing.
+use std::io::{self, BufWriter, Read, Write};
 
 use serde::Serialize;
 use serde_json::{json, Map, Value};
@@ -35,29 +38,27 @@ struct PluginOutput {
 }
 
 fn main() {
-    let mut stdin = String::new();
-    if let Err(err) = std::io::stdin().read_to_string(&mut stdin) {
-        eprintln!("review_evidence: reading stdin: {err}");
+    let stdin = io::stdin();
+    let outcome = run(stdin.lock()).and_then(|output| {
+        let stdout = io::stdout();
+        let mut writer = BufWriter::new(stdout.lock());
+        serde_json::to_writer(&mut writer, &output)
+            .map_err(|err| format!("serializing the output: {err}"))?;
+        writer
+            .flush()
+            .map_err(|err| format!("writing stdout: {err}"))
+    });
+    if let Err(err) = outcome {
+        eprintln!("review_evidence: {err}");
         std::process::exit(1);
-    }
-    match run(&stdin) {
-        Ok(output) => match serde_json::to_string(&output) {
-            Ok(text) => println!("{text}"),
-            Err(err) => {
-                eprintln!("review_evidence: serializing the output: {err}");
-                std::process::exit(1);
-            }
-        },
-        Err(err) => {
-            eprintln!("review_evidence: {err}");
-            std::process::exit(1);
-        }
     }
 }
 
 /// Splits `packet` into chunks of at most [`EVIDENCE_CHUNK_MAX_BYTES`]
 /// bytes, backing off from a multibyte character rather than splitting it.
-fn split_evidence_packet(packet: &str) -> Vec<String> {
+/// Borrows `packet` rather than copying it: the caller's own bytes stay the
+/// only copy of the diff until the output is built.
+fn split_evidence_packet(packet: &str) -> Vec<&str> {
     let mut chunks = Vec::new();
     let mut start = 0;
     while start < packet.len() {
@@ -65,7 +66,7 @@ fn split_evidence_packet(packet: &str) -> Vec<String> {
         while !packet.is_char_boundary(end) {
             end -= 1;
         }
-        chunks.push(packet[start..end].to_owned());
+        chunks.push(&packet[start..end]);
         start = end;
     }
     chunks
@@ -78,7 +79,7 @@ fn evidence_page_inputs(
     evidence_id: &str,
     evidence_sha256: &str,
     evidence_byte_count: usize,
-    chunks: &[String],
+    chunks: &[&str],
 ) -> Vec<Value> {
     let page_count = chunks.len().div_ceil(EVIDENCE_CHUNKS_PER_PAGE);
     let mut pages = Vec::with_capacity(page_count);
@@ -113,7 +114,13 @@ fn evidence_page_inputs(
         for slot in 0..EVIDENCE_CHUNKS_PER_PAGE {
             fields.insert(
                 format!("evidence_chunk_{slot}"),
-                Value::String(chunks.get(first + slot).cloned().unwrap_or_default()),
+                Value::String(
+                    chunks
+                        .get(first + slot)
+                        .copied()
+                        .unwrap_or_default()
+                        .to_owned(),
+                ),
             );
         }
         pages.push(Value::Object(fields));
@@ -132,9 +139,11 @@ fn required_str<'a>(
         .ok_or_else(|| format!("{path}.{field} must be a string"))
 }
 
-fn run(stdin: &str) -> Result<PluginOutput, String> {
+/// Reads the stdin envelope directly off `reader`, never buffering it into
+/// an intermediate string: the diff text lives once, in the parsed `Value`.
+fn run(reader: impl Read) -> Result<PluginOutput, String> {
     let envelope: Value =
-        serde_json::from_str(stdin).map_err(|err| format!("invalid JSON input: {err}"))?;
+        serde_json::from_reader(reader).map_err(|err| format!("invalid JSON input: {err}"))?;
     let envelope = envelope
         .as_object()
         .ok_or_else(|| "input must be a JSON object".to_string())?;
@@ -221,13 +230,13 @@ fn run(stdin: &str) -> Result<PluginOutput, String> {
 
 #[cfg(test)]
 mod tests {
-    //! Ported from gents `graph_package/entry/tests.rs`
-    //! (`evidence_pages_are_complete_and_bounded`,
-    //! `empty_evidence_packet_has_no_rows`): the byte-identity goldens under
-    //! `tests/*.json` are this plugin's cross-implementation proof, checked
-    //! by `gents pack test`; these are the paging invariants a golden case
-    //! cannot itself assert (no fixed patch-size ceiling, no chunk split
-    //! across a multibyte boundary, an empty packet pages to nothing).
+    //! The byte-identity goldens under `tests/*.json` (checked by `gents
+    //! pack test`) are this plugin's cross-implementation proof; these are
+    //! the paging invariants a golden case cannot itself assert (no fixed
+    //! patch-size ceiling, no chunk split across a multibyte boundary, an
+    //! empty packet pages to nothing). Run with `cargo test` from this
+    //! directory, or via `scripts/test-pack.sh`'s per-plugin `cargo test`
+    //! step.
     use super::*;
 
     #[test]
@@ -277,7 +286,9 @@ mod tests {
 
     #[test]
     fn rejects_invalid_json() {
-        assert!(run("not json").unwrap_err().contains("invalid JSON input"));
+        assert!(run("not json".as_bytes())
+            .unwrap_err()
+            .contains("invalid JSON input"));
     }
 
     #[test]
@@ -296,7 +307,7 @@ mod tests {
             },
         })
         .to_string();
-        assert!(run(&stdin).unwrap_err().contains("input.focus"));
+        assert!(run(stdin.as_bytes()).unwrap_err().contains("input.focus"));
     }
 
     #[test]
@@ -315,7 +326,7 @@ mod tests {
             },
         })
         .to_string();
-        let output = run(&stdin).unwrap();
+        let output = run(stdin.as_bytes()).unwrap();
         assert_eq!(output.input["base_ref"], "b");
         assert_eq!(output.input["head_ref"], "h");
         assert_eq!(output.input["evidence_id"], "abc");
