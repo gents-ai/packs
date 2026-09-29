@@ -97,6 +97,25 @@ done < <(jq -r '.plugins // [] | .[] | "\(.plugin) \(.passed) \(.failures | leng
 jq -r '.plugins // [] | .[].failures[]' "$work/test.json" >&2
 graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
+# A Rust plugin's own `cargo test` (unit tests ported alongside its source,
+# e.g. paging or bounds checks the golden/case files above cannot express)
+# runs here, once per plugin, under the repo's pinned rust-toolchain.
+# Skipped, not failed, when cargo is not on PATH.
+if command -v cargo >/dev/null 2>&1; then
+  while read -r plugin source; do
+    [[ -n "$source" && -f "$dir/$source/Cargo.toml" ]] || continue
+    if cargo test --manifest-path "$dir/$source/Cargo.toml" --quiet \
+      >"$work/cargo-test-$plugin.log" 2>&1; then
+      pass "plugin $plugin: cargo test"
+    else
+      fail "plugin $plugin: cargo test failed"
+      cat "$work/cargo-test-$plugin.log" >&2
+    fi
+  done < <(jq -r '.plugins // [] | .[] | select(.language == "rust") | "\(.name) \(.source // "")"' "$dir/manifest.json")
+else
+  echo "note: cargo not on PATH; skipping $pack plugin unit tests" >&2
+fi
+
 # Initializes a fresh home and prints its path; its init report is <home>.json.
 # The directory init runs in ($2, default the current one) becomes the home's
 # operator ceiling.
