@@ -8,8 +8,20 @@ A graph pack installs only from the gents binary today:
 `gents pack install web_deep_research --home <home>`.
 
 Use `gents pack show web_deep_research` for entry/result contracts and
-external dependencies, then `gents graph run web_deep_research --help` for
-run inputs.
+external dependencies. The research entry's inputs:
+
+| Field | Required | Default |
+|---|---|---|
+| `question` | yes | - |
+| `scope` | no | "Answer the question directly; include material context, counterevidence, and uncertainty." |
+| `freshness` | no | "Prefer current sources and record publication dates; retain older primary sources when historically necessary." |
+| `audience` | no | "A technically literate reader" |
+| `output_requirements` | no | "A concise Markdown report with claim-local links, counterevidence, a source ledger, and explicit limitations." |
+| `investigator_count` | no | a string `"2"`-`"8"`, default `"4"` |
+
+```sh
+gents graph run web_deep_research --field question="..." --field investigator_count=3 --watch
+```
 
 ## Bindings and prerequisites
 
