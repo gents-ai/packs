@@ -13,7 +13,7 @@ non-executable sentinel with
 `logical_unit_id={{ event.correlation }}:unit-none`, `status=skipped`,
 `verdict=ignore`, `attempt=0`, `branch=none`, `prior_work_unit_id=none`,
 `repair_context=none`, `prior_diff=none`,
-`owned_paths=[]`,
+`owned_files=[]`,
 `expected_total=1`, and concise values for every required field. Then write a
 plan with all executable counts zero and `expected_total=1`.
 
@@ -48,7 +48,7 @@ Use `logical_unit_id={{ event.correlation }}:<unit-name>`,
 `prior_work_unit_id=none`, `repair_context=none`, and `prior_diff=none`.
 Put the exact ownership
 list in `instructions` and say that touching any other path is a blocker. Also
-write that same list to `owned_paths` as a canonical JSON array of exact
+write that same list to `owned_files` as a canonical JSON array of exact
 repository-relative file names: no directories, globs, prose, or extra paths.
 Also say that slice-local Cargo is deliberately deferred because sibling new
 modules do not exist in that isolated base; unit tests must be written in the

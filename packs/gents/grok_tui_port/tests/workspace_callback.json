@@ -1,0 +1,47 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "src/lib.rs": "pub fn port() {}\n"
+      },
+      "dirs": [
+        "packs/grok_tui_port/recon_input"
+      ]
+    },
+    "seed": {
+      "collection": "PortWorkUnit",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "work_unit_id": "unit-${ATTEMPT}",
+        "status": "ready",
+        "repository_id": "gents-checkout",
+        "base_sha": "${BASE_SHA}",
+        "owned_files": "[\"src/lib.rs\"]",
+        "caused_by_correlation": "run-${ATTEMPT}"
+      }
+    },
+    "taken": {
+      "collection": "CallbackInvocation",
+      "filter": {
+        "callback_id": "port-implement-workspace"
+      }
+    },
+    "expect": [
+      {
+        "collection": "CallbackInvocation",
+        "filter": {
+          "callback_id": "port-implement-workspace"
+        },
+        "fields": {
+          "lifecycle_state": "succeeded"
+        }
+      },
+      {
+        "collection": "IsolatedWorkspace",
+        "fields": {
+          "lifecycle_state": "ready"
+        }
+      }
+    ]
+  }
+}

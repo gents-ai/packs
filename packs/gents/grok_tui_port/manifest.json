@@ -35,6 +35,7 @@
     "schemas/port_surface.graphql",
     "schemas/port_unit_closure.graphql",
     "schemas/port_work_unit.graphql",
+    "schemas/port_work_unit_owned_files.patch.json",
     "scripts/grok_background_probe.py",
     "scripts/grok_behavior_probe.py",
     "scripts/grok_context_probe.py",
@@ -59,7 +60,8 @@
     "tasks/port_recon_task/prompt.md",
     "tasks/port_retry_task/prompt.md",
     "tasks/port_review_task/prompt.md",
-    "tests/install.json"
+    "tests/install.json",
+    "tests/workspace_callback.json"
   ],
   "authors": [
     "gents-ai contributors"
@@ -111,5 +113,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

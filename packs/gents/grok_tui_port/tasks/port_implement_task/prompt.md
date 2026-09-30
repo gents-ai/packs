@@ -17,7 +17,7 @@ from the unchanged logical contract and repair context. Never read or mutate
 the prior sealed workspace.
 
 This is one of eight simultaneous slices. Touch only the paths listed in the
-unit's structured `owned_paths` JSON array. The prose instructions cannot add
+unit's structured `owned_files` JSON array. The prose instructions cannot add
 or waive a path. A change outside that list is a blocker. New sibling files
 will not exist in this isolated base, so do not treat cross-slice unresolved
 imports as a failure. Shell and compiler tools are available inside this bound
@@ -140,7 +140,7 @@ owned slice.
 
 Before writing the implementation receipt, run `git status --short` and remove
 every unignored generated, scratch, log, cache, or build path that is not an
-exact member of `owned_paths`. The host seal captures untracked files too.
+exact member of `owned_files`. The host seal captures untracked files too.
 There is no exception for `.tmp-build`, test logs, build evidence, hidden
 paths, or files described as anticipated artifacts. Keep compiler output in
 the command result or an already-ignored build directory. If any non-owned

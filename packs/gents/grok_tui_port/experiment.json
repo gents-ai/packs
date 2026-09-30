@@ -174,7 +174,7 @@
       "work_unit_collection": "PortWorkUnit",
       "correlation_field": "run_id",
       "work_unit_id_field": "work_unit_id",
-      "owned_paths_field": "owned_paths"
+      "owned_paths_field": "owned_files"
     },
     "source_edges": [],
     "projections": ["atif", "openai-codex", "langgraph", "multi-agent"],
@@ -208,7 +208,7 @@
       {
         "collection": "PortWorkUnit",
         "correlation_field": "run_id",
-        "fields": ["work_unit_id", "logical_unit_id", "surface_ids", "area", "verdict", "status", "attempt", "title", "owned_paths", "prior_work_unit_id", "repair_context", "expected_total"]
+        "fields": ["work_unit_id", "logical_unit_id", "surface_ids", "area", "verdict", "status", "attempt", "title", "owned_files", "prior_work_unit_id", "repair_context", "expected_total"]
       },
       {
         "collection": "PortReview",

@@ -116,7 +116,8 @@
         "work_unit_id",
         "repository_id",
         "base_sha",
-        "caused_by_correlation"
+        "caused_by_correlation",
+        "owned_files"
       ]
     }
   ],
@@ -502,7 +503,7 @@
             "attempt",
             "title",
             "instructions",
-            "owned_paths",
+            "owned_files",
             "grok_call_sites",
             "grok_wire",
             "gents_docs",
@@ -1242,7 +1243,7 @@
               "required": true
             },
             {
-              "name": "owned_paths",
+              "name": "owned_files",
               "required": true
             },
             {
@@ -1775,7 +1776,7 @@
             "attempt",
             "title",
             "instructions",
-            "owned_paths",
+            "owned_files",
             "grok_call_sites",
             "grok_wire",
             "gents_docs",
@@ -1868,7 +1869,7 @@
               "required": true
             },
             {
-              "name": "owned_paths",
+              "name": "owned_files",
               "required": true
             },
             {
@@ -1947,7 +1948,7 @@
             "work_unit_id",
             "logical_unit_id",
             "attempt",
-            "owned_paths",
+            "owned_files",
             "instructions"
           ],
           "filter_fields": [

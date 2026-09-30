@@ -157,6 +157,9 @@ barrier.
 
 `tests/install.json` pins the `coordinator`, `reviewer`, `worker` slots and the
 106 documents an install creates, reinstalls without change and removes.
+`tests/workspace_callback.json` serves the installed pack from a throwaway
+git repository, creates one ready work document and requires the implement stage's workspace callback to
+succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
 gents pack check ./packs/gents/grok_tui_port
@@ -172,6 +175,12 @@ See [the worked-run case study](run_history.md) for the merged output, known
 interventions, lessons and issue links. This package records supervised runs;
 it does not claim an intervention-free completion of the whole graph.
 
+1.1.0 renames `PortWorkUnit.owned_paths` to `owned_files` and passes it to the
+implement workspace callback, which refused every work unit without it
+(gents-ai/packs#1). `schemas/port_work_unit_owned_files.patch.json` adds the
+field to a node that installed an earlier version; the old `owned_paths` field
+stays on such a node, unused.
+
 ## Architecture
 
 ```text
@@ -181,7 +190,7 @@ GrokPortJob
   -> CallbackBinding CreateWorkspace per unit (8-way fanout)
        IsolatedWorkspace at <gents>/.gents/workspaces/gents-ws-<id>-<branch>
   -> implement ReadWrite -> host seal -> WorkspaceReceipt kind=writer
-       runner compares every receipt path to immutable structured owned_paths;
+       runner compares every receipt path to immutable structured owned_files;
        any unowned tracked or untracked artifact aborts the run
   -> per-slice review ReadOnly on each actual sealed dirty tree (parallel)
        receipt changed-files + direct untracked-file reads; mapped wire + tests

@@ -10,7 +10,7 @@ Parse the prior numeric `attempt`, add one, and call `write_port_work_unit`
 exactly once to create the new attempt:
 
 - Keep the same `logical_unit_id`, surface ids, area, title, structured
-  `owned_paths`, ownership instructions, compact surface-id evidence indexes,
+  `owned_files`, ownership instructions, compact surface-id evidence indexes,
   repository, pinned base,
   and expected total. The authoritative complete evidence stays on the mapped
   `PortSurface` rows, including `grok_wire_continuation`.
