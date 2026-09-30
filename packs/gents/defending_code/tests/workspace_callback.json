@@ -1,0 +1,43 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "src/lib.rs": "pub fn fixture() {}\n"
+      }
+    },
+    "seed": {
+      "collection": "DefensePatchAssignment",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "assignment_id": "assignment-${ATTEMPT}",
+        "status": "ready",
+        "repository_id": "defending-code",
+        "base_revision": "${BASE_SHA}",
+        "owned_files": "[\"src/lib.rs\"]"
+      }
+    },
+    "taken": {
+      "collection": "CallbackInvocation",
+      "filter": {
+        "callback_id": "defense-patch-workspace"
+      }
+    },
+    "expect": [
+      {
+        "collection": "CallbackInvocation",
+        "filter": {
+          "callback_id": "defense-patch-workspace"
+        },
+        "fields": {
+          "lifecycle_state": "succeeded"
+        }
+      },
+      {
+        "collection": "IsolatedWorkspace",
+        "fields": {
+          "lifecycle_state": "ready"
+        }
+      }
+    ]
+  }
+}

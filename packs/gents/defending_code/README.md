@@ -167,6 +167,9 @@ provenance before a campaign counts as done.
 
 `tests/install.json` pins the `coordinator`, `verifier`, `worker` slots and the 116 documents an
 install creates, reinstalls without change and removes.
+`tests/workspace_callback.json` serves the installed pack from a throwaway
+git repository, creates one ready work document and requires the patch stage's workspace callback to
+succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
 gents pack check ./packs/gents/defending_code

@@ -1,0 +1,44 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "src/lib.rs": "pub fn fixture() {}\n"
+      }
+    },
+    "seed": {
+      "collection": "MaintenanceReport",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "status": "planned",
+        "work_unit_id": "unit-${ATTEMPT}",
+        "repository_id": "repo-maintenance",
+        "base_sha": "${BASE_SHA}",
+        "branch": "gents/maintenance-${ATTEMPT}",
+        "owned_files": "[\"src/lib.rs\"]"
+      }
+    },
+    "taken": {
+      "collection": "CallbackInvocation",
+      "filter": {
+        "callback_id": "maintenance-execute-workspace"
+      }
+    },
+    "expect": [
+      {
+        "collection": "CallbackInvocation",
+        "filter": {
+          "callback_id": "maintenance-execute-workspace"
+        },
+        "fields": {
+          "lifecycle_state": "succeeded"
+        }
+      },
+      {
+        "collection": "IsolatedWorkspace",
+        "fields": {
+          "lifecycle_state": "ready"
+        }
+      }
+    ]
+  }
+}

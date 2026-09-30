@@ -54,7 +54,8 @@
     "tasks/defend_triage_task/prompt.md",
     "tasks/defend_verification_plan_task/prompt.md",
     "tasks/defend_verifier_task/prompt.md",
-    "tests/install.json"
+    "tests/install.json",
+    "tests/workspace_callback.json"
   ],
   "authors": [
     "gents-ai contributors"

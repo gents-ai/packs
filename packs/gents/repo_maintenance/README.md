@@ -56,6 +56,9 @@ A zero-finding run emits one no-safe-work sentinel, provisions no IsolatedWorksp
 
 `tests/install.json` pins the `coordinator`, `scanner` slots and the 59 documents an
 install creates, reinstalls without change and removes.
+`tests/workspace_callback.json` serves the installed pack from a throwaway
+git repository, creates one ready work document and requires the execute stage's workspace callback to
+succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
 gents pack check ./packs/gents/repo_maintenance

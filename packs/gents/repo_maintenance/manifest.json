@@ -32,7 +32,8 @@
     "tasks/maintenance_scan_task/prompt.md",
     "tasks/maintenance_triage_task/prompt.md",
     "tasks/maintenance_verify_task/prompt.md",
-    "tests/install.json"
+    "tests/install.json",
+    "tests/workspace_callback.json"
   ],
   "authors": [
     "gents-ai contributors"
