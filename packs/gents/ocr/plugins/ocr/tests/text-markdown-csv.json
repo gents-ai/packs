@@ -1,0 +1,38 @@
+{
+  "input": {
+    "files": [
+      "notes.md",
+      "data.csv",
+      "plain.txt"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "markdown",
+        "markdown": "<!-- document: notes.md (markdown) -->\n\n# Notes\n\n- one\n- two",
+        "pages": 1,
+        "source": "notes.md",
+        "warnings": []
+      },
+      {
+        "figures": [],
+        "format": "csv",
+        "markdown": "<!-- document: data.csv (csv) -->\n\n| name | score |\n| --- | --- |\n| Ana | 9 |\n| Bo, Jr. | 7 |",
+        "pages": 1,
+        "source": "data.csv",
+        "warnings": []
+      },
+      {
+        "figures": [],
+        "format": "text",
+        "markdown": "<!-- document: plain.txt (text) -->\n\nPlain text\nsecond line",
+        "pages": 1,
+        "source": "plain.txt",
+        "warnings": []
+      }
+    ]
+  }
+}

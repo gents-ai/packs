@@ -1,0 +1,20 @@
+{
+  "input": {
+    "files": [
+      "letter.png"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "png",
+        "markdown": "<!-- document: letter.png (png) -->\n\n## Quarterly Results\n\nThe quick brown fox jumps over the lazy dog. Revenue grew steadily across every region.\n\nCosts stayed flat while demand increased.",
+        "pages": 1,
+        "source": "letter.png",
+        "warnings": []
+      }
+    ]
+  }
+}

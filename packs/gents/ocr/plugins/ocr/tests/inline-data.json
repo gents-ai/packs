@@ -1,0 +1,18 @@
+{
+  "input": {
+    "name": "scores.csv",
+    "data_base64": "bmFtZSxzY29yZQpBbmEsOQoiQm8sIEpyLiIsNwo="
+  },
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "csv",
+        "markdown": "<!-- document: scores.csv (csv) -->\n\n| name | score |\n| --- | --- |\n| Ana | 9 |\n| Bo, Jr. | 7 |",
+        "pages": 1,
+        "source": "scores.csv",
+        "warnings": []
+      }
+    ]
+  }
+}

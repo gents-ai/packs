@@ -1,0 +1,453 @@
+//! XLSX: every worksheet as a Markdown table, streamed row by row so a large
+//! sheet is never held in memory. Shared strings, inline strings, booleans,
+//! errors and date-formatted numbers are read as the values a person sees.
+use std::collections::HashMap;
+
+use quick_xml::events::{BytesStart, Event};
+use quick_xml::{Reader, XmlVersion};
+
+use crate::ctx::Ctx;
+use crate::detect::header;
+use crate::model::{DocAcc, Document};
+use crate::table::TableWriter;
+use crate::util::{Zip, resolve};
+use crate::xml::{attr, is, parse};
+
+const MAX_COLS: usize = 16_384;
+const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+fn local(e: &BytesStart<'_>) -> String {
+    e.local_name().into_inner().to_string()
+}
+
+fn attribute(e: &BytesStart<'_>, name: &str) -> Option<String> {
+    e.attributes()
+        .flatten()
+        .find(|a| a.key.local_name().into_inner() == name)
+        .and_then(|a| {
+            a.normalized_value(XmlVersion::Implicit1_0)
+                .ok()
+                .map(|v| v.into_owned())
+        })
+}
+
+fn xml_err(what: &str, e: impl std::fmt::Display) -> String {
+    format!("{what} is malformed: {e}")
+}
+
+/// Shared strings in index order; rich-text runs are joined, phonetic hints dropped.
+fn shared_strings(zip: &mut Zip<'_>) -> Result<Vec<String>, String> {
+    let Some(bytes) = zip.read("xl/sharedStrings.xml")? else {
+        return Ok(Vec::new());
+    };
+    let mut reader = Reader::from_reader(bytes.as_slice());
+    let (mut out, mut cur) = (Vec::new(), String::new());
+    let (mut in_t, mut in_phonetic) = (false, false);
+    loop {
+        match reader
+            .read_event()
+            .map_err(|e| xml_err("xl/sharedStrings.xml", e))?
+        {
+            Event::Start(e) => match local(&e).as_str() {
+                "t" if !in_phonetic => in_t = true,
+                "rPh" => in_phonetic = true,
+                _ => {}
+            },
+            Event::End(e) => match e.local_name().into_inner() {
+                "t" => in_t = false,
+                "rPh" => in_phonetic = false,
+                "si" => out.push(std::mem::take(&mut cur)),
+                _ => {}
+            },
+            Event::Empty(e) if local(&e) == "si" => out.push(String::new()),
+            Event::Text(t) if in_t => cur.push_str(&t.xml10_content()),
+            Event::GeneralRef(r) if in_t => {
+                if let Some(c) = r.resolve_char_ref().ok().flatten() {
+                    cur.push(c);
+                } else {
+                    cur.push_str(match r.xml10_content().as_ref() {
+                        "amp" => "&",
+                        "lt" => "<",
+                        "gt" => ">",
+                        "quot" => "\"",
+                        "apos" => "'",
+                        _ => "",
+                    });
+                }
+            }
+            Event::Eof => break,
+            _ => {}
+        }
+    }
+    Ok(out)
+}
+
+/// Whether each cell style (by index) formats its number as a date or time.
+fn date_styles(zip: &mut Zip<'_>) -> Result<Vec<bool>, String> {
+    let Some(src) = zip.read_text("xl/styles.xml")? else {
+        return Ok(Vec::new());
+    };
+    let doc = parse(&src)?;
+    let custom: HashMap<u32, String> = doc
+        .descendants()
+        .filter(|n| is(*n, "numFmt"))
+        .filter_map(|n| {
+            Some((
+                attr(n, "numFmtId")?.parse().ok()?,
+                attr(n, "formatCode")?.to_string(),
+            ))
+        })
+        .collect();
+    let is_date = |id: u32| match custom.get(&id) {
+        Some(code) => {
+            let mut plain = String::new();
+            let (mut quoted, mut bracket) = (false, false);
+            for c in code.chars() {
+                match c {
+                    '"' => quoted = !quoted,
+                    '[' if !quoted => bracket = true,
+                    ']' if !quoted => bracket = false,
+                    c if !quoted && !bracket => plain.push(c.to_ascii_lowercase()),
+                    _ => {}
+                }
+            }
+            plain.contains(['y', 'd', 'h', 's']) || plain.contains('m') && !plain.contains('0')
+        }
+        None => matches!(id, 14..=22 | 27..=36 | 45..=47 | 50..=58),
+    };
+    let xfs = doc.descendants().find(|n| is(*n, "cellXfs"));
+    Ok(xfs
+        .map(|x| {
+            x.children()
+                .filter(|c| is(*c, "xf"))
+                .map(|c| {
+                    is_date(
+                        attr(c, "numFmtId")
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+/// Civil date from days since 1970-01-01 (proleptic Gregorian).
+fn civil(days: i64) -> (i64, u32, u32) {
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (yoe + era * 400 + i64::from(m <= 2), m, d)
+}
+
+/// Formats an Excel serial date; serials below 1 are times of day only.
+pub fn serial_to_string(serial: f64) -> String {
+    if !serial.is_finite() || !(0.0..2_958_466.0).contains(&serial) {
+        return serial.to_string();
+    }
+    let mut days = serial.floor() as i64;
+    let secs = ((serial - serial.floor()) * 86_400.0).round() as i64;
+    if secs >= 86_400 {
+        days += 1;
+    }
+    let secs = secs % 86_400;
+    let time = format!(
+        "{:02}:{:02}:{:02}",
+        secs / 3600,
+        secs % 3600 / 60,
+        secs % 60
+    );
+    if serial < 1.0 {
+        return time;
+    }
+    // Excel counts 1900 as a leap year, so serials from 61 on are one day ahead.
+    let unix_days = days - if days >= 61 { 25_569 } else { 25_568 };
+    let (y, m, d) = civil(unix_days);
+    if secs == 0 {
+        format!("{y:04}-{m:02}-{d:02}")
+    } else {
+        format!("{y:04}-{m:02}-{d:02} {time}")
+    }
+}
+
+fn col_index(cell_ref: &str) -> Option<usize> {
+    let letters: String = cell_ref
+        .chars()
+        .take_while(char::is_ascii_alphabetic)
+        .collect();
+    if letters.is_empty() {
+        return None;
+    }
+    let n = letters.to_ascii_uppercase().bytes().fold(0usize, |a, b| {
+        a.saturating_mul(26)
+            .saturating_add(usize::from(b - b'A' + 1))
+    });
+    Some(n - 1)
+}
+
+struct SheetOut {
+    md: String,
+    rows: usize,
+    cut: bool,
+    drawings: bool,
+}
+
+fn read_sheet(
+    bytes: &[u8],
+    shared: &[String],
+    dates: &[bool],
+    budget: usize,
+) -> Result<SheetOut, String> {
+    let mut reader = Reader::from_reader(bytes);
+    let mut writer: Option<TableWriter> = None;
+    let (mut col0, mut width) = (0usize, 0usize);
+    let (mut row, mut row_started): (Vec<String>, bool) = (Vec::new(), false);
+    let (mut col, mut kind, mut style, mut value, mut in_v, mut in_t, mut in_inline) = (
+        0usize,
+        String::new(),
+        0usize,
+        String::new(),
+        false,
+        false,
+        false,
+    );
+    let mut drawings = false;
+    let mut cut = false;
+    loop {
+        match reader
+            .read_event()
+            .map_err(|e| xml_err("the worksheet", e))?
+        {
+            Event::Start(e) | Event::Empty(e) if local(&e) == "dimension" => {
+                if let Some(r) = attribute(&e, "ref") {
+                    let (a, b) = r.split_once(':').unwrap_or((&r, &r));
+                    if let (Some(x0), Some(x1)) = (col_index(a), col_index(b)) {
+                        col0 = x0;
+                        width = (x1 + 1 - x0).min(MAX_COLS);
+                    }
+                }
+            }
+            Event::Start(e) => match local(&e).as_str() {
+                "row" => {
+                    row.clear();
+                    row_started = true;
+                }
+                "c" => {
+                    kind = attribute(&e, "t").unwrap_or_default();
+                    style = attribute(&e, "s").and_then(|s| s.parse().ok()).unwrap_or(0);
+                    col = attribute(&e, "r")
+                        .and_then(|r| col_index(&r))
+                        .unwrap_or(col0 + row.len());
+                    value.clear();
+                }
+                "v" => in_v = true,
+                "is" => in_inline = true,
+                "t" if in_inline => in_t = true,
+                "drawing" | "legacyDrawing" => drawings = true,
+                _ => {}
+            },
+            Event::Empty(e) if matches!(local(&e).as_str(), "drawing" | "legacyDrawing") => {
+                drawings = true
+            }
+            Event::Text(t) if in_v || in_t => value.push_str(&t.xml10_content()),
+            Event::End(e) => match e.local_name().into_inner() {
+                "v" => in_v = false,
+                "t" => in_t = false,
+                "is" => in_inline = false,
+                "c" if row_started => {
+                    let text = match kind.as_str() {
+                        "s" => value
+                            .trim()
+                            .parse::<usize>()
+                            .ok()
+                            .and_then(|i| shared.get(i))
+                            .cloned()
+                            .unwrap_or_default(),
+                        "b" => if value.trim() == "1" { "TRUE" } else { "FALSE" }.to_string(),
+                        "str" | "inlineStr" | "e" | "d" => value.clone(),
+                        _ if dates.get(style).copied().unwrap_or(false) => value
+                            .trim()
+                            .parse::<f64>()
+                            .map(serial_to_string)
+                            .unwrap_or_else(|_| value.clone()),
+                        _ => value.trim().to_string(),
+                    };
+                    let idx = col.saturating_sub(col0);
+                    if idx < MAX_COLS {
+                        if row.len() <= idx {
+                            row.resize(idx + 1, String::new());
+                        }
+                        row[idx] = text;
+                    }
+                }
+                "row" => {
+                    row_started = false;
+                    if row.iter().any(|c| !c.trim().is_empty()) && !cut {
+                        let w = writer.get_or_insert_with(|| {
+                            TableWriter::new(if width > 0 { width } else { row.len() }, budget)
+                        });
+                        if !w.row(&row) {
+                            cut = true;
+                        }
+                    }
+                }
+                _ => {}
+            },
+            Event::Eof => break,
+            _ => {}
+        }
+        if cut {
+            // The table is full; only the drawing check below still needs the rest.
+            break;
+        }
+    }
+    let (md, rows) = writer.map_or((String::new(), 0), |w| {
+        let rows = w.rows;
+        (w.finish(), rows)
+    });
+    Ok(SheetOut {
+        md,
+        rows,
+        cut,
+        drawings,
+    })
+}
+
+pub fn convert_xlsx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document, String> {
+    let mut zip = Zip::open(data)?;
+    let wb_src = zip
+        .read_text("xl/workbook.xml")?
+        .ok_or("the XLSX has no xl/workbook.xml")?;
+    let wb = parse(&wb_src)?;
+    let mut rels = HashMap::new();
+    if let Some(src) = zip.read_text("xl/_rels/workbook.xml.rels")? {
+        let doc = parse(&src)?;
+        for r in doc.descendants().filter(|n| is(*n, "Relationship")) {
+            if let (Some(id), Some(t)) = (attr(r, "Id"), attr(r, "Target")) {
+                rels.insert(id.to_string(), resolve("xl/workbook.xml", t));
+            }
+        }
+    }
+    let sheets: Vec<(String, String, bool)> = wb
+        .descendants()
+        .filter(|n| is(*n, "sheet"))
+        .filter_map(|n| {
+            Some((
+                attr(n, "name")?.to_string(),
+                rels.get(n.attribute((R_NS, "id"))?)?.clone(),
+                matches!(attr(n, "state"), Some("hidden" | "veryHidden")),
+            ))
+        })
+        .collect();
+    if sheets.is_empty() {
+        return Err("the XLSX has no worksheets".into());
+    }
+    let shared = shared_strings(&mut zip)?;
+    let dates = date_styles(&mut zip)?;
+    let total = sheets.len() as u32;
+    let mut acc = DocAcc::default();
+    ctx.append(&mut acc, &header(source, "xlsx"));
+    let mut selected = 0;
+    for (k, (name, path, hidden)) in sheets.iter().enumerate() {
+        let n = k as u32 + 1;
+        if !ctx.opts.selected(n) {
+            continue;
+        }
+        selected += 1;
+        let safe = name.replace('>', "&gt;");
+        if *hidden {
+            acc.warn(format!("sheet {n} ({name}) is hidden and was skipped"));
+            continue;
+        }
+        let Some(bytes) = zip.read(path)? else {
+            acc.warn(format!(
+                "sheet {n} ({name}): {path} is missing from the archive"
+            ));
+            continue;
+        };
+        let out = read_sheet(
+            &bytes,
+            &shared,
+            &dates,
+            ctx.budget.remaining().saturating_sub(4096),
+        )?;
+        drop(bytes);
+        if out.drawings {
+            acc.warn(format!(
+                "sheet {n} ({name}) has charts or images that are not read"
+            ));
+        }
+        if out.cut {
+            acc.warn(format!(
+                "sheet {n} ({name}): the output size limit cut the table after {} row(s)",
+                out.rows
+            ));
+        }
+        let marker = format!("<!-- sheet {n}: {safe} -->");
+        let chunk = if out.md.is_empty() {
+            format!("{marker}\n\n(empty sheet)")
+        } else {
+            format!("{marker}\n\n{}", out.md)
+        };
+        if !ctx.append(&mut acc, &chunk) {
+            acc.warn(format!("the output size limit was reached before sheet {n}; request pages=\"{n}-\" to continue"));
+            break;
+        }
+    }
+    if selected == 0 {
+        acc.warn(format!(
+            "pages selects nothing: the workbook has {total} sheet(s)"
+        ));
+    }
+    let warnings = acc.finish_warnings();
+    Ok(Document {
+        source: source.to_string(),
+        format: "xlsx",
+        pages: total,
+        markdown: acc.md,
+        figures: Vec::new(),
+        warnings,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serial_dates_follow_excel() {
+        assert_eq!(serial_to_string(1.0), "1900-01-01");
+        assert_eq!(serial_to_string(59.0), "1900-02-28");
+        assert_eq!(serial_to_string(61.0), "1900-03-01");
+        assert_eq!(serial_to_string(45292.0), "2024-01-01");
+        assert_eq!(serial_to_string(45292.75), "2024-01-01 18:00:00");
+        assert_eq!(serial_to_string(0.5), "12:00:00");
+    }
+
+    #[test]
+    fn column_letters_map_to_indexes() {
+        assert_eq!(col_index("A1"), Some(0));
+        assert_eq!(col_index("AA10"), Some(26));
+        assert_eq!(col_index("12"), None);
+    }
+
+    #[test]
+    fn sheet_rows_become_a_table_with_shared_strings_and_dates() {
+        let xml = br#"<worksheet><dimension ref="A1:C3"/><sheetData>
+            <row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>
+            <row r="2"><c r="A2" t="inlineStr"><is><t>x</t></is></c><c r="B2"><v>3.5</v></c><c r="C2" s="1"><v>45292</v></c></row>
+            <row r="3"><c r="A3" t="b"><v>1</v></c><c r="C3" t="e"><v>#DIV/0!</v></c></row></sheetData></worksheet>"#;
+        let shared = vec!["Name".to_string(), "Qty".to_string(), "When".to_string()];
+        let out = read_sheet(xml, &shared, &[false, true], 100_000).unwrap();
+        assert_eq!(
+            out.md,
+            "| Name | Qty | When |\n| --- | --- | --- |\n| x | 3.5 | 2024-01-01 |\n| TRUE |  | #DIV/0! |"
+        );
+        assert!(!out.cut && !out.drawings);
+    }
+}

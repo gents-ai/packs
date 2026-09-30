@@ -1,0 +1,62 @@
+{
+  "input": {},
+  "bind": "fixtures/tree",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "unknown",
+        "markdown": "",
+        "pages": 0,
+        "source": "broken.pdf",
+        "warnings": [
+          "failed: the PDF is corrupt or truncated and cannot be read"
+        ]
+      },
+      {
+        "figures": [],
+        "format": "csv",
+        "markdown": "<!-- document: data.csv (csv) -->\n\n| name | score |\n| --- | --- |\n| Ana | 9 |",
+        "pages": 1,
+        "source": "data.csv",
+        "warnings": []
+      },
+      {
+        "figures": [],
+        "format": "png",
+        "markdown": "<!-- document: img/chart.png (png) -->\n\n### Revenue by region\n\nNorth 42 million South 37 million East 29 million",
+        "pages": 1,
+        "source": "img/chart.png",
+        "warnings": []
+      },
+      {
+        "figures": [
+          {
+            "caption": "Latency chart",
+            "height": 360,
+            "id": "fig-1",
+            "ocr": true,
+            "page": 1,
+            "text": "Revenue by region\nNorth 42 million\nSouth 37 million\nEast 29 million",
+            "width": 520
+          }
+        ],
+        "format": "html",
+        "markdown": "<!-- document: page.html (html) -->\n\n# Status Page\n\nAll systems are **operational**. See the [live board](https://example.com/status).\n\n1. Database\n2. Queue\n\n| Service | State |\n| --- | --- |\n| API | up |\n\n> **[Figure fig-1]** Latency chart (520x360 px)\n>\n> Text in figure:\n> Revenue by region\n> North 42 million\n> South 37 million\n> East 29 million",
+        "pages": 1,
+        "source": "page.html",
+        "warnings": []
+      },
+      {
+        "figures": [],
+        "format": "unknown",
+        "markdown": "",
+        "pages": 0,
+        "source": "skip.xyz",
+        "warnings": [
+          "failed: unsupported format .xyz; supported are PDF, EPUB, DOCX, PPTX, XLSX, ODT, ODS, ODP, HTML, Markdown, text, CSV, TSV and PNG, JPEG, GIF, BMP, TIFF, WebP images"
+        ]
+      }
+    ]
+  }
+}

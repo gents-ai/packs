@@ -1,0 +1,20 @@
+{
+  "input": {
+    "files": [
+      "scan.pdf"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "pdf",
+        "markdown": "<!-- document: scan.pdf (pdf) -->\n\n<!-- page 1 -->\n\n## Quarterly Results\n\nThe quick brown fox jumps over the lazy dog. Revenue grew steadily across every region.\n\nCosts stayed flat while demand increased.",
+        "pages": 1,
+        "source": "scan.pdf",
+        "warnings": []
+      }
+    ]
+  }
+}

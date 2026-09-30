@@ -1,0 +1,31 @@
+{
+  "input": {
+    "files": [
+      "deck.pptx"
+    ],
+    "ocr": "never"
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Sales chart",
+            "height": 360,
+            "id": "fig-1",
+            "ocr": false,
+            "page": 2,
+            "text": "",
+            "width": 520
+          }
+        ],
+        "format": "pptx",
+        "markdown": "<!-- document: deck.pptx (pptx) -->\n\n<!-- slide 1 -->\n\n## Product Launch\n\n- Launch in March\n- Budget approved\n\n<!-- slide 2 -->\n\n## Sales\n\n| Quarter | Units |\n| --- | --- |\n| Q1 | 120 |\n\n> **[Figure fig-1]** Sales chart (520x360 px)\n>\n> (text not read: ocr is never)\n\n*Notes:* Mention the pilot customers",
+        "pages": 2,
+        "source": "deck.pptx",
+        "warnings": []
+      }
+    ]
+  }
+}

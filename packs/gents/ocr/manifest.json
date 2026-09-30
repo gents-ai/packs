@@ -1,0 +1,105 @@
+{
+  "assets": [
+    "README.md",
+    "notice.md",
+    "plugins/ocr.afb",
+    "plugins/ocr/TOOL.md",
+    "tests/install.json"
+  ],
+  "authors": [
+    "gents contributors"
+  ],
+  "dependencies": [],
+  "description": "Reads PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument, HTML, Markdown, CSV and image files into Markdown for a model, including the text inside figures.",
+  "kind": "plugins",
+  "manifest_version": 1,
+  "name": "ocr",
+  "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/ocr.afb",
+      "bind_dir": {
+        "description": "The directory holding the documents or images to read",
+        "input_field": "path"
+      },
+      "description": "Reads PDFs, EPUBs, Office and OpenDocument files, HTML, Markdown, CSV and images into Markdown with page markers, headings, lists, tables and figures, reading scanned pages and the text inside figures with OCR.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "data_base64": {
+            "description": "The file content, base64 encoded, instead of path; up to 64 MiB of base64.",
+            "type": "string"
+          },
+          "figure_images": {
+            "default": false,
+            "description": "Attach each figure image to the result as an image part the model can look at.",
+            "type": "boolean"
+          },
+          "files": {
+            "description": "Relative paths inside path to read, in this order; without it every non-hidden file below path is read in name order.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "max_image_px": {
+            "default": 2000,
+            "description": "Longest side, in pixels, that figure images and OCR inputs are scaled down to.",
+            "maximum": 4096,
+            "minimum": 256,
+            "type": "integer"
+          },
+          "min_figure_px": {
+            "default": 96,
+            "description": "Images whose shorter side is below this many pixels are skipped as decorative.",
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "description": "File name with its extension for inline data, such as report.pdf; the extension is only a hint, the content decides the format.",
+            "type": "string"
+          },
+          "ocr": {
+            "default": "auto",
+            "description": "auto reads a PDF page or image with OCR only when it has no usable text layer; always runs OCR on every page; never disables OCR.",
+            "enum": [
+              "auto",
+              "always",
+              "never"
+            ],
+            "type": "string"
+          },
+          "pages": {
+            "description": "Pages, slides, sheets or EPUB sections to read, 1-based, like \"1-3,7\" or \"5-\". Ignored by single-section formats. Default: all.",
+            "type": "string"
+          },
+          "path": {
+            "description": "Absolute path of the directory the caller bound read-only for this call (or of one file inside it). Give either path or name with data_base64.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "instructions": "plugins/ocr/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 1536,
+        "wall_clock_secs": 900
+      },
+      "name": "ocr",
+      "source": "plugins/ocr"
+    }
+  ],
+  "tags": [
+    "ocr",
+    "pdf",
+    "epub",
+    "documents",
+    "plugin"
+  ],
+  "version": "1.0.0"
+}

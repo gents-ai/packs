@@ -1,0 +1,30 @@
+{
+  "input": {
+    "files": [
+      "book.epub"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Figure 1. Revenue by region",
+            "height": 360,
+            "id": "fig-1",
+            "ocr": true,
+            "page": 1,
+            "text": "Revenue by region\nNorth 42 million\nSouth 37 million\nEast 29 million",
+            "width": 520
+          }
+        ],
+        "format": "epub",
+        "markdown": "<!-- document: book.epub (epub) -->\n\n<!-- section 1: OEBPS/text/ch1.xhtml -->\n\n# The Long Road\n\nIt began with a *small* idea and a **large** map. Read more at [the project page](https://example.com/road).\n\n- Pack the maps\n- Check the weather\n  - Rain expected\n\n> **[Figure fig-1]** Figure 1. Revenue by region (520x360 px)\n>\n> Text in figure:\n> Revenue by region\n> North 42 million\n> South 37 million\n> East 29 million\n\n<!-- section 2: OEBPS/text/ch2.xhtml -->\n\n## Second Stop\n\nThe table below lists the stops.\n\n| Stop | Miles |\n| --- | --- |\n| Harbor | 12 |\n| Ridge | 31 |\n\n> Every road ends somewhere.",
+        "pages": 2,
+        "source": "book.epub",
+        "warnings": []
+      }
+    ]
+  }
+}
