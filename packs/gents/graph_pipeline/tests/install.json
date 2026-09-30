@@ -1,0 +1,10 @@
+{
+  "install": {
+    "assets": [
+      "README.md",
+      "eval_cases.json",
+      "manifest.json",
+      "tests/install.json"
+    ]
+  }
+}

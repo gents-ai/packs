@@ -307,6 +307,7 @@ builds.
 | [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
+| [graph_pipeline](packs/gents/graph_pipeline/README.md) | Compiler evaluation fixtures |
 | [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
 | [mailbox](packs/gents/mailbox/README.md) | Explicit human-attention tool surface |
