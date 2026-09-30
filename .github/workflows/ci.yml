@@ -141,7 +141,9 @@ jobs:
     name: ${{ matrix.pack }} (${{ matrix.os }})
     needs: [resolve, gents]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # The ocr pack links two OCR models and a PDF renderer: its wasm build and
+    # native tests need more than the 20 minutes every other pack fits in.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
