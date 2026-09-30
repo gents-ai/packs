@@ -126,3 +126,19 @@ jobs:
         run: |
           chmod +x "$GENTS"
           scripts/test-pack.sh packs/gents/${{ matrix.pack }}
+
+      # The .pack to publish: built here, where the toolchain and paths are
+      # fixed, so a plugin-bearing pack keeps one digest across builds.
+      - name: Build the publishable ${{ matrix.pack }} .pack
+        env:
+          GENTS: ${{ github.workspace }}/gents-bin/gents
+        run: |
+          mkdir -p dist
+          "$GENTS" pack build packs/gents/${{ matrix.pack }} --out "dist/gents.${{ matrix.pack }}.pack"
+          "$GENTS" pack verify "dist/gents.${{ matrix.pack }}.pack"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pack-${{ matrix.pack }}
+          path: dist/gents.${{ matrix.pack }}.pack
+          retention-days: 30
