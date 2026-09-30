@@ -307,6 +307,7 @@ any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 | `{"graphs": [...]}` | the graph ids the pack compiles to |
 | `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
 | `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents pack remove` releases them |
+| `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
 
 A graph pack installs only from the binary today, so its suite asserts its
 compiled graphs rather than an install. Scenarios (`experiment.json`) need a

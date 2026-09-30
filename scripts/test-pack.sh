@@ -15,6 +15,17 @@
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
 #                            remove releases them
+#        {"runtime": {"repository": {"files": {...}, "dirs": [...]},
+#                     "seed": {"collection": ..., "fields": {...}},
+#                     "taken": {"collection": ..., "filter": {...}},
+#                     "expect": [{"collection": ..., "filter": {...},
+#                                 "fields": {...}}]}}
+#                            the pack installed into a fresh home and served
+#                            from a throwaway git repository (its commit is
+#                            ${BASE_SHA} in seed fields; ${ATTEMPT} keeps a
+#                            re-created seed unique) reaches every expected
+#                            document state after the seed is created, with
+#                            no model involved
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -27,7 +38,13 @@ set -euo pipefail
 dir="$(cd "$1" && pwd)"
 gents="${GENTS:-gents}"
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
+servers=()
+cleanup() {
+  local pid
+  for pid in ${servers[@]+"${servers[@]}"}; do kill "$pid" 2>/dev/null || true; done
+  rm -rf "$work"
+}
+trap cleanup EXIT
 
 namespace="$(jq -r '.namespace // "gents"' "$dir/manifest.json")"
 name="$(jq -r '.name' "$dir/manifest.json")"
@@ -81,27 +98,33 @@ jq -r '.plugins // [] | .[].failures[]' "$work/test.json" >&2
 graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
 # Initializes a fresh home and prints its path; its init report is <home>.json.
+# The directory init runs in ($2, default the current one) becomes the home's
+# operator ceiling.
 fresh_home() {
   local home="$work/home-$1"
-  "$gents" init --home "$home" >"$home.json"
+  (cd "${2:-.}" && "$gents" init --home "$home") >"$home.json"
   printf '%s' "$home"
 }
 
-install_documents() {
-  local case="$1" home args=() profile slot
-  home="$(fresh_home "$(basename "$case" .json)")"
-  # Bind every slot the pack and its dependencies (sibling gents packs)
-  # declare to the fresh home's own profile.
+# Prints one --inference-slot argument per line, binding every slot the pack
+# and its dependencies (sibling gents packs) declare to <home>'s own profile.
+slot_args() {
+  local home="$1" profile dep slot manifests=("$dir/manifest.json")
   profile="$(jq -r '.inference_profile_id' "$home.json")"
-  local manifests=("$dir/manifest.json") dep
   while read -r dep; do
     manifests+=("$(dirname "$dir")/$dep/manifest.json")
   done < <(jq -r '.dependencies // [] | .[]' "$dir/manifest.json")
   while read -r slot; do
-    args+=(--inference-slot "$slot=$profile")
+    printf -- '--inference-slot\n%s=%s\n' "$slot" "$profile"
   done < <(jq -rs '[.[] | .inference_slots // [] | .[].name] | unique | .[]' "${manifests[@]}")
+}
 
-  "$gents" pack install "$dir" --home "$home" "${args[@]}" >"$work/install.json"
+install_documents() {
+  local case="$1" home args=() arg
+  home="$(fresh_home "$(basename "$case" .json)")"
+  while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
+
+  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
     "$(jq -c '.install.slots // []' "$case")" \
     "$(jq -c '.inference.bindings | keys' "$work/install.json")"
@@ -112,7 +135,7 @@ install_documents() {
   want="$(jq -c '.install.documents' "$case")"
   expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
 
-  "$gents" pack install "$dir" --home "$home" "${args[@]}" >"$work/reinstall.json"
+  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
     expect_set "$(basename "$case"): reinstall keeps" "$want" \
       "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json")"
@@ -140,6 +163,104 @@ install_assets() {
   fi
 }
 
+# Polls a GraphQL endpoint until the query's rows include one whose fields
+# match; prints the last response. Waits with a deadline and backoff, so a
+# fast machine finishes at once and a slow one still passes.
+await_rows() {
+  local url="$1" query="$2" want="$3" deadline=$((SECONDS + ${AWAIT_SECS:-120})) delay=0.1 response
+  while :; do
+    response="$(curl -fsS "$url" -H 'content-type: application/json' \
+      -d "$(jq -cn --arg q "$query" '{query: $q}')" 2>/dev/null || true)"
+    if jq -e --argjson want "$want" \
+      '[.data[]?[]? | select(. as $row | $want | to_entries | all(.value == $row[.key]))] | length > 0' \
+      <<<"$response" >/dev/null 2>&1; then
+      printf '%s' "$response"
+      return 0
+    fi
+    ((SECONDS < deadline)) || { printf '%s' "$response"; return 1; }
+    sleep "$delay"
+    delay="$(awk -v d="$delay" 'BEGIN { d *= 2; print (d > 2 ? 2 : d) }')"
+  done
+}
+
+# The GraphQL read for one runtime expectation: its collection, filtered by
+# `filter`, selecting the fields it expects.
+expectation_query() {
+  jq -r '"{ \(.collection)(filter: {\(.filter // {} | to_entries
+      | map("\(.key): {_eq: \(.value | tostring | tojson)}") | join(", "))}) {
+      \(.fields // {} | keys | if length == 0 then ["_docID"] else . end | join(" ")) } }"' <<<"$1"
+}
+
+runtime_case() {
+  local case="$1" name repo home port url log pid args=() arg base path
+  name="$(basename "$case" .json)"
+  repo="$work/repo-$name"
+  mkdir -p "$repo"
+  while read -r path; do mkdir -p "$repo/$path"; done < <(jq -r '.runtime.repository.dirs // [] | .[]' "$case")
+  while read -r path; do
+    mkdir -p "$(dirname "$repo/$path")"
+    jq -j --arg p "$path" '.runtime.repository.files[$p]' "$case" >"$repo/$path"
+  done < <(jq -r '.runtime.repository.files // {} | keys[]' "$case")
+  git -C "$repo" init -q
+  git -C "$repo" add -A
+  git -C "$repo" -c user.name=packs -c user.email=packs@localhost commit -qm fixture --allow-empty
+  base="$(git -C "$repo" rev-parse HEAD)"
+
+  # The workspace callback may only create workspaces inside the operator
+  # ceiling, so the home is initialized from the repository.
+  home="$(fresh_home "$name" "$repo")"
+  while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
+  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+
+  port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+  url="http://127.0.0.1:$port/api/v0/graphql"
+  log="$work/$name-server.log"
+  # The repository placement's host path "." is the server's working directory.
+  (cd "$repo" && NO_COLOR=1 exec "$gents" server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) >"$log" 2>&1 &
+  pid=$!
+  servers+=("$pid")
+
+  local collection mutation attempt=0 deadline=$((SECONDS + 240)) first_query first_want seeded=""
+  collection="$(jq -r '.runtime.seed.collection' "$case")"
+  first_query="$(expectation_query "$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")")"
+  first_want="$(jq -c '(.runtime.taken // .runtime.expect[0]).fields // {}' "$case")"
+  # The callback engine logs nothing when it picks up its bindings, and a
+  # document created before that is history it never processes. So a fresh
+  # seed (${ATTEMPT} makes it unique) is created until `taken` (any matching
+  # row, default the first expectation) shows the engine took one.
+  while ((SECONDS < deadline)); do
+    kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
+    attempt=$((attempt + 1))
+    mutation="$(jq -r --arg base "$base" --arg attempt "$attempt" '.runtime.seed
+      | "mutation { create_\(.collection)(input: {\(.fields | to_entries
+          | map("\(.key): \(.value | tostring | gsub("\\$\\{BASE_SHA\\}"; $base)
+              | gsub("\\$\\{ATTEMPT\\}"; $attempt) | tojson)")
+          | join(", "))}) { _docID } }"' "$case")"
+    # Refused until the runtime has registered the collection; retried below.
+    curl -fsS "$url" -H 'content-type: application/json' \
+      -d "$(jq -cn --arg q "$mutation" '{query: $q}')" 2>/dev/null | jq -e '.data and (.errors | not)' >/dev/null 2>&1 \
+      && seeded=yes
+    if [[ -n "$seeded" ]] && AWAIT_SECS=10 await_rows "$url" "$first_query" "$first_want" >/dev/null; then
+      break
+    fi
+    [[ -n "$seeded" ]] || sleep 1
+  done
+  [[ -n "$seeded" ]] || { fail "$name: could not create the seed $collection"; return; }
+
+  local expect query want response
+  while read -r expect; do
+    query="$(expectation_query "$expect")"
+    want="$(jq -c '.fields' <<<"$expect")"
+    if response="$(await_rows "$url" "$query" "$want")"; then
+      pass "$name: $(jq -r '.collection' <<<"$expect") reaches $want"
+    else
+      fail "$name: $(jq -r '.collection' <<<"$expect") never reached $want; last seen $response"
+      grep -E ' (WARN|ERROR) ' "$log" | tail -5 >&2 || true
+    fi
+  done < <(jq -c '.runtime.expect[]' "$case")
+  kill "$pid" 2>/dev/null || true
+}
+
 shopt -s nullglob
 cases=("$dir"/tests/*.json)
 [[ ${#cases[@]} -gt 0 ]] || fail "has no tests/*.json cases"
@@ -152,8 +273,10 @@ for case in "${cases[@]}"; do
   elif jq -e '.install | has("assets")' "$case" >/dev/null; then
     [[ "$kind" == "assets" ]] || fail "$(basename "$case"): assets case in a $kind pack"
     install_assets "$case"
+  elif jq -e 'has("runtime")' "$case" >/dev/null; then
+    runtime_case "$case"
   else
-    fail "$(basename "$case"): not a graphs or install case"
+    fail "$(basename "$case"): not a graphs, install or runtime case"
   fi
 done
 
