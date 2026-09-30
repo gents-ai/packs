@@ -9,6 +9,19 @@ use crate::model::{Block, Budget, DocAcc, Figure, Part, json_len};
 use crate::ocr::{Ocr, OcrLine};
 use crate::pix::{Pix, probe};
 
+/// Why OCR did not start: one sentence that also says how to continue.
+pub const NO_TIME: &str =
+    "the OCR time budget of this call ran out; call again with pages or files listing what remains";
+
+/// A 64-bit hash of the encoded bytes plus their length: equal images share it
+/// (not cryptographic: a collision would only skip one image as a repeat).
+fn image_key(bytes: &[u8]) -> u128 {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+    let mut h = DefaultHasher::new();
+    bytes.hash(&mut h);
+    (u128::from(h.finish()) << 64) | bytes.len() as u128
+}
+
 /// Figure images already at most this large pass through without re-encoding.
 const PASSTHROUGH_BYTES: usize = 1_500_000;
 const PART_JPEG_QUALITY: u8 = 85;
@@ -52,6 +65,50 @@ impl Ctx {
         true
     }
 
+    /// Appends `text`, or as much of its start as the output budget allows,
+    /// cut at a line end (at a character boundary when one line alone is too
+    /// long). Returns the bytes of `text` that were kept.
+    pub fn append_prefix(&mut self, acc: &mut DocAcc, text: &str) -> usize {
+        // A chunk costs its JSON size plus the two bytes of the blank-line joiner.
+        let room = self.budget.remaining().saturating_sub(2 + 2);
+        let kept = if text.len() <= room && json_len(text) - 2 <= room {
+            text.len()
+        } else {
+            let mut used = 0usize;
+            let mut end = 0usize;
+            let mut at = 0usize;
+            'lines: for line in text.split_inclusive('\n') {
+                let cost = json_len(line) - 2;
+                if used + cost <= room {
+                    used += cost;
+                    at += line.len();
+                    end = at;
+                    continue;
+                }
+                if end == 0 {
+                    for (i, c) in line.char_indices() {
+                        let c_cost = json_len(&line[i..i + c.len_utf8()]) - 2;
+                        if used + c_cost > room {
+                            break 'lines;
+                        }
+                        used += c_cost;
+                        end = i + c.len_utf8();
+                    }
+                }
+                break;
+            }
+            end
+        };
+        let head = text[..kept].trim_end_matches('\n');
+        if !head.is_empty() && !self.append(acc, head) {
+            return 0;
+        }
+        if kept < text.len() {
+            acc.truncated = true;
+        }
+        kept
+    }
+
     /// Records a finished figure in the document and returns its Markdown block.
     pub fn keep(&mut self, acc: &mut DocAcc, mut fig: Figure) -> Option<Block> {
         if crate::md::is_file_name(&fig.caption) {
@@ -64,6 +121,16 @@ impl Ctx {
         }
         acc.figures.push(fig.clone());
         Some(Block::Figure(Box::new(fig)))
+    }
+
+    /// Remembers the alt text of a just-made figure, used as its caption only
+    /// when no caption paragraph is found next to it (see `md::attach_captions`).
+    pub fn note_alt(acc: &mut DocAcc, block: Option<&Block>, alt: &str) {
+        if let Some(Block::Figure(f)) = block
+            && !alt.trim().is_empty()
+        {
+            acc.alts.insert(f.id.clone(), alt.trim().to_string());
+        }
     }
 
     fn next_id(acc: &mut DocAcc) -> String {
@@ -117,6 +184,10 @@ impl Ctx {
             image::ImageFormat::WebP => Some("image/webp"),
             _ => None,
         };
+        if !acc.seen_images.insert(image_key(bytes)) {
+            acc.repeated_skipped += 1;
+            return None;
+        }
         let pix = match Pix::decode(bytes).and_then(|p| p.fit(self.opts.max_image_px)) {
             Ok(p) => p,
             Err(why) => return self.unreadable_figure(acc, unit, caption, &why),
@@ -213,9 +284,7 @@ impl Ctx {
     /// OCR of a whole page or image, honouring the mode and the time budget.
     pub fn ocr_page(&mut self, pix: &Pix) -> Result<Vec<OcrLine>, String> {
         if !self.ocr.has_time() {
-            return Err(
-                "the OCR time budget of this call ran out; request fewer pages or files".into(),
-            );
+            return Err(NO_TIME.into());
         }
         self.ocr.read(pix)
     }

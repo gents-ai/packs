@@ -1,6 +1,9 @@
 //! Converts a parsed HTML or XHTML tree into Markdown blocks: headings, lists,
 //! tables, code, quotes, links and figures, with images resolved through the
 //! caller so the same walker serves HTML files, EPUB chapters and more.
+use std::collections::HashSet;
+use std::rc::Rc;
+
 use base64::Engine as _;
 
 use crate::ctx::Ctx;
@@ -10,7 +13,7 @@ use crate::model::{Block, DocAcc};
 
 /// Supplies the bytes of an image an element refers to.
 pub trait Resolver {
-    fn image(&mut self, src: &str) -> Option<Vec<u8>>;
+    fn image(&mut self, src: &str) -> Option<Rc<[u8]>>;
 }
 
 const SKIP: [&str; 13] = [
@@ -75,6 +78,8 @@ pub struct Conv<'a> {
     pending: Option<(u8, String)>,
     lists: Vec<(bool, u32)>,
     svg: u32,
+    /// Anchors that footnote references in this document point at.
+    note_refs: HashSet<String>,
 }
 
 /// Converts `nodes` into blocks; figures found on the way are recorded in `acc`.
@@ -95,7 +100,9 @@ pub fn convert(
         pending: None,
         lists: Vec::new(),
         svg: 0,
+        note_refs: HashSet::new(),
     };
+    collect_note_refs(nodes, &mut conv.note_refs);
     conv.walk_children(nodes);
     conv.flush();
     if conv.svg > 0 {
@@ -104,7 +111,7 @@ pub fn convert(
     }
     let mut blocks = std::mem::take(&mut conv.blocks);
     drop(conv);
-    crate::md::attach_captions(&mut blocks, &mut acc.figures);
+    crate::md::attach_captions(&mut blocks, acc);
     blocks
 }
 
@@ -178,8 +185,37 @@ impl Conv<'_> {
         }
     }
 
+    /// A footnote body becomes a `[^id]: text` definition that the `[^id]`
+    /// reference rendered for its noteref link points at.
+    fn note(&mut self, id: &str, el: &El) {
+        self.flush();
+        let start = self.blocks.len();
+        self.walk_children(&el.kids);
+        self.flush();
+        let inner = self.blocks.split_off(start);
+        let body = inner
+            .iter()
+            .filter_map(|b| match b {
+                Block::Para(t) | Block::Heading(_, t) | Block::Item { text: t, .. } => {
+                    Some(t.as_str())
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        let body = body.replace(['\u{21a9}', '\u{21b5}'], "");
+        let body = body.trim();
+        if !body.is_empty() {
+            self.blocks
+                .push(Block::Raw(format!("[^{}]: {body}", label(id))));
+        }
+    }
+
     fn element(&mut self, el: &El) {
         let tag = el.tag.as_str();
+        if let Some(id) = note_id(el, &self.note_refs) {
+            return self.note(id, el);
+        }
         match tag {
             t if SKIP.contains(&t) => {}
             "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
@@ -372,7 +408,7 @@ impl Conv<'_> {
             return;
         }
         let bytes = if let Some(data) = src.strip_prefix("data:") {
-            data_uri(data)
+            data_uri(data).map(Rc::from)
         } else if src.contains("://") {
             self.acc.warn(format!(
                 "image {} is an external link and was not fetched (the plugin has no network)",
@@ -410,6 +446,64 @@ impl Conv<'_> {
     }
 }
 
+/// A footnote label safe inside `[^...]`.
+fn label(id: &str) -> String {
+    id.trim_start_matches('#')
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
+fn has_word(value: Option<&str>, words: &[&str]) -> bool {
+    value.is_some_and(|v| v.split_whitespace().any(|w| words.contains(&w)))
+}
+
+/// The id of an element that holds a footnote or endnote body: marked as one,
+/// or a small block that a footnote reference link points at.
+fn note_id<'e>(el: &'e El, refs: &HashSet<String>) -> Option<&'e str> {
+    let id = el.attr("id").filter(|i| !i.is_empty())?;
+    let marked = has_word(el.attr("type"), &["footnote", "endnote", "rearnote"])
+        || has_word(el.attr("role"), &["doc-footnote", "doc-endnote"]);
+    let referenced =
+        matches!(el.tag.as_str(), "aside" | "li" | "p") && refs.contains(&format!("#{id}"));
+    (marked || referenced).then_some(id)
+}
+
+fn internal(a: &El) -> Option<&str> {
+    let href = a.attr("href")?.trim();
+    (href.len() > 1 && href.starts_with('#')).then_some(href)
+}
+
+/// The anchor of a link marked as a footnote reference.
+fn noteref(a: &El) -> Option<&str> {
+    internal(a).filter(|_| {
+        has_word(a.attr("type"), &["noteref"]) || has_word(a.attr("role"), &["doc-noteref"])
+    })
+}
+
+/// Gathers the anchors of footnote reference links: marked ones, and any
+/// in-document link inside a superscript.
+fn collect_note_refs(nodes: &[Node], out: &mut HashSet<String>) {
+    for n in nodes {
+        let Node::El(e) = n else { continue };
+        let found = match e.tag.as_str() {
+            "sup" => find_noteref(e),
+            "a" => noteref(e),
+            _ => None,
+        };
+        if let Some(h) = found {
+            out.insert(h.to_string());
+        }
+        collect_note_refs(&e.kids, out);
+    }
+}
+
 fn short(s: &str) -> String {
     s.chars().take(80).collect()
 }
@@ -444,6 +538,14 @@ fn find<'e>(el: &'e El, tag: &str) -> Option<&'e El> {
     el.kids.iter().find_map(|k| match k {
         Node::El(e) if e.tag == tag => Some(e),
         Node::El(e) => find(e, tag),
+        Node::Text(_) => None,
+    })
+}
+
+fn find_noteref(el: &El) -> Option<&str> {
+    el.kids.iter().find_map(|k| match k {
+        Node::El(e) if e.tag == "a" => internal(e),
+        Node::El(e) => find_noteref(e),
         Node::Text(_) => None,
     })
 }
@@ -545,6 +647,16 @@ fn inline_el(e: &El, mode: Inl, out: &mut String) {
                 out.push_str(&esc(&raw));
             }
         }
+        "sup" if mode.fmt && find_noteref(e).is_some() => {
+            if let Some(href) = find_noteref(e) {
+                out.push_str(&format!("[^{}]", label(href)));
+            }
+        }
+        "a" if mode.fmt && noteref(e).is_some() => {
+            if let Some(href) = noteref(e) {
+                out.push_str(&format!("[^{}]", label(href)));
+            }
+        }
         "a" => {
             let href = e.attr("href").unwrap_or("").trim();
             let external = ["http://", "https://", "mailto:"]
@@ -576,7 +688,7 @@ mod tests {
 
     struct Files;
     impl Resolver for Files {
-        fn image(&mut self, _: &str) -> Option<Vec<u8>> {
+        fn image(&mut self, _: &str) -> Option<Rc<[u8]>> {
             None
         }
     }
@@ -638,6 +750,25 @@ mod tests {
         assert_eq!(
             md("<head><title>T</title></head><body><script>var x</script><p>only this</p></body>"),
             "only this"
+        );
+    }
+
+    #[test]
+    fn nested_ordered_lists_indent_by_the_marker_width() {
+        assert_eq!(
+            md("<ol><li>one<ul><li>inner<ol><li>deep</li></ol></li></ul></li><li>two</li></ol>"),
+            "1. one\n   - inner\n     1. deep\n2. two"
+        );
+    }
+
+    #[test]
+    fn footnote_references_link_to_their_bodies() {
+        let text = md(
+            "<p>Claim<sup><a epub:type=\"noteref\" href=\"#n1\">1</a></sup> and more<sup><a href=\"#n2\">2</a></sup>.</p><aside epub:type=\"footnote\" id=\"n1\"><p>First note. \u{21a9}</p></aside><p id=\"n2\">Second note.</p>",
+        );
+        assert_eq!(
+            text,
+            "Claim[^n1] and more[^n2].\n\n[^n1]: First note.\n\n[^n2]: Second note."
         );
     }
 }

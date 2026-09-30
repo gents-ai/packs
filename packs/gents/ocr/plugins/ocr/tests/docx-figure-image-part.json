@@ -1,11 +1,4 @@
 {
-  "input": {
-    "files": [
-      "report.docx"
-    ],
-    "ocr": "never",
-    "figure_images": true
-  },
   "bind": "fixtures",
   "expect": {
     "parts": [
@@ -20,7 +13,7 @@
         {
           "figures": [
             {
-              "caption": "Revenue chart",
+              "caption": "Figure 1 - Revenue by region",
               "height": 360,
               "id": "fig-1",
               "ocr": false,
@@ -31,12 +24,19 @@
             }
           ],
           "format": "docx",
-          "markdown": "<!-- document: report.docx (docx) -->\n\n# Quarterly Plan\n\nRevenue is **up** and costs are *flat*.\n\n- Hire two engineers\n- Ship the platform\n\n| Item | Budget |\n| --- | --- |\n| Hiring | 120 |\n| Cloud | 45 |\n\n> **[Figure fig-1]** Revenue chart (520x360 px) (image attached)\n>\n> (text not read: ocr is never)",
+          "markdown": "<!-- document: report.docx (docx) -->\n\n# Plan Report\n\n## Quarterly Plan\n\nRevenue is **up** and costs are *flat*.\n\n- Hire two engineers\n- Ship the platform\n\n| Item | Budget |\n| --- | --- |\n| Hiring | 120 |\n| Cloud | 45 |\n\n> **[Figure fig-1]** Figure 1 - Revenue by region (520x360 px) (image attached)\n>\n> (text not read: ocr is never)",
           "pages": 1,
           "source": "report.docx",
           "warnings": []
         }
       ]
     }
+  },
+  "input": {
+    "figure_images": true,
+    "files": [
+      "report.docx"
+    ],
+    "ocr": "never"
   }
 }

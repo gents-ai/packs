@@ -16,6 +16,32 @@ const OCR_DEADLINE: Duration = Duration::from_secs(860);
 /// The next image is assumed to take up to this many times the slowest so far.
 const SLOWEST_FACTOR: f64 = 1.5;
 
+/// A gap between two words wider than this many line heights is a column gutter
+/// or a cell gap, not a word space; the line is read as separate pieces so text
+/// in neighbouring columns is never joined into one line.
+const SPLIT_GAP: f32 = 0.9;
+
+/// Splits every line where two neighbouring words are a gutter apart; `bounds`
+/// gives a word's (left, right, height).
+fn split_at_gutters<T>(lines: Vec<Vec<T>>, bounds: impl Fn(&T) -> (f32, f32, f32)) -> Vec<Vec<T>> {
+    let mut out = Vec::with_capacity(lines.len());
+    for line in lines {
+        let height = line.iter().map(|w| bounds(w).2).fold(0.0, f32::max);
+        let mut piece: Vec<T> = Vec::new();
+        for word in line {
+            let gap = piece.last().map(|prev| bounds(&word).0 - bounds(prev).1);
+            if gap.is_some_and(|g| g > SPLIT_GAP * height) {
+                out.push(std::mem::take(&mut piece));
+            }
+            piece.push(word);
+        }
+        if !piece.is_empty() {
+            out.push(piece);
+        }
+    }
+    out
+}
+
 #[derive(Debug, Clone)]
 pub struct OcrLine {
     pub text: String,
@@ -84,7 +110,14 @@ impl Ocr {
         let words = engine
             .detect_words(&input)
             .map_err(|e| format!("text detection failed: {e}"))?;
-        let lines = engine.find_text_lines(&input, &words);
+        let lines = split_at_gutters(engine.find_text_lines(&input, &words), |w| {
+            let xs = w.corners().map(|p| p.x);
+            (
+                xs.into_iter().fold(f32::MAX, f32::min),
+                xs.into_iter().fold(f32::MIN, f32::max),
+                w.height(),
+            )
+        });
         let recognized = engine
             .recognize_text(&input, &lines)
             .map_err(|e| format!("text recognition failed: {e}"))?;

@@ -55,6 +55,14 @@ fn extension(name: &str) -> String {
         .unwrap_or_default()
 }
 
+/// Whether the file name says it is a raster image, which is always read by OCR.
+pub fn is_image_name(name: &str) -> bool {
+    matches!(
+        extension(name).as_str(),
+        "png" | "jpg" | "jpeg" | "gif" | "bmp" | "tif" | "tiff" | "webp"
+    )
+}
+
 fn image_kind(data: &[u8]) -> Option<&'static str> {
     if data.starts_with(b"\x89PNG\r\n\x1a\n") {
         Some("png")

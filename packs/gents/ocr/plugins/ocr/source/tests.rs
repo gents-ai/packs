@@ -4,7 +4,7 @@ use std::io::Write;
 
 use serde_json::{Value, json};
 
-use super::run;
+use super::{run, run_at};
 
 fn fixtures() -> String {
     format!("{}/tests/fixtures", env!("CARGO_MANIFEST_DIR"))
@@ -394,4 +394,121 @@ fn corrupted_inputs_never_panic() {
             assert!(outcome.is_ok(), "{file} round {round} panicked");
         }
     }
+}
+
+/// A call whose OCR time budget has already run out.
+fn exhausted(input: Value) -> Result<Value, String> {
+    let long_ago = std::time::Instant::now()
+        .checked_sub(std::time::Duration::from_secs(10_000))
+        .expect("clock is far enough from its origin");
+    run_at(&input.to_string(), long_ago)
+        .map(|out| serde_json::from_str(&out).expect("the plugin prints JSON"))
+}
+
+#[test]
+fn images_stop_at_the_ocr_time_budget_instead_of_running_out_the_clock() {
+    // One image: a loud single sentence that says how to continue.
+    let err = exhausted(json!({"path": fixtures(), "files": ["letter.png"]})).unwrap_err();
+    assert!(
+        err.contains("OCR time budget of this call ran out") && err.contains("call again"),
+        "{err}"
+    );
+    // A directory: the image is reported unread, the text file is still read.
+    let out =
+        exhausted(json!({"path": fixtures(), "files": ["letter.png", "plain.txt", "chart.png"]}))
+            .unwrap();
+    let by = |n: &str| {
+        docs(&out)
+            .iter()
+            .find(|d| d["source"] == n)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(by("plain.txt")["format"], "text");
+    for img in ["letter.png", "chart.png"] {
+        let w = by(img)["warnings"][0].as_str().unwrap().to_string();
+        assert!(w.starts_with("not read: the OCR time budget"), "{w}");
+        assert_eq!(by(img)["markdown"], "");
+    }
+}
+
+#[test]
+fn a_figure_repeated_across_chapters_is_read_once() {
+    let container = br#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="c.opf"/></rootfiles></container>"#.to_vec();
+    let opf = br#"<package xmlns="http://www.idpf.org/2007/opf"><manifest><item id="a" href="a.xhtml" media-type="application/xhtml+xml"/><item id="b" href="b.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="a"/><itemref idref="b"/></spine></package>"#.to_vec();
+    let page = |t: &str| {
+        format!("<html><body><p>{t}</p><img src=\"logo.png\" alt=\"Logo\"/></body></html>")
+            .into_bytes()
+    };
+    let epub = zip_with(&[
+        ("mimetype", b"application/epub+zip".to_vec()),
+        ("META-INF/container.xml", container),
+        ("c.opf", opf),
+        ("a.xhtml", page("one")),
+        ("b.xhtml", page("two")),
+        (
+            "logo.png",
+            std::fs::read(format!("{}/chart.png", fixtures())).unwrap(),
+        ),
+    ]);
+    use base64::Engine as _;
+    let out = call(json!({"name": "b.epub", "ocr": "never", "data_base64": base64::engine::general_purpose::STANDARD.encode(epub)})).unwrap();
+    let doc = &docs(&out)[0];
+    assert_eq!(doc["figures"].as_array().unwrap().len(), 1, "{doc}");
+    assert!(
+        doc["warnings"][0]
+            .as_str()
+            .unwrap()
+            .starts_with("1 image(s) already listed earlier"),
+        "{doc}"
+    );
+}
+
+#[test]
+fn a_hostile_pdf_in_a_directory_is_reported_and_the_rest_is_read() {
+    let out = call(json!({"path": format!("{}/hostile", fixtures())})).unwrap();
+    assert_eq!(docs(&out).len(), 2);
+    let by = |n: &str| {
+        docs(&out)
+            .iter()
+            .find(|d| d["source"] == n)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(
+        by("hostile.pdf")["warnings"][0],
+        "page 1: an image of 40000x40000 pixels is over the 50000000 pixel limit and was skipped"
+    );
+    assert!(
+        by("hostile.pdf")["markdown"]
+            .as_str()
+            .unwrap()
+            .contains("readable text")
+    );
+    assert!(
+        by("note.txt")["markdown"]
+            .as_str()
+            .unwrap()
+            .contains("readable note")
+    );
+}
+
+#[test]
+fn files_outside_the_bound_directory_are_refused_with_the_entry_named() {
+    for bad in ["../secret.pdf", "/etc/passwd", "a/../../b.pdf"] {
+        let err = call(json!({"path": fixtures(), "files": [bad]})).unwrap_err();
+        assert_eq!(
+            err,
+            format!("files entry {bad:?} must be a relative path inside the bound directory")
+        );
+    }
+}
+
+#[test]
+fn a_file_over_the_size_limit_is_refused_with_the_limit_and_the_way_out() {
+    let err = super::read_limit_error(300 * 1024 * 1024);
+    assert!(
+        err.contains("300 MiB") && err.contains("split the file") && !err.contains('\n'),
+        "{err}"
+    );
 }

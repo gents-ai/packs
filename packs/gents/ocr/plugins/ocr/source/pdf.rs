@@ -21,13 +21,22 @@ use crate::ctx::Ctx;
 use crate::input::OcrMode;
 use crate::layout::{FigBox, Item, Out, Span, layout, take_captions};
 use crate::model::{DocAcc, Document};
-use crate::pix::Pix;
+use crate::pix::{MAX_DECODE_PIXELS, Pix};
 
 /// A page image at least this share of the page area is a scan background, not a figure.
 const BACKGROUND_SHARE: f32 = 0.85;
 /// Scan-like pages with fewer readable characters than this are OCR'd despite a text layer.
 const STAMP_CHARS: usize = 25;
 const MAX_FIGURES_PER_PAGE: usize = 32;
+/// Decoded figure images of one page are held up to this many bytes; further
+/// ones are skipped and reported, so a page of huge images stays inside memory.
+const MAX_PAGE_IMAGE_BYTES: usize = 256 * 1024 * 1024;
+/// A gap wider than this many em starts a new span: a word gap, even a stretched
+/// one, is narrower, while the gap between table cells or columns is wider, and
+/// the layout needs the cells apart to see the table.
+const WORD_GAP_MAX: f32 = 0.8;
+/// The same after a list marker or a section number.
+const MARKER_GAP_MAX: f32 = 2.5;
 /// The first selected pages sampled to find running headers and footers.
 const FURNITURE_SAMPLE: usize = 8;
 /// Share of the page height, at the top and at the bottom, where they can sit.
@@ -43,6 +52,8 @@ struct Cur {
     adv_known: bool,
     base: f32,
     size: f32,
+    /// No earlier span sits on this baseline.
+    line_start: bool,
 }
 
 /// Running headers and footers: short lines repeated near the page edges,
@@ -137,6 +148,11 @@ struct Collector {
     small: u32,
     repeated: u32,
     images: Vec<PageImage>,
+    /// Bytes of the decoded figure images gathered for this page so far.
+    image_bytes: usize,
+    over_budget: u32,
+    /// The size of the first image over the decode limit on this page.
+    oversized: Option<(u32, u32)>,
     seen: HashSet<u128>,
     min_px: u32,
     max_px: u32,
@@ -183,7 +199,10 @@ impl Collector {
                 (x - c.last_x) - 0.6 * size
             };
             let same_line = (base - c.base).abs() <= 0.45 * c.size.max(size);
-            if same_line && gap >= -0.5 * size && gap <= size.max(c.size) {
+            if same_line
+                && gap >= -0.5 * size
+                && gap <= gap_max(&c.text, c.line_start) * size.max(c.size)
+            {
                 if gap > 0.15 * size && !c.text.ends_with(' ') && s != " " {
                     c.text.push(' ');
                 }
@@ -198,7 +217,14 @@ impl Collector {
             }
         }
         self.flush();
+        let line_start = !self
+            .spans
+            .iter()
+            .rev()
+            .take(6)
+            .any(|p| ((p.bottom - 0.2 * p.size) - base).abs() <= 0.45 * size);
         self.cur = Some(Cur {
+            line_start,
             text: s.to_string(),
             x0: x,
             x1: end,
@@ -273,6 +299,13 @@ impl<'a> Device<'a> for Collector {
 
     fn draw_image(&mut self, image: Image<'a, '_>, transform: Affine) {
         self.any_image = true;
+        // The declared size is read before any pixel is decoded: a crafted
+        // file can declare a huge image in a few bytes.
+        if u64::from(image.width()) * u64::from(image.height()) > MAX_DECODE_PIXELS {
+            self.oversized
+                .get_or_insert((image.width(), image.height()));
+            return;
+        }
         if !self.want_images {
             return;
         }
@@ -298,6 +331,10 @@ impl<'a> Device<'a> for Collector {
         }
         if self.images.len() >= MAX_FIGURES_PER_PAGE || !self.seen.insert(raster.cache_key()) {
             self.repeated += 1;
+            return;
+        }
+        if self.image_bytes >= MAX_PAGE_IMAGE_BYTES {
+            self.over_budget += 1;
             return;
         }
         let source = (raster.width(), raster.height());
@@ -340,12 +377,34 @@ impl<'a> Device<'a> for Collector {
             Some((self.max_px, self.max_px)),
         );
         if let Some(pix) = pix.and_then(|p| p.fit(self.max_px).ok()) {
+            self.image_bytes += pix.data.len();
             self.images.push(PageImage {
                 pix,
                 source,
                 bbox: (x0, x1, top, bottom),
             });
         }
+    }
+}
+
+/// The widest gap, in em, that still continues the span so far. A list bullet
+/// or a section number at the start of a line is often followed by a wide tab,
+/// and that is not a cell gap; a number inside a line is a cell and stays apart.
+fn gap_max(so_far: &str, line_start: bool) -> f32 {
+    const BULLETS: &str =
+        "\u{2022}\u{25aa}\u{25e6}\u{2023}\u{25cf}\u{25cb}\u{25a0}\u{25a1}\u{2013}\u{2014}\u{b7}*-";
+    let number = so_far.trim_end_matches(['.', ')']);
+    let numbering = !number.is_empty()
+        && number.len() <= 8
+        && number.chars().all(|c| c.is_ascii_digit() || c == '.')
+        && number.chars().next().is_some_and(|c| c.is_ascii_digit())
+        && (line_start || number.contains('.'));
+    let bullet =
+        line_start && so_far.chars().count() == 1 && so_far.chars().all(|c| BULLETS.contains(c));
+    if numbering || bullet {
+        MARKER_GAP_MAX
+    } else {
+        WORD_GAP_MAX
     }
 }
 
@@ -505,6 +564,9 @@ fn collect<'a>(
         small: 0,
         repeated: 0,
         images: Vec::new(),
+        image_bytes: 0,
+        over_budget: 0,
+        oversized: None,
         seen: std::mem::take(&mut st.seen),
         min_px,
         max_px,
@@ -535,6 +597,12 @@ fn page<'a>(
     );
     acc.small_skipped += col.small;
     acc.repeated_skipped += col.repeated;
+    if let Some((w, h)) = col.oversized {
+        acc.warn(format!("page {n}: an image of {w}x{h} pixels is over the {MAX_DECODE_PIXELS} pixel limit and was skipped"));
+    }
+    if col.over_budget > 0 {
+        acc.warn(format!("page {n}: {} figure image(s) were skipped because the page's images passed the {} MiB memory cap", col.over_budget, MAX_PAGE_IMAGE_BYTES / 1024 / 1024));
+    }
 
     let text_ok = col.mapped >= 3 && col.unmapped * 3 <= col.mapped;
     if text_ok {
@@ -552,7 +620,13 @@ fn page<'a>(
         ));
     }
     if want_ocr {
-        match ocr_page(ctx, st, page) {
+        // Rendering decodes every image of the page, so a page holding an
+        // oversized one is never rendered.
+        let rendered = match col.oversized {
+            Some(_) => Err("the page holds an image too large to render safely".to_string()),
+            None => ocr_page(ctx, st, page),
+        };
+        match rendered {
             Ok(items) => return blocks_to_md(ctx, acc, n, Vec::new(), items),
             Err(why) if text_ok => acc.warn(format!(
                 "page {n}: OCR was not possible ({why}); the text layer was used"
@@ -651,20 +725,61 @@ fn ocr_page<'a>(ctx: &mut Ctx, st: &State<'a>, page: &'a Page<'a>) -> Result<Vec
         })
         .collect();
     let lines = ctx.ocr_page(&Pix::gray(pw, ph, gray))?;
-    Ok(lines.into_iter().map(|l| ocr_item(&l)).collect())
+    Ok(ocr_items(&lines))
 }
 
-/// An OCR line as a layout span; the font size is taken from the line height.
-pub fn ocr_item(l: &crate::ocr::OcrLine) -> Item {
-    let height = (l.bottom - l.top).max(1.0);
-    Item::Text(Span {
-        text: l.text.clone(),
-        x0: l.left,
-        x1: l.right,
-        top: l.top,
-        bottom: l.bottom,
-        size: height * 0.8,
-    })
+/// A line is a heading candidate on OCR output only when it is this many times
+/// taller than the median line. Line boxes vary with ascenders and descenders,
+/// so a smaller difference says nothing about the font size.
+const OCR_HEADING_RATIO: f32 = 1.25;
+/// A heading candidate is a short line, never a wrapped paragraph.
+const OCR_HEADING_WORDS: usize = 12;
+/// A heading stands alone: the nearest line above and below it (where they
+/// overlap it horizontally) is at least this many median line heights away.
+const OCR_HEADING_ISOLATION: f32 = 0.6;
+
+/// OCR lines as layout spans. Every line gets the median size, which keeps the
+/// paragraph logic steady, except a short, isolated line clearly taller than the
+/// median: it keeps its own size and may become a heading. Anything else that is
+/// only a little taller is a box that grew with ascenders, not a heading.
+pub fn ocr_items(lines: &[crate::ocr::OcrLine]) -> Vec<Item> {
+    let height = |l: &crate::ocr::OcrLine| (l.bottom - l.top).max(1.0);
+    let mut heights: Vec<f32> = lines.iter().map(height).collect();
+    heights.sort_by(f32::total_cmp);
+    let median = heights.get(heights.len() / 2).copied().unwrap_or(1.0);
+    let isolated = |l: &crate::ocr::OcrLine| {
+        let beside = |o: &&crate::ocr::OcrLine| o.left < l.right && o.right > l.left;
+        let above = lines
+            .iter()
+            .filter(beside)
+            .filter(|o| o.bottom <= l.top + 1.0 && !std::ptr::eq(*o, l))
+            .map(|o| l.top - o.bottom)
+            .fold(f32::MAX, f32::min);
+        let below = lines
+            .iter()
+            .filter(beside)
+            .filter(|o| o.top >= l.bottom - 1.0 && !std::ptr::eq(*o, l))
+            .map(|o| o.top - l.bottom)
+            .fold(f32::MAX, f32::min);
+        above.min(below) >= OCR_HEADING_ISOLATION * median
+    };
+    lines
+        .iter()
+        .map(|l| {
+            let own = height(l);
+            let heading = own >= OCR_HEADING_RATIO * median
+                && l.text.split_whitespace().count() <= OCR_HEADING_WORDS
+                && isolated(l);
+            Item::Text(Span {
+                text: l.text.clone(),
+                x0: l.left,
+                x1: l.right,
+                top: l.top,
+                bottom: l.bottom,
+                size: if heading { own } else { median } * 0.8,
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -970,6 +1085,117 @@ mod tests {
             ),
             "{:?}",
             doc.warnings
+        );
+    }
+
+    #[test]
+    fn an_image_declared_far_too_large_is_skipped_not_decoded() {
+        let huge = Img {
+            w: 40_000,
+            h: 40_000,
+            gray: true,
+            data: vec![0; 64],
+            flate: false,
+        };
+        let mut c = text(
+            "F1",
+            12.0,
+            50.0,
+            700.0,
+            "Text that is still read from the page.",
+        );
+        c += &draw("Im1", 50.0, 400.0, 200.0, 200.0);
+        let spec = PageSpec {
+            w: 595.0,
+            h: 842.0,
+            content: c,
+            images: vec![("Im1", &huge)],
+        };
+        let (doc, _) = run(pdf(&[spec]), Options::default());
+        assert!(
+            doc.markdown.contains("Text that is still read"),
+            "{}",
+            doc.markdown
+        );
+        assert!(doc.figures.is_empty());
+        assert_eq!(
+            doc.warnings,
+            vec!["page 1: an image of 40000x40000 pixels is over the 50000000 pixel limit and was skipped".to_string()]
+        );
+        // A scanned page of that size cannot be rendered for OCR: said, not attempted.
+        let scan = PageSpec {
+            w: 595.0,
+            h: 842.0,
+            content: draw("Im1", 0.0, 0.0, 595.0, 842.0),
+            images: vec![("Im1", &huge)],
+        };
+        let (doc, _) = run(pdf(&[scan]), Options::default());
+        assert_eq!(doc.warnings.len(), 2, "{:?}", doc.warnings);
+        assert!(
+            doc.warnings[1].contains("OCR was not possible: the page holds an image too large"),
+            "{:?}",
+            doc.warnings
+        );
+    }
+
+    #[test]
+    fn a_table_with_tight_cell_gaps_is_read_as_a_table() {
+        // Cells start about 10 points after the previous cell ends.
+        let mut c = text("F1", 11.0, 50.0, 780.0, "Sales by region");
+        for (r, row) in [
+            ["Region", "Q1", "Q2", "Notes"],
+            ["North", "10", "12", "good"],
+            ["South", "8", "9", "ok"],
+            ["East", "7", "6", "weak"],
+        ]
+        .iter()
+        .enumerate()
+        {
+            for (col, cell) in row.iter().enumerate() {
+                c += &text(
+                    "F1",
+                    10.0,
+                    50.0 + col as f32 * 52.0,
+                    750.0 - r as f32 * 14.0,
+                    cell,
+                );
+            }
+        }
+        let (doc, _) = run(pdf(&[page(c)]), Options::default());
+        assert!(
+            doc.markdown.ends_with("Sales by region\n\n| Region | Q1 | Q2 | Notes |\n| --- | --- | --- | --- |\n| North | 10 | 12 | good |\n| South | 8 | 9 | ok |\n| East | 7 | 6 | weak |"),
+            "{}",
+            doc.markdown
+        );
+    }
+
+    #[test]
+    fn ocr_heading_marks_need_an_isolated_line_well_above_the_median() {
+        let line = |text: &str, top: f32, height: f32| crate::ocr::OcrLine {
+            text: text.into(),
+            left: 50.0,
+            top,
+            right: 300.0,
+            bottom: top + height,
+        };
+        let lines = vec![
+            line("Main Title", 20.0, 34.0),
+            line("First body line of the paragraph", 100.0, 22.0),
+            line("second line with descenders gypsy", 123.0, 27.0),
+            line("third line plain", 147.0, 20.0),
+        ];
+        let text = crate::md::render(
+            &crate::layout::layout(&ocr_items(&lines))
+                .into_iter()
+                .filter_map(|o| match o {
+                    crate::layout::Out::Block(b) => Some(b),
+                    crate::layout::Out::Fig(_) => None,
+                })
+                .collect::<Vec<_>>(),
+        );
+        assert_eq!(
+            text,
+            "### Main Title\n\nFirst body line of the paragraph second line with descenders gypsy third line plain"
         );
     }
 

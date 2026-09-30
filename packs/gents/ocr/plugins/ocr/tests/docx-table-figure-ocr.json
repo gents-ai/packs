@@ -1,16 +1,11 @@
 {
-  "input": {
-    "files": [
-      "report.docx"
-    ]
-  },
   "bind": "fixtures",
   "expect": {
     "documents": [
       {
         "figures": [
           {
-            "caption": "Revenue chart",
+            "caption": "Figure 1 - Revenue by region",
             "height": 360,
             "id": "fig-1",
             "ocr": true,
@@ -20,11 +15,16 @@
           }
         ],
         "format": "docx",
-        "markdown": "<!-- document: report.docx (docx) -->\n\n# Quarterly Plan\n\nRevenue is **up** and costs are *flat*.\n\n- Hire two engineers\n- Ship the platform\n\n| Item | Budget |\n| --- | --- |\n| Hiring | 120 |\n| Cloud | 45 |\n\n> **[Figure fig-1]** Revenue chart (520x360 px)\n>\n> Text in figure:\n> Revenue by region\n> North 42 million\n> South 37 million\n> East 29 million",
+        "markdown": "<!-- document: report.docx (docx) -->\n\n# Plan Report\n\n## Quarterly Plan\n\nRevenue is **up** and costs are *flat*.\n\n- Hire two engineers\n- Ship the platform\n\n| Item | Budget |\n| --- | --- |\n| Hiring | 120 |\n| Cloud | 45 |\n\n> **[Figure fig-1]** Figure 1 - Revenue by region (520x360 px)\n>\n> Text in figure:\n> Revenue by region\n> North 42 million\n> South 37 million\n> East 29 million",
         "pages": 1,
         "source": "report.docx",
         "warnings": []
       }
+    ]
+  },
+  "input": {
+    "files": [
+      "report.docx"
     ]
   }
 }

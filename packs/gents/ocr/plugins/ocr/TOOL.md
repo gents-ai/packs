@@ -58,7 +58,9 @@ One JSON object:
 - A figure appears inline where it occurs, as one quote block:
   `> **[Figure fig-1]** caption (640x480 px)` followed by `Text in figure:` and
   the text OCR found inside it. The caption is the figure's own caption
-  (`figcaption`, alt text, or a nearby "Figure N" line in a PDF). `figures`
+  (`figcaption`, a Word Caption paragraph or a "Figure N" line next to the
+  image, else its alt text). An image used again in the same document is listed
+  once. `figures`
   repeats the same records with `page` (the unit number), `ocr` (whether OCR
   ran on it) and, when an image is attached, `part`.
 - `pages` is the number of pages, slides, sheets or sections in the whole
@@ -78,8 +80,10 @@ same object.
 ## Behaviour to know
 
 - PDF: pages with a text layer are read from it in reading order (columns,
-  headings by font size, lists, tables of aligned short cells, hyphenation
-  joined); a page with no usable text layer is rendered and read by OCR. Raster
+  a title or abstract across them first, headings by font size, lists, tables
+  found from cells that line up in columns even when the gaps between cells are
+  narrow, hyphenation joined; a figure stays in its own column); a page with
+  no usable text layer is rendered and read by OCR. Raster
   images on a page become figures; vector charts are not figures, and text
   drawn as outlines is only read through OCR. Rotated text is not read and is
   counted in `warnings`. Repeated images (logos) are listed once. On a page
@@ -89,12 +93,23 @@ same object.
   a few seconds for every line of text in it, so a dense scanned page takes
   minutes. Use `ocr: "never"` when the words in images do not matter, and
   `pages` to read a long scan in ranges.
+- On OCR output (scanned pages and image files) columns are read left to
+  right and a line never spans a column gutter. A `#` heading mark is given only
+  to a short line that stands alone and is clearly taller than the other
+  lines; any other line is plain text, so absence of `#` on OCR text says
+  nothing about structure. Small or blurred images read worse.
 - OCR reads Latin-script text. Expect errors on small, blurred or handwritten
   text; OCR lines carry no confidence, so check numbers that matter.
 - Pages or sections are processed one at a time. Output is capped below 4 MiB;
   when a document is cut, `warnings` says where and which `pages` value
-  continues. OCR stops starting new images once the next one might not finish inside the 900 s wall clock of a call;
-  the warning names what was left.
+  continues. OCR stops starting new images (image files and PDF pages) once the next one
+  might not finish inside the 900 s wall clock of a call; the warning names what
+  was left, and in a directory run each unread image is listed with
+  `not read: the OCR time budget ...`: call again with `files` listing them.
+  Plain text and Markdown over the limit are cut at a line, with the lines
+  and bytes read in `warnings`.
+- A file can be at most 256 MiB, and an image at most 50 megapixels (a PDF image
+  over that is skipped with a warning and its page is not rendered for OCR).
 - Office files: text boxes, footnotes, tables, pictures and alt text are
   read; headers, footers, comments, charts and equation layout are not.
 - Directory calls keep going when one file fails: that file appears as a

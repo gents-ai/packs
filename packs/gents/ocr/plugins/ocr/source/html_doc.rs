@@ -1,5 +1,6 @@
 //! HTML and XHTML files, with images read from beside the file when present.
 use std::path::{Component, Path, PathBuf};
+use std::rc::Rc;
 
 use crate::ctx::Ctx;
 use crate::detect::header;
@@ -17,7 +18,7 @@ pub struct DirResolver {
 }
 
 impl Resolver for DirResolver {
-    fn image(&mut self, src: &str) -> Option<Vec<u8>> {
+    fn image(&mut self, src: &str) -> Option<Rc<[u8]>> {
         let base = self.base.as_ref()?;
         let rel = crate::util::percent_decode(src.split(['#', '?']).next().unwrap_or(""));
         let mut path = base.clone();
@@ -33,7 +34,7 @@ impl Resolver for DirResolver {
         if !path.starts_with(&self.root) || std::fs::metadata(&path).ok()?.len() > MAX_IMAGE_FILE {
             return None;
         }
-        std::fs::read(path).ok()
+        std::fs::read(path).ok().map(Rc::from)
     }
 }
 

@@ -225,14 +225,151 @@ fn text_pdf() -> Vec<u8> {
     ])
 }
 
+/// Layout cases of a real document: a table whose cells sit about 9 points
+/// apart, a figure caption followed by body text, and a two-column page whose
+/// figure sits in the left column.
+fn layout_pdf() -> Vec<u8> {
+    let mut p1 = text("F2", 18.0, 56.0, 780.0, "Sales review");
+    p1 += &text(
+        "F1",
+        11.0,
+        56.0,
+        752.0,
+        "The regions are compared below, cell by cell.",
+    );
+    for (r, row) in [
+        ["Region", "Q1", "Q2", "Notes"],
+        ["North", "10", "12", "good"],
+        ["South", "8", "9", "ok"],
+        ["East", "7", "6", "weak"],
+    ]
+    .iter()
+    .enumerate()
+    {
+        for (c, cell) in row.iter().enumerate() {
+            let x = 56.0 + [0.0, 41.0, 63.0, 86.0][c];
+            p1 += &text("F1", 10.0, x, 720.0 - r as f32 * 14.0, cell);
+        }
+    }
+    p1 += &text("F1", 11.0, 56.0, 640.0, "Paragraph after the table.");
+    p1 += &draw("Im1", 56.0, 480.0, 160.0, 120.0);
+    p1 += &text("F1", 11.0, 56.0, 462.0, "Figure 1. Sales chart");
+    p1 += &text("F1", 11.0, 56.0, 450.0, "Tail paragraph after the caption.");
+    let chart = Img {
+        w: 160,
+        h: 120,
+        gray: true,
+        data: (0..160 * 120)
+            .map(|i| ((i % 160) * 255 / 160) as u8)
+            .collect(),
+        flate: true,
+    };
+    let chart2 = Img {
+        data: (0..160 * 120)
+            .map(|i| ((i / 160) * 255 / 120) as u8)
+            .collect(),
+        ..chart_like(&chart)
+    };
+    let mut p2 = text("F2", 16.0, 56.0, 780.0, "Two column page");
+    p2 += &text("F1", 11.0, 56.0, 750.0, "Left intro paragraph of the page.");
+    p2 += &draw("Im1", 56.0, 600.0, 160.0, 120.0);
+    p2 += &text("F1", 11.0, 56.0, 582.0, "Figure 2. Left column chart");
+    p2 += &text("F1", 11.0, 56.0, 552.0, "Left text after the figure.");
+    for (i, t) in [
+        "Right column first paragraph.",
+        "Right column second paragraph.",
+        "Right column third paragraph.",
+    ]
+    .iter()
+    .enumerate()
+    {
+        p2 += &text("F1", 11.0, 330.0, 750.0 - i as f32 * 40.0, t);
+    }
+    pdf(&[
+        PageSpec {
+            w: 595.0,
+            h: 842.0,
+            content: p1,
+            images: vec![("Im1", &chart)],
+        },
+        PageSpec {
+            w: 595.0,
+            h: 842.0,
+            content: p2,
+            images: vec![("Im1", &chart2)],
+        },
+    ])
+}
+
+fn chart_like(img: &Img) -> Img {
+    Img {
+        w: img.w,
+        h: img.h,
+        gray: img.gray,
+        data: Vec::new(),
+        flate: img.flate,
+    }
+}
+
+/// A few bytes that declare a 40000 x 40000 pixel image: the plugin must skip
+/// it with a warning, never decode it.
+fn hostile_pdf() -> Vec<u8> {
+    let huge = Img {
+        w: 40_000,
+        h: 40_000,
+        gray: true,
+        data: vec![0; 64],
+        flate: false,
+    };
+    let mut c = text("F1", 12.0, 56.0, 760.0, "This page also has readable text.");
+    c += &draw("Im1", 56.0, 400.0, 300.0, 300.0);
+    pdf(&[PageSpec {
+        w: 595.0,
+        h: 842.0,
+        content: c,
+        images: vec![("Im1", &huge)],
+    }])
+}
+
+/// A two-column scanned page as pixels: a title, then a column of each.
+fn columns_gray() -> Gray {
+    let mut c = text("F2", 26.0, 120.0, 520.0, "Main Title");
+    c += &text("F2", 14.0, 40.0, 470.0, "Introduction");
+    c += &text("F2", 14.0, 230.0, 470.0, "Results");
+    for (i, t) in [
+        "The left column describes",
+        "the method in some detail",
+        "and ends with this line.",
+    ]
+    .iter()
+    .enumerate()
+    {
+        c += &text("F1", 13.0, 40.0, 445.0 - i as f32 * 18.0, t);
+    }
+    for (i, t) in [
+        "The right column reports",
+        "the results of the study",
+        "and must be read second.",
+    ]
+    .iter()
+    .enumerate()
+    {
+        c += &text("F1", 13.0, 230.0, 445.0 - i as f32 * 18.0, t);
+    }
+    render_gray(pdf(&[page(420.0, 560.0, c)]), 2.0)
+}
+
 fn epub(figure: &[u8]) -> Vec<u8> {
-    let ch1 = r#"<?xml version="1.0" encoding="utf-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>One</title></head><body>
+    let ch1 = r##"<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>One</title></head><body>
 <h1>The Long Road</h1>
 <p>It began with a <em>small</em> idea and a <strong>large</strong> map. Read more at <a href="https://example.com/road">the project page</a>.</p>
 <ul><li>Pack the maps</li><li>Check the weather<ul><li>Rain expected</li></ul></li></ul>
+<ol><li>Start early<ol><li>Pack the car</li></ol></li><li>Drive north</li></ol>
+<p>The road was long<sup><a epub:type="noteref" href="#n1">1</a></sup> and quiet.</p>
+<aside epub:type="footnote" id="n1"><p>Measured in miles, not hours.</p></aside>
 <figure><img src="../images/chart.png" alt="Bar chart"/><figcaption>Figure 1. Revenue by region</figcaption></figure>
-</body></html>"#;
+</body></html>"##;
     let ch2 = r#"<?xml version="1.0" encoding="utf-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Two</title></head><body>
 <h2>Second Stop</h2>
@@ -264,6 +401,7 @@ const CT: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Types xmlns=\"http:
 fn docx(figure: &[u8]) -> Vec<u8> {
     let body = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?><w:document {W_NS}><w:body>
+<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>Plan Report</w:t></w:r></w:p>
 <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Quarterly Plan</w:t></w:r></w:p>
 <w:p><w:r><w:t xml:space="preserve">Revenue is </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>up</w:t></w:r><w:r><w:t xml:space="preserve"> and costs are </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>flat</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
 <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Hire two engineers</w:t></w:r></w:p>
@@ -272,10 +410,11 @@ fn docx(figure: &[u8]) -> Vec<u8> {
 <w:tr><w:tc><w:p><w:r><w:t>Hiring</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>120</w:t></w:r></w:p></w:tc></w:tr>
 <w:tr><w:tc><w:p><w:r><w:t>Cloud</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>45</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
 <w:p><w:r><w:drawing><wp:inline><wp:docPr id="1" name="Picture 1" descr="Revenue chart"/><a:graphic><a:graphicData><a:blip r:embed="rId5"/></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="Caption"/></w:pPr><w:r><w:t>Figure 1 - Revenue by region</w:t></w:r></w:p>
 </w:body></w:document>"#
     );
     let styles = format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?><w:styles {W_NS}><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style></w:styles>"#
+        r#"<?xml version="1.0" encoding="UTF-8"?><w:styles {W_NS}><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style><w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="caption"/></w:style></w:styles>"#
     );
     let numbering = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?><w:numbering {W_NS}><w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>"#
@@ -557,6 +696,8 @@ fn main() {
     write(dir, "notes.odt", &odt(&figure));
     write(dir, "budget.ods", &ods());
     write(dir, "slides.odp", &odp());
+    write(dir, "layout.pdf", &layout_pdf());
+    write(dir, "columns.png", &png(&columns_gray()));
     write(dir, "page.html", HTML_PAGE.as_bytes());
     write(dir, "notes.md", b"# Notes\r\n\r\n- one\r\n- two\r\n");
     write(dir, "data.csv", b"name,score\nAna,9\n\"Bo, Jr.\",7\n");
@@ -568,4 +709,11 @@ fn main() {
     write(dir, "tree/data.csv", b"name,score\nAna,9\n");
     write(dir, "tree/broken.pdf", b"%PDF-1.4\nthis is not a pdf body");
     write(dir, "tree/skip.xyz", b"opaque");
+    // A directory whose PDF declares an absurd image size next to a readable file.
+    write(dir, "hostile/hostile.pdf", &hostile_pdf());
+    write(
+        dir,
+        "hostile/note.txt",
+        b"A readable note beside the hostile PDF.\n",
+    );
 }

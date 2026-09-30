@@ -48,6 +48,24 @@ impl Styles {
         None
     }
 
+    /// Whether the style is, or derives from, the Word "Title" style.
+    fn is_title(&self, id: &str) -> bool {
+        let mut cur = id.to_string();
+        for _ in 0..6 {
+            let Some(Style { name, based_on, .. }) = self.by_id.get(&cur) else {
+                return false;
+            };
+            if name == "title" {
+                return true;
+            }
+            match based_on {
+                Some(b) => cur = b.clone(),
+                None => return false,
+            }
+        }
+        false
+    }
+
     fn name(&self, id: &str) -> String {
         self.by_id
             .get(id)
@@ -95,6 +113,7 @@ struct Walker<'z, 'a> {
     blocks: Vec<Block>,
     /// Consecutive "List Number" paragraphs so far.
     style_run: u32,
+    has_title: bool,
 }
 
 fn parse_styles(zip: &mut Zip<'_>) -> Result<Styles, String> {
@@ -425,7 +444,16 @@ impl Walker<'_, '_> {
                 .and_then(|n| attr(n, "val"))
                 .and_then(|v| v.parse::<u8>().ok())
                 .map(|l| l + 1);
-            let level = self.styles.heading_level(style_id).or(outline);
+            let is_title = self.styles.is_title(style_id);
+            // With a document title at #, section headings start one level below it.
+            let shift = u8::from(self.has_title && !is_title);
+            let subtitle = self.has_title && self.styles.name(style_id) == "subtitle";
+            let level = self
+                .styles
+                .heading_level(style_id)
+                .or(outline)
+                .map(|l| l + shift)
+                .filter(|_| !subtitle);
             let list = self
                 .list_of(ppr, style_id)
                 .and_then(|(id, lvl)| self.list_marker(&id, &lvl));
@@ -465,6 +493,8 @@ impl Walker<'_, '_> {
                     marker,
                     text: body.to_string(),
                 });
+            } else if style_name == "caption" {
+                self.blocks.push(Block::Caption(body.to_string()));
             } else if style_name == "quote" || style_name == "intense quote" {
                 self.blocks
                     .push(Block::Quote(vec![Block::Para(body.to_string())]));
@@ -489,21 +519,23 @@ impl Walker<'_, '_> {
             return;
         }
         let path = resolve(PART, &rel.target);
-        let block = match self.zip.read(&path) {
+        let caption = String::new();
+        let block = match self.zip.read_shared(&path) {
             Ok(Some(bytes)) if crate::pix::probe(&bytes).is_some() => {
-                self.ctx.figure_from_bytes(self.acc, unit, &bytes, alt)
+                self.ctx.figure_from_bytes(self.acc, unit, &bytes, caption)
             }
             Ok(Some(_)) => self.ctx.unreadable_figure(
                 self.acc,
                 unit,
-                alt,
+                caption,
                 "the image format is not PNG, JPEG, GIF, BMP, TIFF or WebP",
             ),
             Ok(None) | Err(_) => {
                 self.ctx
-                    .unreadable_figure(self.acc, unit, alt, "the image file was not found")
+                    .unreadable_figure(self.acc, unit, caption, "the image file was not found")
             }
         };
+        Ctx::note_alt(self.acc, block.as_ref(), &alt);
         if let Some(b) = block {
             self.blocks.push(b);
         }
@@ -572,6 +604,9 @@ pub fn convert_docx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document
     let numbering = parse_numbering(&mut zip)?;
     let rels = parse_rels(&mut zip)?;
     let footnotes = parse_footnotes(&mut zip)?;
+    let has_title = doc
+        .descendants()
+        .any(|n| is(n, "pStyle") && attr(n, "val").is_some_and(|id| styles.is_title(id)));
     let mut acc = DocAcc::default();
     ctx.append(&mut acc, &header(source, "docx"));
     let mut w = Walker {
@@ -586,9 +621,10 @@ pub fn convert_docx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document
         used_notes: Vec::new(),
         blocks: Vec::new(),
         style_run: 0,
+        has_title,
     };
     w.body(body, Some(1));
-    crate::md::attach_captions(&mut w.blocks, &mut w.acc.figures);
+    crate::md::attach_captions(&mut w.blocks, w.acc);
     for id in std::mem::take(&mut w.used_notes) {
         if let Some(t) = w.footnotes.get(&id) {
             w.blocks.push(Block::Raw(format!("[^{id}]: {}", esc(t))));

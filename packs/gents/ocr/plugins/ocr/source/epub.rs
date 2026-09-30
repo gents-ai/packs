@@ -1,6 +1,7 @@
 //! EPUB: the OPF spine gives the reading order, each XHTML chapter is converted
 //! with the shared HTML walker, and images come from inside the archive.
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::ctx::Ctx;
 use crate::detect::header;
@@ -22,8 +23,11 @@ struct ZipResolver<'z, 'a> {
 }
 
 impl Resolver for ZipResolver<'_, '_> {
-    fn image(&mut self, src: &str) -> Option<Vec<u8>> {
-        self.zip.read(&resolve(&self.base, src)).ok().flatten()
+    fn image(&mut self, src: &str) -> Option<Rc<[u8]>> {
+        self.zip
+            .read_shared(&resolve(&self.base, src))
+            .ok()
+            .flatten()
     }
 }
 

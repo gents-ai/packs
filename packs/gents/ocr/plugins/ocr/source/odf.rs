@@ -91,20 +91,23 @@ impl Walker<'_, '_> {
             return;
         }
         let unit = self.unit;
-        let block = match self.zip.read(&resolve("content.xml", href)) {
+        let caption = String::new();
+        let block = match self.zip.read_shared(&resolve("content.xml", href)) {
             Ok(Some(bytes)) if crate::pix::probe(&bytes).is_some() => {
-                self.ctx.figure_from_bytes(self.acc, unit, &bytes, alt)
+                self.ctx.figure_from_bytes(self.acc, unit, &bytes, caption)
             }
             Ok(Some(_)) => self.ctx.unreadable_figure(
                 self.acc,
                 unit,
-                alt,
+                caption,
                 "the image format is not PNG, JPEG, GIF, BMP, TIFF or WebP",
             ),
-            _ => self
-                .ctx
-                .unreadable_figure(self.acc, unit, alt, "the image file was not found"),
+            _ => {
+                self.ctx
+                    .unreadable_figure(self.acc, unit, caption, "the image file was not found")
+            }
         };
+        Ctx::note_alt(self.acc, block.as_ref(), &alt);
         if let Some(b) = block {
             self.blocks.push(b);
         }
@@ -289,7 +292,7 @@ pub fn convert_odf(
                     w.blocks
                         .push(Block::Raw(format!("[^{}]: {}", i + 1, esc(&note))));
                 }
-                crate::md::attach_captions(&mut w.blocks, &mut w.acc.figures);
+                crate::md::attach_captions(&mut w.blocks, w.acc);
                 units.push((String::new(), std::mem::take(&mut w.blocks)));
             }
             Kind::Odp => {
@@ -304,7 +307,7 @@ pub fn convert_odf(
                     }
                     w.unit = Some(n);
                     w.body(page);
-                    crate::md::attach_captions(&mut w.blocks, &mut w.acc.figures);
+                    crate::md::attach_captions(&mut w.blocks, w.acc);
                     units.push((format!("<!-- slide {n} -->"), std::mem::take(&mut w.blocks)));
                 }
             }

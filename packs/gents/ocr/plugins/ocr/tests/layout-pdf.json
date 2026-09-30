@@ -1,0 +1,40 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Figure 1. Sales chart",
+            "height": 120,
+            "id": "fig-1",
+            "ocr": false,
+            "page": 1,
+            "text": "",
+            "width": 160
+          },
+          {
+            "caption": "Figure 2. Left column chart",
+            "height": 120,
+            "id": "fig-2",
+            "ocr": false,
+            "page": 2,
+            "text": "",
+            "width": 160
+          }
+        ],
+        "format": "pdf",
+        "markdown": "<!-- document: layout.pdf (pdf) -->\n\n<!-- page 1 -->\n\n## Sales review\n\nThe regions are compared below, cell by cell.\n\n| Region | Q1 | Q2 | Notes |\n| --- | --- | --- | --- |\n| North | 10 | 12 | good |\n| South | 8 | 9 | ok |\n| East | 7 | 6 | weak |\n\nParagraph after the table.\n\n> **[Figure fig-1]** Figure 1. Sales chart (160x120 px)\n>\n> (text not read: ocr is never)\n\nTail paragraph after the caption.\n\n<!-- page 2 -->\n\n### Two column page\n\nLeft intro paragraph of the page.\n\n> **[Figure fig-2]** Figure 2. Left column chart (160x120 px)\n>\n> (text not read: ocr is never)\n\nLeft text after the figure.\n\nRight column first paragraph.\n\nRight column second paragraph.\n\nRight column third paragraph.",
+        "pages": 2,
+        "source": "layout.pdf",
+        "warnings": []
+      }
+    ]
+  },
+  "input": {
+    "files": [
+      "layout.pdf"
+    ],
+    "ocr": "never"
+  }
+}

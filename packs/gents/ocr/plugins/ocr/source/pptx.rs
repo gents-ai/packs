@@ -116,20 +116,23 @@ impl Slide<'_, '_> {
             return;
         };
         let unit = Some(self.unit);
-        let block = match self.zip.read(&path) {
+        let caption = String::new();
+        let block = match self.zip.read_shared(&path) {
             Ok(Some(bytes)) if crate::pix::probe(&bytes).is_some() => {
-                self.ctx.figure_from_bytes(self.acc, unit, &bytes, alt)
+                self.ctx.figure_from_bytes(self.acc, unit, &bytes, caption)
             }
             Ok(Some(_)) => self.ctx.unreadable_figure(
                 self.acc,
                 unit,
-                alt,
+                caption,
                 "the image format is not PNG, JPEG, GIF, BMP, TIFF or WebP",
             ),
-            _ => self
-                .ctx
-                .unreadable_figure(self.acc, unit, alt, "the image file was not found"),
+            _ => {
+                self.ctx
+                    .unreadable_figure(self.acc, unit, caption, "the image file was not found")
+            }
         };
+        Ctx::note_alt(self.acc, block.as_ref(), &alt);
         if let Some(b) = block {
             self.blocks.push(b);
         }
@@ -241,6 +244,7 @@ pub fn convert_pptx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document
             slide.blocks
         };
         let mut blocks = blocks;
+        crate::md::attach_captions(&mut blocks, &mut acc);
         if let Some(np) = notes_path
             && let Some(nsrc) = zip.read_text(&np)?
         {

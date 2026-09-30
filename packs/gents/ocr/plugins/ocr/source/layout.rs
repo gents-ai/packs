@@ -44,6 +44,11 @@ pub enum Out {
 }
 
 const MAX_DEPTH: u32 = 48;
+/// Median cell length of a table found among the rows of a whole region, where
+/// text columns are still possible: short cells only.
+const REGION_CELL_CHARS: usize = 22;
+/// The same for a region no column gutter cuts, where longer cells are safe.
+const LEAF_CELL_CHARS: usize = 40;
 
 fn bbox(it: &Item) -> (f32, f32, f32, f32) {
     match it {
@@ -85,6 +90,24 @@ fn region(items: &[Item], idx: Vec<usize>, body: f32, out: &mut Vec<Out>, depth:
         return;
     }
     if depth < MAX_DEPTH {
+        // A figure belongs to its column: columns are cut first, so a figure in
+        // the left column stays in the flow of the left column, not after the
+        // right one. Not when the text around it is a table, which fcut frees.
+        if idx.iter().any(|&i| matches!(items[i], Item::Fig(_))) {
+            let text: Vec<usize> = idx
+                .iter()
+                .copied()
+                .filter(|&i| matches!(items[i], Item::Text(_)))
+                .collect();
+            if table(items, &text, body).is_none()
+                && let Some(groups) = vcut(items, &idx, body)
+            {
+                for g in groups {
+                    region(items, g, body, out, depth + 1);
+                }
+                return;
+            }
+        }
         if let Some(groups) = fcut(items, &idx, body) {
             for g in groups {
                 region(items, g, body, out, depth + 1);
@@ -95,10 +118,23 @@ fn region(items: &[Item], idx: Vec<usize>, body: f32, out: &mut Vec<Out>, depth:
             out.push(Out::Block(Block::Table(rows)));
             return;
         }
-        if let Some(groups) = [vcut(items, &idx, body), hcut(items, &idx, body)]
-            .into_iter()
-            .flatten()
-            .next()
+        if let Some(parts) = tcut(items, &idx, body) {
+            for part in parts {
+                match part {
+                    Part::Items(g) => region(items, g, body, out, depth + 1),
+                    Part::Table(grid) => out.push(Out::Block(Block::Table(grid))),
+                }
+            }
+            return;
+        }
+        if let Some(groups) = [
+            vcut(items, &idx, body),
+            scut(items, &idx, body),
+            hcut(items, &idx, body),
+        ]
+        .into_iter()
+        .flatten()
+        .next()
         {
             for g in groups {
                 region(items, g, body, out, depth + 1);
@@ -107,6 +143,54 @@ fn region(items: &[Item], idx: Vec<usize>, body: f32, out: &mut Vec<Out>, depth:
         }
     }
     leaf(items, idx, body, out);
+}
+
+enum Part {
+    Items(Vec<usize>),
+    Table(Vec<Vec<String>>),
+}
+
+/// Cuts tables out of a region: runs of rows whose short cells line up in
+/// columns, wherever they sit among other text. What is above and below stays
+/// in the flow. `None` when the region holds no such run.
+fn tcut(items: &[Item], idx: &[usize], body: f32) -> Option<Vec<Part>> {
+    if idx.len() < 6 || idx.iter().any(|&i| matches!(items[i], Item::Fig(_))) {
+        return None;
+    }
+    let rows = rows_of(items, idx, 0.5 * body);
+    let mut parts = Vec::new();
+    let mut pending: Vec<usize> = Vec::new();
+    let mut found = false;
+    let mut k = 0;
+    while k < rows.len() {
+        if rows[k].spans.len() >= 2 {
+            let end = k + rows[k..].iter().take_while(|r| r.spans.len() >= 2).count();
+            if let Some((lo, hi, grid)) = table_run(items, &rows[k..end], body, REGION_CELL_CHARS) {
+                pending.extend(rows[k..k + lo].iter().flat_map(|r| r.spans.iter().copied()));
+                if !pending.is_empty() {
+                    parts.push(Part::Items(std::mem::take(&mut pending)));
+                }
+                parts.push(Part::Table(grid));
+                found = true;
+                pending.extend(
+                    rows[end - hi..end]
+                        .iter()
+                        .flat_map(|r| r.spans.iter().copied()),
+                );
+                k = end;
+                continue;
+            }
+        }
+        pending.extend(rows[k].spans.iter().copied());
+        k += 1;
+    }
+    if !found {
+        return None;
+    }
+    if !pending.is_empty() {
+        parts.push(Part::Items(pending));
+    }
+    Some(parts)
 }
 
 /// Splits a region around its first figure: what sits above it, the figure with
@@ -172,7 +256,107 @@ fn vcut(items: &[Item], idx: &[usize], body: f32) -> Option<Vec<Vec<usize>>> {
         let tail = merged.pop()?;
         merged.last_mut()?.0.extend(tail.0);
     }
-    (merged.len() > 1).then(|| merged.into_iter().map(|g| g.0).collect())
+    let groups: Vec<Vec<usize>> = merged.into_iter().map(|g| g.0).collect();
+    // Columns sit side by side: items of one share lines with items of the next.
+    // Text that only differs in x (a centred caption under a paragraph) is not.
+    let side_by_side = groups.windows(2).all(|w| shares_lines(items, &w[0], &w[1]));
+    (groups.len() > 1 && side_by_side).then_some(groups)
+}
+
+/// Whether two groups of items sit side by side: their vertical extents
+/// overlap by at least half of the shorter one. Two lines that only differ in x
+/// (a centred caption under a paragraph) do not overlap at all.
+fn shares_lines(items: &[Item], a: &[usize], b: &[usize]) -> bool {
+    let extent = |g: &[usize]| {
+        g.iter().fold((f32::MAX, f32::MIN), |(t, bt), &i| {
+            let (_, _, top, bottom) = bbox(&items[i]);
+            (t.min(top), bt.max(bottom))
+        })
+    };
+    let ((t1, b1), (t2, b2)) = (extent(a), extent(b));
+    (b1.min(b2) - t1.max(t2)) >= 0.5 * (b1 - t1).min(b2 - t2)
+}
+
+/// Cuts a page whose columns are bridged by a few wide items, such as a title
+/// or an abstract across both columns: those items become bands, read top to
+/// bottom, and the text between them is cut into columns on the next round.
+fn scut(items: &[Item], idx: &[usize], body: f32) -> Option<Vec<Vec<usize>>> {
+    let n = idx.len();
+    if n < 8 {
+        return None;
+    }
+    let mut events: Vec<(f32, i32)> = Vec::with_capacity(2 * n);
+    for &i in idx {
+        let (x0, x1, ..) = bbox(&items[i]);
+        events.push((x0, 1));
+        events.push((x1, -1));
+    }
+    // Closings first at equal x, so touching items do not cover each other.
+    events.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+    let tolerated = (n / 12).max(1) as i32;
+    let min_gap = 1.2 * body;
+    let mut best: Option<(f32, f32)> = None;
+    let mut cover = 0;
+    let mut start: Option<f32> = None;
+    for (x, d) in events {
+        cover += d;
+        if cover <= tolerated {
+            if start.is_none() && d < 0 {
+                start = Some(x);
+            }
+        } else if let Some(st) = start.take()
+            && x - st >= min_gap
+            && best.is_none_or(|(a, b)| x - st > b - a)
+        {
+            best = Some((st, x));
+        }
+    }
+    let (a, b) = best?;
+    let crosses = |i: usize| {
+        let (x0, x1, ..) = bbox(&items[i]);
+        x0 < b && x1 > a
+    };
+    let (mut wide, narrow): (Vec<usize>, Vec<usize>) = idx.iter().partition(|&&i| crosses(i));
+    let left = narrow
+        .iter()
+        .filter(|&&i| bbox(&items[i]).1 <= a + 0.01)
+        .count();
+    let right = narrow
+        .iter()
+        .filter(|&&i| bbox(&items[i]).0 >= b - 0.01)
+        .count();
+    if wide.is_empty() || left < 3 || right < 3 {
+        return None;
+    }
+    wide.sort_by(|&p, &q| bbox(&items[p]).2.total_cmp(&bbox(&items[q]).2));
+    // Wide items that touch in height are one band.
+    let mut bands: Vec<(f32, f32, Vec<usize>)> = Vec::new();
+    for &i in &wide {
+        let (_, _, top, bottom) = bbox(&items[i]);
+        match bands.last_mut() {
+            Some(band) if top <= band.1 + 0.5 * body => {
+                band.1 = band.1.max(bottom);
+                band.2.push(i);
+            }
+            _ => bands.push((top, bottom, vec![i])),
+        }
+    }
+    let mut slabs: Vec<Vec<usize>> = vec![Vec::new(); bands.len() + 1];
+    for &i in &narrow {
+        let (_, _, top, bottom) = bbox(&items[i]);
+        let cy = (top + bottom) / 2.0;
+        slabs[bands.iter().take_while(|band| cy > band.1).count()].push(i);
+    }
+    let mut groups = Vec::new();
+    for (k, slab) in slabs.into_iter().enumerate() {
+        if !slab.is_empty() {
+            groups.push(slab);
+        }
+        if let Some(band) = bands.get(k) {
+            groups.push(band.2.clone());
+        }
+    }
+    (groups.len() > 1).then_some(groups)
 }
 
 /// Splits at horizontal gaps clearly larger than the region's own line gaps.
@@ -321,6 +505,104 @@ fn table(items: &[Item], idx: &[usize], body: f32) -> Option<Vec<Vec<String>>> {
     (multi * 10 >= rows.len() * 7).then_some(grid)
 }
 
+/// A run of consecutive rows whose cells line up in columns is a table, however
+/// narrow the gaps between the cells. Up to two rows may be dropped from either
+/// end (a caption or prose line that also has two spans); returns how many were
+/// dropped at the start and at the end, and the grid.
+fn table_run(
+    items: &[Item],
+    rows: &[Row],
+    body: f32,
+    max_len: usize,
+) -> Option<(usize, usize, Vec<Vec<String>>)> {
+    for trim in 0..=4usize {
+        for lo in 0..=trim.min(2) {
+            let hi = trim - lo;
+            if hi > 2 || rows.len() < lo + hi + 3 {
+                continue;
+            }
+            if let Some(grid) = grid_of(items, &rows[lo..rows.len() - hi], body, max_len) {
+                return Some((lo, hi, grid));
+            }
+        }
+    }
+    None
+}
+
+/// Columns are the gaps left in the horizontal projection of every cell in the
+/// rows; each must hold aligned cells (left, right or centre) in two rows.
+fn grid_of(items: &[Item], rows: &[Row], body: f32, max_len: usize) -> Option<Vec<Vec<String>>> {
+    let mut spans: Vec<usize> = rows.iter().flat_map(|r| r.spans.iter().copied()).collect();
+    spans.sort_by(|&a, &b| span(items, a).x0.total_cmp(&span(items, b).x0));
+    let mut cols: Vec<(f32, f32)> = Vec::new();
+    for &i in &spans {
+        let s = span(items, i);
+        match cols.last_mut() {
+            Some(c) if s.x0 - c.1 < 0.5 * body => c.1 = c.1.max(s.x1),
+            _ => cols.push((s.x0, s.x1)),
+        }
+    }
+    if cols.len() < 2 || cols.len() > 30 {
+        return None;
+    }
+    let col_of = |s: &Span| {
+        cols.iter()
+            .position(|c| s.x0 <= c.1)
+            .unwrap_or(cols.len() - 1)
+    };
+    let tol = 0.6 * body;
+    let mut members: Vec<Vec<&Span>> = vec![Vec::new(); cols.len()];
+    for &i in &spans {
+        let s = span(items, i);
+        members[col_of(s)].push(s);
+    }
+    let aligned = |m: &[&Span]| {
+        let fraction = |key: fn(&Span) -> f32| {
+            let mut v: Vec<f32> = m.iter().map(|s| key(s)).collect();
+            v.sort_by(f32::total_cmp);
+            let mid = v[v.len() / 2];
+            v.iter().filter(|x| (**x - mid).abs() <= tol).count() as f32 / v.len() as f32
+        };
+        [
+            fraction(|s| s.x0),
+            fraction(|s| s.x1),
+            fraction(|s| (s.x0 + s.x1) / 2.0),
+        ]
+        .into_iter()
+        .fold(0.0, f32::max)
+            >= 0.6
+    };
+    if members.iter().any(|m| m.len() < 2 || !aligned(m)) {
+        return None;
+    }
+    let mut lens: Vec<usize> = spans
+        .iter()
+        .map(|&i| span(items, i).text.chars().count())
+        .collect();
+    lens.sort_unstable();
+    if lens[lens.len() / 2] > max_len {
+        return None;
+    }
+    let mut grid = Vec::with_capacity(rows.len());
+    let mut multi = 0;
+    for r in rows {
+        let mut cells = vec![String::new(); cols.len()];
+        for &i in &r.spans {
+            let s = span(items, i);
+            let cell = &mut cells[col_of(s)];
+            if !cell.is_empty() {
+                cell.push(' ');
+            }
+            cell.push_str(s.text.trim());
+        }
+        if cells.iter().filter(|c| !c.is_empty()).count() >= 2 {
+            multi += 1;
+        }
+        grid.push(cells);
+    }
+    (multi * 10 >= rows.len() * 7).then_some(grid)
+}
+
 struct Line {
     text: String,
     x0: f32,
@@ -332,6 +614,7 @@ struct Line {
 enum Piece {
     Line(Line),
     Fig(usize),
+    Table(Vec<Vec<String>>),
 }
 
 fn join_spans(items: &[Item], spans: &[usize]) -> Line {
@@ -375,11 +658,30 @@ fn leaf(items: &[Item], idx: Vec<usize>, body: f32, out: &mut Vec<Out>) {
         if run.is_empty() {
             return;
         }
-        for r in rows_of(items, run, 0.5 * body) {
+        let rows = rows_of(items, run, 0.5 * body);
+        let push_line = |r: &Row, pieces: &mut Vec<Piece>| {
             let line = join_spans(items, &r.spans);
             if !line.text.is_empty() {
                 pieces.push(Piece::Line(line));
             }
+        };
+        let mut k = 0;
+        while k < rows.len() {
+            if rows[k].spans.len() >= 2 {
+                let end = k + rows[k..].iter().take_while(|r| r.spans.len() >= 2).count();
+                if let Some((lo, hi, grid)) = table_run(items, &rows[k..end], body, LEAF_CELL_CHARS)
+                {
+                    rows[k..k + lo].iter().for_each(|r| push_line(r, pieces));
+                    pieces.push(Piece::Table(grid));
+                    rows[end - hi..end]
+                        .iter()
+                        .for_each(|r| push_line(r, pieces));
+                    k = end;
+                    continue;
+                }
+            }
+            push_line(&rows[k], pieces);
+            k += 1;
         }
         run.clear();
     };
@@ -432,7 +734,39 @@ pub fn list_marker(text: &str) -> Option<(String, &str)> {
     None
 }
 
+/// Whether a line opens a figure caption that sits next to a figure: directly
+/// before or after one, or at the edge of its region, which is where the cut
+/// around a figure leaves its caption.
+fn caption_lines(pieces: &[Piece]) -> Vec<bool> {
+    let last = pieces.len().saturating_sub(1);
+    pieces
+        .iter()
+        .enumerate()
+        .map(|(k, p)| {
+            let Piece::Line(l) = p else { return false };
+            let edge = |o: Option<&Piece>| !matches!(o, Some(Piece::Line(_)));
+            crate::md::caption_start(&l.text)
+                && (k == 0
+                    || k == last
+                    || edge(k.checked_sub(1).and_then(|p| pieces.get(p)))
+                    || edge(pieces.get(k + 1)))
+        })
+        .collect()
+}
+
+/// A caption goes on only while the next line does not start a new sentence
+/// (it begins with a lowercase letter or a digit); otherwise the caption is over
+/// and the line is body text. A wrapped caption whose second line starts with a
+/// capital is cut there: the body text after a caption is never swallowed.
+fn caption_continues(cur: &Line) -> bool {
+    cur.text
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_lowercase() || c.is_ascii_digit())
+}
+
 fn paragraphs(pieces: Vec<Piece>, body: f32, out: &mut Vec<Out>) {
+    let cap = caption_lines(&pieces);
     let lines: Vec<&Line> = pieces
         .iter()
         .filter_map(|p| {
@@ -457,7 +791,7 @@ fn paragraphs(pieces: Vec<Piece>, body: f32, out: &mut Vec<Out>) {
                 }
                 prev = Some(l);
             }
-            Piece::Fig(_) => prev = None,
+            Piece::Fig(_) | Piece::Table(_) => prev = None,
         }
     }
     deltas.sort_by(f32::total_cmp);
@@ -468,18 +802,29 @@ fn paragraphs(pieces: Vec<Piece>, body: f32, out: &mut Vec<Out>) {
     };
 
     let mut cur: Vec<&Line> = Vec::new();
-    for p in &pieces {
+    let mut in_caption = false;
+    for (p, &starts_caption) in pieces.iter().zip(&cap) {
         match p {
             Piece::Fig(i) => {
                 emit(&mut cur, body, left, out);
+                in_caption = false;
                 out.push(Out::Fig(*i));
+            }
+            Piece::Table(grid) => {
+                emit(&mut cur, body, left, out);
+                in_caption = false;
+                out.push(Out::Block(Block::Table(grid.clone())));
             }
             Piece::Line(l) => {
                 if let Some(pl) = cur.last()
-                    && breaks(pl, l, reference, left, right)
+                    && (breaks(pl, l, reference, left, right)
+                        || starts_caption
+                        || (in_caption && !caption_continues(l)))
                 {
                     emit(&mut cur, body, left, out);
+                    in_caption = false;
                 }
+                in_caption |= starts_caption;
                 cur.push(l);
             }
         }
@@ -568,10 +913,11 @@ pub fn take_captions(out: &mut Vec<Out>, figures: usize) -> Vec<String> {
                 .checked_sub(1)
                 .and_then(|p| out.get(p))
                 .and_then(para_text);
-            if let Some(t) = next.filter(|t| crate::md::caption_start(t)) {
+            let is_caption = |t: &String| crate::md::caption_start(t) && t.chars().count() <= 300;
+            if let Some(t) = next.filter(is_caption) {
                 captions[i] = crate::md::unescape(&t);
                 out.remove(k + 1);
-            } else if let Some(t) = prev.filter(|t| crate::md::caption_start(t)) {
+            } else if let Some(t) = prev.filter(is_caption) {
                 captions[i] = crate::md::unescape(&t);
                 out.remove(k - 1);
                 k -= 1;
@@ -783,6 +1129,188 @@ mod tests {
         assert_eq!(
             render(layout(&items)),
             "1. Introduction to the plugin\n2. Background and scope"
+        );
+    }
+
+    #[test]
+    fn narrow_gaps_between_cells_still_make_a_table() {
+        // Cells 10 points apart, as a default word-processor table draws them.
+        let widths = [40.0, 20.0, 20.0, 30.0];
+        let mut items = Vec::new();
+        for (r, row) in [
+            ["Region", "Q1", "Q2", "Notes"],
+            ["North", "10", "12", "good"],
+            ["South", "8", "9", "ok"],
+            ["East", "7", "6", "weak"],
+        ]
+        .iter()
+        .enumerate()
+        {
+            let mut x = 50.0;
+            for (c, cell) in row.iter().enumerate() {
+                items.push(Item::Text(Span {
+                    text: (*cell).into(),
+                    x0: x,
+                    x1: x + widths[c],
+                    top: 100.0 + r as f32 * 14.0,
+                    bottom: 110.0 + r as f32 * 14.0,
+                    size: 10.0,
+                }));
+                x += widths[c] + 10.0;
+            }
+        }
+        items.insert(
+            0,
+            sp(
+                "A paragraph of prose just above the table.",
+                50.0,
+                70.0,
+                10.0,
+            ),
+        );
+        assert_eq!(
+            render(layout(&items)),
+            "A paragraph of prose just above the table.\n\n| Region | Q1 | Q2 | Notes |\n| --- | --- | --- | --- |\n| North | 10 | 12 | good |\n| South | 8 | 9 | ok |\n| East | 7 | 6 | weak |"
+        );
+    }
+
+    #[test]
+    fn stretched_prose_lines_are_not_a_table() {
+        // Every line is split in a different place, as justified text is.
+        let mut items = Vec::new();
+        for (r, cuts) in [[80.0, 210.0], [130.0, 300.0], [95.0, 260.0], [150.0, 330.0]]
+            .iter()
+            .enumerate()
+        {
+            let top = 100.0 + r as f32 * 12.0;
+            let mut x = 50.0;
+            for cut in [cuts[0], cuts[1], 440.0] {
+                items.push(Item::Text(Span {
+                    text: "some words here".into(),
+                    x0: x,
+                    x1: cut,
+                    top,
+                    bottom: top + 10.0,
+                    size: 10.0,
+                }));
+                x = cut + 6.0;
+            }
+        }
+        assert!(!render(layout(&items)).contains('|'));
+    }
+
+    fn figure_page(caption_y: f32, tail: &str) -> Vec<Item> {
+        vec![
+            sp(
+                "Body text before the figure that is long enough.",
+                50.0,
+                50.0,
+                10.0,
+            ),
+            Item::Fig(FigBox {
+                x0: 50.0,
+                x1: 250.0,
+                top: 70.0,
+                bottom: 250.0,
+                index: 0,
+            }),
+            sp("Figure 2. Chart of sales", 50.0, caption_y, 10.0),
+            sp(tail, 50.0, caption_y + 12.0, 10.0),
+        ]
+    }
+
+    #[test]
+    fn a_caption_takes_only_its_own_line_not_the_paragraph_after() {
+        let mut out = layout(&figure_page(254.0, "Tail paragraph."));
+        let captions = take_captions(&mut out, 1);
+        assert_eq!(captions, vec!["Figure 2. Chart of sales".to_string()]);
+        let rest: Vec<String> = out
+            .iter()
+            .filter_map(|o| match o {
+                Out::Block(Block::Para(t)) => Some(t.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            rest,
+            vec![
+                "Body text before the figure that is long enough.",
+                "Tail paragraph."
+            ]
+        );
+    }
+
+    #[test]
+    fn a_wrapped_caption_keeps_its_second_line() {
+        let mut items = figure_page(254.0, "by region and quarter");
+        if let Item::Text(s) = &mut items[2] {
+            s.text = "Figure 2. Chart of sales across every".into();
+        }
+        items.push(sp("A new body paragraph starts here.", 50.0, 290.0, 10.0));
+        let mut out = layout(&items);
+        let captions = take_captions(&mut out, 1);
+        assert_eq!(
+            captions,
+            vec!["Figure 2. Chart of sales across every by region and quarter".to_string()]
+        );
+    }
+
+    #[test]
+    fn a_figure_stays_in_its_column() {
+        let mut items = Vec::new();
+        for i in 0..8 {
+            let y = 100.0 + i as f32 * 14.0;
+            items.push(sp(
+                &format!("right column line number {i} here"),
+                330.0,
+                y,
+                10.0,
+            ));
+        }
+        items.push(sp(
+            "left intro line that is fairly long text",
+            50.0,
+            100.0,
+            10.0,
+        ));
+        items.push(Item::Fig(FigBox {
+            x0: 50.0,
+            x1: 250.0,
+            top: 120.0,
+            bottom: 200.0,
+            index: 0,
+        }));
+        items.push(sp(
+            "left tail line after the figure here",
+            50.0,
+            210.0,
+            10.0,
+        ));
+        let out = layout(&items);
+        let fig_at = out.iter().position(|o| matches!(o, Out::Fig(_))).unwrap();
+        let right_first = out
+            .iter()
+            .position(|o| matches!(o, Out::Block(Block::Para(t)) if t.starts_with("right column line number 0")))
+            .unwrap();
+        let tail = out
+            .iter()
+            .position(|o| matches!(o, Out::Block(Block::Para(t)) if t.starts_with("left tail")))
+            .unwrap();
+        assert!(
+            fig_at < tail && tail < right_first,
+            "{fig_at} {tail} {right_first}"
+        );
+    }
+
+    #[test]
+    fn a_centred_line_under_a_paragraph_is_not_a_column() {
+        let items = vec![
+            sp("After figure paragraph.", 50.0, 100.0, 10.0),
+            sp("Figure 1: Sales chart", 250.0, 88.0, 10.0),
+        ];
+        assert_eq!(
+            render(layout(&items)),
+            "Figure 1: Sales chart\n\nAfter figure paragraph."
         );
     }
 }

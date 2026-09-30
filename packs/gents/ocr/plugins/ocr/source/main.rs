@@ -3,6 +3,7 @@
 //! a failure is one sentence on stderr and a non-zero exit (see TOOL.md).
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use base64::Engine as _;
 use serde::Serialize;
@@ -36,11 +37,12 @@ mod xml;
 
 use ctx::Ctx;
 use detect::Kind;
-use input::Input;
+use input::{Input, OcrMode};
 use model::{Document, OUTPUT_CAP_BYTES, Part};
 
 /// One input file may be at most this large.
 const MAX_FILE_BYTES: u64 = 256 * 1024 * 1024;
+const READ_CHUNK: usize = 8 * 1024 * 1024;
 const MAX_INLINE_BASE64: usize = 64 * 1024 * 1024;
 const MAX_FILES: usize = 10_000;
 const MAX_DEPTH: usize = 16;
@@ -93,11 +95,17 @@ fn fail(message: &str) -> ! {
 }
 
 fn run(raw: &str) -> Result<String, String> {
+    run_at(raw, Instant::now())
+}
+
+/// Runs a request whose wall clock (for the OCR time budget) started at `started`.
+fn run_at(raw: &str, started: Instant) -> Result<String, String> {
     let input: Input = serde_json::from_str(raw).map_err(|e| format!("invalid input: {e}"))?;
     input.validate_source()?;
     let opts = input.options()?;
     let figure_images = opts.figure_images;
     let mut ctx = Ctx::new(opts);
+    ctx.ocr = ocr::Ocr::new(started);
     let (sources, root) = sources(&input)?;
     let single = sources.len() == 1;
     let mut docs = Vec::with_capacity(sources.len());
@@ -105,6 +113,15 @@ fn run(raw: &str) -> Result<String, String> {
     for src in sources {
         if !single && ctx.budget.remaining() < BUDGET_FLOOR {
             docs.push(unread(&src.name, "not read: the output size limit was reached; call again with files listing the remaining documents"));
+            failed += 1;
+            continue;
+        }
+        if !single
+            && ctx.opts.ocr != OcrMode::Never
+            && detect::is_image_name(&src.name)
+            && !ctx.ocr.has_time()
+        {
+            docs.push(unread(&src.name, &format!("not read: {}", ctx::NO_TIME)));
             failed += 1;
             continue;
         }
@@ -264,6 +281,41 @@ fn walk(root: &Path, dir: &Path, depth: usize, out: &mut Vec<Source>) -> Result<
     Ok(())
 }
 
+/// Reads a whole file in fixed chunks. One read call for a file this large asks
+/// the runtime for one buffer of that size, which it refuses well below the
+/// memory limit; chunks keep every call small.
+fn read_file(path: &Path, len: u64) -> Result<Vec<u8>, String> {
+    let fail = |e: std::io::Error| {
+        if e.kind() == std::io::ErrorKind::OutOfMemory {
+            read_limit_error(len)
+        } else {
+            format!("cannot read the file: {e}")
+        }
+    };
+    let mut file = std::fs::File::open(path).map_err(fail)?;
+    let mut buf: Vec<u8> = Vec::new();
+    buf.try_reserve_exact(len as usize)
+        .map_err(|_| read_limit_error(len))?;
+    let mut chunk = vec![0u8; READ_CHUNK.min(len as usize).max(1)];
+    loop {
+        let n = file.read(&mut chunk).map_err(fail)?;
+        if n == 0 {
+            return Ok(buf);
+        }
+        buf.try_reserve(n).map_err(|_| read_limit_error(len))?;
+        buf.extend_from_slice(&chunk[..n]);
+    }
+}
+
+/// The sentence for a file that does not fit in the plugin's memory.
+fn read_limit_error(len: u64) -> String {
+    format!(
+        "the file is {} MiB, more than the plugin can hold in memory (limit {} MiB); split the file, or read part of a PDF with the pages option",
+        len / 1024 / 1024,
+        MAX_FILE_BYTES / 1024 / 1024
+    )
+}
+
 fn process(ctx: &mut Ctx, src: Source, root: &Path) -> Result<Document, String> {
     let Source { name, data } = src;
     let (bytes, path): (Vec<u8>, Option<PathBuf>) = match data {
@@ -274,16 +326,9 @@ fn process(ctx: &mut Ctx, src: Source, root: &Path) -> Result<Document, String> 
                 return Err("not a file".into());
             }
             if meta.len() > MAX_FILE_BYTES {
-                return Err(format!(
-                    "the file is {} bytes, over the {} MiB limit",
-                    meta.len(),
-                    MAX_FILE_BYTES / 1024 / 1024
-                ));
+                return Err(read_limit_error(meta.len()));
             }
-            (
-                std::fs::read(&p).map_err(|e| format!("cannot read the file: {e}"))?,
-                Some(p),
-            )
+            (read_file(&p, meta.len())?, Some(p))
         }
     };
     let kind = detect::detect(&name, &bytes)?;

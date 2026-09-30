@@ -102,16 +102,25 @@ are ...`, `the EPUB is DRM-protected and cannot be read`, or `the PDF is
 password-protected and cannot be opened without the password`. A call over a
 directory or several `files` keeps going: a file that fails is listed with
 `format` `unknown` and `failed: <reason>` in its `warnings`, and the call only
-fails when every file did.
+fails when every file did. An image file is OCR-bound: once the call's OCR
+time budget is spent, each remaining image of a directory run is listed
+unread with `not read: the OCR time budget of this call ran out; call again
+with pages or files listing what remains`, so the call still returns what it
+read.
 
 Partial results are never silent. `warnings` names pages that could not be
 read and why, pages whose OCR was skipped because the time budget ran out
-(OCR stops starting new images once the next one might not finish inside the 900 s wall clock), glyphs without a Unicode
+(OCR stops starting new images, image files and PDF pages alike, once the next one might not finish inside the 900 s wall clock), glyphs without a Unicode
 mapping, rotated text, charts that are not read, images skipped as
-decorative, repeated headers and footers that were left out, and any
-truncation with the `pages` value that continues it. The output is capped
+decorative, images over 50 megapixels that were skipped without being decoded
+(also when a page that holds one is not rendered for OCR), figure images past
+a 256 MiB per-page memory cap, an image already listed earlier in the
+document and skipped, repeated headers and footers that were left out, and
+any truncation with the `pages` value that continues it. The output is capped
 below the host's 4 MiB ceiling; a document that hits it is cut at a page,
-section or row boundary and says so.
+section or row boundary and says so; plain text and Markdown are cut at a
+line (or, for one enormous line, at a character) and the warning gives the
+lines and bytes read.
 
 ## Validation
 
@@ -131,16 +140,16 @@ image input; OCR with the ocrs text detection and recognition models.
 
 | Format | Detected by | Unit | Read |
 | --- | --- | --- | --- |
-| PDF | `%PDF-` | page | text layer in reading order (columns, headings by font size, lists, aligned-cell tables, hyphenation joined, ligatures expanded, running headers and footers left out), raster images as figures, scanned pages by OCR; encrypted files open with the empty password only |
-| EPUB | zip with `mimetype` | spine section | XHTML chapters in OPF spine order with headings, lists, tables, links, images with `figcaption` or alt text; fonts-only obfuscation is fine, DRM fails |
-| DOCX | zip with `word/document.xml` | one | heading and list styles (also through style numbering), bold and italic, links, tables, footnotes, text boxes, pictures with alt text |
-| PPTX | zip with `ppt/presentation.xml` | slide | titles, text boxes and bullets, tables, pictures with alt text, speaker notes |
+| PDF | `%PDF-` | page | text layer in reading order (columns, with a title or abstract across them read first; headings by font size; lists; tables found from cells that line up in rows and columns, also with narrow gaps between the cells; hyphenation joined, ligatures expanded, running headers and footers left out), raster images as figures placed in their own column, scanned pages by OCR; encrypted files open with the empty password only |
+| EPUB | zip with `mimetype` | spine section | XHTML chapters in OPF spine order with headings, lists (children indented by the parent's marker width), tables, links, footnotes (`[^id]` references with `[^id]:` definitions), images with `figcaption` or alt text; fonts-only obfuscation is fine, DRM fails |
+| DOCX | zip with `word/document.xml` | one | heading and list styles (also through style numbering; a Title is `#` and the headings below it start at `##`), bold and italic, links, tables, footnotes, text boxes, pictures with their Caption paragraph, else a "Figure N" line next to them, else their alt text |
+| PPTX | zip with `ppt/presentation.xml` | slide | titles, text boxes and bullets, tables, pictures with a "Figure N" line next to them or their alt text, speaker notes |
 | XLSX | zip with `xl/workbook.xml` | sheet | every visible sheet as a table, streamed; shared and inline strings, booleans, errors, dates shown as dates |
 | ODT, ODS, ODP | zip with OpenDocument `mimetype` | one, sheet, slide | headings, lists, tables, links, notes, pictures |
 | HTML, XHTML | extension or `<html` | one | headings, lists, tables, code, quotes, links, figures; relative images are read from beside the file inside the bound directory, `data:` images too |
-| Markdown, text | extension | one | passed through with line endings normalised |
+| Markdown, text | extension | one | passed through with line endings normalised; over the output limit they are cut at a line, never dropped |
 | CSV, TSV | extension | one | a table; the delimiter is sniffed from the first line |
-| PNG, JPEG, GIF, BMP, TIFF, WebP | magic bytes | one | OCR, laid out like a scanned page |
+| PNG, JPEG, GIF, BMP, TIFF, WebP | magic bytes | one | OCR, laid out like a scanned page: a line is never joined across a column gutter, so columns come out in reading order |
 
 The format comes from the content first and the extension second, so a
 renamed file is still read as what it is, and a wrong extension fails loudly.
@@ -152,41 +161,61 @@ images on spreadsheet sheets.
 ## How figures and scans are read
 
 Each raster image at least `min_figure_px` on its short side becomes a
-figure: its text is read by OCR, its caption is the `figcaption`, the alt text
-or, in PDF and Office files, a neighbouring "Figure N ..." line, and it stays
-where it occurs. With `figure_images` the image is attached: an original PNG,
+figure: its text is read by OCR and it stays where it occurs. Its caption is
+the `figcaption`; otherwise the one line (with its wrapped continuation, never
+the body text after it) that starts with "Figure N", "Fig. N", "Chart N" or
+similar and sits next to the image, or a Word Caption paragraph; otherwise the
+alt text. An image used again in the same document (a logo on every chapter or
+slide) is decoded, read and listed once, and the later uses are counted in
+`warnings`. With `figure_images` the image is attached: an original PNG,
 JPEG, GIF or WebP within `max_image_px` goes through byte for byte, anything
 else is scaled and re-encoded as JPEG.
 
 A PDF page is read from its text layer whenever it has one. A page without a
 usable text layer (or with a scan behind a few stamped characters) is
 rendered with a pure-Rust renderer and read by OCR; when `ocr` is `never` it is
-reported instead. Pages are processed one at a time, and a logo repeated on
-every page is listed once.
+reported instead. Pages are processed one at a time.
+
+On OCR output, the layout is judged from line boxes, which vary with ascenders
+and descenders, so a heading mark (`#`) is given only to a short line that
+stands alone and is clearly taller than the median line; every other line is
+body text and no other structure is guessed. Columns are separated and read
+left to right; a table in an OCR'd page is not recovered unless its cells are
+far enough apart to read as separate pieces. Small or blurred images read
+worse (a page shrunk to a few hundred pixels across garbles letters): give the
+OCR the largest image you have.
+
+The largest file read is 256 MiB (files are read in chunks; a 250 MiB PDF read
+at a 626 MiB peak in the measurement below); a larger one fails with the limit
+and the way out. An image of more than 50 megapixels is refused, in a PDF with
+a warning naming its size, before anything is decoded.
 
 ## Performance
 
 The plugin processes one page, section or file at a time, skips OCR whenever
-a text layer exists, and streams tables. Numbers below are from
-`plugins/ocr/tools/bench.sh` through `gents plugin run` (wasm, single thread,
-SIMD), on a shared 36-core Linux machine that was running other heavy jobs, so
-treat them as order of magnitude and re-run the script on your own machine.
+a text layer exists, and streams tables. Measured through the gents runtime,
+not natively:
 
-| Input | Time above the 0.7 to 1.0 s call startup | Rate |
-| --- | --- | --- |
-| 100-page generated text PDF (486 KB of text, fonts not embedded) | 2.9 s | about 34 pages/s |
-| 65-page LaTeX manual (embedded fonts) | 0.6 to 0.9 s | about 100 pages/s |
-| EPUB, 20 chapters, 3.5 MB of XHTML | 0.2 to 0.3 s | 13 to 20 MB/s |
-| image with one line of text (OCR) | 5 s | |
-| scanned page, 4 short lines (OCR) | 7 s | |
-| image with 13 full-width lines (OCR) | 44 s | about 3 s per line |
-| dense scanned A4 page, 52 lines (OCR) | 110 to 160 s | about 2 to 3 s per line |
+| Input | Time above the 0.6 to 0.8 s call startup | Rate | Peak memory |
+| --- | --- | --- | --- |
+| 100-page generated text PDF (486 KB of text, fonts not embedded) | 2.4 to 2.6 s | about 40 pages/s | 363 to 369 MiB |
+| 65-page LaTeX manual (embedded fonts), earlier measurement | 0.6 to 0.9 s | about 100 pages/s | |
+| EPUB, 22 chapters, 3.9 MB of XHTML (the output limit stops the 40-chapter file there) | 0.2 to 0.3 s | 13 to 19 MB/s | 381 MiB |
+| scanned page as PDF, 4 short lines (OCR) | 6.5 s | | 543 MiB |
+| the same page as a PNG (OCR) | 5.1 s | | 522 MiB |
+| two-column scanned page as PNG, 8 lines (OCR) | 6.5 s | | 522 MiB |
+| dense scanned A4 page as PDF, 52 lines (OCR) | 119 s | about 2.3 s per line | 548 MiB (one run beside other heavy jobs: 892 MiB) |
+| a 250 MiB PDF (read, one page) or text file (cut at the output limit) | 0.2 s (PDF), 1.7 s (text) | | 625 MiB |
 
-Peak resident memory of the whole `gents` process (idle 365 MiB with the
-module loaded): 370 to 380 MiB for text PDFs and EPUBs, 555 MiB for a scanned
-page, 615 MiB for the dense page.
+Peak memory is the resident size of the whole `gents` process (idle about 365
+MiB with the module loaded). The text PDF, EPUB and scan numbers come from
+`plugins/ocr/tools/bench.sh` and `gents plugin run` (wasm, single thread, SIMD)
+on a shared 36-core Linux machine, on the code of this release, a few runs
+each; the table is order of magnitude, so re-run the script on your own
+machine. The LaTeX manual row was measured on an earlier build of the same
+reader and not repeated.
 
-For comparison, the same dense page takes 2.3 s natively on 9 threads and
+For comparison (measured on an earlier build), the same dense page takes 2.3 s natively on 9 threads and
 about 5.6 s per 13 lines on one native core: inside WebAssembly OCR runs on
 one thread, without the wider native vector units and under the runtime's
 fuel and epoch metering, which makes it about eight times slower than one
@@ -236,18 +265,33 @@ artifact carries the CC BY-SA 4.0 notice for them.
 
 - `plugins/ocr/tests/*.json` are plugin cases with exact expected output over
   the committed fixtures in `plugins/ocr/tests/fixtures/` (a text PDF, a
-  scanned PDF, an EPUB with a figure and caption, a DOCX with a table, PPTX,
-  XLSX, ODT, ODS, ODP, an HTML page, Markdown, CSV, text and PNG images);
-  `directory-bind.json` binds a directory and includes a corrupt PDF and an
-  unsupported file. The plugin crate's own `cargo test` covers the parsers,
-  the layout rules, every loud failure (corrupt and encrypted input, a zip
-  bomb, DRM, oversized images, an exhausted OCR budget) and the output cap.
+  scanned PDF, a layout PDF with a narrow-gap table, a caption followed by
+  body text and a figure in the left column of two columns, an EPUB with a
+  nested list, a footnote and a figure with caption, a DOCX with a Title, a
+  table and a Caption paragraph, PPTX, XLSX, ODT, ODS, ODP, an HTML page,
+  Markdown, CSV, text, PNG images and a two-column scanned page as PNG).
+  `directory-bind.json` binds a directory with a corrupt PDF and an
+  unsupported file; `hostile-pdf.json` binds a directory whose PDF declares a
+  40000 x 40000 pixel image next to a readable note. The plugin case format
+  has no way to expect a failed call (a plugin error fails the case), so the
+  calls that must fail are pinned by the crate's `cargo test`, run by
+  `scripts/test-pack.sh`: corrupt and encrypted input, a zip bomb, DRM, a
+  `files` entry outside the bound directory (exact message), an oversized
+  file, oversized images, an exhausted OCR budget for images and pages, and
+  the output cap, alongside the parsers and the layout rules.
 - `tests/install.json` is the pack-level case: installed into a fresh home,
   the pack registers the `ocr` plugin, a reinstall keeps it, and a remove
   releases it.
 - Fixtures are generated, then committed: `cargo run --release --example
-  gen_fixtures -- <dir>` (from `plugins/ocr`) writes them byte-identically on
-  Linux and macOS with nothing but the crate's own dependencies, and
-  `--bench` writes the larger benchmark inputs.
+  gen_fixtures -- <dir>` (from `plugins/ocr`) writes them with nothing but the
+  crate's own dependencies and `--bench` writes the larger benchmark inputs.
+  Regenerating was checked to reproduce the committed files byte for byte on
+  Linux x86_64 only, and macOS output is not claimed identical. Every fixture
+  that embeds pixels (the PNGs, `scan.pdf`, and the EPUB, DOCX, PPTX and ODF
+  files that hold `chart.png`) carries pixels rendered by the same renderer the
+  plugin uses, and those can differ in the last bit on another processor;
+  the tests read the committed files and never regenerate them, so a different
+  render on another machine changes nothing until someone regenerates and
+  commits.
 - To refresh a case's expectation after an intended change, run the plugin on
   the fixture with `gents plugin run` and review the diff before committing it.

@@ -58,6 +58,8 @@ pub enum Block {
     Table(Vec<Vec<String>>),
     Code(String),
     Quote(Vec<Block>),
+    /// A paragraph the source marks as a caption (Word "Caption" style).
+    Caption(String),
     Figure(Box<Figure>),
     Rule,
     /// Verbatim line, such as a page marker comment.
@@ -85,9 +87,13 @@ pub struct DocAcc {
     pub next_fig: u32,
     pub small_skipped: u32,
     pub repeated_skipped: u32,
+    /// Hashes of the image files already turned into figures in this document.
+    pub seen_images: std::collections::HashSet<u128>,
+    /// Alt text per figure id, used as the caption only when no real caption is found.
+    pub alts: std::collections::HashMap<String, String>,
     /// Set once the output budget refused more content.
     pub truncated: bool,
-    suppressed: usize,
+    pub(crate) suppressed: usize,
 }
 
 impl DocAcc {
@@ -110,7 +116,7 @@ impl DocAcc {
         if self.repeated_skipped > 0 {
             let n = self.repeated_skipped;
             self.warnings.push(format!(
-                "{n} image(s) repeated from an earlier page were listed once and skipped"
+                "{n} image(s) already listed earlier in the document were listed once and skipped"
             ));
         }
         if self.suppressed > 0 {

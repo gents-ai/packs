@@ -1,6 +1,8 @@
 //! Byte-level helpers: text decoding, bounded zip access and archive paths.
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io::{Cursor, Read};
+use std::rc::Rc;
 
 /// A single archive entry may expand to at most this many bytes.
 pub const MAX_ENTRY_BYTES: u64 = 96 * 1024 * 1024;
@@ -105,7 +107,13 @@ pub fn resolve(base: &str, href: &str) -> String {
 pub struct Zip<'a> {
     ar: zip::ZipArchive<Cursor<&'a [u8]>>,
     read: u64,
+    shared: HashMap<String, Rc<[u8]>>,
+    shared_bytes: usize,
 }
+
+/// Entries read through [`Zip::read_shared`] stay cached up to this many bytes
+/// in total, so an image used on many pages is inflated once.
+const SHARED_CACHE_BYTES: usize = 16 * 1024 * 1024;
 
 impl<'a> Zip<'a> {
     pub fn open(data: &'a [u8]) -> Result<Self, String> {
@@ -114,7 +122,12 @@ impl<'a> Zip<'a> {
         if ar.len() > MAX_ENTRIES {
             return Err(format!("the archive has more than {MAX_ENTRIES} entries"));
         }
-        Ok(Self { ar, read: 0 })
+        Ok(Self {
+            ar,
+            read: 0,
+            shared: HashMap::new(),
+            shared_bytes: 0,
+        })
     }
 
     pub fn has(&mut self, name: &str) -> bool {
@@ -148,6 +161,23 @@ impl<'a> Zip<'a> {
         Ok(Some(buf))
     }
 
+    /// Like [`Zip::read`], but repeated reads of one entry (a logo used on every
+    /// slide or chapter) return the cached bytes instead of inflating again.
+    pub fn read_shared(&mut self, name: &str) -> Result<Option<Rc<[u8]>>, String> {
+        if let Some(hit) = self.shared.get(name) {
+            return Ok(Some(Rc::clone(hit)));
+        }
+        let Some(bytes) = self.read(name)? else {
+            return Ok(None);
+        };
+        let bytes: Rc<[u8]> = bytes.into();
+        if self.shared_bytes + bytes.len() <= SHARED_CACHE_BYTES {
+            self.shared_bytes += bytes.len();
+            self.shared.insert(name.to_string(), Rc::clone(&bytes));
+        }
+        Ok(Some(bytes))
+    }
+
     pub fn read_text(&mut self, name: &str) -> Result<Option<String>, String> {
         Ok(self.read(name)?.map(|b| decode_text(&b).into_owned()))
     }
@@ -176,6 +206,23 @@ mod tests {
             decode_text(&[b'a', 0x93, b'b', 0x94, 0xE9]),
             "a\u{201c}b\u{201d}\u{e9}"
         );
+    }
+
+    #[test]
+    fn a_shared_entry_is_inflated_once() {
+        use std::io::Write;
+        let mut zw = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        zw.start_file("logo.png", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zw.write_all(&[7u8; 1000]).unwrap();
+        let data = zw.finish().unwrap().into_inner();
+        let mut zip = Zip::open(&data).unwrap();
+        let a = zip.read_shared("logo.png").unwrap().unwrap();
+        let read_once = zip.read;
+        let b = zip.read_shared("logo.png").unwrap().unwrap();
+        assert!(Rc::ptr_eq(&a, &b));
+        assert_eq!((read_once, zip.read), (1000, 1000));
+        assert!(zip.read_shared("missing.png").unwrap().is_none());
     }
 
     #[test]

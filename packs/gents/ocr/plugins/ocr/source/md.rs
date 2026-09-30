@@ -1,7 +1,7 @@
 //! The one Markdown writer: every converter produces [`Block`]s and this module
 //! turns them into text, so headings, lists, tables and figures look the same
 //! whatever the source format.
-use crate::model::{Block, Figure};
+use crate::model::{Block, DocAcc, Figure};
 
 /// Escapes characters that would be read as Markdown syntax inside running text.
 pub fn esc(text: &str) -> String {
@@ -111,9 +111,10 @@ pub fn is_file_name(caption: &str) -> bool {
         .any(|e| c.ends_with(e))
 }
 
-/// Gives each caption-less figure the "Figure N ..." paragraph next to it,
-/// removing that paragraph from the flow and updating the figure record.
-pub fn attach_captions(blocks: &mut Vec<Block>, figures: &mut [Figure]) {
+/// Gives each caption-less figure the "Figure N ..." paragraph (or caption
+/// paragraph) next to it, removing that paragraph from the flow and updating the
+/// figure record; figures still without a caption then take their alt text.
+pub fn attach_captions(blocks: &mut Vec<Block>, acc: &mut DocAcc) {
     let mut k = 0;
     while k < blocks.len() {
         let empty = matches!(&blocks[k], Block::Figure(f) if f.caption.trim().is_empty());
@@ -122,18 +123,14 @@ pub fn attach_captions(blocks: &mut Vec<Block>, figures: &mut [Figure]) {
                 Some(Block::Para(t)) if caption_start(t.trim_matches('*')) => {
                     Some(unescape(t.trim_matches('*')))
                 }
+                Some(Block::Caption(t)) => Some(unescape(t.trim_matches('*'))),
                 _ => None,
             };
             let found = caption_at(k + 1)
                 .map(|c| (k + 1, c))
                 .or_else(|| k.checked_sub(1).and_then(|p| caption_at(p).map(|c| (p, c))));
             if let Some((at, caption)) = found {
-                if let Block::Figure(f) = &mut blocks[k] {
-                    f.caption = caption.clone();
-                    if let Some(rec) = figures.iter_mut().find(|r| r.id == f.id) {
-                        rec.caption = caption;
-                    }
-                }
+                set_caption(&mut blocks[k], &mut acc.figures, caption);
                 blocks.remove(at);
                 if at < k {
                     k -= 1;
@@ -142,30 +139,59 @@ pub fn attach_captions(blocks: &mut Vec<Block>, figures: &mut [Figure]) {
         }
         k += 1;
     }
+    for b in blocks.iter_mut() {
+        if let Block::Caption(t) = b {
+            let text = std::mem::take(t);
+            *b = Block::Para(text);
+            continue;
+        }
+        let id = match b {
+            Block::Figure(f) if f.caption.trim().is_empty() => f.id.clone(),
+            _ => continue,
+        };
+        if let Some(alt) = acc.alts.remove(&id).filter(|a| !is_file_name(a)) {
+            set_caption(b, &mut acc.figures, alt);
+        }
+    }
+}
+
+fn set_caption(block: &mut Block, figures: &mut [Figure], caption: String) {
+    if let Block::Figure(f) = block {
+        f.caption.clone_from(&caption);
+        if let Some(rec) = figures.iter_mut().find(|r| r.id == f.id) {
+            rec.caption = caption;
+        }
+    }
 }
 
 pub fn render(blocks: &[Block]) -> String {
     let mut out = String::new();
-    // Some(ordered) of the previous block when it was a list item.
-    let mut prev_item: Option<bool> = None;
+    // The open list levels as (marker width, ordered): a child is indented by
+    // its parents' marker widths so strict Markdown parsers nest it, and items
+    // of one list sit on adjacent lines.
+    let mut open: Vec<(usize, bool)> = Vec::new();
     for block in blocks {
-        let this_item = match block {
-            Block::Item { marker, .. } => Some(marker != "-"),
+        let item = match block {
+            Block::Item { depth, marker, .. } => Some((usize::from(*depth), marker != "-")),
             _ => None,
         };
         if !out.is_empty() {
-            // Items of one list sit on adjacent lines; a bullet list followed by a numbered one is two lists.
-            let tight = matches!((this_item, prev_item), (Some(a), Some(b)) if a == b || matches!(block, Block::Item { depth, .. } if *depth > 0));
+            // A bullet list followed by a numbered one is two lists.
+            let tight = item.is_some_and(|(depth, ordered)| {
+                !open.is_empty() && (depth > 0 || open[0].1 == ordered)
+            });
             out.push_str(if tight { "\n" } else { "\n\n" });
         }
-        prev_item = this_item;
+        if item.is_none() {
+            open.clear();
+        }
         match block {
             Block::Heading(level, text) => {
                 out.push_str(&"#".repeat(usize::from((*level).clamp(1, 6))));
                 out.push(' ');
                 out.push_str(text.trim());
             }
-            Block::Para(text) => {
+            Block::Para(text) | Block::Caption(text) => {
                 let lines: Vec<String> = text.trim().lines().map(guard_line_start).collect();
                 out.push_str(&lines.join("\n"));
             }
@@ -174,7 +200,10 @@ pub fn render(blocks: &[Block]) -> String {
                 marker,
                 text,
             } => {
-                out.push_str(&"  ".repeat(usize::from(*depth)));
+                let d = usize::from(*depth);
+                open.resize(d, (2, false));
+                out.push_str(&" ".repeat(open.iter().map(|o| o.0).sum()));
+                open.push((marker.chars().count() + 1, marker != "-"));
                 out.push_str(marker);
                 out.push(' ');
                 out.push_str(text.trim().replace('\n', " ").as_str());
@@ -307,6 +336,43 @@ mod tests {
     }
 
     #[test]
+    fn nested_items_are_indented_by_the_parent_marker_width() {
+        let item = |depth, marker: &str, text: &str| Block::Item {
+            depth,
+            marker: marker.into(),
+            text: text.into(),
+        };
+        assert_eq!(
+            render(&[
+                item(0, "1.", "a"),
+                item(1, "-", "b"),
+                item(2, "-", "c"),
+                item(0, "2.", "d"),
+            ]),
+            "1. a\n   - b\n     - c\n2. d"
+        );
+    }
+
+    #[test]
+    fn alt_text_is_only_a_fallback_caption() {
+        let mut acc = DocAcc {
+            figures: vec![fig("fig-1", ""), fig("fig-2", "")],
+            ..DocAcc::default()
+        };
+        acc.alts.insert("fig-1".into(), "Bar chart".into());
+        acc.alts.insert("fig-2".into(), "Other".into());
+        let mut blocks = vec![
+            Block::Figure(Box::new(acc.figures[0].clone())),
+            Block::Caption("Sales by quarter".into()),
+            Block::Figure(Box::new(acc.figures[1].clone())),
+        ];
+        attach_captions(&mut blocks, &mut acc);
+        assert_eq!(acc.figures[0].caption, "Sales by quarter");
+        assert_eq!(acc.figures[1].caption, "Other");
+        assert_eq!(blocks.len(), 2);
+    }
+
+    #[test]
     fn paragraph_line_starts_are_guarded() {
         assert_eq!(
             render(&[Block::Para("# not a heading".into())]),
@@ -328,11 +394,15 @@ mod tests {
 
     #[test]
     fn caption_paragraphs_attach_to_captionless_figures() {
-        let mut figures = vec![
-            fig("fig-1", ""),
-            fig("fig-2", "Own caption"),
-            fig("fig-3", ""),
-        ];
+        let mut acc = DocAcc {
+            figures: vec![
+                fig("fig-1", ""),
+                fig("fig-2", "Own caption"),
+                fig("fig-3", ""),
+            ],
+            ..DocAcc::default()
+        };
+        let figures = acc.figures.clone();
         let mut blocks = vec![
             Block::Para("Intro.".into()),
             Block::Figure(Box::new(figures[0].clone())),
@@ -342,7 +412,8 @@ mod tests {
             Block::Para("*Fig. 3: Throughput*".into()),
             Block::Figure(Box::new(figures[2].clone())),
         ];
-        attach_captions(&mut blocks, &mut figures);
+        attach_captions(&mut blocks, &mut acc);
+        let figures = acc.figures;
         assert_eq!(figures[0].caption, "Figure 1. Latency by region");
         assert_eq!(figures[1].caption, "Own caption");
         assert_eq!(figures[2].caption, "Fig. 3: Throughput");

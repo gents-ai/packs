@@ -1,0 +1,20 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "png",
+        "markdown": "<!-- document: columns.png (png) -->\n\n## Main Title\n\nIntroduction\n\nThe left column describes the method in some detail and ends with this line.\n\nResults\n\nThe right column reports the results of the study and must be read second.",
+        "pages": 1,
+        "source": "columns.png",
+        "warnings": []
+      }
+    ]
+  },
+  "input": {
+    "files": [
+      "columns.png"
+    ]
+  }
+}

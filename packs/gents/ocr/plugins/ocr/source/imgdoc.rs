@@ -4,7 +4,7 @@ use crate::detect::header;
 use crate::input::OcrMode;
 use crate::layout::{Out, layout};
 use crate::model::{DocAcc, Document, Figure};
-use crate::pdf::ocr_item;
+use crate::pdf::ocr_items;
 use crate::pix::Pix;
 
 pub fn convert(
@@ -16,10 +16,13 @@ pub fn convert(
     if ctx.opts.ocr == OcrMode::Never {
         return Err("ocr is never, and an image has no text layer to read".into());
     }
+    if !ctx.ocr.has_time() {
+        return Err(crate::ctx::NO_TIME.into());
+    }
     let full = Pix::decode(data)?;
     let dims = (full.w, full.h);
     let pix = full.fit(ctx.opts.max_image_px)?;
-    let lines = ctx.ocr.read(&pix)?;
+    let lines = ctx.ocr_page(&pix)?;
     let mut acc = DocAcc::default();
     ctx.append(&mut acc, &header(source, format));
     let mut blocks = Vec::new();
@@ -54,7 +57,7 @@ pub fn convert(
             blocks.push(b);
         }
     }
-    let items: Vec<_> = lines.iter().map(ocr_item).collect();
+    let items = ocr_items(&lines);
     if items.is_empty() {
         acc.warn("no text was found in the image");
     }
