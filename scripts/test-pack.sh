@@ -26,6 +26,10 @@
 #                            re-created seed unique) reaches every expected
 #                            document state after the seed is created, with
 #                            no model involved
+#        {"install": {"plugins": [...]}}
+#                            a plugins pack installed into a fresh home
+#                            registers exactly these plugins, a reinstall
+#                            keeps the same set, and a remove releases them
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -288,6 +292,25 @@ runtime_case() {
   kill "$pid" 2>/dev/null || true
 }
 
+install_plugins() {
+  local case="$1" home want name
+  name="$(basename "$case")"
+  home="$(fresh_home "$(basename "$case" .json)")"
+  want="$(jq -c '.install.plugins' "$case")"
+  "$gents" pack install "$dir" --home "$home" >"$work/install.json"
+  expect_set "$name: install registers" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/install.json")"
+  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  expect_set "$name: plugin list after install" "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+
+  "$gents" pack install "$dir" --home "$home" >"$work/reinstall.json"
+  expect_set "$name: reinstall keeps" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/reinstall.json")"
+
+  "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
+  expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
+  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+}
+
 shopt -s nullglob
 cases=("$dir"/tests/*.json)
 [[ ${#cases[@]} -gt 0 ]] || fail "has no tests/*.json cases"
@@ -302,6 +325,9 @@ for case in "${cases[@]}"; do
     install_assets "$case"
   elif jq -e 'has("runtime")' "$case" >/dev/null; then
     runtime_case "$case"
+  elif jq -e '.install | has("plugins")' "$case" >/dev/null; then
+    [[ "$kind" == "plugins" ]] || fail "$(basename "$case"): plugins case in a $kind pack"
+    install_plugins "$case"
   else
     fail "$(basename "$case"): not a graphs, install or runtime case"
   fi
