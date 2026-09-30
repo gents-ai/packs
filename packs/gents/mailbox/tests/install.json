@@ -1,0 +1,10 @@
+{
+  "install": {
+    "assets": [
+      "README.md",
+      "datastore_tool_surfaces/mailbox_writes/object.json",
+      "manifest.json",
+      "tests/install.json"
+    ]
+  }
+}

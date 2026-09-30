@@ -1,0 +1,20 @@
+{
+  "assets": [
+    "README.md",
+    "datastore_tool_surfaces/mailbox_writes/object.json",
+    "tests/install.json"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "dependencies": [],
+  "description": "Worked mailbox assets for Gents",
+  "kind": "assets",
+  "manifest_version": 1,
+  "name": "mailbox",
+  "namespace": "gents",
+  "tags": [
+    "example"
+  ],
+  "version": "1.0.0"
+}
