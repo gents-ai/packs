@@ -1,0 +1,32 @@
+{
+  "agent_behaviors": [
+    {
+      "behavior_id": "document-reader",
+      "context_id": "document-reader-context",
+      "display_name": "Document reader",
+      "inference_profile_id": "gents:inference-slot:document_reader"
+    }
+  ],
+  "agent_principal": {},
+  "contexts": [
+    {
+      "context_id": "document-reader-context",
+      "display_name": "Document reader",
+      "system_prompt": "./agent_behaviors/document_reader/system_prompt.md",
+      "tools_id": "document-reader-tools"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Document reader tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/ocr"
+          }
+        ]
+      },
+      "tools_id": "document-reader-tools"
+    }
+  ]
+}

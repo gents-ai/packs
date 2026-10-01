@@ -1,7 +1,9 @@
 {
   "assets": [
     "README.md",
+    "agent_behaviors/document_reader/system_prompt.md",
     "notice.md",
+    "pack_config.json",
     "plugins/ocr.afb",
     "plugins/ocr/TOOL.md",
     "tests/install.json"
@@ -9,9 +11,19 @@
   "authors": [
     "gents contributors"
   ],
+  "config": "pack_config.json",
   "dependencies": [],
-  "description": "Reads PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument, HTML, Markdown, CSV and image files into Markdown for a model, including the text inside figures.",
-  "kind": "plugins",
+  "description": "Reads PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument, HTML, Markdown, CSV and image files into Markdown, including the text inside figures, as a Document reader agent and a plugin.",
+  "inference_slots": [
+    {
+      "behaviors": [
+        "document-reader"
+      ],
+      "description": "Reads the documents the user names with the ocr tool and answers from them. Any capable profile; one that accepts images also describes figures.",
+      "name": "document_reader"
+    }
+  ],
+  "kind": "documents",
   "manifest_version": 1,
   "name": "ocr",
   "namespace": "gents",
@@ -19,7 +31,8 @@
     {
       "artifact": "plugins/ocr.afb",
       "bind_dir": {
-        "description": "The directory holding the documents or images to read",
+        "access": "read",
+        "description": "The folder holding the files to read, or the one file to read",
         "input_field": "path"
       },
       "description": "Reads PDFs, EPUBs, Office and OpenDocument files, HTML, Markdown, CSV and images into Markdown with page markers, headings, lists, tables and figures, reading scanned pages and the text inside figures with OCR.",
@@ -40,7 +53,7 @@
             "type": "boolean"
           },
           "files": {
-            "description": "Relative paths inside path to read, in this order; without it every non-hidden file below path is read in name order.",
+            "description": "Relative paths inside the folder path to read, in this order; without it every non-hidden file below path is read in name order.",
             "items": {
               "type": "string"
             },
@@ -104,7 +117,7 @@
             "type": "string"
           },
           "path": {
-            "description": "Absolute path of the directory the caller bound read-only for this call (or of one file inside it). Give either path or name with data_base64.",
+            "description": "Path of the file or folder to read; a relative path starts at the working folder. Give either path or name with data_base64.",
             "type": "string"
           }
         },

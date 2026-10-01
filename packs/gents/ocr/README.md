@@ -5,53 +5,175 @@ PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument (ODT, ODS, ODP), HTML, Markdown,
 CSV, plain text and PNG, JPEG, GIF, BMP, TIFF and WebP images. Scanned pages
 and the text inside figures are read with a bundled OCR engine, and every
 figure appears where it occurs in the text, with its caption and the words
-found inside it. The pack ships one plugin, `ocr`; it is a WebAssembly
-module, so it behaves the same on every operating system gents runs on.
+found inside it. The pack ships the `ocr` plugin (a WebAssembly module, so it
+behaves the same on every operating system gents runs on) and a ready-made
+**Document reader** agent that uses it.
+
+## Use it from the desktop
+
+No configuration.
+
+1. Install `gents/ocr` from the Packs panel.
+2. Pick **Document reader** as the agent for a chat.
+3. Ask about a file: "Summarize `reports/q3.pdf`" or "What does figure 2 in
+   `deck.pptx` show?"
+
+Files in the working folder of the chat are readable at once. A file anywhere
+else raises "Allow ocr to read `<path>`?" with Allow once, Always allow and
+Deny; Always allow remembers the containing folder. Folders you trust can be
+added up front under Allowed folders in the settings, which is optional. The
+reader sees only the file or folder the question names, never its neighbours,
+and never writes.
+
+The same agent runs from a terminal:
+
+```sh
+gents pack install gents/ocr --inference-slot document_reader=<profile>
+gents chat --behavior-id document-reader "Summarize reports/q3.pdf"
+```
+
+## Use it as a model tool
+
+The `document-reader` behavior's Tools document grants exactly this plugin as
+a model tool (`integrations.plugins: [{"plugin": "gents/ocr"}]`). To give the
+tool to another behavior, add the same entry to that behavior's Tools:
+
+```json
+{"tools_id": "my-tools", "integrations": {"plugins": [{"plugin": "gents/ocr"}]}}
+```
+
+The model calls `ocr` with `{"path": "reports/q3.pdf", "pages": "1-3"}`; a
+result with `next.cursor` is continued by calling again with that `cursor`
+and every other field unchanged. `plugins/ocr/TOOL.md` is what the model reads.
+
+## Use it as a graph node
+
+The plugin runs as a graph plugin node and answers in the records below, so
+any graph pack can plan a folder into page ranges, read the ranges in
+parallel and hand the pages and figures to its next node. A graph request is
+recognized by the `run_id` every graph document carries, and a graph job names
+a folder in `path` and, to pick files, `files`.
+
+| Node | Reads | Writes |
+| --- | --- | --- |
+| `plan` | `OcrJob`: `run_id`, `path`, `files`, `ocr`, `figure_images`, `max_image_px`, `min_figure_px` | `OcrChunk` (many): the job's fields plus `chunk`, `source`, `format` and `pages` (a range of at most 20 pages, one sheet, or empty for a file read by cursor) |
+| `extract` | one `OcrChunk` | `OcrDocument` (one), `OcrPage` (many), `OcrFigure` (many) |
+
+| Record | Fields (every record also has `run_id`, `chunk` and `source`) |
+| --- | --- |
+| `OcrDocument` | `format`, `page_count`, `markdown`, `complete`, `cursor` (when not complete), `warnings`, `error` (a file that could not be read) |
+| `OcrPage` | `page` (1-based in the file; a single-section file is page 1), `markdown` |
+| `OcrFigure` | `figure`, `page`, `caption`, `text`, `width`, `height`, `ocr`, `image_base64` and `mime` (with `figure_images`) |
+
+A graph pack declares the two nodes with the plugin pinned to the digest
+`gents plugin list` shows for `gents/ocr`, then wires `extract` to its own
+next stage. The two capabilities, as they go in `graph_capabilities`
+(`<digest>` is that `sha256:` digest; a plugin from another pack is named
+`namespace/name` and pinned by its author):
+
+```json
+{"capability_id": "read-plan", "revision": "v1", "allowed_callers": ["${GENTS_PACK_AGENT_DID}"],
+ "target": {"kind": "plugin", "plugin": "gents/ocr", "digest": "<digest>"},
+ "input_ports": [{"name": "job", "collection": "OcrJob", "schema": "OcrJob/v1", "correlation_field": "run_id", "cardinality": "one", "required": true}],
+ "output_ports": [{"name": "chunks", "collection": "OcrChunk", "schema": "OcrChunk/v1", "correlation_field": "run_id", "cardinality": "many"}]}
+{"capability_id": "read-extract", "revision": "v1", "allowed_callers": ["${GENTS_PACK_AGENT_DID}"],
+ "target": {"kind": "plugin", "plugin": "gents/ocr", "digest": "<digest>"},
+ "input_ports": [{"name": "chunk", "collection": "OcrChunk", "schema": "OcrChunk/v1", "correlation_field": "run_id", "cardinality": "many", "required": true}],
+ "output_ports": [
+   {"name": "document", "collection": "OcrDocument", "schema": "OcrDocument/v1", "correlation_field": "run_id", "cardinality": "one", "required": true},
+   {"name": "pages", "collection": "OcrPage", "schema": "OcrPage/v1", "correlation_field": "run_id", "cardinality": "many"},
+   {"name": "figures", "collection": "OcrFigure", "schema": "OcrFigure/v1", "correlation_field": "run_id", "cardinality": "many"}]}
+```
+
+The edge `plan.chunks -> extract.chunk` is `"concurrency": "parallel"`, the
+entry is `OcrJob` into `plan.job`, and a graph of these two nodes sets
+`max_total_invocations` to at most 1024 (the plan and up to 1000 chunks, which
+the plan refuses to exceed). A consumer node reads `OcrPage` rows for text by
+page, `OcrDocument` for a chunk's whole Markdown and `OcrFigure` for
+captions, the text found in figures and, with `figure_images`, the images as
+base64. Each collection's schema is the field list above (`String` fields,
+`Int` for `chunk`, `page`, `page_count`, `width`, `height`, `max_image_px` and
+`min_figure_px`, `Boolean` for `complete`, `ocr` and `figure_images`, and
+`[String]` for `files` and `warnings`); `run_id` is indexed.
+
+A chunk is read up to 1.5 MB of Markdown and images. When more remains,
+`OcrDocument.complete` is `false` and `cursor` continues it with the CLI loop
+below, so nothing is dropped silently. A graph pack that ships the graph
+itself cannot yet be installed from a directory or the registry (gents installs
+only graph packs compiled into its binary today), which is why this pack ships
+the agent and the plugin and documents the nodes here.
+
+## Use it from a scenario
+
+A scenario seeds its documents from `seed.fields`, and `${NAME}` in
+`experiment.json` reads an environment variable, so a document can be read
+once with the CLI and handed to the scenario as text:
+
+```sh
+export REPORT_MD="$(gents plugin run gents/ocr --bind-dir ./reports \
+  --input '{"path": "./reports", "files": ["q3.pdf"], "pages": "1-5"}' | jq -r '.documents[0].markdown')"
+```
+
+```json
+{"seed": {"collection": "ReviewJob", "fields": {"report": "${REPORT_MD}"}}}
+```
+
+gents scenarios have no step that calls a plugin themselves (the only
+built-in step is the repository `scan`), so the read happens before the run.
+This example was not run: a scenario needs a model endpoint.
+
+## Use it from the CLI
+
+`gents plugin run` binds the folder you name for one call. A document longer
+than one call returns `next.cursor`; this loop follows it to the end:
+
+```sh
+dir=~/Documents/reports file=big.pdf cursor=""
+while :; do
+  input="$(jq -nc --arg p "$dir" --arg f "$file" --arg c "$cursor" \
+    '{path: $p, files: [$f]} + (if $c == "" then {} else {cursor: $c} end)')"
+  out="$(gents plugin run gents/ocr --bind-dir "$dir" --input "$input")"
+  jq -r '.documents[].markdown' <<<"$out"
+  cursor="$(jq -r '.next.cursor // empty' <<<"$out")"
+  [ -n "$cursor" ] || break
+done
+```
+
+`"mode": "plan"` lists a folder's files with the `pages` ranges that cover
+each, to split a very large job over several calls.
 
 ## Installation
 
 ```sh
-gents pack install ./packs/gents/ocr --home <home>
-gents pack install gents/ocr --home <home>   # once published to the registry
+gents pack install ./packs/gents/ocr --home <home> --inference-slot document_reader=<profile>
+gents pack install gents/ocr --home <home> --inference-slot document_reader=<profile>   # once published
 ```
-
-The desktop app's Packs panel installs the same pack from the registry or the
-store. Nothing in the pack needs configuring after that.
-
-## Bindings and prerequisites
-
-The pack declares no inference slots.
 
 Building from a source checkout compiles the plugin to `wasm32-wasip1` with
 the compiler `rust-toolchain.toml` pins, so it needs a Rust toolchain and
 `rustup target add wasm32-wasip1`; a pack fetched pre-built (a `.pack`, the
-home's store or the registry) skips the build.
-
-The plugin reads files through a directory the caller binds for one call:
-
-```sh
-gents plugin run ocr --home <home> --bind-dir ~/Documents/reports --input '{"files": ["q3.pdf"]}'
-```
-
-`gents pack test` cases bind with their `bind` field, and a scenario's
-`prepare` step can bind a directory too. A model that calls the plugin as a
-tool has no bound directory, so it sends a file inline (`name` and
-`data_base64`); reading a whole folder is an operator action.
+home's store or the registry) skips the build. The pack declares one
+inference slot, `document_reader`: any capable profile, and one that accepts
+images also describes figures.
 
 ## Authority
 
-The plugin declares `bind_dir` (input field `path`) and no standing manifold
-grant. A binding is read-only, names exactly one directory, exists for one
-call and is never recorded as an install grant. The plugin has no network,
-environment or write access, and cannot read outside the bound directory.
-Its `limits` are 1536 MiB of memory, a 900 s wall clock and 4 MiB of output,
-which is the host's own ceiling for plugin output.
+A call reads only what it names. The plugin declares `bind_dir` (input field
+`path`, access `read`): the file it names is the only file the call can see
+(a private folder holding one hard link, nothing copied), and a folder it
+names is that folder. Nothing is bound beyond that and nothing is recorded as
+an install grant. Allowed without asking: the working folder. Allowed once the
+operator listed them: Allowed folders in the settings, or `gents plugin dirs
+add <folder>`. Anything else asks first in a chat, and in a graph or a headless
+run is refused with the command that allows it. The plugin has no network,
+environment or write access. Its `limits` are 1536 MiB of memory, a 900 s wall
+clock and 4 MiB of output, which is the host's own ceiling for plugin output.
 
 ## Inputs and outputs
 
-One JSON object in. Name the source with `path` (the bound directory, or one
-file inside it, optionally `files` to pick and order files) or with `name` and
-`data_base64` (up to 64 MiB of base64).
+One JSON object in. Name the source with `path` (a file, or a folder with
+optionally `files` to pick and order files; a relative path starts at the
+working folder) or with `name` and `data_base64` (up to 64 MiB of base64).
 
 | Field | Meaning |
 | --- | --- |

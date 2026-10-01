@@ -1,7 +1,15 @@
 {
   "install": {
+    "documents": [
+      "AgentBehavior/document-reader",
+      "AgentContext/document-reader-context",
+      "Tools/document-reader-tools"
+    ],
     "plugins": [
       "ocr"
+    ],
+    "slots": [
+      "document_reader"
     ]
   }
 }

@@ -339,7 +339,7 @@ builds.
 | [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
 | [mailbox](packs/gents/mailbox/README.md) | Explicit human-attention tool surface |
-| [ocr](packs/gents/ocr/README.md) | Reads PDF, EPUB, Office, OpenDocument, HTML and image files into Markdown for a model, OCR included |
+| [ocr](packs/gents/ocr/README.md) | A Document reader agent and an ocr plugin that read PDF, EPUB, Office, OpenDocument, HTML and image files into Markdown, OCR included |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
 | [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |

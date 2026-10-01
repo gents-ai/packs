@@ -29,7 +29,12 @@
 #        {"install": {"plugins": [...]}}
 #                            a plugins pack installed into a fresh home
 #                            registers exactly these plugins, a reinstall
-#                            keeps the same set, and a remove releases them
+#                            keeps the same set, and a remove releases them;
+#                            next to "documents" it also checks the plugins
+#                            a documents or graph pack ships
+#        runtime "repository" may also hold "copy": {"<repo path>": "<file
+#                            path inside the pack>"} for binary files, which
+#                            are copied into the repository before its commit
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -157,6 +162,10 @@ install_documents() {
   local want
   want="$(jq -c '.install.documents' "$case")"
   expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
+  if jq -e '.install | has("plugins")' "$case" >/dev/null; then
+    expect_set "$(basename "$case"): install registers plugins" \
+      "$(jq -c '.install.plugins' "$case")" "$(jq -c '[.apply.plugins[].name]' "$work/install.json")"
+  fi
 
   "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
@@ -227,6 +236,10 @@ runtime_case() {
     mkdir -p "$(dirname "$repo/$path")"
     jq -j --arg p "$path" '.runtime.repository.files[$p]' "$case" >"$repo/$path"
   done < <(jq -r '.runtime.repository.files // {} | keys[]' "$case")
+  while read -r path; do
+    mkdir -p "$(dirname "$repo/$path")"
+    cp "$dir/$(jq -r --arg p "$path" '.runtime.repository.copy[$p]' "$case")" "$repo/$path"
+  done < <(jq -r '.runtime.repository.copy // {} | keys[]' "$case")
   git -C "$repo" init -q
   git -C "$repo" add -A
   git -C "$repo" -c user.name=packs -c user.email=packs@localhost commit -qm fixture --allow-empty
@@ -318,7 +331,7 @@ for case in "${cases[@]}"; do
   if jq -e 'has("graphs")' "$case" >/dev/null; then
     expect_set "$(basename "$case"): graphs" "$(jq -c '.graphs' "$case")" "$graphs"
   elif jq -e '.install | has("documents")' "$case" >/dev/null; then
-    [[ "$kind" == "documents" ]] || fail "$(basename "$case"): documents case in a $kind pack"
+    [[ "$kind" == "documents" || "$kind" == "graph" ]] || fail "$(basename "$case"): documents case in a $kind pack"
     install_documents "$case"
   elif jq -e '.install | has("assets")' "$case" >/dev/null; then
     [[ "$kind" == "assets" ]] || fail "$(basename "$case"): assets case in a $kind pack"
