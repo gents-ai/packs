@@ -28,6 +28,11 @@
       ],
       "description": "Reads the documents the user names with the ocr tool and answers from them. Any capable profile; one that accepts images also describes figures.",
       "name": "document_reader"
+    },
+    {
+      "description": "Chandra or any OpenAI-compatible vision OCR endpoint; leave unbound to use the built-in OCR.",
+      "name": "remote_ocr",
+      "optional": true
     }
   ],
   "kind": "documents",
@@ -131,6 +136,16 @@
           "path_original": {
             "description": "Set by the host to the real path of the file or folder named in path; leave it out.",
             "type": "string"
+          },
+          "remote_ocr": {
+            "default": "auto",
+            "description": "With a bound remote OCR backend, auto sends a scanned page or image there when the built-in OCR reads it poorly; force sends every page or image that needs OCR; off keeps the built-in OCR. Text-layer pages and other formats are never sent.",
+            "enum": [
+              "auto",
+              "off",
+              "force"
+            ],
+            "type": "string"
           }
         },
         "type": "object"
@@ -142,6 +157,7 @@
         "memory_mib": 1536,
         "wall_clock_secs": 900
       },
+      "model_slot": "remote_ocr",
       "name": "ocr",
       "source": "plugins/ocr"
     }

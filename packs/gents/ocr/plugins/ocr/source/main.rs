@@ -35,6 +35,7 @@ mod pdfocr;
 mod pix;
 mod plan;
 mod pptx;
+mod remote;
 mod resume;
 #[cfg(test)]
 mod slice_tests;
@@ -166,9 +167,11 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
     }
     let mut resume: Option<Resume> = None;
     let mut first = 0usize;
+    let mut carried = Vec::new();
     if let Some(cursor) = &input.cursor {
-        let p = resume::decode(cursor)?;
+        let mut p = resume::decode(cursor)?;
         check_cursor(&p, req, &sources)?;
+        carried = std::mem::take(&mut p.at.ans);
         first = p.file as usize;
         resume = Some(p.at.clone()).filter(|r| !r.is_start());
         let mut probe = open_shared(&sources[first])?;
@@ -184,22 +187,37 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
             ));
         }
     }
+    // Earlier rounds of a model call already used part of the wall clock.
+    let remote = remote::Remote::new(&input, opts.remote_ocr)?.with_carried(carried);
+    let started = started
+        .checked_sub(remote.spent(opts.max_seconds))
+        .unwrap_or(started);
     let mut ctx = Ctx::started(opts, started);
+    ctx.remote = remote;
     let single = sources.len() == 1;
     let mut docs = Vec::with_capacity(sources.len().min(1024));
     let mut failed = 0usize;
     let mut next: Option<Next> = None;
+    // Where the call stopped, for the second round of a model call.
+    let mut stopped: Option<(u32, u32)> = None;
     for (i, src) in sources.into_iter().enumerate().skip(first) {
         let continuing = resume.take();
+        ctx.remote.set_file(i);
         let stop = continuing.is_none()
             && !docs.is_empty()
             && (ctx.budget.remaining() < BUDGET_FLOOR
                 || !ctx.clock.fits()
+                || ctx.remote.stops_before_file(i, ctx.budget.remaining())
                 || (ctx.opts.ocr != OcrMode::Never
                     && detect::is_image_name(&src.name)
                     && !ctx.ocr.has_time()));
         if stop {
-            next = Some(issue(req, i, &src, None)?);
+            let at = Resume {
+                ans: ctx.remote.undelivered(None),
+                ..Resume::default()
+            };
+            next = Some(issue(req, i, &src, Some(at))?);
+            stopped = Some((i as u32, 0));
             break;
         }
         if !single
@@ -217,7 +235,10 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
         let before = ctx.emitted;
         match process(&mut ctx, src, &root, continuing.as_ref()) {
             Ok((mut doc, mut srcf)) => {
-                if let Some(at) = doc.next.take() {
+                if let Some(mut at) = doc.next.take() {
+                    let cut = (at.skip > 0).then(|| ctx.remote.id(at.unit));
+                    at.ans = ctx.remote.undelivered(cut.as_deref());
+                    stopped = Some((i as u32, at.unit));
                     let fp = srcf
                         .fingerprint()
                         .map_err(|e| format!("cannot read the file: {e}"))?;
@@ -248,6 +269,11 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
                 failed += 1;
             }
         }
+    }
+    if ctx.remote.has_requests() {
+        return ctx
+            .remote
+            .round(stopped, started.elapsed().as_millis() as u64);
     }
     if failed == docs.len() && next.is_none() {
         let reasons: Vec<&str> = docs

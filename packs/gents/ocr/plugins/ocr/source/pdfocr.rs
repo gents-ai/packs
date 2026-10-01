@@ -7,27 +7,39 @@ use hayro_syntax::page::Page;
 
 use crate::ctx::Ctx;
 use crate::layout::{Item, Span};
+use crate::ocr::{OcrLine, Stats};
 use crate::pix::Pix;
+use crate::remote::{JPEG_QUALITY, REMOTE_MAX_PX, REMOTE_SCALE};
 
 /// Pages are rendered at most this many times larger than their point size for OCR.
 const MAX_RENDER_SCALE: f32 = 4.0;
 
-/// Renders the page and reads it with OCR, returning the lines as layout items.
-pub fn ocr_page<'a>(
-    ctx: &mut Ctx,
+/// Renders the page at `scale` times its point size on white.
+fn render_page<'a>(
     cache: &RenderCache<'a>,
     settings: &InterpreterSettings,
     page: &'a Page<'a>,
-) -> Result<Vec<Item>, String> {
-    let (w, h) = page.render_dimensions();
-    let scale = (ctx.opts.max_image_px as f32 / w.max(h).max(1.0)).min(MAX_RENDER_SCALE);
+    scale: f32,
+) -> hayro::vello_cpu::Pixmap {
     let render_settings = RenderSettings {
         x_scale: scale,
         y_scale: scale,
         bg_color: WHITE,
         ..RenderSettings::default()
     };
-    let pixmap = render(page, cache, settings, &render_settings);
+    render(page, cache, settings, &render_settings)
+}
+
+/// Renders the page and reads it with the built-in OCR: the lines and what the read dropped.
+pub fn ocr_lines<'a>(
+    ctx: &mut Ctx,
+    cache: &RenderCache<'a>,
+    settings: &InterpreterSettings,
+    page: &'a Page<'a>,
+) -> Result<(Vec<OcrLine>, Stats), String> {
+    let (w, h) = page.render_dimensions();
+    let scale = (ctx.opts.max_image_px as f32 / w.max(h).max(1.0)).min(MAX_RENDER_SCALE);
+    let pixmap = render_page(cache, settings, page, scale);
     let (pw, ph) = (u32::from(pixmap.width()), u32::from(pixmap.height()));
     let gray: Vec<u8> = pixmap
         .data_as_u8_slice()
@@ -38,8 +50,27 @@ pub fn ocr_page<'a>(
             ((u32::from(p[0]) * 299 + u32::from(p[1]) * 587 + u32::from(p[2]) * 114) / 1000) as u8
         })
         .collect();
-    let lines = ctx.ocr_page(&Pix::gray(pw, ph, gray))?;
-    Ok(ocr_items(&lines))
+    ctx.ocr_page_scored(&Pix::gray(pw, ph, gray))
+}
+
+/// Renders the page for the remote OCR backend: colour, at the backend's
+/// resolution, as a JPEG.
+pub fn remote_jpeg<'a>(
+    cache: &RenderCache<'a>,
+    settings: &InterpreterSettings,
+    page: &'a Page<'a>,
+) -> Result<Vec<u8>, String> {
+    let (w, h) = page.render_dimensions();
+    let scale = REMOTE_SCALE.min(REMOTE_MAX_PX as f32 / w.max(h).max(1.0));
+    let pixmap = render_page(cache, settings, page, scale);
+    let rgb: Vec<u8> = pixmap
+        .data_as_u8_slice()
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .flat_map(|p| [p[0], p[1], p[2]])
+        .collect();
+    Pix::rgb(u32::from(pixmap.width()), u32::from(pixmap.height()), rgb).jpeg(JPEG_QUALITY)
 }
 
 /// A line is a heading candidate on OCR output only when it is this many times

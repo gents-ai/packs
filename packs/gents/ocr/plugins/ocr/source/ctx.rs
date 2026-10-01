@@ -6,8 +6,9 @@ use base64::Engine as _;
 
 use crate::input::{OcrMode, Options};
 use crate::model::{Block, Budget, DocAcc, Document, Figure, Part, json_len};
-use crate::ocr::{Ocr, OcrLine};
+use crate::ocr::{Ocr, OcrLine, Stats};
 use crate::pix::{Pix, probe};
+use crate::remote::Remote;
 use crate::resume::Resume;
 
 /// Why OCR did not start: one sentence that also says how to continue.
@@ -64,6 +65,8 @@ const PART_JPEG_QUALITY: u8 = 85;
 pub struct Ctx {
     pub opts: Options,
     pub ocr: Ocr,
+    /// The remote OCR backend's model calls for this call; off unless the host offered them.
+    pub remote: Remote,
     pub budget: Budget,
     pub parts: Vec<Part>,
     /// The wall clock of the call, checked between units.
@@ -87,6 +90,7 @@ pub struct Mark {
     seen: usize,
     parts: usize,
     used: usize,
+    remote: crate::remote::Mark,
 }
 
 /// What became of a unit offered to [`Ctx::emit`].
@@ -119,6 +123,7 @@ impl Ctx {
         let limit = Duration::from_secs(opts.max_seconds);
         Self {
             ocr: Ocr::new(started, limit),
+            remote: Remote::off(),
             budget: Budget::new(opts.max_bytes),
             parts: Vec::new(),
             clock: Clock::new(started, limit),
@@ -140,6 +145,7 @@ impl Ctx {
             seen: acc.seen_order.len(),
             parts: self.parts.len(),
             used: self.budget.used(),
+            remote: self.remote.mark(),
         }
     }
 
@@ -169,6 +175,7 @@ impl Ctx {
         });
         acc.truncated = false;
         self.parts.truncate(mark.parts);
+        self.remote.rewind(&mark.remote);
         self.budget
             .refund(self.budget.used().saturating_sub(mark.used));
     }
@@ -186,6 +193,7 @@ impl Ctx {
                 .map(|k| format!("{k:032x}"))
                 .collect(),
             st: None,
+            ans: Vec::new(),
         }
     }
 
@@ -533,5 +541,13 @@ impl Ctx {
             return Err(NO_TIME.into());
         }
         self.ocr.read(pix)
+    }
+
+    /// [`Ctx::ocr_page`] plus what the read dropped.
+    pub fn ocr_page_scored(&mut self, pix: &Pix) -> Result<(Vec<OcrLine>, Stats), String> {
+        if !self.ocr.has_time() {
+            return Err(NO_TIME.into());
+        }
+        self.ocr.read_scored(pix)
     }
 }

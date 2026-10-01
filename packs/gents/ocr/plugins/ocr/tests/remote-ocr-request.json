@@ -1,0 +1,10 @@
+{
+  "input": {
+    "files": [
+      "scan.pdf"
+    ],
+    "model_calls": true,
+    "remote_ocr": "force"
+  },
+  "bind": "fixtures"
+}

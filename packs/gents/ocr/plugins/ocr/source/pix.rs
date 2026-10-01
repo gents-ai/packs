@@ -8,6 +8,7 @@ use image::{DynamicImage, GenericImageView, ImageReader, Limits};
 /// Decoding refuses images above this many pixels (one 8-bit RGB copy is 3 bytes each).
 pub const MAX_DECODE_PIXELS: u64 = 50_000_000;
 
+#[derive(Clone)]
 pub struct Pix {
     pub w: u32,
     pub h: u32,

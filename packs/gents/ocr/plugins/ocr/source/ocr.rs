@@ -46,6 +46,57 @@ pub struct OcrLine {
     pub bottom: f32,
 }
 
+/// What a read dropped, which the lines alone no longer show.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Stats {
+    /// Lines recognized but dropped as noise (fewer than two letters or digits).
+    pub dropped: usize,
+}
+
+/// Needs at least this many words before the fragment share is judged.
+const MIN_WORDS: usize = 8;
+/// More than this share of 1 or 2 character words reads as broken recognition
+/// (running English prose is roughly a quarter to a third short words).
+const MAX_FRAGMENT_SHARE: f32 = 0.6;
+/// Fewer letters and digits than this share of the visible characters reads as symbol noise.
+const MIN_ALNUM_SHARE: f32 = 0.6;
+/// Needs at least this many detected lines before the noise-drop rate is judged.
+const MIN_DETECTED: usize = 8;
+/// More than this share of detected lines dropped as noise reads as a failed page.
+const MAX_DROP_SHARE: f32 = 0.5;
+
+/// Why a built-in read looks unreliable, or `None` when it looks usable. The
+/// engine exposes no confidence, so this judges the output: nothing found on a
+/// page that has ink (`inked`), mostly symbols, mostly 1 or 2 character
+/// fragments, or most detected lines dropped as noise. It is a heuristic: it
+/// catches garbled and empty reads, not a fluent misreading.
+pub fn unreliable(lines: &[OcrLine], stats: Stats, inked: bool) -> Option<&'static str> {
+    if lines.is_empty() {
+        return inked.then_some("no text was found on an inked page");
+    }
+    let (mut alnum, mut visible, mut words, mut short) = (0usize, 0usize, 0usize, 0usize);
+    for line in lines {
+        for w in line.text.split_whitespace() {
+            let n = w.chars().count();
+            words += 1;
+            short += usize::from(n <= 2);
+            visible += n;
+            alnum += w.chars().filter(|c| c.is_alphanumeric()).count();
+        }
+    }
+    let detected = lines.len() + stats.dropped;
+    if detected >= MIN_DETECTED && stats.dropped as f32 > MAX_DROP_SHARE * detected as f32 {
+        return Some("most detected lines were noise");
+    }
+    if visible > 0 && (alnum as f32) < MIN_ALNUM_SHARE * visible as f32 {
+        return Some("the text is mostly symbols");
+    }
+    if words >= MIN_WORDS && short as f32 > MAX_FRAGMENT_SHARE * words as f32 {
+        return Some("the text is mostly fragments");
+    }
+    None
+}
+
 pub struct Ocr {
     engine: Option<OcrEngine>,
     clock: Clock,
@@ -88,13 +139,18 @@ impl Ocr {
     /// Reads the text lines of an image in reading order. Lines with fewer
     /// than two letters or digits are dropped as recognition noise.
     pub fn read(&mut self, pix: &Pix) -> Result<Vec<OcrLine>, String> {
+        self.read_scored(pix).map(|(lines, _)| lines)
+    }
+
+    /// [`Ocr::read`] plus what the read dropped, for [`unreliable`].
+    pub fn read_scored(&mut self, pix: &Pix) -> Result<(Vec<OcrLine>, Stats), String> {
         let began = Instant::now();
         let lines = self.read_lines(pix);
         self.clock.record(began.elapsed());
         lines
     }
 
-    fn read_lines(&mut self, pix: &Pix) -> Result<Vec<OcrLine>, String> {
+    fn read_lines(&mut self, pix: &Pix) -> Result<(Vec<OcrLine>, Stats), String> {
         let engine = self.engine()?;
         let luma = pix.luma();
         let source = ImageSource::from_bytes(&luma, (pix.w, pix.h))
@@ -116,12 +172,14 @@ impl Ocr {
         let recognized = engine
             .recognize_text(&input, &lines)
             .map_err(|e| format!("text recognition failed: {e}"))?;
-        Ok(recognized
+        let mut stats = Stats::default();
+        let lines = recognized
             .into_iter()
             .flatten()
             .filter_map(|line| {
                 let text = line.to_string();
                 if text.chars().filter(|c| c.is_alphanumeric()).count() < 2 {
+                    stats.dropped += 1;
                     return None;
                 }
                 let r = line.bounding_rect();
@@ -133,6 +191,76 @@ impl Ocr {
                     bottom: r.bottom() as f32,
                 })
             })
-            .collect())
+            .collect();
+        Ok((lines, stats))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn lines(texts: &[&str]) -> Vec<OcrLine> {
+        texts
+            .iter()
+            .map(|t| OcrLine {
+                text: (*t).to_string(),
+                left: 0.0,
+                top: 0.0,
+                right: 1.0,
+                bottom: 1.0,
+            })
+            .collect()
+    }
+
+    const PROSE: &[&str] = &[
+        "The quick brown fox jumps over the lazy dog.",
+        "Revenue grew steadily across every region in the year.",
+    ];
+
+    #[test]
+    fn fluent_prose_is_usable() {
+        assert_eq!(unreliable(&lines(PROSE), Stats::default(), true), None);
+        // A few dropped lines among many good ones do not fail the page.
+        assert_eq!(unreliable(&lines(PROSE), Stats { dropped: 2 }, true), None);
+    }
+
+    #[test]
+    fn nothing_found_is_unreliable_only_on_an_inked_page() {
+        assert!(unreliable(&[], Stats::default(), true).is_some());
+        assert_eq!(unreliable(&[], Stats::default(), false), None);
+    }
+
+    #[test]
+    fn symbol_noise_is_unreliable() {
+        let l = lines(&["~~ ^^ ,, .. -- ;; ::", "ab ## // \\ || {{ }}"]);
+        assert_eq!(
+            unreliable(&l, Stats::default(), true),
+            Some("the text is mostly symbols")
+        );
+    }
+
+    #[test]
+    fn mostly_short_fragments_are_unreliable() {
+        let l = lines(&["ab c de f gh i jk l", "mn o pq r st u vw x"]);
+        assert_eq!(
+            unreliable(&l, Stats::default(), true),
+            Some("the text is mostly fragments")
+        );
+        // Too few words to judge.
+        assert_eq!(
+            unreliable(&lines(&["ab c de"]), Stats::default(), true),
+            None
+        );
+    }
+
+    #[test]
+    fn a_high_noise_drop_rate_is_unreliable() {
+        let kept = lines(&["Some real words here", "and a few more words"]);
+        assert_eq!(
+            unreliable(&kept, Stats { dropped: 20 }, true),
+            Some("most detected lines were noise")
+        );
+        assert_eq!(unreliable(&kept, Stats { dropped: 3 }, true), None);
     }
 }
