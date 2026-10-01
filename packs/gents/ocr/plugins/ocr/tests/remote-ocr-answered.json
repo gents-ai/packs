@@ -1,0 +1,32 @@
+{
+  "input": {
+    "files": [
+      "scan.pdf"
+    ],
+    "model_calls": true,
+    "remote_ocr": "force",
+    "model_results": {
+      "f0p1": {
+        "text": "<h2>Remote page</h2><p>Read by the model.</p>"
+      }
+    },
+    "state": {
+      "ms": 0
+    }
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "pdf",
+        "markdown": "<!-- document: scan.pdf (pdf) -->\n\n<!-- page 1 -->\n\n## Remote page\n\nRead by the model.",
+        "pages": 1,
+        "source": "scan.pdf",
+        "warnings": [
+          "page(s) 1 were read by the remote OCR backend, which gives text only (no line boxes)"
+        ]
+      }
+    ]
+  }
+}

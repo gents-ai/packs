@@ -134,7 +134,7 @@ fresh_home() {
   printf '%s' "$home"
 }
 
-# Prints one --inference-slot argument per line, binding every slot the pack
+# Prints one --inference-slot argument per line, binding every required slot the pack
 # and its dependencies (sibling gents packs) declare to <home>'s own profile.
 slot_args() {
   local home="$1" profile dep slot manifests=("$dir/manifest.json")
@@ -144,7 +144,7 @@ slot_args() {
   done < <(jq -r '.dependencies // [] | .[]' "$dir/manifest.json")
   while read -r slot; do
     printf -- '--inference-slot\n%s=%s\n' "$slot" "$profile"
-  done < <(jq -rs '[.[] | .inference_slots // [] | .[].name] | unique | .[]' "${manifests[@]}")
+  done < <(jq -rs '[.[] | .inference_slots // [] | .[] | select(.optional != true) | .name] | unique | .[]' "${manifests[@]}")
 }
 
 install_documents() {
