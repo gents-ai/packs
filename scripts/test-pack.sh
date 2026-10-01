@@ -194,6 +194,9 @@ expectation_query() {
 runtime_case() {
   local case="$1" name repo home port url log pid args=() arg base path
   name="$(basename "$case" .json)"
+  # Runtime cases seed through the operator document command; fail at once on a gents without it.
+  "$gents" document create --help >/dev/null 2>&1 \
+    || { fail "$name: this gents has no 'document create' command; set GENTS to a gents build that includes it"; return; }
   repo="$work/repo-$name"
   mkdir -p "$repo"
   while read -r path; do mkdir -p "$repo/$path"; done < <(jq -r '.runtime.repository.dirs // [] | .[]' "$case")
@@ -220,7 +223,7 @@ runtime_case() {
   pid=$!
   servers+=("$pid")
 
-  local collection mutation attempt=0 deadline=$((SECONDS + 240)) first_query first_want seeded=""
+  local collection fields attempt=0 deadline=$((SECONDS + 240)) first_query first_want seeded=""
   collection="$(jq -r '.runtime.seed.collection' "$case")"
   first_query="$(expectation_query "$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")")"
   first_want="$(jq -c '(.runtime.taken // .runtime.expect[0]).fields // {}' "$case")"
@@ -231,21 +234,26 @@ runtime_case() {
   while ((SECONDS < deadline)); do
     kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
     attempt=$((attempt + 1))
-    mutation="$(jq -r --arg base "$base" --arg attempt "$attempt" '.runtime.seed
-      | "mutation { create_\(.collection)(input: {\(.fields | to_entries
-          | map("\(.key): \(.value | tostring | gsub("\\$\\{BASE_SHA\\}"; $base)
-              | gsub("\\$\\{ATTEMPT\\}"; $attempt) | tojson)")
-          | join(", "))}) { _docID } }"' "$case")"
-    # Refused until the runtime has registered the collection; retried below.
-    curl -fsS "$url" -H 'content-type: application/json' \
-      -d "$(jq -cn --arg q "$mutation" '{query: $q}')" 2>/dev/null | jq -e '.data and (.errors | not)' >/dev/null 2>&1 \
-      && seeded=yes
+    fields="$(jq -c --arg base "$base" --arg attempt "$attempt" '.runtime.seed.fields
+      | map_values(if type == "string"
+          then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt)
+          else . end)' "$case")"
+    # A served home admits writes only from its own principal, so the seed is
+    # created by the operator command. Refused until the runtime has registered
+    # the collection; retried below.
+    "$gents" document create "$collection" --home "$home" --graphql "$url" --json "$fields" \
+      >/dev/null 2>"$work/$name-seed.err" && seeded=yes
+    # An authorization refusal or a bad field can never succeed on retry.
+    if [[ -z "$seeded" ]] && grep -qiE 'not authorized|permission denied|has no field|--json' "$work/$name-seed.err"; then
+      fail "$name: could not create the seed $collection: $(tail -1 "$work/$name-seed.err")"
+      return
+    fi
     if [[ -n "$seeded" ]] && AWAIT_SECS=10 await_rows "$url" "$first_query" "$first_want" >/dev/null; then
       break
     fi
     [[ -n "$seeded" ]] || sleep 1
   done
-  [[ -n "$seeded" ]] || { fail "$name: could not create the seed $collection"; return; }
+  [[ -n "$seeded" ]] || { fail "$name: could not create the seed $collection: $(tail -1 "$work/$name-seed.err" 2>/dev/null)"; return; }
 
   local expect query want response
   while read -r expect; do
