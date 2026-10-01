@@ -799,7 +799,7 @@ fn page<'a>(
     n: u32,
     st: &mut State<'a>,
 ) -> String {
-    if ctx.emitted > 0 && ctx.remote.stops_before(n) {
+    if ctx.emitted > 0 && ctx.remote.stops_before(n, ctx.budget.remaining()) {
         ctx.waiting = true;
         return String::new();
     }

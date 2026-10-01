@@ -214,6 +214,16 @@ they come back as text only, with no line boxes (no record in this pack has them
 either). In `auto` the built-in read of a page that read well is repeated in the
 second round of a call that also sent other pages.
 
+An answer is paid for once. A round asks for no more pages than the call's
+`max_bytes` is planned to hold (about 8 KiB of text a page, at most 12 pages),
+and when a call still ends before delivering every answered page, the answers
+it did not deliver travel in the cursor (up to 128 KiB; past that the pages are
+requested again) and the next call reads them from there. When any answer of a
+round failed, the host may be out of time, so the built-in reads that follow get
+an eighth of `max_seconds` and the call stops with a cursor when it is used up.
+The call's models need the host to support the model call protocol (gents
+#2149) for the wall clock behaviour.
+
 Licence. The pack bundles nothing of Chandra and does not download it. Per its
 README and model card, Chandra's code is Apache 2.0 and its weights use a
 modified OpenRAIL-M licence: free for research, personal use and startups

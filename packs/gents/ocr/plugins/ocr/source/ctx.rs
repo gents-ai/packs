@@ -193,6 +193,7 @@ impl Ctx {
                 .map(|k| format!("{k:032x}"))
                 .collect(),
             st: None,
+            ans: Vec::new(),
         }
     }
 

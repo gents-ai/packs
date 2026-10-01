@@ -54,6 +54,9 @@ pub struct Resume {
     /// State a format carries from one call to the next.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub st: Option<Value>,
+    /// Remote OCR answers (request id, text) already paid for and not yet delivered.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub ans: Vec<(String, String)>,
 }
 
 impl Resume {
@@ -135,6 +138,7 @@ mod tests {
                 fig: 3,
                 seen: vec!["ff".into()],
                 st: Some(serde_json::json!({"x": 1})),
+                ans: vec![("f2p4".into(), "text".into())],
             },
         }
     }

@@ -195,6 +195,11 @@ fn off_and_a_host_without_model_calls_leave_the_output_unchanged() {
         json!({"remote_ocr": "off", "model_calls": true}),
         json!({"remote_ocr": "force"}),
         json!({"remote_ocr": "auto"}),
+        // A caller's own state and answers mean nothing to an unbound slot,
+        // and a plugin clock shifted by them would stop the read at once.
+        json!({"state": {"ms": 900_000}, "model_results": {"f0p1": {"text": "x"}}}),
+        json!({"state": {"stop": "bad"}, "model_results": {}, "remote_ocr": "force"}),
+        json!({"state": {"ms": 900_000}, "remote_ocr": "off", "model_calls": true}),
     ] {
         let mut input = json!({"path": fixtures(), "files": ["scan.pdf", "letter.png"]});
         input
@@ -295,20 +300,26 @@ fn a_bad_state_is_refused() {
 
 #[test]
 fn the_round_limits_bound_requests_and_bytes() {
+    const ROOM: usize = usize::MAX;
     let mut r = Remote::new(
         &serde_json::from_value::<Input>(json!({"path": "/x"})).unwrap(),
         RemoteOcr::Force,
     )
     .unwrap();
-    assert!(r.collecting() && !r.stops_before(1));
+    assert!(r.collecting() && !r.stops_before(1, ROOM));
     let page = vec![7u8; 600_000];
     let mut added = 0;
-    while r.add(format!("f0p{added}"), &page) == Add::Added {
+    while r.add(format!("f0p{added}"), &page, ROOM) == Add::Added {
         added += 1;
     }
     assert!((3..MAX_REQUESTS).contains(&added), "{added}");
-    assert!(r.stops_before(99) && r.stops_before_file(3));
-    assert_eq!(r.add("big".into(), &vec![0u8; 3_000_000]), Add::TooLarge);
+    assert!(r.stops_before(99, ROOM) && r.stops_before_file(3, ROOM));
+    let mut empty = Remote::off();
+    empty.mode = RemoteOcr::Force;
+    assert_eq!(
+        empty.add("big".into(), &vec![0u8; 3_000_000], ROOM),
+        Add::TooLarge
+    );
     let mark = r.mark();
     r.note_read(4);
     r.rewind(&r.mark());
@@ -334,8 +345,8 @@ fn only_the_documented_state_round_trips() {
     .unwrap();
     let mut r = Remote::new(&input, RemoteOcr::Auto).unwrap();
     r.set_file(2);
-    assert_eq!(r.carried().as_millis(), 1500);
-    assert!(!r.collecting() && r.stops_before(7) && !r.stops_before(1));
+    assert_eq!(r.spent(860).as_millis(), 1500);
+    assert!(!r.collecting() && r.stops_before(7, usize::MAX) && !r.stops_before(1, usize::MAX));
 }
 
 #[test]
@@ -355,4 +366,140 @@ fn a_graph_node_passes_the_model_call_round_through_and_reads_the_answers() {
             .unwrap()
             .contains("## Remote page")
     );
+}
+
+#[test]
+fn a_round_never_holds_more_than_the_request_limit() {
+    let mut r = Remote::new(
+        &serde_json::from_value::<Input>(json!({"path": "/x"})).unwrap(),
+        RemoteOcr::Force,
+    )
+    .unwrap();
+    let tiny = [1u8; 100];
+    for n in 0..MAX_REQUESTS {
+        assert_eq!(r.add(format!("f0p{n}"), &tiny, usize::MAX), Add::Added);
+    }
+    assert_eq!(r.add("f0p99".into(), &tiny, usize::MAX), Add::Full);
+    assert_eq!(r.requests.len(), MAX_REQUESTS);
+}
+
+#[test]
+fn a_small_output_budget_asks_for_few_pages_and_each_page_once() {
+    let dir = blank_scan("budget", 8);
+    // Answers a little over the planned size, so a round holding three pages overflows.
+    let body = "word ".repeat(2400);
+    for max_bytes in [4096usize, 20_000] {
+        let base = json!({"path": dir, "model_calls": true, "remote_ocr": "force", "max_bytes": max_bytes});
+        let asked = std::cell::RefCell::new(Vec::new());
+        let (md, _, _) = drive(&base, |r| {
+            let id = r["id"].as_str().unwrap().to_string();
+            let text = format!("<p>{id} {body}</p>");
+            asked.borrow_mut().push(id);
+            json!({"text": text})
+        });
+        let mut asked = asked.into_inner();
+        asked.sort();
+        let before = asked.len();
+        asked.dedup();
+        assert_eq!(
+            (max_bytes, asked.len()),
+            (max_bytes, before),
+            "a page was requested twice"
+        );
+        assert_eq!(asked.len(), 8);
+        for n in 1..=8 {
+            assert_eq!(
+                md.matches(&format!("f0p{n} word")).count(),
+                1,
+                "{max_bytes}: page {n} in {md}"
+            );
+        }
+    }
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn a_page_larger_than_the_budget_is_cut_from_the_one_answer() {
+    let dir = blank_scan("cut", 2);
+    let paras: String = (1..=300)
+        .map(|n| format!("<p>para {n} of the page</p>"))
+        .collect();
+    let base = json!({"path": dir, "model_calls": true, "remote_ocr": "force", "max_bytes": 4096});
+    let asked = std::cell::RefCell::new(0usize);
+    let (md, _, _) = drive(&base, |_| {
+        *asked.borrow_mut() += 1;
+        json!({"text": paras})
+    });
+    assert_eq!(asked.into_inner(), 2);
+    for n in 1..=300 {
+        assert_eq!(
+            md.matches(&format!("para {n} of the page")).count(),
+            2,
+            "paragraph {n} (once per page)"
+        );
+    }
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn undelivered_answers_travel_in_the_cursor_and_are_read_from_it() {
+    let input: Input = serde_json::from_value(json!({
+        "path": "/x",
+        "model_results": {"f0p2": {"text": "two"}, "f0p3": {"text": "three"}, "f0p4": {"error": "down"}}
+    }))
+    .unwrap();
+    let mut r = Remote::new(&input, RemoteOcr::Force).unwrap();
+    let mark = r.mark();
+    assert!(matches!(r.take_answer("f0p2"), Some(Answer::Text(t)) if t == "two"));
+    assert!(matches!(r.take_answer("f0p4"), Some(Answer::Error(_))));
+    // Taken back with its unit: both unread answers are carried, the error is not.
+    r.rewind(&mark);
+    let carried = r.undelivered(None);
+    assert_eq!(
+        carried,
+        vec![
+            ("f0p2".into(), "two".into()),
+            ("f0p3".into(), "three".into())
+        ]
+    );
+    // A page cut in the middle keeps its text, once, first.
+    assert!(r.take_answer("f0p3").is_some());
+    assert_eq!(
+        r.undelivered(Some("f0p3")),
+        vec![
+            ("f0p3".into(), "three".into()),
+            ("f0p2".into(), "two".into())
+        ]
+    );
+    // The next call reads them before asking again.
+    let next = Remote::new(
+        &serde_json::from_value::<Input>(json!({"path": "/x"})).unwrap(),
+        RemoteOcr::Force,
+    )
+    .unwrap()
+    .with_carried(carried);
+    assert!(next.collecting());
+    let mut next = next;
+    assert!(matches!(next.take_answer("f0p3"), Some(Answer::Text(t)) if t == "three"));
+}
+
+#[test]
+fn a_failed_answer_leaves_an_eighth_of_the_clock_for_the_fallback() {
+    let with = |results: Value, state: Value| {
+        let input: Input =
+            serde_json::from_value(json!({"path": "/x", "model_results": results, "state": state}))
+                .unwrap();
+        Remote::new(&input, RemoteOcr::Auto).unwrap()
+    };
+    let ok = with(json!({"f0p1": {"text": "a"}}), json!({"ms": 2000}));
+    assert_eq!(ok.spent(800).as_millis(), 2000);
+    let failed = with(
+        json!({"f0p1": {"text": "a"}, "f0p2": {"error": "wall clock"}}),
+        json!({"ms": 2000}),
+    );
+    assert_eq!(failed.spent(800).as_millis(), 700_000);
+    // Round one's own time still counts when it is more.
+    let late = with(json!({"f0p2": {"error": "x"}}), json!({"ms": 790_000}));
+    assert_eq!(late.spent(800).as_millis(), 790_000);
+    assert_eq!(Remote::off().spent(800).as_millis(), 0);
 }

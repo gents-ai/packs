@@ -12,6 +12,12 @@
 //! same file again, takes the answers for those pages and stops at the same
 //! place, returning the usual cursor for the rest. Pages whose request failed,
 //! or that got no answer, fall back to the built-in OCR with a warning.
+//!
+//! An answer is paid for once: when round two ends before delivering every
+//! answered page (the byte budget or the clock), the answers it did not
+//! deliver, and the text of a page it delivered only the start of, travel in
+//! the cursor and are read from there by the next call instead of requested
+//! again. The batch is also sized so that this is the exception.
 use std::collections::HashMap;
 
 use base64::Engine as _;
@@ -44,6 +50,12 @@ pub const JPEG_QUALITY: u8 = 80;
 const MAX_TOKENS: u32 = 8192;
 /// Bytes of a state the plugin accepts back: it only ever writes a few dozen.
 const MAX_STATE_BYTES: usize = 4096;
+/// Output bytes one page's answer is planned to take, so a round asks for no
+/// more pages than the caller's byte budget can hold.
+const ANSWER_ESTIMATE: usize = 8192;
+/// Bytes of undelivered answers a cursor carries to the next call.
+// vertexia: answers past the cap are requested again; a store the host keeps for the call would lift it
+const CARRY_CAP: usize = 128 * 1024;
 
 /// Chandra's own page prompt (`OCR_PROMPT` of its `prompts.py`), asking for the
 /// page as HTML with a fixed tag set; any OpenAI-compatible vision model that
@@ -109,8 +121,15 @@ pub enum Add {
 /// The remote side of one call.
 pub struct Remote {
     mode: RemoteOcr,
-    /// The answers of the previous round; `None` in round one.
-    answers: Option<HashMap<String, Answer>>,
+    /// Answers not read yet: the host's, and those a cursor carried.
+    answers: HashMap<String, Answer>,
+    /// The host sent answers: this is round two.
+    answered: bool,
+    /// Some answer failed, so the host may be out of time for this call.
+    degraded: bool,
+    /// The answers read so far, by request id, in case the unit is taken back
+    /// or only its start is delivered.
+    taken: Vec<(String, String)>,
     state: RoundState,
     file: u32,
     requests: Vec<Request>,
@@ -124,6 +143,7 @@ pub struct Mark {
     requests: usize,
     bytes: usize,
     read: usize,
+    taken: usize,
 }
 
 impl Remote {
@@ -131,7 +151,10 @@ impl Remote {
     pub fn off() -> Self {
         Self {
             mode: RemoteOcr::Off,
-            answers: None,
+            answers: HashMap::new(),
+            answered: false,
+            degraded: false,
+            taken: Vec::new(),
             state: RoundState::default(),
             file: 0,
             requests: Vec::new(),
@@ -143,6 +166,10 @@ impl Remote {
     /// The remote side of a call, from the host's fields. `mode` is the
     /// effective mode (off when the host offered no model calls).
     pub fn new(input: &Input, mode: RemoteOcr) -> Result<Self, String> {
+        // Unbound, the caller's own state and answers are not ours to read.
+        if mode == RemoteOcr::Off {
+            return Ok(Self::off());
+        }
         let state = match &input.state {
             None | Some(Value::Null) => RoundState::default(),
             Some(v) if v.to_string().len() > MAX_STATE_BYTES => {
@@ -151,17 +178,30 @@ impl Remote {
             Some(v) => serde_json::from_value(v.clone())
                 .map_err(|e| format!("the state is not one this plugin returned: {e}"))?,
         };
-        let answers = input.model_results.as_ref().map(|m| {
-            m.iter()
-                .map(|(id, v)| (id.clone(), answer_of(v)))
-                .collect::<HashMap<_, _>>()
-        });
+        let answers: HashMap<String, Answer> = input
+            .model_results
+            .iter()
+            .flatten()
+            .map(|(id, v)| (id.clone(), answer_of(v)))
+            .collect();
         Ok(Self {
             mode,
+            degraded: answers.values().any(|a| matches!(a, Answer::Error(_))),
+            answered: input.model_results.is_some(),
             answers,
             state,
             ..Self::off()
         })
+    }
+
+    /// Adds the answers an earlier call's cursor carried.
+    pub fn with_carried(mut self, carried: Vec<(String, String)>) -> Self {
+        if self.active() {
+            for (id, text) in carried {
+                self.answers.entry(id).or_insert(Answer::Text(text));
+            }
+        }
+        self
     }
 
     pub fn active(&self) -> bool {
@@ -174,12 +214,24 @@ impl Remote {
 
     /// Whether this round may still make requests (the first round).
     pub fn collecting(&self) -> bool {
-        self.active() && self.answers.is_none()
+        self.active() && !self.answered
     }
 
-    /// The plugin time earlier rounds of this call used.
-    pub fn carried(&self) -> std::time::Duration {
-        std::time::Duration::from_millis(self.state.ms)
+    /// The part of the call's wall clock to count as used before this round
+    /// began, out of `limit_secs`. Earlier rounds' plugin time, and when an
+    /// answer failed (the host may have run out of time, and its last round is
+    /// an eighth of the clock) all but an eighth, so the built-in reads that
+    /// follow stop with a cursor in time.
+    pub fn spent(&self, limit_secs: u64) -> std::time::Duration {
+        if !self.active() {
+            return std::time::Duration::ZERO;
+        }
+        let carried = std::time::Duration::from_millis(self.state.ms);
+        if self.degraded {
+            carried.max(std::time::Duration::from_millis(limit_secs * 1000 / 8 * 7))
+        } else {
+            carried
+        }
     }
 
     pub fn set_file(&mut self, index: usize) {
@@ -192,18 +244,57 @@ impl Remote {
     }
 
     pub fn take_answer(&mut self, id: &str) -> Option<Answer> {
-        self.answers.as_mut()?.remove(id)
+        let answer = self.answers.remove(id)?;
+        if let Answer::Text(text) = &answer {
+            self.taken.push((id.to_string(), text.clone()));
+        }
+        Some(answer)
     }
 
-    fn full(&self) -> bool {
-        self.requests.len() >= MAX_REQUESTS || self.bytes >= SOFT_BYTES
+    /// The answers paid for but not delivered, for the cursor: those not read
+    /// yet or taken back with their unit, and the text of `cut`, a page of
+    /// which only the start was delivered. Bounded by [`CARRY_CAP`].
+    pub fn undelivered(&self, cut: Option<&str>) -> Vec<(String, String)> {
+        let mut out: Vec<(String, String)> = cut
+            .and_then(|id| self.taken.iter().rfind(|(i, _)| i == id))
+            .cloned()
+            .into_iter()
+            .collect();
+        let mut rest: Vec<(&String, &String)> = self
+            .answers
+            .iter()
+            .filter_map(|(id, a)| match a {
+                Answer::Text(t) => Some((id, t)),
+                Answer::Error(_) => None,
+            })
+            .collect();
+        rest.sort();
+        let mut bytes = out.iter().map(|(_, t)| t.len()).sum::<usize>();
+        for (id, text) in rest {
+            bytes += text.len();
+            if bytes > CARRY_CAP {
+                break;
+            }
+            out.push((id.clone(), text.clone()));
+        }
+        out
+    }
+
+    /// Whether the round holds all it can: pages, image bytes, or as many
+    /// answers as `room` (the caller's output bytes left) is planned to hold.
+    /// An empty round is never full, so every call makes progress.
+    fn full(&self, room: usize) -> bool {
+        !self.requests.is_empty()
+            && (self.requests.len() >= MAX_REQUESTS
+                || self.bytes >= SOFT_BYTES
+                || self.requests.len() * ANSWER_ESTIMATE >= room)
     }
 
     /// Whether the call stops before reading `unit` of the current file: the
     /// round is full (round one) or this is where round one stopped (round two).
-    pub fn stops_before(&self, unit: u32) -> bool {
+    pub fn stops_before(&self, unit: u32, room: usize) -> bool {
         if self.collecting() {
-            return self.full();
+            return self.full(room);
         }
         self.active()
             && self
@@ -213,15 +304,18 @@ impl Remote {
     }
 
     /// The same question before a whole file `index`.
-    pub fn stops_before_file(&self, index: usize) -> bool {
+    pub fn stops_before_file(&self, index: usize, room: usize) -> bool {
         if self.collecting() {
-            return self.full();
+            return self.full(room);
         }
         self.active() && self.state.stop == Some((index as u32, 0))
     }
 
-    /// Adds a page image to the round.
-    pub fn add(&mut self, id: String, jpeg: &[u8]) -> Add {
+    /// Adds a page image to the round; `room` is the caller's output bytes left.
+    pub fn add(&mut self, id: String, jpeg: &[u8], room: usize) -> Add {
+        if self.full(room) {
+            return Add::Full;
+        }
         let data_base64 = base64::engine::general_purpose::STANDARD.encode(jpeg);
         if data_base64.len() > REQUEST_BYTES_CAP {
             return Add::TooLarge;
@@ -272,13 +366,19 @@ impl Remote {
             requests: self.requests.len(),
             bytes: self.bytes,
             read: self.read.len(),
+            taken: self.taken.len(),
         }
     }
 
+    /// Takes the unit back out: its requests, and its answers go back to unread.
     pub fn rewind(&mut self, mark: &Mark) {
         self.requests.truncate(mark.requests);
         self.bytes = mark.bytes;
         self.read.truncate(mark.read);
+        let from = mark.taken.min(self.taken.len());
+        for (id, text) in self.taken.drain(from..) {
+            self.answers.insert(id, Answer::Text(text));
+        }
     }
 
     /// The answer that asks the host to run this round's requests; `stop` is
@@ -368,7 +468,7 @@ pub fn read_page(
             return fallback(lines);
         }
     };
-    match ctx.remote.add(id, &jpeg) {
+    match ctx.remote.add(id, &jpeg, ctx.budget.remaining()) {
         Add::Added => Read::Pending,
         Add::Full => Read::Wait,
         Add::TooLarge => {
