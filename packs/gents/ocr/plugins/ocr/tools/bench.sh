@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Measures the built plugin through the gents runtime: text PDF pages per
-# second, EPUB throughput and OCR seconds per page, with peak memory where the
-# platform's time(1) reports it. Works on Linux and macOS.
+# second, EPUB throughput and OCR seconds per page, with the peak memory of the
+# gents process. Works on Linux and macOS.
 #
 # Usage: tools/bench.sh <gents binary> [pack dir]     (pack dir defaults to ../..)
-# Needs jq, perl and a Rust toolchain with wasm32-wasip1 (the pack is built on install).
+# Needs jq, perl, python3 and a Rust toolchain with wasm32-wasip1 (the pack is built on install).
 set -euo pipefail
 
 gents="$1"
@@ -17,30 +17,19 @@ trap 'rm -rf "$work"' EXIT
 "$gents" init --home "$work/home" >/dev/null
 "$gents" pack install "$pack" --home "$work/home" >/dev/null
 
-# Peak resident memory of the whole gents process, when time(1) can tell.
-if /usr/bin/time -l true >/dev/null 2>&1; then
-  timer=(/usr/bin/time -l)
-  peak() { awk '/maximum resident set size/ { printf "%.0f MiB", $1 / 1048576 }' "$1"; }
-elif /usr/bin/time -v true >/dev/null 2>&1; then
-  timer=(/usr/bin/time -v)
-  peak() { awk -F': ' '/Maximum resident set size/ { printf "%.0f MiB", $2 / 1024 }' "$1"; }
-else
-  timer=()
-  peak() { printf 'n/a'; }
-fi
+# Peak resident memory of the whole gents process, from the kernel's own
+# accounting through tools/peakrss.py (the same on Linux and macOS).
+tools="$(cd "$(dirname "$0")" && pwd)"
+peak() { printf '%s MiB' "$(cat "$work/peak.txt")"; }
 
 now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 
 run() { # dir input
   local dir="$1" input="$2" start end
   start="$(now)"
-  if ((${#timer[@]})); then
-    "${timer[@]}" "$gents" plugin run ocr --home "$work/home" --bind-dir "$dir" --input "$input" >"$work/out.json" 2>"$work/time.txt"
-  else
-    "$gents" plugin run ocr --home "$work/home" --bind-dir "$dir" --input "$input" >"$work/out.json" 2>"$work/time.txt"
-  fi
+  python3 "$tools/peakrss.py" "$work/peak.txt" "$gents" plugin run ocr --home "$work/home" --bind-dir "$dir" --input "$input" >"$work/out.json"
   end="$(now)"
-  printf '  %s s, peak %s, %s\n' "$(awk -v a="$end" -v b="$start" 'BEGIN { printf "%.2f", a - b }')" "$(peak "$work/time.txt")" "$(jq -r '(.response // .).documents | map("\(.pages) page(s), \(.markdown | length) chars") | join("; ")' "$work/out.json")"
+  printf '  %s s, peak %s, %s\n' "$(awk -v a="$end" -v b="$start" 'BEGIN { printf "%.2f", a - b }')" "$(peak)" "$(jq -r '(.response // .).documents | map("\(.pages) page(s), \(.markdown | length) chars") | join("; ")' "$work/out.json")"
 }
 
 mkdir -p "$work/empty" "$work/text" "$work/epub" "$work/scan" "$work/dense"

@@ -4,7 +4,7 @@ use crate::detect::header;
 use crate::input::OcrMode;
 use crate::layout::{Out, layout};
 use crate::model::{DocAcc, Document, Figure};
-use crate::pdf::ocr_items;
+use crate::pdfocr::ocr_items;
 use crate::pix::Pix;
 use crate::src::Src;
 

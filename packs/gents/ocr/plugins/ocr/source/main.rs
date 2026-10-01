@@ -24,12 +24,14 @@ mod model;
 mod ocr;
 mod odf;
 mod pdf;
+mod pdfdecode;
 #[cfg(test)]
 mod pdfgen;
 mod pdflazy;
 #[cfg(test)]
 mod pdflazy_tests;
 mod pdfobj;
+mod pdfocr;
 mod pix;
 mod plan;
 mod pptx;

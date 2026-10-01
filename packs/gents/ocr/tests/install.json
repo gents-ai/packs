@@ -3,6 +3,12 @@
     "documents": [
       "AgentBehavior/document-reader",
       "AgentContext/document-reader-context",
+      "Callback/ocr-extract",
+      "Callback/ocr-plan",
+      "CallbackBinding/ocr-extract",
+      "CallbackBinding/ocr-plan",
+      "EventSource/ocr-extract",
+      "EventSource/ocr-plan",
       "Tools/document-reader-tools"
     ],
     "plugins": [

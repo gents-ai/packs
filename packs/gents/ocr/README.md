@@ -18,12 +18,14 @@ No configuration.
 3. Ask about a file: "Summarize `reports/q3.pdf`" or "What does figure 2 in
    `deck.pptx` show?"
 
-Files in the working folder of the chat are readable at once. A file anywhere
-else raises "Allow ocr to read `<path>`?" with Allow once, Always allow and
-Deny; Always allow remembers the containing folder. Folders you trust can be
-added up front under Allowed folders in the settings, which is optional. The
-reader sees only the file or folder the question names, never its neighbours,
-and never writes.
+Files in the working folder of the chat are readable at once (the folder you
+gave the agent as its tool root; never `/` or your home folder, which a
+launcher may use as a current directory). A file anywhere else raises "Allow
+ocr to read `<path>`?" with Allow once, Always allow this file, Always allow
+this folder and Deny; the dialog names the exact folder the last one remembers.
+Folders or single files you trust can be added up front under Allowed folders
+in the settings, which is optional. The reader sees only the file or folder the
+question names, never its neighbours, and never writes.
 
 The same agent runs from a terminal:
 
@@ -48,16 +50,28 @@ and every other field unchanged. `plugins/ocr/TOOL.md` is what the model reads.
 
 ## Use it as a graph node
 
-The plugin runs as a graph plugin node and answers in the records below, so
-any graph pack can plan a folder into page ranges, read the ranges in
-parallel and hand the pages and figures to its next node. A graph request is
-recognized by the `run_id` every graph document carries, and a graph job names
-a folder in `path` and, to pick files, `files`.
+Installing the pack also installs two plugin nodes, `ocr-plan` and
+`ocr-extract`, wired as plain callbacks, so no model and no graph pack is
+needed: create an `OcrJob` document and the records below appear.
+
+```sh
+gents server --home <home> --http-port 8080 &   # started in the folder holding your files
+gql() { curl -fsS http://127.0.0.1:8080/api/v0/graphql -H 'content-type: application/json' -d "$(jq -cn --arg q "$1" '{query: $q}')"; }
+gql 'mutation { create_OcrJob(input: {run_id: "r1", path: "reports"}) { _docID } }'
+gql '{ OcrPage(filter: {run_id: {_eq: "r1"}}) { source page markdown } }'
+```
+
+`path` names a folder, or one file; a relative path starts at the server's
+working folder, which is readable without asking. A path elsewhere must be in
+the allowed folders (`gents plugin dirs add <folder>`): a graph node asks nobody
+and is refused with that command otherwise. A request is recognized as a node's
+by the `run_id` every such document carries. A folder job can name the files to
+read in `files` (a list of names).
 
 | Node | Reads | Writes |
 | --- | --- | --- |
-| `plan` | `OcrJob`: `run_id`, `path`, `files`, `ocr`, `figure_images`, `max_image_px`, `min_figure_px` | `OcrChunk` (many): the job's fields plus `chunk`, `source`, `format` and `pages` (a range of at most 20 pages, one sheet, or empty for a file read by cursor) |
-| `extract` | one `OcrChunk` | `OcrDocument` (one), `OcrPage` (many), `OcrFigure` (many) |
+| `ocr-plan` | `OcrJob`: `run_id`, `path`, `files`, `ocr`, `figure_images`, `max_image_px`, `min_figure_px` | `OcrChunk` (many): the job's fields plus `chunk`, `source`, `format` and `pages` (a range of at most 20 pages, one sheet, or empty for a file read by cursor) |
+| `ocr-extract` | one `OcrChunk` | `OcrDocument` (one), `OcrPage` (many), `OcrFigure` (many) |
 
 | Record | Fields (every record also has `run_id`, `chunk` and `source`) |
 | --- | --- |
@@ -65,43 +79,19 @@ a folder in `path` and, to pick files, `files`.
 | `OcrPage` | `page` (1-based in the file; a single-section file is page 1), `markdown` |
 | `OcrFigure` | `figure`, `page`, `caption`, `text`, `width`, `height`, `ocr`, `image_base64` and `mime` (with `figure_images`) |
 
-A graph pack declares the two nodes with the plugin pinned to the digest
-`gents plugin list` shows for `gents/ocr`, then wires `extract` to its own
-next stage. The two capabilities, as they go in `graph_capabilities`
-(`<digest>` is that `sha256:` digest; a plugin from another pack is named
-`namespace/name` and pinned by its author):
+The chunks of a folder name the folder and one file each in `files`; the chunks
+of a one-file job name that file itself. The host gives the plugin a one-file
+`path` as a short-lived link and the real path in `path_original` (the manifest's
+`bind_dir.original_field`), which is how the extract step binds the file again.
+The collections' schemas are in `schemas/`. A chunk is read up to 1.5 MB of
+Markdown and images. When more remains, `OcrDocument.complete` is `false` and
+`cursor` continues it with the CLI loop below, so nothing is dropped silently.
+A job plans at most 1000 chunks and says so when it would exceed them.
 
-```json
-{"capability_id": "read-plan", "revision": "v1", "allowed_callers": ["${GENTS_PACK_AGENT_DID}"],
- "target": {"kind": "plugin", "plugin": "gents/ocr", "digest": "<digest>"},
- "input_ports": [{"name": "job", "collection": "OcrJob", "schema": "OcrJob/v1", "correlation_field": "run_id", "cardinality": "one", "required": true}],
- "output_ports": [{"name": "chunks", "collection": "OcrChunk", "schema": "OcrChunk/v1", "correlation_field": "run_id", "cardinality": "many"}]}
-{"capability_id": "read-extract", "revision": "v1", "allowed_callers": ["${GENTS_PACK_AGENT_DID}"],
- "target": {"kind": "plugin", "plugin": "gents/ocr", "digest": "<digest>"},
- "input_ports": [{"name": "chunk", "collection": "OcrChunk", "schema": "OcrChunk/v1", "correlation_field": "run_id", "cardinality": "many", "required": true}],
- "output_ports": [
-   {"name": "document", "collection": "OcrDocument", "schema": "OcrDocument/v1", "correlation_field": "run_id", "cardinality": "one", "required": true},
-   {"name": "pages", "collection": "OcrPage", "schema": "OcrPage/v1", "correlation_field": "run_id", "cardinality": "many"},
-   {"name": "figures", "collection": "OcrFigure", "schema": "OcrFigure/v1", "correlation_field": "run_id", "cardinality": "many"}]}
-```
-
-The edge `plan.chunks -> extract.chunk` is `"concurrency": "parallel"`, the
-entry is `OcrJob` into `plan.job`, and a graph of these two nodes sets
-`max_total_invocations` to at most 1024 (the plan and up to 1000 chunks, which
-the plan refuses to exceed). A consumer node reads `OcrPage` rows for text by
-page, `OcrDocument` for a chunk's whole Markdown and `OcrFigure` for
-captions, the text found in figures and, with `figure_images`, the images as
-base64. Each collection's schema is the field list above (`String` fields,
-`Int` for `chunk`, `page`, `page_count`, `width`, `height`, `max_image_px` and
-`min_figure_px`, `Boolean` for `complete`, `ocr` and `figure_images`, and
-`[String]` for `files` and `warnings`); `run_id` is indexed.
-
-A chunk is read up to 1.5 MB of Markdown and images. When more remains,
-`OcrDocument.complete` is `false` and `cursor` continues it with the CLI loop
-below, so nothing is dropped silently. A graph pack that ships the graph
-itself cannot yet be installed from a directory or the registry (gents installs
-only graph packs compiled into its binary today), which is why this pack ships
-the agent and the plugin and documents the nodes here.
+A graph pack of your own can use the same plugin as a node: name
+`gents/ocr` in its capability, pinned to the digest `gents plugin list` shows
+(gents installs only graph packs compiled into its binary today, which is why
+this pack wires the nodes as callbacks instead of shipping a graph).
 
 ## Use it from a scenario
 
@@ -160,14 +150,22 @@ images also describes figures.
 
 A call reads only what it names. The plugin declares `bind_dir` (input field
 `path`, access `read`): the file it names is the only file the call can see
-(a private folder holding one hard link, nothing copied), and a folder it
-names is that folder. Nothing is bound beyond that and nothing is recorded as
-an install grant. Allowed without asking: the working folder. Allowed once the
-operator listed them: Allowed folders in the settings, or `gents plugin dirs
-add <folder>`. Anything else asks first in a chat, and in a graph or a headless
-run is refused with the command that allows it. The plugin has no network,
-environment or write access. Its `limits` are 1536 MiB of memory, a 900 s wall
-clock and 4 MiB of output, which is the host's own ceiling for plugin output.
+(a private folder holding one hard link, nothing copied; it is made on the
+file's own filesystem, never beside the file, and removed when the call ends),
+and a folder it names is that folder. Nothing is bound beyond that and nothing
+is recorded as an install grant. Allowed without asking: the session's working
+folder, but only a specific folder: never `/`, your home folder or a folder
+holding it or the gents home. Allowed once you listed them: Allowed folders in
+the settings, or `gents plugin dirs add <folder or file>` (read-only unless
+`--access read_write`). Anything else asks first in a chat (Allow once, Always
+allow this file, Always allow this folder, Deny), and in a graph or a headless
+run is refused with the command that allows it. A chat connected to a server on
+another machine cannot answer; the call then fails at once with that command.
+The allowed list and the questions are files in the gents home that the agent's
+file tools refuse to write; a shell run as your own user can still edit them, as
+it can any of your files. The plugin has no network, environment or write
+access. Its `limits` are 1536 MiB of memory, a 900 s wall clock and 4 MiB of
+output, which is the host's own ceiling for plugin output.
 
 ## Inputs and outputs
 

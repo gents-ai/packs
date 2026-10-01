@@ -1,0 +1,9 @@
+type OcrJob {
+  run_id: String @index(unique: true) @immutable
+  path: String
+  files: [String]
+  ocr: String
+  figure_images: Boolean
+  max_image_px: Int
+  min_figure_px: Int
+}

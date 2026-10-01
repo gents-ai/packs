@@ -6,6 +6,13 @@
     "pack_config.json",
     "plugins/ocr.afb",
     "plugins/ocr/TOOL.md",
+    "schemas/ocr_chunk.graphql",
+    "schemas/ocr_document.graphql",
+    "schemas/ocr_figure.graphql",
+    "schemas/ocr_job.graphql",
+    "schemas/ocr_page.graphql",
+    "tests/graph_file.json",
+    "tests/graph_folder.json",
     "tests/install.json"
   ],
   "authors": [
@@ -33,7 +40,8 @@
       "bind_dir": {
         "access": "read",
         "description": "The folder holding the files to read, or the one file to read",
-        "input_field": "path"
+        "input_field": "path",
+        "original_field": "path_original"
       },
       "description": "Reads PDFs, EPUBs, Office and OpenDocument files, HTML, Markdown, CSV and images into Markdown with page markers, headings, lists, tables and figures, reading scanned pages and the text inside figures with OCR.",
       "input_schema": {
@@ -119,6 +127,10 @@
           "path": {
             "description": "Path of the file or folder to read; a relative path starts at the working folder. Give either path or name with data_base64.",
             "type": "string"
+          },
+          "path_original": {
+            "description": "Set by the host to the real path of the file or folder named in path; leave it out.",
+            "type": "string"
           }
         },
         "type": "object"
@@ -133,6 +145,13 @@
       "name": "ocr",
       "source": "plugins/ocr"
     }
+  ],
+  "schemas": [
+    "schemas/ocr_job.graphql",
+    "schemas/ocr_chunk.graphql",
+    "schemas/ocr_document.graphql",
+    "schemas/ocr_page.graphql",
+    "schemas/ocr_figure.graphql"
   ],
   "tags": [
     "ocr",

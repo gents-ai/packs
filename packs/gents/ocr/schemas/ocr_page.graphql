@@ -1,0 +1,7 @@
+type OcrPage {
+  run_id: String @index
+  chunk: Int
+  source: String
+  page: Int
+  markdown: String
+}

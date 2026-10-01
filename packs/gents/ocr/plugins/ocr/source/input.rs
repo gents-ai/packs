@@ -18,6 +18,11 @@ const MAX_RANGES: usize = 1_000;
 #[serde(deny_unknown_fields)]
 pub struct Input {
     pub path: Option<String>,
+    /// Filled by the host with the real path of the file or folder `path` names;
+    /// for one file `path` is a short-lived link to it. Graph mode reads it from
+    /// the raw request; the field is here so the strict parser accepts it.
+    #[allow(dead_code)]
+    pub path_original: Option<String>,
     pub files: Option<Vec<String>>,
     pub name: Option<String>,
     pub data_base64: Option<String>,

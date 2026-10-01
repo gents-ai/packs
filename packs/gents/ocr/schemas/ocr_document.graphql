@@ -1,0 +1,12 @@
+type OcrDocument {
+  run_id: String @index
+  chunk: Int
+  source: String
+  format: String
+  page_count: Int
+  markdown: String
+  complete: Boolean
+  cursor: String
+  warnings: [String]
+  error: String
+}

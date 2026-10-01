@@ -143,10 +143,11 @@ same object.
 
 ## Graph mode
 
-The pack's `ocr` graph runs this plugin as two nodes. A request that carries
-a `run_id` is a graph node's; nothing else sends one. Name a folder in `path`
-and, to pick files, `files`; a single file path is refused because the
-extract nodes could not be handed the file again.
+The pack's `ocr-plan` and `ocr-extract` callbacks run this plugin as two
+nodes. A request that carries a `run_id` is a node's; nothing else sends one.
+Name a folder, or one file, in `path` and, to pick files in a folder, `files`.
+The host gives the plugin `path_original`, the real path, when `path` is a one-file
+link; a chunk of a one-file job names that real path.
 
 - An `OcrJob` (`run_id`, `path`, optional `files`, `ocr`, `figure_images`,
   `max_image_px`, `min_figure_px`) is planned into `OcrChunk` records: one per

@@ -42,15 +42,17 @@ pub fn run(raw: &str, started: Instant) -> Option<Result<String, String>> {
     })
 }
 
-/// Splits a job into the chunks that cover every file once.
+/// Splits a job into the chunks that cover every file once. A job names a
+/// folder, or one file: for one file the host gives `path` as a link that is
+/// gone after the call, so its chunks name the file itself (`path_original`)
+/// and the next call binds it again.
 fn plan(job: &Map<String, Value>, started: Instant) -> Result<String, String> {
     let path = job.get("path").and_then(Value::as_str).unwrap_or_default();
-    if Path::new(path).is_file() {
-        return Err(
-            "a graph job names a folder in path and the files to read in files, not one file"
-                .into(),
-        );
-    }
+    let single = Path::new(path).is_file();
+    let chunk_path = job
+        .get("path_original")
+        .and_then(Value::as_str)
+        .unwrap_or(path);
     let mut request = job.clone();
     request.insert("mode".into(), json!("plan"));
     request.retain(|k, _| !GRAPH_ONLY.contains(&k.as_str()));
@@ -71,8 +73,10 @@ fn plan(job: &Map<String, Value>, started: Instant) -> Result<String, String> {
         for pages in ranges {
             let mut chunk = Map::new();
             chunk.insert("chunk".into(), json!(chunks.len()));
-            chunk.insert("path".into(), json!(path));
-            chunk.insert("files".into(), json!([entry["source"]]));
+            chunk.insert("path".into(), json!(chunk_path));
+            if !single {
+                chunk.insert("files".into(), json!([entry["source"]]));
+            }
             chunk.insert("source".into(), entry["source"].clone());
             chunk.insert("format".into(), entry["format"].clone());
             if !pages.is_empty() {
@@ -290,12 +294,28 @@ mod tests {
     }
 
     #[test]
-    fn a_single_file_path_is_refused_in_one_sentence_and_a_folder_is_planned() {
+    fn a_single_file_job_is_planned_into_chunks_that_name_the_file_itself() {
         let file = format!("{}/text.pdf", fixtures());
-        let why = call(json!({"run_id": "r", "path": file})).unwrap_err();
-        assert!(why.contains("folder"), "{why}");
+        let chunks = call(
+            json!({"run_id": "r", "path": file, "path_original": "/real/text.pdf",
+            "ocr": "never"}),
+        )
+        .unwrap();
+        let chunk = &chunks.as_array().unwrap()[0];
+        assert_eq!(chunk["path"], "/real/text.pdf");
+        assert_eq!(chunk["source"], "text.pdf");
+        assert!(chunk.get("files").is_none(), "{chunk}");
+        let mut read = chunk.clone();
+        read["path"] = json!(file);
+        read["path_original"] = json!("/real/text.pdf");
+        read["run_id"] = json!("r");
+        let out = call(read).unwrap();
+        assert_eq!(out["document"]["format"], "pdf");
+        assert!(!out["pages"].as_array().unwrap().is_empty());
         let tree = format!("{}/tree", fixtures());
-        assert!(call(json!({"run_id": "r", "path": tree, "ocr": "never"})).is_ok());
+        let folder = call(json!({"run_id": "r", "path": tree, "ocr": "never"})).unwrap();
+        assert!(folder[0]["files"].is_array());
+        assert_eq!(folder[0]["path"], tree);
     }
 
     #[test]

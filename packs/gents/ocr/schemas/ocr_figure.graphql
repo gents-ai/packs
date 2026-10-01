@@ -1,0 +1,14 @@
+type OcrFigure {
+  run_id: String @index
+  chunk: Int
+  source: String
+  figure: String
+  page: Int
+  caption: String
+  text: String
+  width: Int
+  height: Int
+  ocr: Boolean
+  image_base64: String
+  mime: String
+}
