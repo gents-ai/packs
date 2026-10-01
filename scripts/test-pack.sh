@@ -152,7 +152,7 @@ install_documents() {
   home="$(fresh_home "$(basename "$case" .json)")"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
 
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
     "$(jq -c '.install.slots // []' "$case")" \
     "$(jq -c '.inference.bindings | keys' "$work/install.json")"
@@ -167,7 +167,7 @@ install_documents() {
       "$(jq -c '.install.plugins' "$case")" "$(jq -c '[.apply.plugins[].name]' "$work/install.json")"
   fi
 
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/reinstall.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
     expect_set "$(basename "$case"): reinstall keeps" "$want" \
       "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json")"
@@ -182,7 +182,7 @@ install_documents() {
 install_assets() {
   local case="$1" home root
   home="$(fresh_home "$(basename "$case" .json)")"
-  "$gents" pack install "$dir" --home "$home" >"$work/install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   root="$(jq -r '.installed_assets' "$work/install.json")"
   expect_set "$(basename "$case"): install materializes" \
     "$(jq -c '.install.assets' "$case")" \
@@ -248,8 +248,9 @@ runtime_case() {
   # The workspace callback may only create workspaces inside the operator
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
+  "$gents" plugin dirs add "$repo" --home "$home" >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
   url="http://127.0.0.1:$port/api/v0/graphql"
@@ -270,9 +271,9 @@ runtime_case() {
   while ((SECONDS < deadline)); do
     kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
     attempt=$((attempt + 1))
-    fields="$(jq -c --arg base "$base" --arg attempt "$attempt" '.runtime.seed.fields
+    fields="$(jq -c --arg base "$base" --arg attempt "$attempt" --arg repo "$repo" '.runtime.seed.fields
       | map_values(if type == "string"
-          then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt)
+          then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt) | gsub("\\$\\{REPOSITORY\\}"; $repo)
           else . end)' "$case")"
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
@@ -310,12 +311,12 @@ install_plugins() {
   name="$(basename "$case")"
   home="$(fresh_home "$(basename "$case" .json)")"
   want="$(jq -c '.install.plugins' "$case")"
-  "$gents" pack install "$dir" --home "$home" >"$work/install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   expect_set "$name: install registers" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/install.json")"
   "$gents" plugin list --home "$home" >"$work/plugins.json"
   expect_set "$name: plugin list after install" "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
 
-  "$gents" pack install "$dir" --home "$home" >"$work/reinstall.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
   expect_set "$name: reinstall keeps" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/reinstall.json")"
 
   "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"

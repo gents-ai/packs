@@ -10,7 +10,7 @@
       "collection": "OcrJob",
       "fields": {
         "run_id": "run-${ATTEMPT}",
-        "path": "docs/a.md",
+        "path": "${REPOSITORY}/docs/a.md",
         "ocr": "never"
       }
     },
