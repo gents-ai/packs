@@ -1,0 +1,56 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "docs/a.md": "# Alpha\n\nhello from the graph\n",
+        "docs/b.csv": "x,y\n1,2\n"
+      }
+    },
+    "seed": {
+      "collection": "OcrJob",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "path": "${REPOSITORY}/docs",
+        "ocr": "never"
+      }
+    },
+    "taken": {
+      "collection": "OcrChunk",
+      "fields": {
+        "source": "a.md"
+      }
+    },
+    "expect": [
+      {
+        "collection": "OcrChunk",
+        "fields": {
+          "source": "a.md",
+          "format": "markdown"
+        }
+      },
+      {
+        "collection": "OcrDocument",
+        "fields": {
+          "source": "a.md",
+          "format": "markdown",
+          "complete": true
+        }
+      },
+      {
+        "collection": "OcrPage",
+        "fields": {
+          "source": "a.md",
+          "page": 1
+        }
+      },
+      {
+        "collection": "OcrDocument",
+        "fields": {
+          "source": "b.csv",
+          "format": "csv",
+          "complete": true
+        }
+      }
+    ]
+  }
+}

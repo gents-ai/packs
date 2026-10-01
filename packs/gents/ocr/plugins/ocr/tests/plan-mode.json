@@ -1,0 +1,145 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "bytes": 10447,
+        "chunks": [
+          {
+            "pages": "1-2"
+          }
+        ],
+        "count": 2,
+        "format": "pptx",
+        "read": "pages",
+        "source": "deck.pptx",
+        "unit": "slide"
+      },
+      {
+        "bytes": 2191,
+        "chunks": [
+          {
+            "pages": "1"
+          },
+          {
+            "pages": "2"
+          }
+        ],
+        "count": 2,
+        "format": "xlsx",
+        "read": "pages",
+        "source": "sheet.xlsx",
+        "unit": "sheet"
+      },
+      {
+        "bytes": 41363,
+        "chunks": [
+          {
+            "pages": "1-6"
+          }
+        ],
+        "count": 6,
+        "format": "pdf",
+        "read": "pages",
+        "source": "many.pdf",
+        "unit": "page"
+      },
+      {
+        "bytes": 37270,
+        "estimated_calls": 1,
+        "format": "text",
+        "read": "cursor",
+        "source": "long.txt"
+      },
+      {
+        "bytes": 9600,
+        "chunks": [
+          {
+            "pages": "1-2"
+          }
+        ],
+        "count": 2,
+        "format": "epub",
+        "read": "pages",
+        "source": "book.epub",
+        "unit": "section"
+      },
+      {
+        "bytes": 10033,
+        "estimated_calls": 1,
+        "format": "docx",
+        "read": "cursor",
+        "source": "report.docx"
+      },
+      {
+        "bytes": 572,
+        "chunks": [
+          {
+            "pages": "1"
+          }
+        ],
+        "count": 1,
+        "format": "ods",
+        "read": "pages",
+        "source": "budget.ods",
+        "unit": "sheet"
+      },
+      {
+        "bytes": 529,
+        "chunks": [
+          {
+            "pages": "1-2"
+          }
+        ],
+        "count": 2,
+        "format": "odp",
+        "read": "pages",
+        "source": "slides.odp",
+        "unit": "slide"
+      },
+      {
+        "bytes": 18334,
+        "chunks": [
+          {
+            "pages": "1"
+          }
+        ],
+        "count": 1,
+        "format": "pdf",
+        "read": "pages",
+        "source": "scan.pdf",
+        "unit": "page"
+      },
+      {
+        "bytes": 31,
+        "error": "the PDF is corrupt or truncated and cannot be read",
+        "format": "pdf",
+        "read": "cursor",
+        "source": "tree/broken.pdf"
+      },
+      {
+        "bytes": 6,
+        "error": "unsupported format .xyz; supported are PDF, EPUB, DOCX, PPTX, XLSX, ODT, ODS, ODP, HTML, Markdown, text, CSV, TSV and PNG, JPEG, GIF, BMP, TIFF, WebP images",
+        "format": "unknown",
+        "read": "cursor",
+        "source": "tree/skip.xyz"
+      }
+    ]
+  },
+  "input": {
+    "files": [
+      "deck.pptx",
+      "sheet.xlsx",
+      "many.pdf",
+      "long.txt",
+      "book.epub",
+      "report.docx",
+      "budget.ods",
+      "slides.odp",
+      "scan.pdf",
+      "tree/broken.pdf",
+      "tree/skip.xyz"
+    ],
+    "mode": "plan"
+  }
+}

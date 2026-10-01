@@ -26,6 +26,15 @@
 #                            re-created seed unique) reaches every expected
 #                            document state after the seed is created, with
 #                            no model involved
+#        {"install": {"plugins": [...]}}
+#                            a plugins pack installed into a fresh home
+#                            registers exactly these plugins, a reinstall
+#                            keeps the same set, and a remove releases them;
+#                            next to "documents" it also checks the plugins
+#                            a documents or graph pack ships
+#        runtime "repository" may also hold "copy": {"<repo path>": "<file
+#                            path inside the pack>"} for binary files, which
+#                            are copied into the repository before its commit
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -97,6 +106,25 @@ done < <(jq -r '.plugins // [] | .[] | "\(.plugin) \(.passed) \(.failures | leng
 jq -r '.plugins // [] | .[].failures[]' "$work/test.json" >&2
 graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
+# A Rust plugin's own `cargo test` (unit tests ported alongside its source,
+# e.g. paging or bounds checks the golden/case files above cannot express)
+# runs here, once per plugin, under the repo's pinned rust-toolchain.
+# Skipped, not failed, when cargo is not on PATH.
+if command -v cargo >/dev/null 2>&1; then
+  while read -r plugin source; do
+    [[ -n "$source" && -f "$dir/$source/Cargo.toml" ]] || continue
+    if cargo test --manifest-path "$dir/$source/Cargo.toml" --quiet \
+      >"$work/cargo-test-$plugin.log" 2>&1; then
+      pass "plugin $plugin: cargo test"
+    else
+      fail "plugin $plugin: cargo test failed"
+      cat "$work/cargo-test-$plugin.log" >&2
+    fi
+  done < <(jq -r '.plugins // [] | .[] | select(.language == "rust") | "\(.name) \(.source // "")"' "$dir/manifest.json")
+else
+  echo "note: cargo not on PATH; skipping $pack plugin unit tests" >&2
+fi
+
 # Initializes a fresh home and prints its path; its init report is <home>.json.
 # The directory init runs in ($2, default the current one) becomes the home's
 # operator ceiling.
@@ -124,7 +152,7 @@ install_documents() {
   home="$(fresh_home "$(basename "$case" .json)")"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
 
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
     "$(jq -c '.install.slots // []' "$case")" \
     "$(jq -c '.inference.bindings | keys' "$work/install.json")"
@@ -134,8 +162,12 @@ install_documents() {
   local want
   want="$(jq -c '.install.documents' "$case")"
   expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
+  if jq -e '.install | has("plugins")' "$case" >/dev/null; then
+    expect_set "$(basename "$case"): install registers plugins" \
+      "$(jq -c '.install.plugins' "$case")" "$(jq -c '[.apply.plugins[].name]' "$work/install.json")"
+  fi
 
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/reinstall.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
     expect_set "$(basename "$case"): reinstall keeps" "$want" \
       "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json")"
@@ -150,7 +182,7 @@ install_documents() {
 install_assets() {
   local case="$1" home root
   home="$(fresh_home "$(basename "$case" .json)")"
-  "$gents" pack install "$dir" --home "$home" >"$work/install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   root="$(jq -r '.installed_assets' "$work/install.json")"
   expect_set "$(basename "$case"): install materializes" \
     "$(jq -c '.install.assets' "$case")" \
@@ -204,6 +236,10 @@ runtime_case() {
     mkdir -p "$(dirname "$repo/$path")"
     jq -j --arg p "$path" '.runtime.repository.files[$p]' "$case" >"$repo/$path"
   done < <(jq -r '.runtime.repository.files // {} | keys[]' "$case")
+  while read -r path; do
+    mkdir -p "$(dirname "$repo/$path")"
+    cp "$dir/$(jq -r --arg p "$path" '.runtime.repository.copy[$p]' "$case")" "$repo/$path"
+  done < <(jq -r '.runtime.repository.copy // {} | keys[]' "$case")
   git -C "$repo" init -q
   git -C "$repo" add -A
   git -C "$repo" -c user.name=packs -c user.email=packs@localhost commit -qm fixture --allow-empty
@@ -212,8 +248,9 @@ runtime_case() {
   # The workspace callback may only create workspaces inside the operator
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
+  "$gents" plugin dirs add "$repo" --home "$home" >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
-  "$gents" pack install "$dir" --home "$home" ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
   url="http://127.0.0.1:$port/api/v0/graphql"
@@ -234,9 +271,9 @@ runtime_case() {
   while ((SECONDS < deadline)); do
     kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
     attempt=$((attempt + 1))
-    fields="$(jq -c --arg base "$base" --arg attempt "$attempt" '.runtime.seed.fields
+    fields="$(jq -c --arg base "$base" --arg attempt "$attempt" --arg repo "$repo" '.runtime.seed.fields
       | map_values(if type == "string"
-          then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt)
+          then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt) | gsub("\\$\\{REPOSITORY\\}"; $repo)
           else . end)' "$case")"
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
@@ -269,6 +306,25 @@ runtime_case() {
   kill "$pid" 2>/dev/null || true
 }
 
+install_plugins() {
+  local case="$1" home want name
+  name="$(basename "$case")"
+  home="$(fresh_home "$(basename "$case" .json)")"
+  want="$(jq -c '.install.plugins' "$case")"
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
+  expect_set "$name: install registers" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/install.json")"
+  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  expect_set "$name: plugin list after install" "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+
+  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
+  expect_set "$name: reinstall keeps" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/reinstall.json")"
+
+  "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
+  expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
+  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+}
+
 shopt -s nullglob
 cases=("$dir"/tests/*.json)
 [[ ${#cases[@]} -gt 0 ]] || fail "has no tests/*.json cases"
@@ -276,13 +332,16 @@ for case in "${cases[@]}"; do
   if jq -e 'has("graphs")' "$case" >/dev/null; then
     expect_set "$(basename "$case"): graphs" "$(jq -c '.graphs' "$case")" "$graphs"
   elif jq -e '.install | has("documents")' "$case" >/dev/null; then
-    [[ "$kind" == "documents" ]] || fail "$(basename "$case"): documents case in a $kind pack"
+    [[ "$kind" == "documents" || "$kind" == "graph" ]] || fail "$(basename "$case"): documents case in a $kind pack"
     install_documents "$case"
   elif jq -e '.install | has("assets")' "$case" >/dev/null; then
     [[ "$kind" == "assets" ]] || fail "$(basename "$case"): assets case in a $kind pack"
     install_assets "$case"
   elif jq -e 'has("runtime")' "$case" >/dev/null; then
     runtime_case "$case"
+  elif jq -e '.install | has("plugins")' "$case" >/dev/null; then
+    [[ "$kind" == "plugins" ]] || fail "$(basename "$case"): plugins case in a $kind pack"
+    install_plugins "$case"
   else
     fail "$(basename "$case"): not a graphs, install or runtime case"
   fi

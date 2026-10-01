@@ -1,0 +1,20 @@
+{
+  "input": {
+    "files": [
+      "slides.odp"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "odp",
+        "markdown": "<!-- document: slides.odp (odp) -->\n\n<!-- slide 1 -->\n\nWelcome slide\n\n<!-- slide 2 -->\n\nSecond slide",
+        "pages": 2,
+        "source": "slides.odp",
+        "warnings": []
+      }
+    ]
+  }
+}

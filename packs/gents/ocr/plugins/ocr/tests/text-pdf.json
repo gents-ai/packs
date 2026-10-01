@@ -1,0 +1,31 @@
+{
+  "input": {
+    "files": [
+      "text.pdf"
+    ],
+    "ocr": "never"
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Figure 1. Gradient test chart",
+            "height": 120,
+            "id": "fig-1",
+            "ocr": false,
+            "page": 2,
+            "text": "",
+            "width": 200
+          }
+        ],
+        "format": "pdf",
+        "markdown": "<!-- document: text.pdf (pdf) -->\n\n<!-- page 1 -->\n\n# Annual Report\n\nThis report summarises the year. Revenue rose in every region and the team shipped the new platform on schedule.\n\nCosts were held flat while headcount grew by ten percent.\n\n### Highlights\n\n- Record revenue in the northern region\n- Platform launch completed\n- Customer satisfaction at 94 percent\n\n<!-- page 2 -->\n\n### Results by region\n\n| Region | Revenue | Growth |\n| --- | --- | --- |\n| North | 42 | 12% |\n| South | 37 | 8% |\n| East | 29 | 5% |\n\n> **[Figure fig-1]** Figure 1. Gradient test chart (200x120 px)\n>\n> (text not read: ocr is never)",
+        "pages": 2,
+        "source": "text.pdf",
+        "warnings": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "input": {
+    "files": [
+      "sheet.xlsx"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "xlsx",
+        "markdown": "<!-- document: sheet.xlsx (xlsx) -->\n\n<!-- sheet 1: Sales -->\n\n| Region | Revenue | Date |\n| --- | --- | --- |\n| North | 42.5 | 2024-01-01 |\n| South | 37 | 2024-02-01 |\n\n<!-- sheet 2: Notes -->\n\n| Remember to re-run after the audit. |\n| --- |",
+        "pages": 2,
+        "source": "sheet.xlsx",
+        "warnings": []
+      }
+    ]
+  }
+}

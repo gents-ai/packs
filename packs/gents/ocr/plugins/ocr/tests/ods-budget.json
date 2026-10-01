@@ -1,0 +1,20 @@
+{
+  "input": {
+    "files": [
+      "budget.ods"
+    ]
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "ods",
+        "markdown": "<!-- document: budget.ods (ods) -->\n\n<!-- sheet 1: Budget -->\n\n| Item | Cost |\n| --- | --- |\n| Laptops | 1200 |",
+        "pages": 1,
+        "source": "budget.ods",
+        "warnings": []
+      }
+    ]
+  }
+}

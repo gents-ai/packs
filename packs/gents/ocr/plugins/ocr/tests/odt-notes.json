@@ -1,0 +1,31 @@
+{
+  "input": {
+    "files": [
+      "notes.odt"
+    ],
+    "ocr": "never"
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Revenue chart",
+            "height": 360,
+            "id": "fig-1",
+            "ocr": false,
+            "page": 1,
+            "text": "",
+            "width": 520
+          }
+        ],
+        "format": "odt",
+        "markdown": "<!-- document: notes.odt (odt) -->\n\n# Meeting Notes\n\nWe agreed on three things[^1].\n\n1. First action\n2. Second action\n\n| Owner | Task |\n| --- | --- |\n| Ana | Draft |\n\n> **[Figure fig-1]** Revenue chart (520x360 px)\n>\n> (text not read: ocr is never)\n\n[^1]: Decided on Monday.",
+        "pages": 1,
+        "source": "notes.odt",
+        "warnings": []
+      }
+    ]
+  }
+}

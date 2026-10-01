@@ -1,0 +1,31 @@
+{
+  "input": {
+    "files": [
+      "page.html"
+    ],
+    "ocr": "never"
+  },
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [
+          {
+            "caption": "Latency chart",
+            "height": 0,
+            "id": "fig-1",
+            "ocr": false,
+            "page": 1,
+            "text": "",
+            "width": 0
+          }
+        ],
+        "format": "html",
+        "markdown": "<!-- document: page.html (html) -->\n\n# Status Page\n\nAll systems are **operational**. See the [live board](https://example.com/status).\n\n1. Database\n2. Queue\n\n| Service | State |\n| --- | --- |\n| API | up |\n\n> **[Figure fig-1]** Latency chart\n>\n> (image not read: the image file was not found)",
+        "pages": 1,
+        "source": "page.html",
+        "warnings": []
+      }
+    ]
+  }
+}

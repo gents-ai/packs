@@ -1,0 +1,137 @@
+{
+  "agent_behaviors": [
+    {
+      "behavior_id": "document-reader",
+      "context_id": "document-reader-context",
+      "display_name": "Document reader",
+      "inference_profile_id": "gents:inference-slot:document_reader"
+    }
+  ],
+  "agent_principal": {},
+  "callback_bindings": [
+    {
+      "binding_id": "ocr-plan",
+      "callback_id": "ocr-plan",
+      "event_source_id": "ocr-plan",
+      "input_fields": [
+        "run_id",
+        "path",
+        "files",
+        "ocr",
+        "figure_images",
+        "max_image_px",
+        "min_figure_px"
+      ]
+    },
+    {
+      "binding_id": "ocr-extract",
+      "callback_id": "ocr-extract",
+      "event_source_id": "ocr-extract",
+      "input_fields": [
+        "run_id",
+        "chunk",
+        "path",
+        "files",
+        "source",
+        "format",
+        "pages",
+        "ocr",
+        "figure_images",
+        "max_image_px",
+        "min_figure_px"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "callback_id": "ocr-plan",
+      "display_name": "ocr-plan",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "many",
+            "collection": "OcrChunk",
+            "correlation_field": "run_id",
+            "name": "chunks",
+            "schema": "OcrChunk/v1"
+          }
+        ],
+        "plugin": "ocr"
+      }
+    },
+    {
+      "callback_id": "ocr-extract",
+      "display_name": "ocr-extract",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "OcrDocument",
+            "correlation_field": "run_id",
+            "name": "document",
+            "required": true,
+            "schema": "OcrDocument/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "OcrPage",
+            "correlation_field": "run_id",
+            "name": "pages",
+            "schema": "OcrPage/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "OcrFigure",
+            "correlation_field": "run_id",
+            "name": "figures",
+            "schema": "OcrFigure/v1"
+          }
+        ],
+        "plugin": "ocr"
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "document-reader-context",
+      "display_name": "Document reader",
+      "system_prompt": "./agent_behaviors/document_reader/system_prompt.md",
+      "tools_id": "document-reader-tools"
+    }
+  ],
+  "event_sources": [
+    {
+      "correlation_field": "run_id",
+      "display_name": "ocr-plan",
+      "event_kind": "created",
+      "event_source_id": "ocr-plan",
+      "source_collection": "OcrJob"
+    },
+    {
+      "correlation_field": "run_id",
+      "display_name": "ocr-extract",
+      "event_kind": "created",
+      "event_source_id": "ocr-extract",
+      "source_collection": "OcrChunk"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Document reader tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/ocr"
+          }
+        ]
+      },
+      "tools_id": "document-reader-tools"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "assets": [
+    "README.md",
+    "agent_behaviors/document_reader/system_prompt.md",
+    "notice.md",
+    "pack_config.json",
+    "plugins/ocr.afb",
+    "plugins/ocr/TOOL.md",
+    "schemas/ocr_chunk.graphql",
+    "schemas/ocr_document.graphql",
+    "schemas/ocr_figure.graphql",
+    "schemas/ocr_job.graphql",
+    "schemas/ocr_page.graphql",
+    "tests/graph_file.json",
+    "tests/graph_folder.json",
+    "tests/install.json"
+  ],
+  "authors": [
+    "gents contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Reads PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument, HTML, Markdown, CSV and image files into Markdown, including the text inside figures, as a Document reader agent and a plugin.",
+  "inference_slots": [
+    {
+      "behaviors": [
+        "document-reader"
+      ],
+      "description": "Reads the documents the user names with the ocr tool and answers from them. Any capable profile; one that accepts images also describes figures.",
+      "name": "document_reader"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "ocr",
+  "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/ocr.afb",
+      "bind_dir": {
+        "access": "read",
+        "description": "The folder holding the files to read, or the one file to read",
+        "input_field": "path",
+        "original_field": "path_original"
+      },
+      "description": "Reads PDFs, EPUBs, Office and OpenDocument files, HTML, Markdown, CSV and images into Markdown with page markers, headings, lists, tables and figures, reading scanned pages and the text inside figures with OCR.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "description": "The next.cursor value of the previous call, to continue where it stopped. Repeat every other field unchanged.",
+            "type": "string"
+          },
+          "data_base64": {
+            "description": "The file content, base64 encoded, instead of path; up to 64 MiB of base64.",
+            "type": "string"
+          },
+          "figure_images": {
+            "default": false,
+            "description": "Attach each figure image to the result as an image part the model can look at.",
+            "type": "boolean"
+          },
+          "files": {
+            "description": "Relative paths inside the folder path to read, in this order; without it every non-hidden file below path is read in name order.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "max_bytes": {
+            "default": 3800000,
+            "description": "The most JSON bytes of content one call returns before it stops and returns a cursor.",
+            "maximum": 3800000,
+            "minimum": 4096,
+            "type": "integer"
+          },
+          "max_image_px": {
+            "default": 2000,
+            "description": "Longest side, in pixels, that figure images and OCR inputs are scaled down to.",
+            "maximum": 4096,
+            "minimum": 256,
+            "type": "integer"
+          },
+          "max_seconds": {
+            "default": 860,
+            "description": "Seconds after which a call starts no further page, sheet or file and returns a cursor for the rest.",
+            "maximum": 860,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_figure_px": {
+            "default": 96,
+            "description": "Images whose shorter side is below this many pixels are skipped as decorative.",
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mode": {
+            "default": "read",
+            "description": "read returns the Markdown; plan lists what each file holds and the pages ranges that cover its pages, slides, sheets or sections once each, without reading their content.",
+            "enum": [
+              "read",
+              "plan"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "File name with its extension for inline data, such as report.pdf; the extension is only a hint, the content decides the format.",
+            "type": "string"
+          },
+          "ocr": {
+            "default": "auto",
+            "description": "auto reads a PDF page or image with OCR only when it has no usable text layer; always runs OCR on every page; never disables OCR.",
+            "enum": [
+              "auto",
+              "always",
+              "never"
+            ],
+            "type": "string"
+          },
+          "pages": {
+            "description": "Pages, slides, sheets or EPUB sections to read, 1-based, like \"1-3,7\" or \"5-\". Ignored by single-section formats. Default: all.",
+            "type": "string"
+          },
+          "path": {
+            "description": "Path of the file or folder to read; a relative path starts at the working folder. Give either path or name with data_base64.",
+            "type": "string"
+          },
+          "path_original": {
+            "description": "Set by the host to the real path of the file or folder named in path; leave it out.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "instructions": "plugins/ocr/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 1536,
+        "wall_clock_secs": 900
+      },
+      "name": "ocr",
+      "source": "plugins/ocr"
+    }
+  ],
+  "schemas": [
+    "schemas/ocr_job.graphql",
+    "schemas/ocr_chunk.graphql",
+    "schemas/ocr_document.graphql",
+    "schemas/ocr_page.graphql",
+    "schemas/ocr_figure.graphql"
+  ],
+  "tags": [
+    "ocr",
+    "pdf",
+    "epub",
+    "documents",
+    "plugin"
+  ],
+  "version": "1.0.0"
+}
