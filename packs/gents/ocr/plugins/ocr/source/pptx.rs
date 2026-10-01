@@ -8,6 +8,9 @@ use crate::ctx::Ctx;
 use crate::detect::header;
 use crate::md::esc;
 use crate::model::{Block, DocAcc, Document};
+use crate::resume::Resume;
+use crate::slicer::{self, Units, with_marker};
+use crate::src::Src;
 use crate::util::{Zip, resolve};
 use crate::xml::{attr, child, descendant, is, parse};
 
@@ -15,7 +18,7 @@ const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relati
 
 struct Rels(HashMap<String, (String, String)>);
 
-fn rels_of(zip: &mut Zip<'_>, part: &str) -> Result<Rels, String> {
+fn rels_of(zip: &mut Zip, part: &str) -> Result<Rels, String> {
     let (dir, file) = part.rsplit_once('/').unwrap_or(("", part));
     let path = format!("{dir}/_rels/{file}.rels");
     let mut map = HashMap::new();
@@ -50,16 +53,16 @@ fn paragraph_text(p: Node<'_, '_>) -> String {
     out
 }
 
-struct Slide<'z, 'a> {
+struct Slide<'z> {
     ctx: &'z mut Ctx,
     acc: &'z mut DocAcc,
-    zip: &'z mut Zip<'a>,
+    zip: &'z mut Zip,
     rels: Rels,
     unit: u32,
     blocks: Vec<Block>,
 }
 
-impl Slide<'_, '_> {
+impl Slide<'_> {
     fn shape(&mut self, sp: Node<'_, '_>) {
         let ph = descendant(sp, "ph").and_then(|p| attr(p, "type"));
         if matches!(ph, Some("sldNum" | "dt" | "ftr")) {
@@ -191,14 +194,14 @@ impl Slide<'_, '_> {
     }
 }
 
-pub fn convert_pptx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document, String> {
-    let mut zip = Zip::open(data)?;
+/// The slide parts in presentation order.
+fn slide_paths(zip: &mut Zip) -> Result<Vec<String>, String> {
     let pres_path = "ppt/presentation.xml";
     let pres = zip
         .read_text(pres_path)?
         .ok_or("the PPTX has no ppt/presentation.xml")?;
     let pdoc = parse(&pres)?;
-    let pres_rels = rels_of(&mut zip, pres_path)?;
+    let pres_rels = rels_of(zip, pres_path)?;
     let slides: Vec<String> = pdoc
         .descendants()
         .filter(|n| is(*n, "sldId"))
@@ -208,91 +211,111 @@ pub fn convert_pptx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document
     if slides.is_empty() {
         return Err("the PPTX has no slides".into());
     }
+    Ok(slides)
+}
+
+/// The number of slides, without reading them.
+pub fn slide_count(src: &Src) -> Result<u32, String> {
+    Ok(slide_paths(&mut Zip::open(src.reopen()?)?)?.len() as u32)
+}
+
+pub fn convert_pptx(
+    ctx: &mut Ctx,
+    source: &str,
+    src: &Src,
+    resume: Option<&Resume>,
+) -> Result<Document, String> {
+    let mut zip = Zip::open(src.reopen()?)?;
+    let slides = slide_paths(&mut zip)?;
     let total = slides.len() as u32;
     let mut acc = DocAcc::default();
-    ctx.append(&mut acc, &header(source, "pptx"));
-    let mut selected = 0;
-    for (k, path) in slides.iter().enumerate() {
-        let n = k as u32 + 1;
-        if !ctx.opts.selected(n) {
-            continue;
+    let parts_from = ctx.parts.len();
+    match resume {
+        Some(r) => {
+            acc.next_fig = r.fig;
+            acc.restore_seen(&r.seen);
         }
-        selected += 1;
-        let Some(src) = zip.read_text(path)? else {
-            acc.warn(format!("slide {n}: {path} is missing from the archive"));
-            continue;
-        };
-        let doc = parse(&src)?;
-        let rels = rels_of(&mut zip, path)?;
-        let notes_path = rels
-            .0
-            .values()
-            .find(|(_, t)| t.ends_with("/notesSlide"))
-            .map(|(p, _)| p.clone());
-        let blocks = {
-            let mut slide = Slide {
-                ctx: &mut *ctx,
-                acc: &mut acc,
-                zip: &mut zip,
-                rels,
-                unit: n,
-                blocks: Vec::new(),
-            };
-            if let Some(tree) = descendant(doc.root_element(), "spTree") {
-                slide.tree(tree);
-            }
-            slide.blocks
-        };
-        let mut blocks = blocks;
-        crate::md::attach_captions(&mut blocks, &mut acc);
-        if let Some(np) = notes_path
-            && let Some(nsrc) = zip.read_text(&np)?
-        {
-            let ndoc = parse(&nsrc)?;
-            let notes: Vec<String> = ndoc
-                .descendants()
-                .filter(|s| {
-                    is(*s, "sp")
-                        && descendant(*s, "ph").and_then(|p| attr(p, "type")) == Some("body")
-                })
-                .flat_map(|s| {
-                    s.descendants()
-                        .filter(|p| is(*p, "p"))
-                        .map(paragraph_text)
-                        .collect::<Vec<_>>()
-                })
-                .filter(|t| !t.trim().is_empty())
-                .collect();
-            if !notes.is_empty() {
-                blocks.push(Block::Para(format!("*Notes:* {}", esc(&notes.join(" ")))));
+        None => {
+            ctx.append(&mut acc, &header(source, "pptx"));
+            if ctx.opts.selects_none(total) {
+                acc.warn(format!(
+                    "pages selects nothing: the deck has {total} slide(s)"
+                ));
             }
         }
-        let body = crate::md::render(&blocks);
-        let marker = format!("<!-- slide {n} -->");
-        if !ctx.append(
+    }
+    let next = {
+        let mut reader = Units::new(
+            &mut *ctx,
             &mut acc,
-            &if body.is_empty() {
-                marker
-            } else {
-                format!("{marker}\n\n{body}")
+            resume.map_or(1, |r| r.unit),
+            total,
+            |ctx: &mut Ctx, acc: &mut DocAcc, n: u32| {
+                let path = &slides[(n - 1) as usize];
+                let Some(xml) = zip.read_text(path)? else {
+                    acc.warn(format!("slide {n}: {path} is missing from the archive"));
+                    return Ok(String::new());
+                };
+                slide_markdown(ctx, acc, &mut zip, path, &xml, n)
             },
-        ) {
-            acc.warn(format!("the output size limit was reached before slide {n}; request pages=\"{n}-\" to continue"));
-            break;
+        );
+        slicer::run(&mut reader, resume.map_or(0, |r| r.skip))?
+    };
+    Ok(ctx.document(acc, source, "pptx", total, resume, next, parts_from))
+}
+
+/// One slide as Markdown: its marker, shapes, pictures, tables and notes.
+fn slide_markdown(
+    ctx: &mut Ctx,
+    acc: &mut DocAcc,
+    zip: &mut Zip,
+    path: &str,
+    xml: &str,
+    n: u32,
+) -> Result<String, String> {
+    let doc = parse(xml)?;
+    let rels = rels_of(zip, path)?;
+    let notes_path = rels
+        .0
+        .values()
+        .find(|(_, t)| t.ends_with("/notesSlide"))
+        .map(|(p, _)| p.clone());
+    let mut slide = Slide {
+        ctx: &mut *ctx,
+        acc: &mut *acc,
+        zip: &mut *zip,
+        rels,
+        unit: n,
+        blocks: Vec::new(),
+    };
+    if let Some(tree) = descendant(doc.root_element(), "spTree") {
+        slide.tree(tree);
+    }
+    let mut blocks = slide.blocks;
+    crate::md::attach_captions(&mut blocks, acc);
+    if let Some(np) = notes_path
+        && let Some(nsrc) = zip.read_text(&np)?
+    {
+        let ndoc = parse(&nsrc)?;
+        let notes: Vec<String> = ndoc
+            .descendants()
+            .filter(|s| {
+                is(*s, "sp") && descendant(*s, "ph").and_then(|p| attr(p, "type")) == Some("body")
+            })
+            .flat_map(|s| {
+                s.descendants()
+                    .filter(|p| is(*p, "p"))
+                    .map(paragraph_text)
+                    .collect::<Vec<_>>()
+            })
+            .filter(|t| !t.trim().is_empty())
+            .collect();
+        if !notes.is_empty() {
+            blocks.push(Block::Para(format!("*Notes:* {}", esc(&notes.join(" ")))));
         }
     }
-    if selected == 0 {
-        acc.warn(format!(
-            "pages selects nothing: the deck has {total} slide(s)"
-        ));
-    }
-    let warnings = acc.finish_warnings();
-    Ok(Document {
-        source: source.to_string(),
-        format: "pptx",
-        pages: total,
-        markdown: acc.md,
-        figures: acc.figures,
-        warnings,
-    })
+    Ok(with_marker(
+        &format!("<!-- slide {n} -->"),
+        &crate::md::render(&blocks),
+    ))
 }

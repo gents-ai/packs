@@ -3,6 +3,8 @@
 //! host's output ceiling.
 use serde::Serialize;
 
+use crate::resume::Resume;
+
 /// The host's output ceiling is 4 MiB; content stops at this many JSON bytes so
 /// the envelope, figure records and warnings always fit under it.
 pub const OUTPUT_CAP_BYTES: usize = 3_800_000;
@@ -34,6 +36,17 @@ pub struct Document {
     pub markdown: String,
     pub figures: Vec<Figure>,
     pub warnings: Vec<String>,
+    /// Only on a document that continues an earlier call: how its Markdown
+    /// joins the earlier part: `blank` (a blank line), `line` (a line break) or
+    /// `none` (the earlier part was cut inside a line, so the two are one line).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub joint: Option<&'static str>,
+    /// Only on a continuation inside a table: the header rows of that table.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_header: Option<String>,
+    /// Where the next call continues this document, when it was not finished.
+    #[serde(skip)]
+    pub next: Option<Resume>,
 }
 
 #[derive(Serialize)]
@@ -78,6 +91,15 @@ pub fn json_len(s: &str) -> usize {
         .sum::<usize>()
 }
 
+/// Bytes one character takes once JSON-escaped, quotes not included.
+pub fn json_char_len(c: char) -> usize {
+    match c {
+        '"' | '\\' | '\n' | '\r' | '\t' => 2,
+        c if (c as u32) < 0x20 => 6,
+        c => c.len_utf8(),
+    }
+}
+
 /// What one document has accumulated so far.
 #[derive(Default)]
 pub struct DocAcc {
@@ -87,8 +109,10 @@ pub struct DocAcc {
     pub next_fig: u32,
     pub small_skipped: u32,
     pub repeated_skipped: u32,
-    /// Hashes of the image files already turned into figures in this document.
+    /// Hashes of the images already turned into figures in this document, with
+    /// the order they were added in, which a continuation carries over.
     pub seen_images: std::collections::HashSet<u128>,
+    pub seen_order: Vec<u128>,
     /// Alt text per figure id, used as the caption only when no real caption is found.
     pub alts: std::collections::HashMap<String, String>,
     /// Set once the output budget refused more content.
@@ -96,7 +120,29 @@ pub struct DocAcc {
     pub(crate) suppressed: usize,
 }
 
+/// Images remembered per document; past this an image used again is listed again.
+pub const MAX_SEEN_IMAGES: usize = 256;
+
 impl DocAcc {
+    /// Remembers an image; false when it was already listed earlier in the document.
+    pub fn see(&mut self, key: u128) -> bool {
+        if self.seen_images.contains(&key) {
+            return false;
+        }
+        if self.seen_order.len() < MAX_SEEN_IMAGES {
+            self.seen_images.insert(key);
+            self.seen_order.push(key);
+        }
+        true
+    }
+
+    /// Restores the memory of listed images a continuation was issued with.
+    pub fn restore_seen(&mut self, seen: &[String]) {
+        for k in seen.iter().filter_map(|h| u128::from_str_radix(h, 16).ok()) {
+            self.see(k);
+        }
+    }
+
     pub fn warn(&mut self, message: impl Into<String>) {
         if self.warnings.len() < MAX_WARNINGS {
             self.warnings.push(message.into());
@@ -128,15 +174,34 @@ impl DocAcc {
     }
 }
 
-/// Tracks the JSON bytes this call has produced against [`OUTPUT_CAP_BYTES`].
-#[derive(Default)]
+/// Tracks the JSON bytes this call has produced against its cap, by default [`OUTPUT_CAP_BYTES`].
 pub struct Budget {
     used: usize,
+    cap: usize,
+}
+
+impl Default for Budget {
+    fn default() -> Self {
+        Self::new(OUTPUT_CAP_BYTES)
+    }
 }
 
 impl Budget {
+    pub fn new(cap: usize) -> Self {
+        Self { used: 0, cap }
+    }
+
+    pub fn used(&self) -> usize {
+        self.used
+    }
+
+    /// Returns bytes charged for something that was taken back out of the result.
+    pub fn refund(&mut self, bytes: usize) {
+        self.used = self.used.saturating_sub(bytes);
+    }
+
     pub fn fits(&self, bytes: usize) -> bool {
-        self.used + bytes <= OUTPUT_CAP_BYTES
+        self.used + bytes <= self.cap
     }
 
     pub fn charge(&mut self, bytes: usize) -> bool {
@@ -148,6 +213,6 @@ impl Budget {
     }
 
     pub fn remaining(&self) -> usize {
-        OUTPUT_CAP_BYTES.saturating_sub(self.used)
+        self.cap.saturating_sub(self.used)
     }
 }

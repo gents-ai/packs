@@ -26,6 +26,10 @@
       "input_schema": {
         "additionalProperties": false,
         "properties": {
+          "cursor": {
+            "description": "The next.cursor value of the previous call, to continue where it stopped. Repeat every other field unchanged.",
+            "type": "string"
+          },
           "data_base64": {
             "description": "The file content, base64 encoded, instead of path; up to 64 MiB of base64.",
             "type": "string"
@@ -44,11 +48,25 @@
             "minItems": 1,
             "type": "array"
           },
+          "max_bytes": {
+            "default": 3800000,
+            "description": "The most JSON bytes of content one call returns before it stops and returns a cursor.",
+            "maximum": 3800000,
+            "minimum": 4096,
+            "type": "integer"
+          },
           "max_image_px": {
             "default": 2000,
             "description": "Longest side, in pixels, that figure images and OCR inputs are scaled down to.",
             "maximum": 4096,
             "minimum": 256,
+            "type": "integer"
+          },
+          "max_seconds": {
+            "default": 860,
+            "description": "Seconds after which a call starts no further page, sheet or file and returns a cursor for the rest.",
+            "maximum": 860,
+            "minimum": 1,
             "type": "integer"
           },
           "min_figure_px": {
@@ -57,6 +75,15 @@
             "maximum": 4096,
             "minimum": 1,
             "type": "integer"
+          },
+          "mode": {
+            "default": "read",
+            "description": "read returns the Markdown; plan lists what each file holds and the pages ranges that cover its pages, slides, sheets or sections once each, without reading their content.",
+            "enum": [
+              "read",
+              "plan"
+            ],
+            "type": "string"
           },
           "name": {
             "description": "File name with its extension for inline data, such as report.pdf; the extension is only a hint, the content decides the format.",

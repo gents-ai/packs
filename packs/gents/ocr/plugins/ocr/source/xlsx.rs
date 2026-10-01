@@ -6,14 +6,24 @@ use std::collections::HashMap;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::{Reader, XmlVersion};
 
+use std::io::{BufRead, BufReader};
+
+use serde::{Deserialize, Serialize};
+
 use crate::ctx::Ctx;
 use crate::detect::header;
 use crate::model::{DocAcc, Document};
+use crate::resume::Resume;
+use crate::slicer::{self, Snap, Step, Steps, with_marker};
+use crate::src::Src;
 use crate::table::TableWriter;
-use crate::util::{Zip, resolve};
+use crate::util::{Zip, resolve, skip_bytes};
 use crate::xml::{attr, is, parse};
 
 const MAX_COLS: usize = 16_384;
+/// The shared strings kept in memory take at most about this many bytes; later ones are left out.
+const SHARED_BYTES: usize = 192 * 1024 * 1024;
+const STREAM_BUFFER: usize = 64 * 1024;
 const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
 fn local(e: &BytesStart<'_>) -> String {
@@ -35,17 +45,31 @@ fn xml_err(what: &str, e: impl std::fmt::Display) -> String {
     format!("{what} is malformed: {e}")
 }
 
-/// Shared strings in index order; rich-text runs are joined, phonetic hints dropped.
-fn shared_strings(zip: &mut Zip<'_>) -> Result<Vec<String>, String> {
-    let Some(bytes) = zip.read("xl/sharedStrings.xml")? else {
-        return Ok(Vec::new());
+/// Shared strings in index order; rich-text runs are joined, phonetic hints
+/// dropped. Streamed, and kept up to [`SHARED_BYTES`]; the second value is how
+/// many strings did not fit.
+fn shared_strings(zip: &mut Zip) -> Result<(Vec<String>, usize), String> {
+    let Some(entry) = zip.stream("xl/sharedStrings.xml")? else {
+        return Ok((Vec::new(), 0));
     };
-    let mut reader = Reader::from_reader(bytes.as_slice());
-    let (mut out, mut cur) = (Vec::new(), String::new());
+    let mut reader = Reader::from_reader(BufReader::with_capacity(STREAM_BUFFER, entry));
+    let (mut kept, mut dropped, mut used) = (Vec::new(), 0usize, 0usize);
+    let mut cur = String::new();
+    let mut push = |s: String, out: &mut Vec<String>| {
+        used += s.len() + std::mem::size_of::<String>();
+        if used <= SHARED_BYTES {
+            out.push(s);
+        } else {
+            dropped += 1;
+        }
+    };
+    let out = &mut kept;
     let (mut in_t, mut in_phonetic) = (false, false);
+    let mut buf = Vec::new();
     loop {
+        buf.clear();
         match reader
-            .read_event()
+            .read_event_into(&mut buf)
             .map_err(|e| xml_err("xl/sharedStrings.xml", e))?
         {
             Event::Start(e) => match local(&e).as_str() {
@@ -56,10 +80,10 @@ fn shared_strings(zip: &mut Zip<'_>) -> Result<Vec<String>, String> {
             Event::End(e) => match e.local_name().into_inner() {
                 "t" => in_t = false,
                 "rPh" => in_phonetic = false,
-                "si" => out.push(std::mem::take(&mut cur)),
+                "si" => push(std::mem::take(&mut cur), out),
                 _ => {}
             },
-            Event::Empty(e) if local(&e) == "si" => out.push(String::new()),
+            Event::Empty(e) if local(&e) == "si" => push(String::new(), out),
             Event::Text(t) if in_t => cur.push_str(&t.xml10_content()),
             Event::GeneralRef(r) if in_t => {
                 if let Some(c) = r.resolve_char_ref().ok().flatten() {
@@ -79,11 +103,11 @@ fn shared_strings(zip: &mut Zip<'_>) -> Result<Vec<String>, String> {
             _ => {}
         }
     }
-    Ok(out)
+    Ok((kept, dropped))
 }
 
 /// Whether each cell style (by index) formats its number as a date or time.
-fn date_styles(zip: &mut Zip<'_>) -> Result<Vec<bool>, String> {
+fn date_styles(zip: &mut Zip) -> Result<Vec<bool>, String> {
     let Some(src) = zip.read_text("xl/styles.xml")? else {
         return Ok(Vec::new());
     };
@@ -190,22 +214,48 @@ fn col_index(cell_ref: &str) -> Option<usize> {
     Some(n - 1)
 }
 
-struct SheetOut {
-    md: String,
-    rows: usize,
-    cut: bool,
-    drawings: bool,
+/// What a call carries to the next inside one sheet.
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+struct SheetSt {
+    col0: usize,
+    cols: usize,
+    /// The header and rule lines of the table, for a slice that starts below them.
+    hdr: String,
 }
 
-fn read_sheet(
-    bytes: &[u8],
-    shared: &[String],
-    dates: &[bool],
+struct SheetOut {
+    md: String,
+    drawings: bool,
+    /// The sheet has more rows: where they start in the part, and what to carry.
+    more: Option<(u64, SheetSt)>,
+    /// The first row does not fit beside what this call already holds.
+    deferred: bool,
+    skipped_rows: usize,
+}
+
+/// Shared strings and date styles, which every cell lookup needs.
+struct Lookup<'a> {
+    shared: &'a [String],
+    dates: &'a [bool],
+}
+
+/// Reads rows from `rd`, which is positioned `start` bytes into the part (at
+/// the first byte when `at` is `None`), until the sheet ends or the table
+/// has used `budget` bytes. With `can_defer`, a first row that does not fit
+/// leaves the whole sheet for the next call.
+fn read_sheet<R: BufRead>(
+    rd: R,
+    lookup: &Lookup<'_>,
     budget: usize,
+    at: Option<(u64, &SheetSt)>,
+    can_defer: bool,
 ) -> Result<SheetOut, String> {
-    let mut reader = Reader::from_reader(bytes);
+    let (start, mut state) = at.map_or((0, SheetSt::default()), |(p, s)| (p, s.clone()));
+    let mut reader = Reader::from_reader(rd);
+    // A slice starts in the middle of the part, so its closing tags have no opening ones.
+    reader.config_mut().check_end_names = false;
     let mut writer: Option<TableWriter> = None;
-    let (mut col0, mut width) = (0usize, 0usize);
     let (mut row, mut row_started): (Vec<String>, bool) = (Vec::new(), false);
     let (mut col, mut kind, mut style, mut value, mut in_v, mut in_t, mut in_inline) = (
         0usize,
@@ -216,19 +266,23 @@ fn read_sheet(
         false,
         false,
     );
-    let mut drawings = false;
-    let mut cut = false;
+    let (mut drawings, mut deferred, mut skipped_rows) = (false, false, 0usize);
+    let mut more = None;
+    let mut row_at = start;
+    let mut buf = Vec::new();
     loop {
+        buf.clear();
+        let before = start + reader.buffer_position();
         match reader
-            .read_event()
+            .read_event_into(&mut buf)
             .map_err(|e| xml_err("the worksheet", e))?
         {
             Event::Start(e) | Event::Empty(e) if local(&e) == "dimension" => {
                 if let Some(r) = attribute(&e, "ref") {
                     let (a, b) = r.split_once(':').unwrap_or((&r, &r));
                     if let (Some(x0), Some(x1)) = (col_index(a), col_index(b)) {
-                        col0 = x0;
-                        width = (x1 + 1 - x0).min(MAX_COLS);
+                        state.col0 = x0;
+                        state.cols = (x1 + 1 - x0).min(MAX_COLS);
                     }
                 }
             }
@@ -236,13 +290,14 @@ fn read_sheet(
                 "row" => {
                     row.clear();
                     row_started = true;
+                    row_at = before;
                 }
                 "c" => {
                     kind = attribute(&e, "t").unwrap_or_default();
                     style = attribute(&e, "s").and_then(|s| s.parse().ok()).unwrap_or(0);
                     col = attribute(&e, "r")
                         .and_then(|r| col_index(&r))
-                        .unwrap_or(col0 + row.len());
+                        .unwrap_or(state.col0 + row.len());
                     value.clear();
                 }
                 "v" => in_v = true,
@@ -265,19 +320,19 @@ fn read_sheet(
                             .trim()
                             .parse::<usize>()
                             .ok()
-                            .and_then(|i| shared.get(i))
+                            .and_then(|i| lookup.shared.get(i))
                             .cloned()
                             .unwrap_or_default(),
                         "b" => if value.trim() == "1" { "TRUE" } else { "FALSE" }.to_string(),
                         "str" | "inlineStr" | "e" | "d" => value.clone(),
-                        _ if dates.get(style).copied().unwrap_or(false) => value
+                        _ if lookup.dates.get(style).copied().unwrap_or(false) => value
                             .trim()
                             .parse::<f64>()
                             .map(serial_to_string)
                             .unwrap_or_else(|_| value.clone()),
                         _ => value.trim().to_string(),
                     };
-                    let idx = col.saturating_sub(col0);
+                    let idx = col.saturating_sub(state.col0);
                     if idx < MAX_COLS {
                         if row.len() <= idx {
                             row.resize(idx + 1, String::new());
@@ -287,13 +342,29 @@ fn read_sheet(
                 }
                 "row" => {
                     row_started = false;
-                    if row.iter().any(|c| !c.trim().is_empty()) && !cut {
-                        let w = writer.get_or_insert_with(|| {
-                            TableWriter::new(if width > 0 { width } else { row.len() }, budget)
-                        });
-                        if !w.row(&row) {
-                            cut = true;
+                    if !row.iter().any(|c| !c.trim().is_empty()) {
+                        continue;
+                    }
+                    let w = writer.get_or_insert_with(|| {
+                        if state.cols == 0 {
+                            state.cols = row.len();
                         }
+                        TableWriter::new(state.cols, budget, start == 0)
+                    });
+                    if w.rows == 0 && start == 0 {
+                        state.hdr = TableWriter::header_of(state.cols, &row);
+                    }
+                    if !w.row(&row) {
+                        if w.rows == 0 && can_defer {
+                            deferred = true;
+                        } else if w.rows == 0 {
+                            skipped_rows += 1;
+                            w.reset_full();
+                            continue;
+                        } else {
+                            more = Some((row_at, state.clone()));
+                        }
+                        break;
                     }
                 }
                 _ => {}
@@ -301,25 +372,136 @@ fn read_sheet(
             Event::Eof => break,
             _ => {}
         }
-        if cut {
-            // The table is full; only the drawing check below still needs the rest.
-            break;
-        }
     }
-    let (md, rows) = writer.map_or((String::new(), 0), |w| {
-        let rows = w.rows;
-        (w.finish(), rows)
-    });
+    let md = writer.map_or_else(String::new, TableWriter::finish);
     Ok(SheetOut {
         md,
-        rows,
-        cut,
         drawings,
+        more,
+        deferred,
+        skipped_rows,
     })
 }
 
-pub fn convert_xlsx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document, String> {
-    let mut zip = Zip::open(data)?;
+struct Sheet {
+    name: String,
+    path: String,
+    hidden: bool,
+}
+
+/// The worksheets of a workbook, one unit each, read row by row.
+struct Book<'a> {
+    ctx: &'a mut Ctx,
+    acc: &'a mut DocAcc,
+    zip: Zip,
+    sheets: Vec<Sheet>,
+    shared: Vec<String>,
+    dates: Vec<bool>,
+    /// The sheet to read next, and where in it.
+    unit: u32,
+    pos: u64,
+    st: Option<SheetSt>,
+}
+
+impl Steps for Book<'_> {
+    fn parts(&mut self) -> (&mut Ctx, &mut DocAcc) {
+        (&mut *self.ctx, &mut *self.acc)
+    }
+
+    fn snapshot(&self) -> Snap {
+        Snap {
+            unit: self.unit,
+            pos: self.pos,
+            st: self.st.as_ref().and_then(|s| serde_json::to_value(s).ok()),
+        }
+    }
+
+    fn step(&mut self) -> Result<Option<Step>, String> {
+        loop {
+            let Some(sheet) = self.sheets.get((self.unit - 1) as usize) else {
+                return Ok(None);
+            };
+            let n = self.unit;
+            if !self.ctx.opts.selected(n) {
+                self.unit += 1;
+                continue;
+            }
+            if sheet.hidden {
+                self.acc.warn(format!(
+                    "sheet {n} ({}) is hidden and was skipped",
+                    sheet.name
+                ));
+                self.unit += 1;
+                continue;
+            }
+            let Some(mut entry) = self.zip.stream(&sheet.path)? else {
+                self.acc.warn(format!(
+                    "sheet {n} ({}): {} is missing from the archive",
+                    sheet.name, sheet.path
+                ));
+                self.unit += 1;
+                continue;
+            };
+            let fresh = self.pos == 0;
+            if !fresh {
+                skip_bytes(&mut entry, self.pos)?;
+            }
+            let budget = self.ctx.budget.remaining().saturating_sub(4096);
+            let lookup = Lookup {
+                shared: &self.shared,
+                dates: &self.dates,
+            };
+            let at = (!fresh).then(|| (self.pos, self.st.clone().unwrap_or_default()));
+            let out = read_sheet(
+                BufReader::with_capacity(STREAM_BUFFER, entry),
+                &lookup,
+                budget,
+                at.as_ref().map(|(p, s)| (*p, s)),
+                self.ctx.emitted > 0,
+            )?;
+            let name = sheet.name.clone();
+            if out.deferred {
+                return Ok(Some(Step::Wait));
+            }
+            if out.skipped_rows > 0 {
+                self.acc.warn(format!(
+                    "sheet {n} ({name}): {} row(s) larger than the output limit were skipped",
+                    out.skipped_rows
+                ));
+            }
+            if out.drawings && out.more.is_none() {
+                self.acc.warn(format!(
+                    "sheet {n} ({name}) has charts or images that are not read"
+                ));
+            }
+            let marker = format!("<!-- sheet {n}: {} -->", name.replace('>', "&gt;"));
+            let body = match (fresh, out.md.is_empty()) {
+                (true, true) => with_marker(&marker, "(empty sheet)"),
+                (true, false) => with_marker(&marker, &out.md),
+                (false, _) => out.md,
+            };
+            return Ok(Some(match out.more {
+                Some((pos, st)) => {
+                    let snap = Snap {
+                        unit: n,
+                        pos,
+                        st: serde_json::to_value(&st).ok(),
+                    };
+                    Step::Stop(body, snap, 1)
+                }
+                None => {
+                    self.unit += 1;
+                    self.pos = 0;
+                    self.st = None;
+                    Step::Chunk(body)
+                }
+            }));
+        }
+    }
+}
+
+/// The worksheets in workbook order.
+fn sheet_list(zip: &mut Zip) -> Result<Vec<Sheet>, String> {
     let wb_src = zip
         .read_text("xl/workbook.xml")?
         .ok_or("the XLSX has no xl/workbook.xml")?;
@@ -333,86 +515,82 @@ pub fn convert_xlsx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document
             }
         }
     }
-    let sheets: Vec<(String, String, bool)> = wb
+    let sheets: Vec<Sheet> = wb
         .descendants()
         .filter(|n| is(*n, "sheet"))
         .filter_map(|n| {
-            Some((
-                attr(n, "name")?.to_string(),
-                rels.get(n.attribute((R_NS, "id"))?)?.clone(),
-                matches!(attr(n, "state"), Some("hidden" | "veryHidden")),
-            ))
+            Some(Sheet {
+                name: attr(n, "name")?.to_string(),
+                path: rels.get(n.attribute((R_NS, "id"))?)?.clone(),
+                hidden: matches!(attr(n, "state"), Some("hidden" | "veryHidden")),
+            })
         })
         .collect();
     if sheets.is_empty() {
         return Err("the XLSX has no worksheets".into());
     }
-    let shared = shared_strings(&mut zip)?;
+    Ok(sheets)
+}
+
+/// The number of worksheets, without reading them.
+pub fn sheet_count(src: &Src) -> Result<u32, String> {
+    Ok(sheet_list(&mut Zip::open(src.reopen()?)?)?.len() as u32)
+}
+
+pub fn convert_xlsx(
+    ctx: &mut Ctx,
+    source: &str,
+    src: &Src,
+    resume: Option<&Resume>,
+) -> Result<Document, String> {
+    let mut zip = Zip::open(src.reopen()?)?;
+    let sheets = sheet_list(&mut zip)?;
+    let (shared, dropped) = shared_strings(&mut zip)?;
     let dates = date_styles(&mut zip)?;
     let total = sheets.len() as u32;
     let mut acc = DocAcc::default();
-    ctx.append(&mut acc, &header(source, "xlsx"));
-    let mut selected = 0;
-    for (k, (name, path, hidden)) in sheets.iter().enumerate() {
-        let n = k as u32 + 1;
-        if !ctx.opts.selected(n) {
-            continue;
+    let parts_from = ctx.parts.len();
+    match resume {
+        Some(r) => {
+            acc.next_fig = r.fig;
+            acc.restore_seen(&r.seen);
         }
-        selected += 1;
-        let safe = name.replace('>', "&gt;");
-        if *hidden {
-            acc.warn(format!("sheet {n} ({name}) is hidden and was skipped"));
-            continue;
-        }
-        let Some(bytes) = zip.read(path)? else {
-            acc.warn(format!(
-                "sheet {n} ({name}): {path} is missing from the archive"
-            ));
-            continue;
-        };
-        let out = read_sheet(
-            &bytes,
-            &shared,
-            &dates,
-            ctx.budget.remaining().saturating_sub(4096),
-        )?;
-        drop(bytes);
-        if out.drawings {
-            acc.warn(format!(
-                "sheet {n} ({name}) has charts or images that are not read"
-            ));
-        }
-        if out.cut {
-            acc.warn(format!(
-                "sheet {n} ({name}): the output size limit cut the table after {} row(s)",
-                out.rows
-            ));
-        }
-        let marker = format!("<!-- sheet {n}: {safe} -->");
-        let chunk = if out.md.is_empty() {
-            format!("{marker}\n\n(empty sheet)")
-        } else {
-            format!("{marker}\n\n{}", out.md)
-        };
-        if !ctx.append(&mut acc, &chunk) {
-            acc.warn(format!("the output size limit was reached before sheet {n}; request pages=\"{n}-\" to continue"));
-            break;
+        None => {
+            ctx.append(&mut acc, &header(source, "xlsx"));
+            if ctx.opts.selects_none(total) {
+                acc.warn(format!(
+                    "pages selects nothing: the workbook has {total} sheet(s)"
+                ));
+            }
         }
     }
-    if selected == 0 {
+    if dropped > 0 {
         acc.warn(format!(
-            "pages selects nothing: the workbook has {total} sheet(s)"
+            "{dropped} shared string(s) are over the {} MiB the reader keeps; cells that use them are empty",
+            SHARED_BYTES / 1024 / 1024
         ));
     }
-    let warnings = acc.finish_warnings();
-    Ok(Document {
-        source: source.to_string(),
-        format: "xlsx",
-        pages: total,
-        markdown: acc.md,
-        figures: Vec::new(),
-        warnings,
-    })
+    let st: Option<SheetSt> = resume
+        .and_then(|r| r.st.clone())
+        .and_then(|v| serde_json::from_value(v).ok());
+    let table_header = st.as_ref().map(|s| s.hdr.clone()).filter(|h| !h.is_empty());
+    let next = {
+        let mut book = Book {
+            ctx: &mut *ctx,
+            acc: &mut acc,
+            zip,
+            sheets,
+            shared,
+            dates,
+            unit: resume.map_or(1, |r| r.unit.max(1)),
+            pos: resume.map_or(0, |r| r.pos),
+            st,
+        };
+        slicer::run(&mut book, resume.map_or(0, |r| r.skip))?
+    };
+    let mut doc = ctx.document(acc, source, "xlsx", total, resume, next, parts_from);
+    doc.table_header = table_header;
+    Ok(doc)
 }
 
 #[cfg(test)]
@@ -443,11 +621,15 @@ mod tests {
             <row r="2"><c r="A2" t="inlineStr"><is><t>x</t></is></c><c r="B2"><v>3.5</v></c><c r="C2" s="1"><v>45292</v></c></row>
             <row r="3"><c r="A3" t="b"><v>1</v></c><c r="C3" t="e"><v>#DIV/0!</v></c></row></sheetData></worksheet>"#;
         let shared = vec!["Name".to_string(), "Qty".to_string(), "When".to_string()];
-        let out = read_sheet(xml, &shared, &[false, true], 100_000).unwrap();
+        let lookup = Lookup {
+            shared: &shared,
+            dates: &[false, true],
+        };
+        let out = read_sheet(&xml[..], &lookup, 100_000, None, false).unwrap();
         assert_eq!(
             out.md,
             "| Name | Qty | When |\n| --- | --- | --- |\n| x | 3.5 | 2024-01-01 |\n| TRUE |  | #DIV/0! |"
         );
-        assert!(!out.cut && !out.drawings);
+        assert!(out.more.is_none() && !out.drawings);
     }
 }

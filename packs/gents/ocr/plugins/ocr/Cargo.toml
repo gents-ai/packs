@@ -25,8 +25,6 @@ serde_json = "1"
 base64 = "0.22"
 zip = { version = "8", default-features = false, features = ["deflate"] }
 quick-xml = "0.42"
-
-[dev-dependencies]
 flate2 = "1"
 
 [[example]]

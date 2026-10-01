@@ -5,16 +5,11 @@ use std::time::{Duration, Instant};
 use ocrs::{ImageSource, OcrEngine, OcrEngineParams, TextItem};
 use rten::Model;
 
+use crate::ctx::Clock;
 use crate::pix::Pix;
 
 static DETECTION: &[u8] = include_bytes!("../models/text-detection.rten");
 static RECOGNITION: &[u8] = include_bytes!("../models/text-recognition.rten");
-
-/// The plugin's declared wall clock is 900 s; OCR only starts another image
-/// when it is expected to finish by this point, so a partial result still returns.
-const OCR_DEADLINE: Duration = Duration::from_secs(860);
-/// The next image is assumed to take up to this many times the slowest so far.
-const SLOWEST_FACTOR: f64 = 1.5;
 
 /// A gap between two words wider than this many line heights is a column gutter
 /// or a cell gap, not a word space; the line is read as separate pieces so text
@@ -53,22 +48,22 @@ pub struct OcrLine {
 
 pub struct Ocr {
     engine: Option<OcrEngine>,
-    started: Instant,
-    slowest: Duration,
+    clock: Clock,
 }
 
 impl Ocr {
-    pub fn new(started: Instant) -> Self {
+    /// `limit` is the call's wall clock; OCR only starts another image when it
+    /// is expected to finish inside it, so a partial result still returns.
+    pub fn new(started: Instant, limit: Duration) -> Self {
         Self {
             engine: None,
-            started,
-            slowest: Duration::ZERO,
+            clock: Clock::new(started, limit),
         }
     }
 
     /// Whether another image is expected to finish inside the call's wall clock.
     pub fn has_time(&self) -> bool {
-        self.started.elapsed() + self.slowest.mul_f64(SLOWEST_FACTOR) < OCR_DEADLINE
+        self.clock.fits()
     }
 
     fn engine(&mut self) -> Result<&OcrEngine, String> {
@@ -95,7 +90,7 @@ impl Ocr {
     pub fn read(&mut self, pix: &Pix) -> Result<Vec<OcrLine>, String> {
         let began = Instant::now();
         let lines = self.read_lines(pix);
-        self.slowest = self.slowest.max(began.elapsed());
+        self.clock.record(began.elapsed());
         lines
     }
 

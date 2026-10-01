@@ -16,12 +16,17 @@ use hayro_interpret::{
 use hayro_syntax::page::Page;
 use hayro_syntax::{LoadPdfError, Pdf};
 use kurbo::{Affine, BezPath, Point, Rect};
+use serde::{Deserialize, Serialize};
 
 use crate::ctx::Ctx;
 use crate::input::OcrMode;
 use crate::layout::{FigBox, Item, Out, Span, layout, take_captions};
 use crate::model::{DocAcc, Document};
+use crate::pdflazy::Lazy;
 use crate::pix::{MAX_DECODE_PIXELS, Pix};
+use crate::resume::Resume;
+use crate::slicer::{self, Snap, Step, Steps, with_marker};
+use crate::src::Src;
 
 /// A page image at least this share of the page area is a scan background, not a figure.
 const BACKGROUND_SHARE: f32 = 0.85;
@@ -445,39 +450,157 @@ struct State<'a> {
     render: RenderCache<'a>,
     settings: InterpreterSettings,
     seen: HashSet<u128>,
-    furniture: Furniture,
+    /// `None` until the running headers and footers have been looked for.
+    furniture: Option<Furniture>,
 }
 
-pub fn convert(ctx: &mut Ctx, source: &str, data: Vec<u8>) -> Result<Document, String> {
-    let pdf = Pdf::new(data).map_err(|e| match e {
+impl State<'_> {
+    fn new(furniture: Option<Furniture>) -> Self {
+        State {
+            interp: InterpreterCache::new(),
+            render: RenderCache::new(),
+            settings: InterpreterSettings::default(),
+            seen: HashSet::new(),
+            furniture,
+        }
+    }
+}
+
+/// A PDF the lazy reader cannot index (a damaged cross-reference table,
+/// encryption) is read whole up to this size, which lets `hayro` repair it.
+const WHOLE_LIMIT: u64 = 256 * 1024 * 1024;
+
+fn load_error(e: LoadPdfError) -> String {
+    match e {
         LoadPdfError::Decryption(_) => {
             "the PDF is password-protected and cannot be opened without the password".to_string()
         }
         LoadPdfError::Invalid => "the PDF is corrupt or truncated and cannot be read".to_string(),
-    })?;
-    let pages = pdf.pages();
-    let total = pages.len() as u32;
-    if total == 0 {
-        return Err("the PDF has no pages".into());
     }
-    let mut acc = DocAcc::default();
-    let mut state = State {
-        interp: InterpreterCache::new(),
-        render: RenderCache::new(),
-        settings: InterpreterSettings::default(),
-        seen: HashSet::new(),
-        furniture: Furniture::default(),
-    };
-    ctx.append(&mut acc, &crate::detect::header(source, "pdf"));
-    let picks: Vec<u32> = (1..=total).filter(|&n| ctx.opts.selected(n)).collect();
-    if picks.len() >= 3 {
-        let mut samples = Vec::new();
-        for &n in picks.iter().take(FURNITURE_SAMPLE) {
-            let p = &pages[(n - 1) as usize];
+}
+
+/// How a PDF is read: windows of pages copied out of the file, or the whole file.
+enum Backend {
+    Lazy(Box<Lazy>),
+    Whole(Pdf),
+}
+
+impl Backend {
+    fn open(src: &mut Src) -> Result<Self, String> {
+        let why = match Lazy::open(src.reopen()?) {
+            Ok(lazy) => return Ok(Self::Lazy(Box::new(lazy))),
+            Err(why) => why,
+        };
+        if src.len() > WHOLE_LIMIT {
+            return Err(format!(
+                "the PDF cannot be indexed ({why}) and is over the {} MiB that can be repaired; save a repaired copy with a PDF tool",
+                WHOLE_LIMIT / 1024 / 1024
+            ));
+        }
+        let data = src
+            .head(src.len() as usize)
+            .map_err(|e| format!("cannot read the file: {e}"))?;
+        Pdf::new(data).map(Self::Whole).map_err(load_error)
+    }
+
+    fn total(&self) -> u32 {
+        match self {
+            Self::Lazy(l) => l.total,
+            Self::Whole(p) => p.pages().len() as u32,
+        }
+    }
+}
+
+/// The number of pages of a PDF, without reading its pages.
+pub fn page_count(src: &mut Src) -> Result<u32, String> {
+    Ok(Backend::open(src)?.total())
+}
+
+/// What a call carries to the next: the running headers and footers.
+#[derive(Serialize, Deserialize, Default)]
+struct Saved {
+    top: Vec<String>,
+    bottom: Vec<String>,
+}
+
+impl Saved {
+    fn of(f: &Furniture) -> Self {
+        let sorted = |s: &HashSet<String>| {
+            let mut v: Vec<String> = s.iter().cloned().collect();
+            v.sort();
+            v
+        };
+        Self {
+            top: sorted(&f.top),
+            bottom: sorted(&f.bottom),
+        }
+    }
+
+    fn furniture(self) -> Furniture {
+        Furniture {
+            top: self.top.into_iter().collect(),
+            bottom: self.bottom.into_iter().collect(),
+            removed: 0,
+        }
+    }
+}
+
+/// The pages of one window as a stream of units.
+struct Pages<'a> {
+    ctx: &'a mut Ctx,
+    acc: &'a mut DocAcc,
+    pdf: &'a Pdf,
+    /// Page number and index in the file opened, in reading order.
+    entries: &'a [(u32, usize)],
+    /// The page to continue with once these are done.
+    after: u32,
+    i: usize,
+    st: State<'a>,
+}
+
+impl Steps for Pages<'_> {
+    fn parts(&mut self) -> (&mut Ctx, &mut DocAcc) {
+        (&mut *self.ctx, &mut *self.acc)
+    }
+
+    fn snapshot(&self) -> Snap {
+        Snap {
+            unit: self.entries.get(self.i).map_or(self.after, |e| e.0),
+            pos: 0,
+            st: self
+                .st
+                .furniture
+                .as_ref()
+                .and_then(|f| serde_json::to_value(Saved::of(f)).ok()),
+        }
+    }
+
+    fn step(&mut self) -> Result<Option<Step>, String> {
+        let Some(&(n, idx)) = self.entries.get(self.i) else {
+            return Ok(None);
+        };
+        let pdf: &Pdf = self.pdf;
+        let body = page(self.ctx, self.acc, pdf, &pdf.pages()[idx], n, &mut self.st);
+        if self.ctx.waiting {
+            return Ok(Some(Step::Wait));
+        }
+        self.i += 1;
+        Ok(Some(Step::Chunk(with_marker(
+            &format!("<!-- page {n} -->"),
+            &body,
+        ))))
+    }
+}
+
+/// Learns the running headers and footers from the first pages of `entries`.
+fn learn_furniture<'a>(ctx: &Ctx, pdf: &'a Pdf, entries: &[(u32, usize)], st: &mut State<'a>) {
+    let mut samples = Vec::new();
+    if entries.len() >= 3 {
+        for &(_, idx) in entries.iter().take(FURNITURE_SAMPLE) {
             let col = collect(
-                &pdf,
-                p,
-                &mut state,
+                pdf,
+                &pdf.pages()[idx],
+                st,
                 ctx.opts.min_figure_px,
                 ctx.opts.max_image_px,
                 false,
@@ -491,44 +614,132 @@ pub fn convert(ctx: &mut Ctx, source: &str, data: Vec<u8>) -> Result<Document, S
                 );
             }
         }
-        if samples.len() >= 3 {
-            state.furniture = Furniture::learn(&samples);
+    }
+    st.furniture = Some(if samples.len() >= 3 {
+        Furniture::learn(&samples)
+    } else {
+        Furniture::default()
+    });
+}
+
+/// Reads the pages `entries` of `pdf` through the slicer. The furniture moves
+/// in and out so the next window keeps what this one learned.
+fn read_window(
+    ctx: &mut Ctx,
+    acc: &mut DocAcc,
+    pdf: &Pdf,
+    entries: &[(u32, usize)],
+    after: u32,
+    furniture: &mut Option<Furniture>,
+    skip: &mut u64,
+) -> Result<Option<Resume>, String> {
+    let mut st = State::new(furniture.take());
+    if st.furniture.is_none() {
+        learn_furniture(ctx, pdf, entries, &mut st);
+    }
+    let mut reader = Pages {
+        ctx,
+        acc,
+        pdf,
+        entries,
+        after,
+        i: 0,
+        st,
+    };
+    let next = slicer::run(&mut reader, std::mem::take(skip))?;
+    *furniture = reader.st.furniture.take();
+    Ok(next)
+}
+
+pub fn convert(
+    ctx: &mut Ctx,
+    source: &str,
+    src: &mut Src,
+    resume: Option<&Resume>,
+) -> Result<Document, String> {
+    let backend = Backend::open(src)?;
+    let total = backend.total();
+    if total == 0 {
+        return Err("the PDF has no pages".into());
+    }
+    let mut acc = DocAcc::default();
+    let parts_from = ctx.parts.len();
+    match resume {
+        Some(r) => {
+            acc.next_fig = r.fig;
+            acc.restore_seen(&r.seen);
+        }
+        None => {
+            ctx.append(&mut acc, &crate::detect::header(source, "pdf"));
+            if ctx.opts.selects_none(total) {
+                acc.warn(format!(
+                    "pages selects nothing: the document has {total} page(s)"
+                ));
+            }
         }
     }
-    let mut selected = 0u32;
-    for n in 1..=total {
-        if !ctx.opts.selected(n) {
-            continue;
+    let mut furniture = resume
+        .and_then(|r| r.st.clone())
+        .and_then(|v| serde_json::from_value::<Saved>(v).ok())
+        .map(Saved::furniture);
+    let mut skip = resume.map_or(0, |r| r.skip);
+    let mut from = resume.map_or(1, |r| r.unit.max(1));
+    let mut removed = 0;
+    let next = match backend {
+        Backend::Whole(pdf) => {
+            let entries: Vec<(u32, usize)> = (from..=total)
+                .filter(|&n| ctx.opts.selected(n))
+                .map(|n| (n, (n - 1) as usize))
+                .collect();
+            let next = read_window(
+                ctx,
+                &mut acc,
+                &pdf,
+                &entries,
+                total + 1,
+                &mut furniture,
+                &mut skip,
+            )?;
+            removed = furniture.as_ref().map_or(0, |f| f.removed);
+            next
         }
-        selected += 1;
-        let body = page(ctx, &mut acc, &pdf, &pages[(n - 1) as usize], n, &mut state);
-        let chunk = if body.is_empty() {
-            format!("<!-- page {n} -->")
-        } else {
-            format!("<!-- page {n} -->\n\n{body}")
-        };
-        if !ctx.append(&mut acc, &chunk) {
-            acc.warn(format!("the output size limit was reached before page {n}; request pages=\"{n}-\" to continue"));
-            break;
-        }
+        Backend::Lazy(mut lazy) => loop {
+            let min = if furniture.is_none() {
+                FURNITURE_SAMPLE
+            } else {
+                1
+            };
+            let win = lazy.window(&ctx.opts, from, min)?;
+            for w in win.warnings {
+                acc.warn(w);
+            }
+            if win.numbers.is_empty() {
+                break None;
+            }
+            let pdf = Pdf::new(win.bytes).map_err(load_error)?;
+            let entries: Vec<(u32, usize)> = win.numbers.iter().copied().zip(0usize..).collect();
+            let next = read_window(
+                ctx,
+                &mut acc,
+                &pdf,
+                &entries,
+                win.after,
+                &mut furniture,
+                &mut skip,
+            )?;
+            removed += furniture
+                .as_mut()
+                .map_or(0, |f| std::mem::take(&mut f.removed));
+            if next.is_some() || win.after > total {
+                break next;
+            }
+            from = win.after;
+        },
+    };
+    if removed > 0 {
+        acc.warn(format!("{removed} repeated header or footer line(s) near the page edges (running titles, page numbers) were left out"));
     }
-    if selected == 0 {
-        acc.warn(format!(
-            "pages selects nothing: the document has {total} page(s)"
-        ));
-    }
-    if state.furniture.removed > 0 {
-        acc.warn(format!("{} repeated header or footer line(s) near the page edges (running titles, page numbers) were left out", state.furniture.removed));
-    }
-    let warnings = acc.finish_warnings();
-    Ok(Document {
-        source: source.to_string(),
-        format: "pdf",
-        pages: total,
-        markdown: acc.md,
-        figures: acc.figures,
-        warnings,
-    })
+    Ok(ctx.document(acc, source, "pdf", total, resume, next, parts_from))
 }
 
 /// Runs the interpreter over one page and gathers its text, images and counts.
@@ -587,6 +798,7 @@ fn page<'a>(
     st: &mut State<'a>,
 ) -> String {
     let h = page.render_dimensions().1;
+    st.seen.clone_from(&acc.seen_images);
     let mut col = collect(
         pdf,
         page,
@@ -595,6 +807,9 @@ fn page<'a>(
         ctx.opts.max_image_px,
         true,
     );
+    for key in st.seen.drain() {
+        acc.see(key);
+    }
     acc.small_skipped += col.small;
     acc.repeated_skipped += col.repeated;
     if let Some((w, h)) = col.oversized {
@@ -605,8 +820,8 @@ fn page<'a>(
     }
 
     let text_ok = col.mapped >= 3 && col.unmapped * 3 <= col.mapped;
-    if text_ok {
-        st.furniture.drop_from(&mut col.spans, h);
+    if text_ok && let Some(f) = st.furniture.as_mut() {
+        f.drop_from(&mut col.spans, h);
     }
     let visual = col.any_image || col.paths > 0;
     let want_ocr = match ctx.opts.ocr {
@@ -618,6 +833,10 @@ fn page<'a>(
         acc.warn(format!(
             "page {n}: no usable text layer and ocr is never, so the page was not read"
         ));
+    }
+    if want_ocr && ctx.must_wait() {
+        ctx.waiting = true;
+        return String::new();
     }
     if want_ocr {
         // Rendering decodes every image of the page, so a page holding an
@@ -790,7 +1009,7 @@ mod tests {
 
     fn run(data: Vec<u8>, opts: Options) -> (Document, Ctx) {
         let mut ctx = Ctx::new(opts);
-        let doc = convert(&mut ctx, "t.pdf", data).unwrap();
+        let doc = convert(&mut ctx, "t.pdf", &mut Src::mem(data), None).unwrap();
         (doc, ctx)
     }
 
@@ -1076,8 +1295,8 @@ mod tests {
         let long_ago = std::time::Instant::now()
             .checked_sub(std::time::Duration::from_secs(10_000))
             .expect("clock is far enough from its origin");
-        ctx.ocr = crate::ocr::Ocr::new(long_ago);
-        let doc = convert(&mut ctx, "t.pdf", pdf(&[spec])).unwrap();
+        ctx.ocr = crate::ocr::Ocr::new(long_ago, std::time::Duration::from_secs(1));
+        let doc = convert(&mut ctx, "t.pdf", &mut Src::mem(pdf(&[spec])), None).unwrap();
         assert_eq!(doc.warnings.len(), 1, "{:?}", doc.warnings);
         assert!(
             doc.warnings[0].starts_with(
@@ -1208,9 +1427,14 @@ mod tests {
     #[test]
     fn corrupt_and_encrypted_input_fail_with_a_reason() {
         let mut ctx = Ctx::new(Options::default());
-        let err = convert(&mut ctx, "x.pdf", b"%PDF-1.4 garbage".to_vec())
-            .err()
-            .unwrap();
+        let err = convert(
+            &mut ctx,
+            "x.pdf",
+            &mut Src::mem(b"%PDF-1.4 garbage".to_vec()),
+            None,
+        )
+        .err()
+        .unwrap();
         assert!(err.contains("corrupt or truncated"), "{err}");
     }
 }

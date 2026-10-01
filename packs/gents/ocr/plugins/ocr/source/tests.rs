@@ -193,7 +193,7 @@ fn figure_images_use_the_response_and_parts_shape() {
 }
 
 #[test]
-fn a_large_table_is_cut_at_the_output_limit_and_says_so() {
+fn a_large_table_is_cut_at_the_output_limit_and_continues_with_a_cursor() {
     let mut csv = String::from("id,text\n");
     for i in 0..150_000 {
         csv.push_str(&format!("{i},row number {i} with some padding text\n"));
@@ -202,15 +202,20 @@ fn a_large_table_is_cut_at_the_output_limit_and_says_so() {
         use base64::Engine as _;
         base64::engine::general_purpose::STANDARD.encode(csv)
     };
-    let raw = run(&json!({"name": "big.csv", "data_base64": b64}).to_string()).unwrap();
+    let input = json!({"name": "big.csv", "data_base64": b64});
+    let raw = run(&input.to_string()).unwrap();
     assert!(raw.len() < 4 * 1024 * 1024, "{} bytes", raw.len());
     let out: Value = serde_json::from_str(&raw).unwrap();
-    let warning = docs(&out)[0]["warnings"][0].as_str().unwrap();
-    assert!(
-        warning.contains("output size limit cut the table after")
-            && warning.contains("more row(s) were not read"),
-        "{warning}"
+    assert!(docs(&out)[0]["warnings"].as_array().unwrap().is_empty());
+    let cursor = out["next"]["cursor"].as_str().unwrap().to_string();
+    let mut again = input.clone();
+    again["cursor"] = json!(cursor);
+    let second: Value = serde_json::from_str(&run(&again.to_string()).unwrap()).unwrap();
+    assert_eq!(
+        docs(&second)[0]["table_header"],
+        "| id | text |\n| --- | --- |"
     );
+    assert_eq!(docs(&second)[0]["joint"], "line");
 }
 
 fn zip_with(entries: &[(&str, Vec<u8>)]) -> Vec<u8> {
@@ -413,23 +418,16 @@ fn images_stop_at_the_ocr_time_budget_instead_of_running_out_the_clock() {
         err.contains("OCR time budget of this call ran out") && err.contains("call again"),
         "{err}"
     );
-    // A directory: the image is reported unread, the text file is still read.
+    // A directory: the image is reported unread and the call stops with a cursor at the next file.
     let out =
         exhausted(json!({"path": fixtures(), "files": ["letter.png", "plain.txt", "chart.png"]}))
             .unwrap();
-    let by = |n: &str| {
-        docs(&out)
-            .iter()
-            .find(|d| d["source"] == n)
-            .unwrap()
-            .clone()
-    };
-    assert_eq!(by("plain.txt")["format"], "text");
-    for img in ["letter.png", "chart.png"] {
-        let w = by(img)["warnings"][0].as_str().unwrap().to_string();
-        assert!(w.starts_with("not read: the OCR time budget"), "{w}");
-        assert_eq!(by(img)["markdown"], "");
-    }
+    assert_eq!(docs(&out).len(), 1);
+    let w = docs(&out)[0]["warnings"][0].as_str().unwrap().to_string();
+    assert!(w.starts_with("not read: the OCR time budget"), "{w}");
+    assert_eq!(docs(&out)[0]["markdown"], "");
+    assert_eq!(out["next"]["source"], "plain.txt");
+    assert!(out["next"]["cursor"].as_str().unwrap().starts_with("ocr1."));
 }
 
 #[test]
@@ -502,13 +500,4 @@ fn files_outside_the_bound_directory_are_refused_with_the_entry_named() {
             format!("files entry {bad:?} must be a relative path inside the bound directory")
         );
     }
-}
-
-#[test]
-fn a_file_over_the_size_limit_is_refused_with_the_limit_and_the_way_out() {
-    let err = super::read_limit_error(300 * 1024 * 1024);
-    assert!(
-        err.contains("300 MiB") && err.contains("split the file") && !err.contains('\n'),
-        "{err}"
-    );
 }

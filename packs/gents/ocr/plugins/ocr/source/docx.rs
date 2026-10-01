@@ -8,8 +8,13 @@ use crate::ctx::Ctx;
 use crate::detect::header;
 use crate::md::esc;
 use crate::model::{Block, DocAcc, Document};
-use crate::util::{Zip, resolve};
-use crate::xml::{attr, child, descendant, is, parse, text};
+use crate::resume::Resume;
+use crate::slicer::{self, Snap, Step, Steps};
+use crate::src::Src;
+use crate::util::{Entry, Zip, resolve};
+use crate::xml::{attr, child, is, parse, text};
+use crate::xmlfrag::{Frags, attribute, container, scan};
+use serde::{Deserialize, Serialize};
 
 const PART: &str = "word/document.xml";
 
@@ -100,10 +105,10 @@ struct Rel {
     external: bool,
 }
 
-struct Walker<'z, 'a> {
+struct Walker<'z> {
     ctx: &'z mut Ctx,
     acc: &'z mut DocAcc,
-    zip: &'z mut Zip<'a>,
+    zip: &'z mut Zip,
     styles: Styles,
     numbering: Numbering,
     rels: HashMap<String, Rel>,
@@ -116,7 +121,11 @@ struct Walker<'z, 'a> {
     has_title: bool,
 }
 
-fn parse_styles(zip: &mut Zip<'_>) -> Result<Styles, String> {
+/// Source bytes of XML read into one batch of body elements.
+const BATCH_BYTES: usize = 256 * 1024;
+const FOOTNOTE_BATCH: usize = 1024 * 1024;
+
+fn parse_styles(zip: &mut Zip) -> Result<Styles, String> {
     let mut styles = Styles::default();
     if let Some(src) = zip.read_text("word/styles.xml")? {
         let doc = parse(&src)?;
@@ -151,7 +160,7 @@ fn parse_styles(zip: &mut Zip<'_>) -> Result<Styles, String> {
     Ok(styles)
 }
 
-fn parse_numbering(zip: &mut Zip<'_>) -> Result<Numbering, String> {
+fn parse_numbering(zip: &mut Zip) -> Result<Numbering, String> {
     let mut numbering = Numbering::default();
     if let Some(src) = zip.read_text("word/numbering.xml")? {
         let doc = parse(&src)?;
@@ -184,7 +193,7 @@ fn parse_numbering(zip: &mut Zip<'_>) -> Result<Numbering, String> {
     Ok(numbering)
 }
 
-fn parse_rels(zip: &mut Zip<'_>) -> Result<HashMap<String, Rel>, String> {
+fn parse_rels(zip: &mut Zip) -> Result<HashMap<String, Rel>, String> {
     let mut rels = HashMap::new();
     if let Some(src) = zip.read_text("word/_rels/document.xml.rels")? {
         let doc = parse(&src)?;
@@ -203,11 +212,23 @@ fn parse_rels(zip: &mut Zip<'_>) -> Result<HashMap<String, Rel>, String> {
     Ok(rels)
 }
 
-fn parse_footnotes(zip: &mut Zip<'_>) -> Result<HashMap<String, String>, String> {
+/// Footnote texts kept in memory at most this many bytes in all.
+const NOTES_CAP_BYTES: usize = 8 * 1024 * 1024;
+
+/// Footnote texts by id, read as a stream; ones past the memory cap are counted, not kept.
+fn parse_footnotes(zip: &mut Zip) -> Result<(HashMap<String, String>, usize), String> {
     let mut notes = HashMap::new();
-    if let Some(src) = zip.read_text("word/footnotes.xml")? {
-        let doc = parse(&src)?;
-        for n in doc.descendants().filter(|n| is(*n, "footnote")) {
+    let (mut bytes, mut dropped) = (0usize, 0usize);
+    let Some(entry) = zip.stream("word/footnotes.xml")? else {
+        return Ok((notes, 0));
+    };
+    let mut frags = Frags::open(entry, &[("footnotes", 0)], &[], None)?;
+    while let Some(batch) = frags.next_batch(FOOTNOTE_BATCH)? {
+        let doc = parse(&batch.xml)?;
+        for n in container(&doc, batch.depth)
+            .children()
+            .filter(|n| is(*n, "footnote"))
+        {
             if matches!(
                 attr(n, "type"),
                 Some("separator" | "continuationSeparator" | "continuationNotice")
@@ -220,11 +241,17 @@ fn parse_footnotes(zip: &mut Zip<'_>) -> Result<HashMap<String, String>, String>
                     .filter(|p| is(*p, "p"))
                     .map(|p| text_of_para(p))
                     .collect();
-                notes.insert(id.to_string(), t.join(" ").trim().to_string());
+                let t = t.join(" ").trim().to_string();
+                if bytes + t.len() > NOTES_CAP_BYTES {
+                    dropped += 1;
+                    continue;
+                }
+                bytes += t.len();
+                notes.insert(id.to_string(), t);
             }
         }
     }
-    Ok(notes)
+    Ok((notes, dropped))
 }
 
 /// Plain text of a paragraph's runs, for table cells and notes.
@@ -296,7 +323,7 @@ fn emit_runs(runs: &[Run]) -> String {
     out
 }
 
-impl Walker<'_, '_> {
+impl Walker<'_> {
     fn collect_runs(
         &mut self,
         node: Node<'_, '_>,
@@ -508,6 +535,10 @@ impl Walker<'_, '_> {
     }
 
     fn image(&mut self, rid: &str, alt: String, unit: Option<u32>) {
+        if self.ctx.must_wait() {
+            self.ctx.waiting = true;
+            return;
+        }
         let Some(rel) = self.rels.get(rid) else {
             return;
         };
@@ -571,7 +602,7 @@ impl Walker<'_, '_> {
 
     fn body(&mut self, node: Node<'_, '_>, unit: Option<u32>) {
         for c in node.children().filter(Node::is_element) {
-            if self.acc.truncated {
+            if self.acc.truncated || self.ctx.waiting {
                 return;
             }
             match c.tag_name().name() {
@@ -593,55 +624,182 @@ impl Walker<'_, '_> {
     }
 }
 
-pub fn convert_docx(ctx: &mut Ctx, source: &str, data: &[u8]) -> Result<Document, String> {
-    let mut zip = Zip::open(data)?;
-    let src = zip
-        .read_text(PART)?
-        .ok_or("the DOCX has no word/document.xml")?;
-    let doc = parse(&src)?;
-    let body = descendant(doc.root_element(), "body").ok_or("the DOCX has no document body")?;
+/// What a call carries to the next: list counters, the notes cited so far and
+/// the heading shift, so a slice reads exactly as it would inside one call.
+#[derive(Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+struct State {
+    counters: HashMap<String, Vec<u32>>,
+    used_notes: Vec<String>,
+    style_run: u32,
+    has_title: bool,
+}
+
+/// A pending caption or list item ties a block to the next one, so a batch is
+/// only cut where none does.
+pub fn safe_cut(last: Option<&Block>) -> bool {
+    match last {
+        Some(Block::Item { .. } | Block::Figure(_) | Block::Caption(_)) => false,
+        Some(Block::Para(t)) => !crate::md::caption_start(t.trim_matches('*')),
+        _ => true,
+    }
+}
+
+/// Whether any paragraph uses a Title style: a one-pass scan of the body.
+fn has_title_style(zip: &mut Zip, styles: &Styles) -> Result<bool, String> {
+    let Some(entry) = zip.stream(PART)? else {
+        return Ok(false);
+    };
+    let mut found = false;
+    scan(entry, |name, end, raw| {
+        if name == "pStyle" && !end && attribute(raw, "val").is_some_and(|id| styles.is_title(&id))
+        {
+            found = true;
+        }
+        !found
+    })?;
+    Ok(found)
+}
+
+/// The body of a DOCX as a stream of batches, then its footnotes.
+struct Reader<'a> {
+    w: Walker<'a>,
+    frags: Frags<Entry<'a>>,
+    /// Packed position of the next batch.
+    pos: u64,
+    ended: bool,
+    notes_done: bool,
+}
+
+impl Reader<'_> {
+    fn state(&self) -> State {
+        State {
+            counters: self.w.counters.clone(),
+            used_notes: self.w.used_notes.clone(),
+            style_run: self.w.style_run,
+            has_title: self.w.has_title,
+        }
+    }
+}
+
+impl Steps for Reader<'_> {
+    fn parts(&mut self) -> (&mut Ctx, &mut DocAcc) {
+        (&mut *self.w.ctx, &mut *self.w.acc)
+    }
+
+    fn snapshot(&self) -> Snap {
+        Snap {
+            unit: 1,
+            pos: self.pos,
+            st: serde_json::to_value(self.state()).ok(),
+        }
+    }
+
+    fn step(&mut self) -> Result<Option<Step>, String> {
+        if self.ended {
+            if std::mem::replace(&mut self.notes_done, true) {
+                return Ok(None);
+            }
+            let notes: Vec<Block> = std::mem::take(&mut self.w.used_notes)
+                .iter()
+                .filter_map(|id| {
+                    self.w
+                        .footnotes
+                        .get(id)
+                        .map(|t| Block::Raw(format!("[^{id}]: {}", esc(t))))
+                })
+                .collect();
+            return Ok(Some(Step::Chunk(crate::md::render(&notes))));
+        }
+        loop {
+            let Some(batch) = self.frags.next_batch(BATCH_BYTES)? else {
+                self.ended = true;
+                break;
+            };
+            let doc = parse(&batch.xml)?;
+            self.w.body(container(&doc, batch.depth), Some(1));
+            self.pos = batch.next;
+            if batch.last {
+                self.ended = true;
+                break;
+            }
+            if self.w.ctx.waiting || safe_cut(self.w.blocks.last()) {
+                break;
+            }
+        }
+        if self.w.ctx.waiting {
+            return Ok(Some(Step::Wait));
+        }
+        crate::md::attach_captions(&mut self.w.blocks, self.w.acc);
+        let blocks = std::mem::take(&mut self.w.blocks);
+        Ok(Some(Step::Chunk(crate::md::render(&blocks))))
+    }
+}
+
+pub fn convert_docx(
+    ctx: &mut Ctx,
+    source: &str,
+    src: &Src,
+    resume: Option<&Resume>,
+) -> Result<Document, String> {
+    let mut zip = Zip::open(src.reopen()?)?;
+    let mut main = zip.fork()?;
+    if !zip.has(PART) {
+        return Err("the DOCX has no word/document.xml".into());
+    }
     let styles = parse_styles(&mut zip)?;
     let numbering = parse_numbering(&mut zip)?;
     let rels = parse_rels(&mut zip)?;
-    let footnotes = parse_footnotes(&mut zip)?;
-    let has_title = doc
-        .descendants()
-        .any(|n| is(n, "pStyle") && attr(n, "val").is_some_and(|id| styles.is_title(id)));
-    let mut acc = DocAcc::default();
-    ctx.append(&mut acc, &header(source, "docx"));
-    let mut w = Walker {
-        ctx: &mut *ctx,
-        acc: &mut acc,
-        zip: &mut zip,
-        styles,
-        numbering,
-        rels,
-        counters: HashMap::new(),
-        footnotes,
-        used_notes: Vec::new(),
-        blocks: Vec::new(),
-        style_run: 0,
-        has_title,
+    let (footnotes, notes_dropped) = parse_footnotes(&mut zip)?;
+    let saved: State = resume
+        .and_then(|r| r.st.clone())
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+    let has_title = match resume {
+        Some(_) => saved.has_title,
+        None => has_title_style(&mut main, &styles)?,
     };
-    w.body(body, Some(1));
-    crate::md::attach_captions(&mut w.blocks, w.acc);
-    for id in std::mem::take(&mut w.used_notes) {
-        if let Some(t) = w.footnotes.get(&id) {
-            w.blocks.push(Block::Raw(format!("[^{id}]: {}", esc(t))));
+    let mut acc = DocAcc::default();
+    let parts_from = ctx.parts.len();
+    match resume {
+        Some(r) => {
+            acc.next_fig = r.fig;
+            acc.restore_seen(&r.seen);
+        }
+        None => {
+            ctx.append(&mut acc, &header(source, "docx"));
+            if notes_dropped > 0 {
+                acc.warn(format!("{notes_dropped} footnote(s) were left out: the notes of this document are over the {} MiB the reader keeps", NOTES_CAP_BYTES / 1024 / 1024));
+            }
         }
     }
-    let blocks = std::mem::take(&mut w.blocks);
-    drop(w);
-    if !ctx.append(&mut acc, &crate::md::render(&blocks)) {
-        acc.warn("the output size limit was reached and the document was cut at that point");
-    }
-    let warnings = acc.finish_warnings();
-    Ok(Document {
-        source: source.to_string(),
-        format: "docx",
-        pages: 1,
-        markdown: acc.md,
-        figures: acc.figures,
-        warnings,
-    })
+    let entry = main
+        .stream(PART)?
+        .ok_or("the DOCX has no word/document.xml")?;
+    let start = resume.map(|r| r.pos).filter(|p| *p > 0);
+    let frags = Frags::open(entry, &[("document", 0), ("body", 0)], &[], start)?;
+    let next = {
+        let mut reader = Reader {
+            w: Walker {
+                ctx: &mut *ctx,
+                acc: &mut acc,
+                zip: &mut zip,
+                styles,
+                numbering,
+                rels,
+                counters: saved.counters,
+                footnotes,
+                used_notes: saved.used_notes,
+                blocks: Vec::new(),
+                style_run: saved.style_run,
+                has_title,
+            },
+            frags,
+            pos: start.unwrap_or(0),
+            ended: false,
+            notes_done: false,
+        };
+        slicer::run(&mut reader, resume.map_or(0, |r| r.skip))?
+    };
+    Ok(ctx.document(acc, source, "docx", 1, resume, next, parts_from))
 }

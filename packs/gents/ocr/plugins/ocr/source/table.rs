@@ -12,11 +12,14 @@ pub struct TableWriter {
     pub rows: usize,
     budget: usize,
     pub full: bool,
+    /// Whether the first row is a header followed by the rule; a table that
+    /// continues an earlier call writes plain rows.
+    header: bool,
 }
 
 impl TableWriter {
     /// `budget` is the JSON bytes this table may use.
-    pub fn new(cols: usize, budget: usize) -> Self {
+    pub fn new(cols: usize, budget: usize, header: bool) -> Self {
         Self {
             md: String::new(),
             json: 2,
@@ -24,7 +27,13 @@ impl TableWriter {
             rows: 0,
             budget,
             full: false,
+            header,
         }
+    }
+
+    /// Forgets that the budget ran out, after a row too large for any budget was skipped.
+    pub fn reset_full(&mut self) {
+        self.full = false;
     }
 
     /// Adds a row; returns false once the budget is used up (the row is dropped).
@@ -39,7 +48,7 @@ impl TableWriter {
             line.push_str(" |");
         }
         line.push('\n');
-        if self.rows == 0 {
+        if self.rows == 0 && self.header {
             line.push('|');
             line.push_str(&" --- |".repeat(self.cols));
             line.push('\n');
@@ -55,6 +64,13 @@ impl TableWriter {
         true
     }
 
+    /// The header and rule lines a table with these columns opens with.
+    pub fn header_of<S: AsRef<str>>(cols: usize, first: &[S]) -> String {
+        let mut h = Self::new(cols, usize::MAX, true);
+        h.row(first);
+        h.finish()
+    }
+
     pub fn finish(mut self) -> String {
         self.md.truncate(self.md.trim_end().len());
         self.md
@@ -67,10 +83,10 @@ mod tests {
 
     #[test]
     fn writes_header_rule_and_stops_at_budget() {
-        let mut t = TableWriter::new(2, 10_000);
+        let mut t = TableWriter::new(2, 10_000, true);
         assert!(t.row(&["a", "b"]) && t.row(&["1", "2|3"]));
         assert_eq!(t.finish(), "| a | b |\n| --- | --- |\n| 1 | 2\\|3 |");
-        let mut small = TableWriter::new(2, 120);
+        let mut small = TableWriter::new(2, 120, true);
         let mut written = 0;
         while small.row(&["some text", "more text"]) {
             written += 1;

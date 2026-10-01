@@ -25,28 +25,35 @@ mod odf;
 mod pdf;
 #[cfg(test)]
 mod pdfgen;
+mod pdflazy;
+mod pdfobj;
 mod pix;
+mod plan;
 mod pptx;
+mod resume;
+mod slicer;
+mod src;
 mod table;
 #[cfg(test)]
 mod tests;
 mod text;
+mod textio;
 mod util;
 mod xlsx;
 mod xml;
+mod xmlfrag;
 
 use ctx::Ctx;
 use detect::Kind;
-use input::{Input, OcrMode};
+use input::{Input, Mode, OcrMode};
 use model::{Document, OUTPUT_CAP_BYTES, Part};
+use resume::{Payload, Resume};
+use src::Src;
 
-/// One input file may be at most this large.
-const MAX_FILE_BYTES: u64 = 256 * 1024 * 1024;
-const READ_CHUNK: usize = 8 * 1024 * 1024;
 const MAX_INLINE_BASE64: usize = 64 * 1024 * 1024;
 const MAX_FILES: usize = 10_000;
 const MAX_DEPTH: usize = 16;
-/// Once this little budget is left, further documents are reported unread.
+/// Once this little budget is left, the call stops and returns a cursor for the rest.
 const BUDGET_FLOOR: usize = 16 * 1024;
 
 enum Data {
@@ -54,14 +61,39 @@ enum Data {
     Inline(Vec<u8>),
 }
 
-struct Source {
-    name: String,
+pub struct Source {
+    pub name: String,
     data: Data,
+}
+
+impl Source {
+    fn open(self) -> Result<Src, String> {
+        match self.data {
+            Data::Path(p) => Src::open(&p),
+            Data::Inline(b) => Ok(Src::mem(b)),
+        }
+    }
+
+    /// The directory of the file, for formats that read files beside it.
+    fn dir(&self) -> Option<PathBuf> {
+        match &self.data {
+            Data::Path(p) => p.parent().map(Path::to_path_buf),
+            Data::Inline(_) => None,
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct Next {
+    cursor: String,
+    source: String,
 }
 
 #[derive(Serialize)]
 struct Plain<'a> {
     documents: &'a [Document],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next: Option<&'a Next>,
 }
 
 #[derive(Serialize)]
@@ -98,25 +130,70 @@ fn run(raw: &str) -> Result<String, String> {
     run_at(raw, Instant::now())
 }
 
-/// Runs a request whose wall clock (for the OCR time budget) started at `started`.
+/// A source that matches a cursor: the same file list, the same file, unchanged.
+fn check_cursor(p: &Payload, req: u64, sources: &[Source]) -> Result<(), String> {
+    let gone = "the files changed since the cursor was returned; start again without a cursor";
+    if p.req != req {
+        return Err("the cursor belongs to a different request (files, pages, ocr or image options changed); repeat the request it came from".into());
+    }
+    match sources.get(p.file as usize) {
+        Some(s) if s.name == p.name => Ok(()),
+        _ => Err(gone.into()),
+    }
+}
+
+/// Runs a request whose wall clock started at `started`.
 fn run_at(raw: &str, started: Instant) -> Result<String, String> {
     let input: Input = serde_json::from_str(raw).map_err(|e| format!("invalid input: {e}"))?;
     input.validate_source()?;
     let opts = input.options()?;
     let figure_images = opts.figure_images;
-    let mut ctx = Ctx::new(opts);
-    ctx.ocr = ocr::Ocr::new(started);
     let (sources, root) = sources(&input)?;
+    let names: Vec<String> = sources.iter().map(|s| s.name.clone()).collect();
+    let req = input.fingerprint(&names);
+    if input.mode == Some(Mode::Plan) {
+        return plan::run(&opts, sources, started);
+    }
+    let mut resume: Option<Resume> = None;
+    let mut first = 0usize;
+    if let Some(cursor) = &input.cursor {
+        let p = resume::decode(cursor)?;
+        check_cursor(&p, req, &sources)?;
+        first = p.file as usize;
+        resume = Some(p.at.clone()).filter(|r| !r.is_start());
+        let mut probe = open_shared(&sources[first])?;
+        let same = probe.len() == p.len
+            && probe
+                .fingerprint()
+                .map_err(|e| format!("cannot read the file: {e}"))?
+                == p.fp;
+        if !same {
+            return Err(format!(
+                "{} changed since the cursor was returned; start again without a cursor",
+                p.name
+            ));
+        }
+    }
+    let mut ctx = Ctx::started(opts, started);
     let single = sources.len() == 1;
-    let mut docs = Vec::with_capacity(sources.len());
+    let mut docs = Vec::with_capacity(sources.len().min(1024));
     let mut failed = 0usize;
-    for src in sources {
-        if !single && ctx.budget.remaining() < BUDGET_FLOOR {
-            docs.push(unread(&src.name, "not read: the output size limit was reached; call again with files listing the remaining documents"));
-            failed += 1;
-            continue;
+    let mut next: Option<Next> = None;
+    for (i, src) in sources.into_iter().enumerate().skip(first) {
+        let continuing = resume.take();
+        let stop = continuing.is_none()
+            && !docs.is_empty()
+            && (ctx.budget.remaining() < BUDGET_FLOOR
+                || !ctx.clock.fits()
+                || (ctx.opts.ocr != OcrMode::Never
+                    && detect::is_image_name(&src.name)
+                    && !ctx.ocr.has_time()));
+        if stop {
+            next = Some(issue(req, i, &src, None)?);
+            break;
         }
         if !single
+            && continuing.is_none()
             && ctx.opts.ocr != OcrMode::Never
             && detect::is_image_name(&src.name)
             && !ctx.ocr.has_time()
@@ -126,8 +203,35 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
             continue;
         }
         let name = src.name.clone();
-        match process(&mut ctx, src, &root) {
-            Ok(doc) => docs.push(doc),
+        let fresh = continuing.is_none();
+        let before = ctx.emitted;
+        match process(&mut ctx, src, &root, continuing.as_ref()) {
+            Ok((mut doc, mut srcf)) => {
+                if let Some(at) = doc.next.take() {
+                    let fp = srcf
+                        .fingerprint()
+                        .map_err(|e| format!("cannot read the file: {e}"))?;
+                    let cursor = resume::encode(&Payload {
+                        v: 1,
+                        req,
+                        file: i as u32,
+                        name: name.clone(),
+                        len: srcf.len(),
+                        fp,
+                        at,
+                    })?;
+                    next = Some(Next {
+                        cursor,
+                        source: name,
+                    });
+                    // Nothing of this file fit beside what earlier files filled: leave it whole.
+                    if !(fresh && ctx.emitted == before && !docs.is_empty()) {
+                        docs.push(doc);
+                    }
+                    break;
+                }
+                docs.push(doc);
+            }
             Err(why) if single => return Err(format!("{name}: {why}")),
             Err(why) => {
                 docs.push(unread(&name, &format!("failed: {why}")));
@@ -135,7 +239,7 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
             }
         }
     }
-    if failed == docs.len() {
+    if failed == docs.len() && next.is_none() {
         let reasons: Vec<&str> = docs
             .iter()
             .flat_map(|d| d.warnings.iter().map(String::as_str))
@@ -146,22 +250,54 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
             reasons.join("; ")
         ));
     }
+    let plain = Plain {
+        documents: &docs,
+        next: next.as_ref(),
+    };
     let json = if figure_images && !ctx.parts.is_empty() {
         serde_json::to_string(&WithImages {
-            response: Plain { documents: &docs },
+            response: plain,
             parts: &ctx.parts,
         })
     } else {
-        serde_json::to_string(&Plain { documents: &docs })
+        serde_json::to_string(&plain)
     }
     .map_err(|e| format!("serializing the result: {e}"))?;
     if json.len() > OUTPUT_CAP_BYTES + 400_000 {
         return Err(format!(
-            "the result is {} bytes, over the output limit; request fewer pages or files",
+            "the result is {} bytes, over the output limit; lower max_bytes or read fewer pages or files",
             json.len()
         ));
     }
     Ok(json)
+}
+
+/// A cursor that resumes at the start of file `i`.
+fn issue(req: u64, i: usize, src: &Source, at: Option<Resume>) -> Result<Next, String> {
+    let mut s = open_shared(src)?;
+    let cursor = resume::encode(&Payload {
+        v: 1,
+        req,
+        file: i as u32,
+        name: src.name.clone(),
+        len: s.len(),
+        fp: s
+            .fingerprint()
+            .map_err(|e| format!("cannot read the file: {e}"))?,
+        at: at.unwrap_or_default(),
+    })?;
+    Ok(Next {
+        cursor,
+        source: src.name.clone(),
+    })
+}
+
+/// Opens a source without consuming it.
+fn open_shared(src: &Source) -> Result<Src, String> {
+    match &src.data {
+        Data::Path(p) => Src::open(p),
+        Data::Inline(b) => Ok(Src::mem(b.clone())),
+    }
 }
 
 fn unread(name: &str, why: &str) -> Document {
@@ -172,6 +308,9 @@ fn unread(name: &str, why: &str) -> Document {
         markdown: String::new(),
         figures: Vec::new(),
         warnings: vec![why.to_string()],
+        joint: None,
+        table_header: None,
+        next: None,
     }
 }
 
@@ -281,84 +420,40 @@ fn walk(root: &Path, dir: &Path, depth: usize, out: &mut Vec<Source>) -> Result<
     Ok(())
 }
 
-/// Reads a whole file in fixed chunks. One read call for a file this large asks
-/// the runtime for one buffer of that size, which it refuses well below the
-/// memory limit; chunks keep every call small.
-fn read_file(path: &Path, len: u64) -> Result<Vec<u8>, String> {
-    let fail = |e: std::io::Error| {
-        if e.kind() == std::io::ErrorKind::OutOfMemory {
-            read_limit_error(len)
-        } else {
-            format!("cannot read the file: {e}")
-        }
-    };
-    let mut file = std::fs::File::open(path).map_err(fail)?;
-    let mut buf: Vec<u8> = Vec::new();
-    buf.try_reserve_exact(len as usize)
-        .map_err(|_| read_limit_error(len))?;
-    let mut chunk = vec![0u8; READ_CHUNK.min(len as usize).max(1)];
-    loop {
-        let n = file.read(&mut chunk).map_err(fail)?;
-        if n == 0 {
-            return Ok(buf);
-        }
-        buf.try_reserve(n).map_err(|_| read_limit_error(len))?;
-        buf.extend_from_slice(&chunk[..n]);
-    }
-}
-
-/// The sentence for a file that does not fit in the plugin's memory.
-fn read_limit_error(len: u64) -> String {
-    format!(
-        "the file is {} MiB, more than the plugin can hold in memory (limit {} MiB); split the file, or read part of a PDF with the pages option",
-        len / 1024 / 1024,
-        MAX_FILE_BYTES / 1024 / 1024
-    )
-}
-
-fn process(ctx: &mut Ctx, src: Source, root: &Path) -> Result<Document, String> {
-    let Source { name, data } = src;
-    let (bytes, path): (Vec<u8>, Option<PathBuf>) = match data {
-        Data::Inline(b) => (b, None),
-        Data::Path(p) => {
-            let meta = std::fs::metadata(&p).map_err(|e| format!("cannot read the file: {e}"))?;
-            if !meta.is_file() {
-                return Err("not a file".into());
-            }
-            if meta.len() > MAX_FILE_BYTES {
-                return Err(read_limit_error(meta.len()));
-            }
-            (read_file(&p, meta.len())?, Some(p))
-        }
-    };
-    let kind = detect::detect(&name, &bytes)?;
+/// Converts one source. The opened file is handed back, so a cursor can fingerprint it.
+fn process(
+    ctx: &mut Ctx,
+    source: Source,
+    root: &Path,
+    resume: Option<&Resume>,
+) -> Result<(Document, Src), String> {
+    let name = source.name.clone();
+    let base = source.dir();
+    let mut src = source.open()?;
+    let kind = detect::detect(&name, &mut src)?;
     let name = name.as_str();
-    match kind {
-        Kind::Pdf => pdf::convert(ctx, name, bytes),
-        Kind::Image(format) => imgdoc::convert(ctx, name, format, &bytes),
-        Kind::Html => {
-            let base = path
-                .as_deref()
-                .and_then(Path::parent)
-                .map(Path::to_path_buf);
-            html_doc::convert_html(
-                ctx,
-                name,
-                &bytes,
-                &mut html_doc::DirResolver {
-                    base,
-                    root: root.to_path_buf(),
-                },
-            )
-        }
-        Kind::Text => text::convert_text(ctx, name, "text", &bytes),
-        Kind::Markdown => text::convert_text(ctx, name, "markdown", &bytes),
-        Kind::Csv => text::convert_csv(ctx, name, "csv", &bytes, false),
-        Kind::Tsv => text::convert_csv(ctx, name, "tsv", &bytes, true),
-        Kind::Epub => epub::convert_epub(ctx, name, &bytes),
-        Kind::Docx => docx::convert_docx(ctx, name, &bytes),
-        Kind::Pptx => pptx::convert_pptx(ctx, name, &bytes),
-        Kind::Xlsx => xlsx::convert_xlsx(ctx, name, &bytes),
-        Kind::Odt | Kind::Ods | Kind::Odp => odf::convert_odf(ctx, name, kind, &bytes),
-    }
+    let doc = match kind {
+        Kind::Pdf => pdf::convert(ctx, name, &mut src, resume)?,
+        Kind::Image(format) => imgdoc::convert(ctx, name, format, &mut src)?,
+        Kind::Html => html_doc::convert_html(
+            ctx,
+            name,
+            &mut src,
+            &mut html_doc::DirResolver {
+                base,
+                root: root.to_path_buf(),
+            },
+            resume,
+        )?,
+        Kind::Text => text::convert_text(ctx, name, "text", &mut src, resume)?,
+        Kind::Markdown => text::convert_text(ctx, name, "markdown", &mut src, resume)?,
+        Kind::Csv => text::convert_csv(ctx, name, "csv", &mut src, false, resume)?,
+        Kind::Tsv => text::convert_csv(ctx, name, "tsv", &mut src, true, resume)?,
+        Kind::Epub => epub::convert_epub(ctx, name, &src, resume)?,
+        Kind::Docx => docx::convert_docx(ctx, name, &src, resume)?,
+        Kind::Pptx => pptx::convert_pptx(ctx, name, &src, resume)?,
+        Kind::Xlsx => xlsx::convert_xlsx(ctx, name, &src, resume)?,
+        Kind::Odt | Kind::Ods | Kind::Odp => odf::convert_odf(ctx, name, kind, &src, resume)?,
+    };
+    Ok((doc, src))
 }

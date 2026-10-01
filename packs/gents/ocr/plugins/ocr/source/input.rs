@@ -2,8 +2,14 @@
 //! page selection grammar and the bounds on each size.
 use serde::Deserialize;
 
+use crate::model::OUTPUT_CAP_BYTES;
+use crate::resume::Fnv;
+
 pub const DEFAULT_MAX_IMAGE_PX: u32 = 2000;
 pub const DEFAULT_MIN_FIGURE_PX: u32 = 96;
+/// The plugin's wall clock is 900 s; no unit is started once the next one might not finish by this.
+pub const DEFAULT_MAX_SECONDS: u64 = 860;
+const MIN_MAX_BYTES: usize = 4096;
 const MAX_FILES: usize = 10_000;
 const MAX_PAGE: u32 = 1_000_000;
 const MAX_RANGES: usize = 1_000;
@@ -20,6 +26,18 @@ pub struct Input {
     pub figure_images: Option<bool>,
     pub max_image_px: Option<u32>,
     pub min_figure_px: Option<u32>,
+    pub cursor: Option<String>,
+    pub mode: Option<Mode>,
+    pub max_bytes: Option<usize>,
+    pub max_seconds: Option<u64>,
+}
+
+/// What a call does: read the content, or only describe the structure.
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    Read,
+    Plan,
 }
 
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
@@ -68,6 +86,15 @@ impl PageSel {
     pub fn contains(&self, n: u32) -> bool {
         self.0.iter().any(|&(lo, hi)| (lo..=hi).contains(&n))
     }
+
+    /// The first selected number from `from` on.
+    pub fn next_from(&self, from: u32) -> Option<u32> {
+        self.0
+            .iter()
+            .filter(|&&(_, hi)| hi >= from)
+            .map(|&(lo, _)| lo.max(from))
+            .min()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -77,11 +104,31 @@ pub struct Options {
     pub figure_images: bool,
     pub max_image_px: u32,
     pub min_figure_px: u32,
+    /// The most JSON bytes of content one call returns.
+    pub max_bytes: usize,
+    /// The wall clock, in seconds, after which no further unit is started.
+    pub max_seconds: u64,
 }
 
 impl Options {
     pub fn selected(&self, n: u32) -> bool {
         self.pages.as_ref().is_none_or(|p| p.contains(n))
+    }
+
+    /// The first selected page from `from` on, up to `total`.
+    pub fn next_selected(&self, from: u32, total: u32) -> Option<u32> {
+        let n = match &self.pages {
+            Some(p) => p.next_from(from)?,
+            None => from,
+        };
+        (n >= 1 && n <= total).then_some(n)
+    }
+
+    /// Whether the page selection leaves out all of `1..=total`.
+    pub fn selects_none(&self, total: u32) -> bool {
+        self.pages
+            .as_ref()
+            .is_some_and(|p| !(1..=total).any(|n| p.contains(n)))
     }
 }
 
@@ -93,6 +140,8 @@ impl Default for Options {
             figure_images: false,
             max_image_px: DEFAULT_MAX_IMAGE_PX,
             min_figure_px: DEFAULT_MIN_FIGURE_PX,
+            max_bytes: OUTPUT_CAP_BYTES,
+            max_seconds: DEFAULT_MAX_SECONDS,
         }
     }
 }
@@ -111,6 +160,21 @@ impl Input {
                 "min_figure_px {min_figure_px} must be between 1 and 4096"
             ));
         }
+        let max_bytes = self.max_bytes.unwrap_or(OUTPUT_CAP_BYTES);
+        if !(MIN_MAX_BYTES..=OUTPUT_CAP_BYTES).contains(&max_bytes) {
+            return Err(format!(
+                "max_bytes {max_bytes} must be between {MIN_MAX_BYTES} and {OUTPUT_CAP_BYTES}"
+            ));
+        }
+        let max_seconds = self.max_seconds.unwrap_or(DEFAULT_MAX_SECONDS);
+        if !(1..=DEFAULT_MAX_SECONDS).contains(&max_seconds) {
+            return Err(format!(
+                "max_seconds {max_seconds} must be between 1 and {DEFAULT_MAX_SECONDS}"
+            ));
+        }
+        if self.cursor.is_some() && self.mode == Some(Mode::Plan) {
+            return Err("a plan has no cursor; leave cursor out or read instead".into());
+        }
         let pages = match self.pages.as_deref() {
             Some(spec) => Some(PageSel::parse(spec)?),
             None => None,
@@ -121,7 +185,42 @@ impl Input {
             figure_images: self.figure_images.unwrap_or(false),
             max_image_px,
             min_figure_px,
+            max_bytes,
+            max_seconds,
         })
+    }
+
+    /// A fingerprint of everything that decides what a call returns, so a
+    /// cursor is only accepted by a call that repeats the request it came from.
+    pub fn fingerprint(&self, names: &[String]) -> u64 {
+        let mut h = Fnv::new();
+        h.field(
+            self.ocr
+                .map_or("auto", |o| match o {
+                    OcrMode::Auto => "auto",
+                    OcrMode::Always => "always",
+                    OcrMode::Never => "never",
+                })
+                .as_bytes(),
+        );
+        h.field(self.pages.as_deref().unwrap_or("").as_bytes());
+        h.field(&[u8::from(self.figure_images.unwrap_or(false))]);
+        h.field(
+            &self
+                .max_image_px
+                .unwrap_or(DEFAULT_MAX_IMAGE_PX)
+                .to_le_bytes(),
+        );
+        h.field(
+            &self
+                .min_figure_px
+                .unwrap_or(DEFAULT_MIN_FIGURE_PX)
+                .to_le_bytes(),
+        );
+        for n in names {
+            h.field(n.as_bytes());
+        }
+        h.finish()
     }
 
     /// Checks the source fields: a path (with optional relative files) or an

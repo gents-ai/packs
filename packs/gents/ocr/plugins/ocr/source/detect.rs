@@ -1,5 +1,6 @@
 //! Format detection from magic bytes first and the file extension second, so a
 //! renamed file is still read as what it is and a wrong extension fails loudly.
+use crate::src::Src;
 use crate::util::Zip;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -81,8 +82,8 @@ fn image_kind(data: &[u8]) -> Option<&'static str> {
     }
 }
 
-fn zip_kind(data: &[u8]) -> Result<Kind, String> {
-    let mut zip = Zip::open(data)?;
+fn zip_kind(src: &Src) -> Result<Kind, String> {
+    let mut zip = Zip::open(src.reopen()?)?;
     if let Some(mime) = zip.read("mimetype")? {
         let mime = String::from_utf8_lossy(&mime);
         let mime = mime.trim();
@@ -111,14 +112,27 @@ fn zip_kind(data: &[u8]) -> Result<Kind, String> {
     }
 }
 
-pub fn detect(name: &str, data: &[u8]) -> Result<Kind, String> {
+/// The format of a file, from its first bytes (and its archive directory for a
+/// zip) first and its extension second.
+pub fn detect(name: &str, src: &mut Src) -> Result<Kind, String> {
+    let head = src
+        .head(1024)
+        .map_err(|e| format!("cannot read the file: {e}"))?;
+    detect_head(name, &head, || zip_kind(src))
+}
+
+fn detect_head(
+    name: &str,
+    data: &[u8],
+    zip: impl FnOnce() -> Result<Kind, String>,
+) -> Result<Kind, String> {
     let ext = extension(name);
-    let head = &data[..data.len().min(1024)];
+    let head = data;
     if head.windows(5).any(|w| w == b"%PDF-") {
         return Ok(Kind::Pdf);
     }
     if data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06") {
-        return zip_kind(data);
+        return zip();
     }
     if let Some(kind) = image_kind(data) {
         return Ok(Kind::Image(kind));
@@ -182,40 +196,40 @@ pub fn detect(name: &str, data: &[u8]) -> Result<Kind, String> {
 mod tests {
     use super::*;
 
+    fn d(name: &str, bytes: &[u8]) -> Result<Kind, String> {
+        detect(name, &mut Src::mem(bytes.to_vec()))
+    }
+
     #[test]
     fn magic_bytes_beat_a_wrong_extension() {
-        assert_eq!(detect("scan.txt", b"%PDF-1.7\n").unwrap(), Kind::Pdf);
+        assert_eq!(d("scan.txt", b"%PDF-1.7\n").unwrap(), Kind::Pdf);
         assert_eq!(
-            detect("x.bin", b"\x89PNG\r\n\x1a\nrest").unwrap(),
+            d("x.bin", b"\x89PNG\r\n\x1a\nrest").unwrap(),
             Kind::Image("png")
         );
-        assert_eq!(detect("page", b"<!DOCTYPE html><p>x").unwrap(), Kind::Html);
+        assert_eq!(d("page", b"<!DOCTYPE html><p>x").unwrap(), Kind::Html);
     }
 
     #[test]
     fn text_formats_by_extension_and_failures_say_why() {
-        assert_eq!(detect("a.csv", b"a,b").unwrap(), Kind::Csv);
-        assert_eq!(detect("a.md", b"# x").unwrap(), Kind::Markdown);
+        assert_eq!(d("a.csv", b"a,b").unwrap(), Kind::Csv);
+        assert_eq!(d("a.md", b"# x").unwrap(), Kind::Markdown);
         assert!(
-            detect("a.pdf", b"not a pdf")
+            d("a.pdf", b"not a pdf")
                 .unwrap_err()
                 .contains("not a valid PDF")
         );
         assert!(
-            detect("a.xyz", b"data")
+            d("a.xyz", b"data")
                 .unwrap_err()
                 .contains("unsupported format .xyz")
         );
         assert!(
-            detect("a.doc", &[0xD0, 0xCF, 0x11, 0xE0, 0])
+            d("a.doc", &[0xD0, 0xCF, 0x11, 0xE0, 0])
                 .unwrap_err()
                 .contains("legacy binary Office")
         );
-        assert!(
-            detect("noext", b"data")
-                .unwrap_err()
-                .contains("no extension")
-        );
+        assert!(d("noext", b"data").unwrap_err().contains("no extension"));
     }
 
     #[test]

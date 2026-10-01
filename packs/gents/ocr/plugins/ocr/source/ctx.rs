@@ -1,17 +1,47 @@
 //! Per-call state: options, the lazily started OCR engine, the output budget
 //! and the image parts, plus the figure pipeline every converter shares.
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 
 use crate::input::{OcrMode, Options};
-use crate::model::{Block, Budget, DocAcc, Figure, Part, json_len};
+use crate::model::{Block, Budget, DocAcc, Document, Figure, Part, json_len};
 use crate::ocr::{Ocr, OcrLine};
 use crate::pix::{Pix, probe};
+use crate::resume::Resume;
 
 /// Why OCR did not start: one sentence that also says how to continue.
 pub const NO_TIME: &str =
     "the OCR time budget of this call ran out; call again with pages or files listing what remains";
+
+/// The call's wall clock: whether another piece of work, expected to take as
+/// long as a multiple of the slowest so far, still finishes inside the limit.
+pub struct Clock {
+    started: Instant,
+    limit: Duration,
+    slowest: Duration,
+}
+
+/// The next piece of work is assumed to take up to this many times the slowest so far.
+const SLOWEST_FACTOR: f64 = 1.5;
+
+impl Clock {
+    pub fn new(started: Instant, limit: Duration) -> Self {
+        Self {
+            started,
+            limit,
+            slowest: Duration::ZERO,
+        }
+    }
+
+    pub fn fits(&self) -> bool {
+        self.started.elapsed() + self.slowest.mul_f64(SLOWEST_FACTOR) < self.limit
+    }
+
+    pub fn record(&mut self, took: Duration) {
+        self.slowest = self.slowest.max(took);
+    }
+}
 
 /// A 64-bit hash of the encoded bytes plus their length: equal images share it
 /// (not cryptographic: a collision would only skip one image as a repeat).
@@ -22,8 +52,13 @@ fn image_key(bytes: &[u8]) -> u128 {
     (u128::from(h.finish()) << 64) | bytes.len() as u128
 }
 
+/// What a figure record adds to the output, in JSON bytes.
+fn figure_cost(fig: &Figure) -> usize {
+    json_len(&fig.text) + json_len(&fig.caption) + 160
+}
+
 /// Figure images already at most this large pass through without re-encoding.
-const PASSTHROUGH_BYTES: usize = 1_500_000;
+pub const PASSTHROUGH_BYTES: usize = 1_500_000;
 const PART_JPEG_QUALITY: u8 = 85;
 
 pub struct Ctx {
@@ -31,6 +66,40 @@ pub struct Ctx {
     pub ocr: Ocr,
     pub budget: Budget,
     pub parts: Vec<Part>,
+    /// The wall clock of the call, checked between units.
+    pub clock: Clock,
+    /// Units delivered in this call, across documents.
+    pub emitted: usize,
+    /// Set when a figure was left unread because it must wait for the next call.
+    pub waiting: bool,
+}
+
+/// The state of a document and the call when a unit began, so a unit that does
+/// not fit can be taken back out and left for the next call.
+pub struct Mark {
+    md: usize,
+    figs: usize,
+    warns: usize,
+    suppressed: usize,
+    pub next_fig: u32,
+    small: u32,
+    repeated: u32,
+    seen: usize,
+    parts: usize,
+    used: usize,
+}
+
+/// What became of a unit offered to [`Ctx::emit`].
+pub enum Emit {
+    Added,
+    /// It did not fit and was taken back out: the next call starts at it.
+    Deferred,
+    /// It was the first content of the call and larger than the whole limit: the
+    /// start of it was delivered up to `skip` bytes, with `joint` line breaks (0 to 2) before the rest.
+    Cut {
+        skip: u64,
+        joint: u8,
+    },
 }
 
 /// The encoded original of a figure, when one exists, for zero-copy attachment.
@@ -40,13 +109,184 @@ pub struct Original<'a> {
 }
 
 impl Ctx {
+    #[cfg(test)]
     pub fn new(opts: Options) -> Self {
+        Self::started(opts, Instant::now())
+    }
+
+    /// A call whose wall clock began at `started`.
+    pub fn started(opts: Options, started: Instant) -> Self {
+        let limit = Duration::from_secs(opts.max_seconds);
         Self {
-            opts,
-            ocr: Ocr::new(Instant::now()),
-            budget: Budget::default(),
+            ocr: Ocr::new(started, limit),
+            budget: Budget::new(opts.max_bytes),
             parts: Vec::new(),
+            clock: Clock::new(started, limit),
+            emitted: 0,
+            waiting: false,
+            opts,
         }
+    }
+
+    pub fn mark(&self, acc: &DocAcc) -> Mark {
+        Mark {
+            md: acc.md.len(),
+            figs: acc.figures.len(),
+            warns: acc.warnings.len(),
+            suppressed: acc.suppressed,
+            next_fig: acc.next_fig,
+            small: acc.small_skipped,
+            repeated: acc.repeated_skipped,
+            seen: acc.seen_order.len(),
+            parts: self.parts.len(),
+            used: self.budget.used(),
+        }
+    }
+
+    /// Takes everything a unit added since `mark` back out.
+    pub fn rewind(&mut self, acc: &mut DocAcc, mark: &Mark) {
+        acc.md.truncate(mark.md);
+        acc.figures.truncate(mark.figs);
+        acc.warnings.truncate(mark.warns);
+        acc.suppressed = mark.suppressed;
+        acc.next_fig = mark.next_fig;
+        acc.small_skipped = mark.small;
+        acc.repeated_skipped = mark.repeated;
+        for k in acc.seen_order.drain(mark.seen..) {
+            acc.seen_images.remove(&k);
+        }
+        acc.alts.retain(|id, _| {
+            id.strip_prefix("fig-")
+                .and_then(|n| n.parse::<u32>().ok())
+                .is_some_and(|n| n <= mark.next_fig)
+        });
+        acc.truncated = false;
+        self.parts.truncate(mark.parts);
+        self.budget
+            .refund(self.budget.used().saturating_sub(mark.used));
+    }
+
+    /// The continuation that starts the unit `mark` was taken before.
+    pub fn resume_at(&self, acc: &DocAcc, mark: &Mark, unit: u32, pos: u64) -> Resume {
+        Resume {
+            unit,
+            pos,
+            skip: 0,
+            joint: 2,
+            fig: mark.next_fig,
+            seen: acc.seen_order[..mark.seen]
+                .iter()
+                .map(|k| format!("{k:032x}"))
+                .collect(),
+            st: None,
+        }
+    }
+
+    /// The continuation that starts after everything the document holds now.
+    pub fn resume_now(&self, acc: &DocAcc, unit: u32, pos: u64) -> Resume {
+        let mark = self.mark(acc);
+        self.resume_at(acc, &mark, unit, pos)
+    }
+
+    /// Whether a unit that needs OCR must wait for the next call: the wall clock
+    /// has no room for it, and this call already delivered something.
+    pub fn must_wait(&self) -> bool {
+        self.emitted > 0 && self.opts.ocr != OcrMode::Never && !self.ocr.has_time()
+    }
+
+    /// Offers one finished unit of Markdown. `skip` is how much of it an earlier
+    /// call already delivered. A unit that does not fit is left for the next
+    /// call, unless it is the first content of this one, which is cut at a line.
+    pub fn emit(&mut self, acc: &mut DocAcc, mark: &Mark, chunk: &str, skip: u64) -> Emit {
+        let after = chunk.get(skip as usize..).unwrap_or("");
+        let rest = after.trim_start_matches('\n');
+        let lead = chunk.len() - rest.len();
+        if rest.is_empty() || self.append(acc, rest) {
+            self.emitted += 1;
+            return Emit::Added;
+        }
+        if self.emitted > 0 {
+            self.rewind(acc, mark);
+            return Emit::Deferred;
+        }
+        // The refused attempt above marked the document full; the prefix gets its own try.
+        acc.truncated = false;
+        let kept = self.append_prefix(acc, rest);
+        self.emitted += 1;
+        let at = lead + kept;
+        let head_nl = chunk[..at].len() - chunk[..at].trim_end_matches('\n').len();
+        let tail_nl = chunk[at..].len() - chunk[at..].trim_start_matches('\n').len();
+        let joint = (head_nl + tail_nl).min(2) as u8;
+        Emit::Cut {
+            skip: at as u64,
+            joint,
+        }
+    }
+
+    /// Builds the finished document of a call: warnings made final, and, for a
+    /// document that continues an earlier call or stops early, only the figures
+    /// that appear in the delivered text.
+    #[allow(clippy::too_many_arguments)] // each converter hands over the same eight facts
+    pub fn document(
+        &mut self,
+        mut acc: DocAcc,
+        source: &str,
+        format: &'static str,
+        pages: u32,
+        from: Option<&Resume>,
+        next: Option<Resume>,
+        parts_from: usize,
+    ) -> Document {
+        let warnings = acc.finish_warnings();
+        if from.is_some_and(|r| r.skip > 0) || next.as_ref().is_some_and(|r| r.skip > 0) {
+            self.retain_visible(&mut acc, parts_from);
+        }
+        Document {
+            source: source.to_string(),
+            format,
+            pages,
+            markdown: acc.md,
+            figures: acc.figures,
+            warnings,
+            joint: from.map(Resume::joint_name),
+            table_header: None,
+            next,
+        }
+    }
+
+    /// Drops the figures (and their attached images) whose block is not in the
+    /// delivered part of a unit that was cut, refunding what they were charged.
+    fn retain_visible(&mut self, acc: &mut DocAcc, parts_from: usize) {
+        let mut kept = Vec::new();
+        let mut gone_parts = Vec::new();
+        for fig in std::mem::take(&mut acc.figures) {
+            if acc.md.contains(&format!("[Figure {}]", fig.id)) {
+                kept.push(fig);
+                continue;
+            }
+            self.budget.refund(figure_cost(&fig));
+            if let Some(p) = fig.part {
+                gone_parts.push(p);
+            }
+        }
+        if !gone_parts.is_empty() {
+            let mut remap = Vec::new();
+            let mut parts = Vec::new();
+            for (i, part) in std::mem::take(&mut self.parts).into_iter().enumerate() {
+                if i >= parts_from && gone_parts.contains(&i) {
+                    self.budget.refund(part.data.len() + 64);
+                    remap.push(None);
+                } else {
+                    remap.push(Some(parts.len()));
+                    parts.push(part);
+                }
+            }
+            self.parts = parts;
+            for fig in &mut kept {
+                fig.part = fig.part.and_then(|p| remap.get(p).copied().flatten());
+            }
+        }
+        acc.figures = kept;
     }
 
     /// Appends one chunk of Markdown to a document if the output budget allows.
@@ -114,8 +354,7 @@ impl Ctx {
         if crate::md::is_file_name(&fig.caption) {
             fig.caption.clear();
         }
-        let cost = json_len(&fig.text) + json_len(&fig.caption) + 160;
-        if !self.budget.charge(cost) {
+        if !self.budget.charge(figure_cost(&fig)) {
             acc.truncated = true;
             return None;
         }
@@ -184,7 +423,7 @@ impl Ctx {
             image::ImageFormat::WebP => Some("image/webp"),
             _ => None,
         };
-        if !acc.seen_images.insert(image_key(bytes)) {
+        if !acc.see(image_key(bytes)) {
             acc.repeated_skipped += 1;
             return None;
         }

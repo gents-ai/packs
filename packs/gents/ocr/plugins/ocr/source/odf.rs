@@ -8,17 +8,20 @@ use crate::ctx::Ctx;
 use crate::detect::{Kind, header};
 use crate::md::esc;
 use crate::model::{Block, DocAcc, Document};
+use crate::resume::Resume;
+use crate::slicer::{self, Snap, Step, Steps, Units, with_marker};
+use crate::src::Src;
 use crate::table::TableWriter;
-use crate::util::{Zip, resolve};
+use crate::util::{MAX_DOM_BYTES, Zip, resolve};
 use crate::xml::{attr, child, descendant, is, parse, text};
 
 /// Repeated rows and columns are expanded at most this many times.
 const MAX_REPEAT: usize = 50;
 
-struct Walker<'z, 'a> {
+struct Walker<'z> {
     ctx: &'z mut Ctx,
     acc: &'z mut DocAcc,
-    zip: &'z mut Zip<'a>,
+    zip: &'z mut Zip,
     ordered: HashMap<String, bool>,
     blocks: Vec<Block>,
     notes: Vec<String>,
@@ -67,7 +70,27 @@ fn inline(node: Node<'_, '_>, notes: &mut Vec<String>, out: &mut String) {
     }
 }
 
-impl Walker<'_, '_> {
+impl<'z> Walker<'z> {
+    fn new(
+        ctx: &'z mut Ctx,
+        acc: &'z mut DocAcc,
+        zip: &'z mut Zip,
+        ordered: HashMap<String, bool>,
+        unit: Option<u32>,
+    ) -> Self {
+        Self {
+            ctx,
+            acc,
+            zip,
+            ordered,
+            blocks: Vec::new(),
+            notes: Vec::new(),
+            unit,
+        }
+    }
+}
+
+impl Walker<'_> {
     fn paragraph_text(&mut self, p: Node<'_, '_>) -> String {
         let mut s = String::new();
         inline(p, &mut self.notes, &mut s);
@@ -246,17 +269,144 @@ impl Walker<'_, '_> {
     }
 }
 
+/// The sheets of a spreadsheet, one unit each, written row by row.
+struct Sheets<'a, 'd> {
+    ctx: &'a mut Ctx,
+    acc: &'a mut DocAcc,
+    zip: Zip,
+    tables: Vec<Node<'d, 'd>>,
+    /// The sheet to read next, the row to start at and the header of the table.
+    unit: u32,
+    row: u64,
+    hdr: String,
+}
+
+impl Steps for Sheets<'_, '_> {
+    fn parts(&mut self) -> (&mut Ctx, &mut DocAcc) {
+        (&mut *self.ctx, &mut *self.acc)
+    }
+
+    fn snapshot(&self) -> Snap {
+        Snap {
+            unit: self.unit,
+            pos: self.row,
+            st: Some(serde_json::json!({ "hdr": self.hdr })),
+        }
+    }
+
+    fn step(&mut self) -> Result<Option<Step>, String> {
+        loop {
+            let Some(&sheet) = self.tables.get((self.unit - 1) as usize) else {
+                return Ok(None);
+            };
+            let n = self.unit;
+            if !self.ctx.opts.selected(n) {
+                self.unit += 1;
+                continue;
+            }
+            let rows = Walker::new(
+                &mut *self.ctx,
+                &mut *self.acc,
+                &mut self.zip,
+                HashMap::new(),
+                Some(n),
+            )
+            .table(sheet);
+            let fresh = self.row == 0;
+            let cols = rows.iter().map(Vec::len).max().unwrap_or(0);
+            let budget = self.ctx.budget.remaining().saturating_sub(4096);
+            let mut tw = TableWriter::new(cols, budget, fresh);
+            let mut at = (self.row as usize).min(rows.len());
+            if fresh && let Some(first) = rows.first() {
+                self.hdr = TableWriter::header_of(cols, first);
+            }
+            while let Some(r) = rows.get(at) {
+                if !tw.row(r) {
+                    break;
+                }
+                at += 1;
+            }
+            if tw.rows == 0 && at < rows.len() {
+                if self.ctx.emitted > 0 {
+                    return Ok(Some(Step::Wait));
+                }
+                self.acc.warn(format!(
+                    "sheet {n}: a row larger than the output limit was skipped"
+                ));
+                self.row = at as u64 + 1;
+                continue;
+            }
+            let name = attr(sheet, "name").unwrap_or("").replace('>', "&gt;");
+            let marker = format!("<!-- sheet {n}: {name} -->");
+            let md = tw.finish();
+            let body = match (fresh, md.is_empty()) {
+                (true, true) => with_marker(&marker, "(empty sheet)"),
+                (true, false) => with_marker(&marker, &md),
+                (false, _) => md,
+            };
+            if at < rows.len() {
+                let snap = Snap {
+                    unit: n,
+                    pos: at as u64,
+                    st: Some(serde_json::json!({ "hdr": self.hdr })),
+                };
+                return Ok(Some(Step::Stop(body, snap, 1)));
+            }
+            self.unit += 1;
+            self.row = 0;
+            self.hdr.clear();
+            return Ok(Some(Step::Chunk(body)));
+        }
+    }
+}
+
+/// The text of `content.xml`, which is parsed as one tree and so is bounded.
+fn content_text(zip: &mut Zip) -> Result<String, String> {
+    let content = zip
+        .read_limited("content.xml", MAX_DOM_BYTES)
+        .map_err(|_| {
+            format!(
+                "the document text is over the {} MiB this reader handles; export it as CSV, XLSX or text",
+                MAX_DOM_BYTES / 1024 / 1024
+            )
+        })?
+        .ok_or("the file has no content.xml")?;
+    Ok(crate::util::decode_text(&content).into_owned())
+}
+
+/// The slides or sheets of a presentation or spreadsheet nodes below `body`.
+fn unit_nodes<'d>(kind: Kind, body: Node<'d, 'd>) -> Vec<Node<'d, 'd>> {
+    let (parent, tag) = match kind {
+        Kind::Odp => ("presentation", "page"),
+        Kind::Ods => ("spreadsheet", "table"),
+        _ => return Vec::new(),
+    };
+    descendant(body, parent)
+        .map(|p| p.children().filter(|c| is(*c, tag)).collect())
+        .unwrap_or_default()
+}
+
+/// The number of slides or sheets (1 for a text document), without reading them.
+pub fn unit_count(kind: Kind, src: &Src) -> Result<u32, String> {
+    if kind == Kind::Odt {
+        return Ok(1);
+    }
+    let text = content_text(&mut Zip::open(src.reopen()?)?)?;
+    let doc = parse(&text)?;
+    let body = child(doc.root_element(), "body").ok_or("the file has no document body")?;
+    Ok(unit_nodes(kind, body).len() as u32)
+}
+
 pub fn convert_odf(
     ctx: &mut Ctx,
     source: &str,
     kind: Kind,
-    data: &[u8],
+    src: &Src,
+    resume: Option<&Resume>,
 ) -> Result<Document, String> {
-    let mut zip = Zip::open(data)?;
-    let src = zip
-        .read_text("content.xml")?
-        .ok_or("the file has no content.xml")?;
-    let doc = parse(&src)?;
+    let mut zip = Zip::open(src.reopen()?)?;
+    let text = content_text(&mut zip)?;
+    let doc = parse(&text)?;
     let office_body = child(doc.root_element(), "body").ok_or("the file has no document body")?;
     let mut ordered = HashMap::new();
     for ls in doc.descendants().filter(|n| is(*n, "list-style")) {
@@ -268,127 +418,93 @@ pub fn convert_odf(
         }
     }
     let format = kind.name();
+    let pages = unit_nodes(kind, office_body);
+    let total = if kind == Kind::Odt {
+        1
+    } else {
+        pages.len() as u32
+    };
     let mut acc = DocAcc::default();
-    ctx.append(&mut acc, &header(source, format));
-    let mut units: Vec<(String, Vec<Block>)> = Vec::new();
-    let mut tables: Vec<(String, String, bool, usize)> = Vec::new();
-    let mut total = 1u32;
-    {
-        let mut w = Walker {
-            ctx: &mut *ctx,
-            acc: &mut acc,
-            zip: &mut zip,
-            ordered,
-            blocks: Vec::new(),
-            notes: Vec::new(),
-            unit: Some(1),
-        };
-        match kind {
-            Kind::Odt => {
-                if let Some(text_body) = child(office_body, "text") {
-                    w.body(text_body);
-                }
-                for (i, note) in std::mem::take(&mut w.notes).into_iter().enumerate() {
-                    w.blocks
-                        .push(Block::Raw(format!("[^{}]: {}", i + 1, esc(&note))));
-                }
-                crate::md::attach_captions(&mut w.blocks, w.acc);
-                units.push((String::new(), std::mem::take(&mut w.blocks)));
+    let parts_from = ctx.parts.len();
+    match resume {
+        Some(r) => {
+            acc.next_fig = r.fig;
+            acc.restore_seen(&r.seen);
+        }
+        None => {
+            ctx.append(&mut acc, &header(source, format));
+            if kind != Kind::Odt && ctx.opts.selects_none(total) {
+                acc.warn(format!(
+                    "pages selects nothing: the document has {total} page(s)"
+                ));
             }
-            Kind::Odp => {
-                let pages: Vec<Node<'_, '_>> = descendant(office_body, "presentation")
-                    .map(|p| p.children().filter(|c| is(*c, "page")).collect())
-                    .unwrap_or_default();
-                total = pages.len() as u32;
-                for (k, page) in pages.into_iter().enumerate() {
-                    let n = k as u32 + 1;
-                    if !w.ctx.opts.selected(n) {
-                        continue;
+        }
+    }
+    let skip = resume.map_or(0, |r| r.skip);
+    let unit = resume.map_or(1, |r| r.unit.max(1));
+    let mut table_header = None;
+    let next = match kind {
+        Kind::Odt => {
+            let text_body = child(office_body, "text");
+            let mut reader = Units::new(
+                &mut *ctx,
+                &mut acc,
+                unit,
+                1,
+                |ctx: &mut Ctx, acc: &mut DocAcc, _| {
+                    let mut w = Walker::new(ctx, acc, &mut zip, ordered.clone(), Some(1));
+                    if let Some(text_body) = text_body {
+                        w.body(text_body);
                     }
-                    w.unit = Some(n);
-                    w.body(page);
+                    for (i, note) in std::mem::take(&mut w.notes).into_iter().enumerate() {
+                        w.blocks
+                            .push(Block::Raw(format!("[^{}]: {}", i + 1, esc(&note))));
+                    }
                     crate::md::attach_captions(&mut w.blocks, w.acc);
-                    units.push((format!("<!-- slide {n} -->"), std::mem::take(&mut w.blocks)));
-                }
-            }
-            _ => {
-                let sheets: Vec<Node<'_, '_>> = descendant(office_body, "spreadsheet")
-                    .map(|p| p.children().filter(|c| is(*c, "table")).collect())
-                    .unwrap_or_default();
-                total = sheets.len() as u32;
-                for (k, sheet) in sheets.into_iter().enumerate() {
-                    let n = k as u32 + 1;
-                    if !w.ctx.opts.selected(n) {
-                        continue;
-                    }
-                    let rows = w.table(sheet);
-                    let name = attr(sheet, "name").unwrap_or("").replace('>', "&gt;");
-                    let cols = rows.iter().map(Vec::len).max().unwrap_or(0);
-                    let mut tw =
-                        TableWriter::new(cols, w.ctx.budget.remaining().saturating_sub(4096));
-                    for r in &rows {
-                        if !tw.row(r) {
-                            break;
-                        }
-                    }
-                    tables.push((
-                        format!("<!-- sheet {n}: {name} -->"),
-                        String::new(),
-                        tw.full,
-                        tw.rows,
-                    ));
-                    let md = tw.finish();
-                    if let Some(last) = tables.last_mut() {
-                        last.1 = md;
-                    }
-                }
-            }
+                    Ok(crate::md::render(&w.blocks))
+                },
+            )
+            .unfiltered();
+            slicer::run(&mut reader, skip)?
         }
-    }
-    let mut selected = units.len() + tables.len();
-    if matches!(kind, Kind::Odt) {
-        selected = 1;
-    }
-    for (marker, blocks) in units {
-        let body = crate::md::render(&blocks);
-        let chunk = match (marker.is_empty(), body.is_empty()) {
-            (true, _) => body,
-            (false, true) => marker,
-            (false, false) => format!("{marker}\n\n{body}"),
-        };
-        if !ctx.append(&mut acc, &chunk) {
-            acc.warn("the output size limit was reached and the rest of the document was cut");
-            break;
+        Kind::Odp => {
+            let mut reader = Units::new(
+                &mut *ctx,
+                &mut acc,
+                unit,
+                total,
+                |ctx: &mut Ctx, acc: &mut DocAcc, n| {
+                    let mut w = Walker::new(ctx, acc, &mut zip, ordered.clone(), Some(n));
+                    w.body(pages[(n - 1) as usize]);
+                    crate::md::attach_captions(&mut w.blocks, w.acc);
+                    Ok(with_marker(
+                        &format!("<!-- slide {n} -->"),
+                        &crate::md::render(&w.blocks),
+                    ))
+                },
+            );
+            slicer::run(&mut reader, skip)?
         }
-    }
-    for (marker, md, full, rows) in tables {
-        if full {
-            acc.warn(format!(
-                "{marker}: the output size limit cut the table after {rows} row(s)"
-            ));
+        _ => {
+            table_header = resume
+                .and_then(|r| r.st.as_ref())
+                .and_then(|v| v.get("hdr"))
+                .and_then(|h| h.as_str())
+                .filter(|h| !h.is_empty())
+                .map(str::to_string);
+            let mut reader = Sheets {
+                ctx: &mut *ctx,
+                acc: &mut acc,
+                zip,
+                tables: pages,
+                unit,
+                row: resume.map_or(0, |r| r.pos),
+                hdr: table_header.clone().unwrap_or_default(),
+            };
+            slicer::run(&mut reader, skip)?
         }
-        let chunk = if md.is_empty() {
-            format!("{marker}\n\n(empty sheet)")
-        } else {
-            format!("{marker}\n\n{md}")
-        };
-        if !ctx.append(&mut acc, &chunk) {
-            acc.warn("the output size limit was reached and the remaining sheets were cut");
-            break;
-        }
-    }
-    if selected == 0 {
-        acc.warn(format!(
-            "pages selects nothing: the document has {total} page(s)"
-        ));
-    }
-    let warnings = acc.finish_warnings();
-    Ok(Document {
-        source: source.to_string(),
-        format,
-        pages: total,
-        markdown: acc.md,
-        figures: acc.figures,
-        warnings,
-    })
+    };
+    let mut out = ctx.document(acc, source, format, total, resume, next, parts_from);
+    out.table_header = table_header;
+    Ok(out)
 }

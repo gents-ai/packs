@@ -1,7 +1,7 @@
 //! Decoded pixels: one gray or RGB buffer with the bounded decode, downscale
 //! and encode steps the OCR engine and the figure parts share.
 use std::borrow::Cow;
-use std::io::Cursor;
+use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 
 use image::{DynamicImage, GenericImageView, ImageReader, Limits};
 
@@ -19,7 +19,13 @@ pub struct Pix {
 /// Header-only dimensions and format of an encoded image, `None` when the
 /// bytes are not a raster format the plugin decodes.
 pub fn probe(bytes: &[u8]) -> Option<(u32, u32, image::ImageFormat)> {
-    let reader = ImageReader::new(Cursor::new(bytes))
+    probe_from(Cursor::new(bytes))
+}
+
+/// [`probe`] on a seekable source, read from its start.
+pub fn probe_from<R: Read + Seek>(mut rd: R) -> Option<(u32, u32, image::ImageFormat)> {
+    rd.seek(SeekFrom::Start(0)).ok()?;
+    let reader = ImageReader::new(BufReader::new(rd))
         .with_guessed_format()
         .ok()?;
     let format = reader.format()?;
@@ -38,7 +44,13 @@ impl Pix {
 
     /// Decodes an encoded image, refusing oversized ones before allocating.
     pub fn decode(bytes: &[u8]) -> Result<Self, String> {
-        let (w, h, _) = probe(bytes).ok_or(
+        Self::decode_from(Cursor::new(bytes))
+    }
+
+    /// Decodes an image read from a seekable source: the file is streamed, and
+    /// the pixel cap is checked from the header before any pixel is allocated.
+    pub fn decode_from<R: Read + Seek>(mut rd: R) -> Result<Self, String> {
+        let (w, h, _) = probe_from(&mut rd).ok_or(
             "the image format is not readable (PNG, JPEG, GIF, BMP, TIFF and WebP are supported)",
         )?;
         if u64::from(w) * u64::from(h) > MAX_DECODE_PIXELS {
@@ -46,7 +58,8 @@ impl Pix {
                 "the image is {w}x{h} pixels, over the {MAX_DECODE_PIXELS} pixel decode limit"
             ));
         }
-        let mut reader = ImageReader::new(Cursor::new(bytes))
+        rd.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
+        let mut reader = ImageReader::new(BufReader::new(rd))
             .with_guessed_format()
             .map_err(|e| e.to_string())?;
         let mut limits = Limits::default();
@@ -201,9 +214,12 @@ mod tests {
             let pix = Pix::decode(bytes.get_ref()).unwrap_or_else(|e| panic!("{name}: {e}"));
             assert_eq!((pix.w, pix.h), (64, 48), "{name}");
             assert_eq!(
-                crate::detect::detect("image.bin", bytes.get_ref())
-                    .unwrap()
-                    .name(),
+                crate::detect::detect(
+                    "image.bin",
+                    &mut crate::src::Src::mem(bytes.get_ref().clone())
+                )
+                .unwrap()
+                .name(),
                 name
             );
         }

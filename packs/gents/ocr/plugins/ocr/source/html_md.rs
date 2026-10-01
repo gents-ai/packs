@@ -418,6 +418,10 @@ impl Conv<'_> {
         } else {
             self.res.image(src)
         };
+        if bytes.is_some() && self.ctx.must_wait() {
+            self.ctx.waiting = true;
+            return;
+        }
         let caption = caption.trim().to_string();
         let block = match bytes {
             Some(b) if !is_svg(src, &b) => {

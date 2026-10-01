@@ -1,17 +1,18 @@
 //! Image files: a single page read by OCR and laid out like a scanned page.
-use crate::ctx::{Ctx, Original};
+use crate::ctx::{Ctx, Original, PASSTHROUGH_BYTES};
 use crate::detect::header;
 use crate::input::OcrMode;
 use crate::layout::{Out, layout};
 use crate::model::{DocAcc, Document, Figure};
 use crate::pdf::ocr_items;
 use crate::pix::Pix;
+use crate::src::Src;
 
 pub fn convert(
     ctx: &mut Ctx,
     source: &str,
     format: &'static str,
-    data: &[u8],
+    src: &mut Src,
 ) -> Result<Document, String> {
     if ctx.opts.ocr == OcrMode::Never {
         return Err("ocr is never, and an image has no text layer to read".into());
@@ -19,7 +20,7 @@ pub fn convert(
     if !ctx.ocr.has_time() {
         return Err(crate::ctx::NO_TIME.into());
     }
-    let full = Pix::decode(data)?;
+    let full = Pix::decode_from(&mut *src)?;
     let dims = (full.w, full.h);
     let pix = full.fit(ctx.opts.max_image_px)?;
     let lines = ctx.ocr_page(&pix)?;
@@ -35,12 +36,22 @@ pub fn convert(
             "webp" => Some("image/webp"),
             _ => None,
         };
+        // Only an image small enough to pass through is read again as bytes.
+        let original = if src.len() <= PASSTHROUGH_BYTES as u64 {
+            src.head(src.len() as usize)
+                .map_err(|e| format!("cannot read the file: {e}"))?
+        } else {
+            Vec::new()
+        };
         let part = ctx.attach(
             &mut acc,
             &id,
             &pix,
             dims,
-            mime.map(|mime| Original { bytes: data, mime }),
+            mime.filter(|_| !original.is_empty()).map(|mime| Original {
+                bytes: &original,
+                mime,
+            }),
         );
         let fig = Figure {
             id,
@@ -78,5 +89,8 @@ pub fn convert(
         markdown: acc.md,
         figures: acc.figures,
         warnings,
+        joint: None,
+        table_header: None,
+        next: None,
     })
 }
