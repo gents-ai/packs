@@ -256,40 +256,23 @@ install_documents() {
   expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed' "$work/remove.json")"
 }
 
-# A graph pack's declared external services must exist in the home before it
-# installs. They are created as the home principal through a served home (the
-# runtime owns the datastore while it runs), then the server is stopped; the
-# endpoint is never contacted.
+# External service declarations use the canonical configuration owner; the
+# fixture endpoint is never contacted.
 register_services() {
-  local home="$1" service port url pid deadline=$((SECONDS + 60)) did created
+  local home="$1" root="$work/service-config"
   jq -e '(.external_dependencies // []) | length > 0' "$dir/manifest.json" >/dev/null || return 0
-  "$gents" document create --help >/dev/null 2>&1 \
-    || { fail "install: this gents has no 'document create' command; set GENTS to a gents build that includes it"; return 1; }
-  did="$(jq -r '.agent_did' "$home.json")"
-  port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
-  url="http://127.0.0.1:$port/api/v0/graphql"
-  (cd "$work" && NO_COLOR=1 exec "$gents" server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) \
-    >"$work/register-server.log" 2>&1 &
-  pid=$!
-  servers+=("$pid")
-  while read -r service; do
-    created=
-    while ((SECONDS < deadline)); do
-      kill -0 "$pid" 2>/dev/null || { fail "install: gents server exited: $(tail -3 "$work/register-server.log" | tr '\n' ' ')"; return 1; }
-      if "$gents" document create ToolServiceRegistry --home "$home" --graphql "$url" --json "$(jq -cn \
-        --arg id "$service" --arg did "$did" \
-        '{service_id: $id, agent_did: $did, display_name: $id, description: "test registration", lan_ip: "127.0.0.1",
-          mcp_port: 9, mcp_path: "/mcp", send_agent_did: false, enabled: true, status: "online", version: "unversioned"}')" \
-        >/dev/null 2>"$work/register.err"; then
-        created=yes
-        break
-      fi
-      sleep 1
-    done
-    [[ -n "$created" ]] || { fail "install: could not register service $service: $(tail -1 "$work/register.err")"; return 1; }
-  done < <(jq -r '.external_dependencies // [] | .[].service_id' "$dir/manifest.json")
-  kill "$pid" 2>/dev/null || true
-  wait "$pid" 2>/dev/null || true
+  "$gents" config export --home "$home" --root "$root" --force >/dev/null || return 1
+  jq --slurpfile manifest "$dir/manifest.json" '
+    .tool_service_registries = ((.tool_service_registries // []) +
+      [$manifest[0].external_dependencies[] | {
+        service_id: .service_id, display_name: .service_id,
+        description: "test registration", hostname: "localhost", lan_ip: "127.0.0.1",
+        mcp_port: 9, mcp_path: "/mcp", send_agent_did: false, enabled: true
+      }])
+  ' "$root/pack_config.json" >"$root/config-next.json"
+  mv "$root/config-next.json" "$root/pack_config.json"
+  "$gents" config apply --home "$home" --root "$root" >"$work/register.json" 2>"$work/register.err" \
+    || { fail "install: could not register services: $(tail -1 "$work/register.err")"; return 1; }
 }
 
 install_graph() {
