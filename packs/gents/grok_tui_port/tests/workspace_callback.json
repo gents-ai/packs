@@ -5,7 +5,7 @@
         "src/lib.rs": "pub fn port() {}\n"
       },
       "dirs": [
-        "packs/grok_tui_port/recon_input"
+        "packs/gents/grok_tui_port/recon_input"
       ]
     },
     "seed": {

@@ -11,10 +11,22 @@
     "backend_preset": "vllm",
     "openai_wire_api": "chat-completions"
   },
-  "scan": {
-    "root": "${GENTS_SCAN_ROOT:-.}",
-    "max_payload_chars": "${GENTS_SCAN_MAX_PAYLOAD_CHARS:-49152}"
-  },
+  "prepare": [
+    {
+      "plugin": "secscan",
+      "input": {
+        "max_payload_chars": ${GENTS_SCAN_MAX_PAYLOAD_CHARS:-49152}
+      },
+      "bind_dir": "${GENTS_SCAN_ROOT:-.}",
+      "seed_fields": {
+        "candidates": "/payload",
+        "candidate_total": "/candidate_total",
+        "candidate_files": "/candidate_files",
+        "slug_counts": "/slug_counts_line",
+        "overflow_count": "/overflow_count"
+      }
+    }
+  ],
   "seed": {
     "collection": "ScanJob",
     "job_id_field": "run_id",

@@ -1,0 +1,25 @@
+{
+  "defs": "def row($coll; $key; $id): .config[$coll][] | select(.[$key] == $id); def source_of($trigger): row(\"event_sources\"; \"event_source_id\"; (row(\"triggers\"; \"trigger_id\"; $trigger) | .source.event_source_id)); def workspace($binding; $collection; $prompt): . as $d | row(\"callback_bindings\"; \"binding_id\"; $binding) as $b | $d | row(\"event_sources\"; \"event_source_id\"; $b.event_source_id) | .source_collection == $collection and ($d.assets[$prompt] | (contains(\"make worktree BRANCH=\") | not) and (contains(\"Do not run `git commit`\") or contains(\"Do not run git commit\")));",
+  "jq": [
+    {
+      "name": "the pack is typed, static and writes through the write tool package",
+      "expr": ".scenario.init.tool_package == \"write\" and (.scenario.expect.prompt_tool_contracts | length) == 14 and (.scenario.expect.result_documents | length) == 17 and (.config.agent_behaviors | length) == 16 and (.config.tasks | length) == 16 and (.config.triggers | length) == 16"
+    },
+    {
+      "name": "both fan-outs close: each fan-out trigger reads a run-correlated source and declares its count source",
+      "expr": ". as $d | [\"defend-scan\", \"defend-verifier\", \"defend-contract-review\"] | all(. as $t | $d | source_of($t) | .correlation_field == \"run_id\") and ([(\"DefenseReviewArea\",\"DefenseVerificationAssignment\",\"DefenseRootCauseCluster\")] as $want | [$d | source_of(\"defend-scan\"), source_of(\"defend-verifier\"), source_of(\"defend-contract-review\") | .source_collection] == $want) and ([\"defend-scan\", \"defend-verifier\", \"defend-contract-review\"] | all(. as $t | $d.scenario.expect.trigger_request_count_sources | has($t)))"
+    },
+    {
+      "name": "patch reviews only fire for documents that carry a workspace",
+      "expr": "[\"defend-patch-review\", \"defend-patch-security-review\"] as $ids | . as $d | $ids | all(. as $t | $d | source_of($t) | .filter == \"{ _and: [ { workspace_id: { _neq: null } }, { workspace_id: { _ne: \\\"\\\" } } ] }\")"
+    },
+    {
+      "name": "the skip surface writes every patch outcome collection",
+      "expr": "[row(\"datastore_tool_surfaces\"; \"surface_id\"; \"defend-patch-skip-writes\") | .entries.entries[].collection] as $got | [\"DefensePatchCandidate\", \"DefensePatchValidation\", \"DefensePatchReview\", \"DefensePatchSecurityReview\"] | all(. as $c | $got | index($c) != null)"
+    },
+    {
+      "name": "the patch workspace callback is bound and the worker may not commit",
+      "expr": "workspace(\"defense-patch-workspace\"; \"DefensePatchAssignment\"; \"tasks/defend_patch_task/prompt.md\")"
+    }
+  ]
+}

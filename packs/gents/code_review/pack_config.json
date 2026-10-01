@@ -712,8 +712,50 @@
       "entries": [
         {
           "collection": "CodeReviewJob",
-          "input_contract": "review-input/v1",
+          "input_contract": "review-input/v2",
+          "input_schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repository": {
+                "type": "string",
+                "default": "."
+              },
+              "base": {
+                "type": "string",
+                "default": "origin/main"
+              },
+              "head": {
+                "type": "string",
+                "default": "HEAD"
+              },
+              "focus": {
+                "type": "string",
+                "default": "Review the diff for material correctness, safety, durability, and maintainability defects."
+              }
+            }
+          },
           "name": "review",
+          "prepare": {
+            "host": [
+              {
+                "kind": "git_diff",
+                "repository_field": "repository",
+                "base_field": "base",
+                "head_field": "head",
+                "unified_context_lines": 12,
+                "rename_similarity_percent": 50
+              },
+              {
+                "kind": "read_only_workspace"
+              }
+            ],
+            "plugin": "review_evidence",
+            "writes": [
+              "CodeReviewEvidenceManifest",
+              "CodeReviewEvidencePage"
+            ]
+          },
           "schema": "CodeReviewJob/v1",
           "to": {
             "node_id": "recon",

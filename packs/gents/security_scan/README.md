@@ -37,6 +37,11 @@ export GENTS_SCAN_MAX_BATCHES=24
 export GENTS_SCAN_MAX_PAYLOAD_CHARS=49152
 ```
 
+Running the scenario from a source checkout builds the `secscan` plugin
+during the `prepare` step, so a Rust toolchain plus
+`rustup target add wasm32-wasip1` is required; a pack fetched pre-built
+(a `.pack`, the home's store, or the registry) skips the build.
+
 `GENTS_SCAN_ROOT` roots the pre-scan, the file tools, and bash for the
 investigate/revalidate stages, and defaults to `.`. Install binds the declared
 `coordinator`, `scanner`, and `verifier` slots to existing user profiles;
@@ -65,10 +70,14 @@ Per stage, from the Tools documents in `pack_config.json`:
 - **scan-report** (`scan-report-tools`): no host files, no bash, no
   network, no `defra_query`. Reads and writes only through
   `scan-report-io`.
-- **secscan** (the pre-scan plugin, `plugins/secscan`): no host access
-  declared. `gents` cannot yet bind a per-run directory to a plugin's
-  manifold, so its `root` mode only runs once a caller installs the pack
-  with its own explicit `fs.ReadOnly` grant; its `files` mode needs none.
+- **secscan** (the pre-scan plugin, `plugins/secscan`): declares no standing
+  authority. It declares `bind_dir` (`root`), so the scenario's `prepare`
+  step binds `${GENTS_SCAN_ROOT:-.}` read-only for that one call and no
+  other; the binding is never recorded as a standing grant. Its `files`
+  mode needs no binding at all. Its declared `limits` (512 MiB, 300 s, and
+  4 MiB of output - the host's own fixed stdout-capture ceiling for every
+  compiled plugin, not a choice this pack makes) raise the call's budget
+  above the sandbox default for a whole-repository walk.
 
 No subagents are granted to any stage.
 
@@ -133,10 +142,14 @@ make test-security_scan        # from the repository root
 
 `tests/install.json` pins the `coordinator`, `scanner`, `verifier` slots and
 the 29 documents an install creates, reinstalls without change and removes.
-`cargo test` in the plugin crate covers what `gents pack test`'s JSON
-fixtures cannot express: rejected malformed input (bad JSON, neither or both
-of `root`/`files`, a non-absolute or unreadable `root`, a malformed `files`
-entry).
+`plugins/secscan/tests/*.json` are plain `{"input", "expect"}` cases run by
+`gents pack test`; one of them (`bind-scans-a-directory.json`) also sets
+`"bind": "fixtures/tree"`, exercising `root` mode end to end through the
+same `call_bound` path the scenario's `prepare` step uses, scoped to the
+small fixture tree checked in alongside it. `cargo test` in the plugin
+crate covers what those JSON fixtures cannot express: rejected malformed
+input (bad JSON, neither or both of `root`/`files`, a non-absolute or
+unreadable `root`, a malformed `files` entry).
 
 ## Operational history
 
@@ -166,19 +179,32 @@ as an overflow count in the same document.
 ## Matchers
 
 The pre-scan is a Rust port of deepsec's regex matcher registry, shipped as
-this pack's own `secscan` plugin (`plugins/secscan/source/`). `gents pack
-scenario run` still calls the copy compiled into gents until gents runs the
-pack's plugin for the scan step; both produce byte-identical output.
+this pack's own `secscan` plugin (`plugins/secscan/source/`), which runs as
+a `prepare` step before the seed: `gents pack scenario run` binds
+`${GENTS_SCAN_ROOT:-.}` read-only for that one call and maps the plugin's
+own output onto five seed fields (`experiment.json`'s
+`prepare[0].seed_fields`): `candidates` (`/payload`), `candidate_total`
+(`/candidate_total`), `candidate_files` (`/candidate_files`),
+`slug_counts` (`/slug_counts_line`), and `overflow_count`
+(`/overflow_count`).
 
 Measured on the gents repository (about 5,000 files, 39 MB), best of 3:
 native 0.19 s; the plugin 0.51 s (wasm32 SIMD on, set in the repository's
 `.cargo/config.toml`; 1.43 s without it). Line numbers are resolved in one
 forward sweep, so a 20 MB file with 3,000 matches takes 24 ms instead of the
-16.5 s the per-match recount took. A whole-repository `root` scan needs
-several billion units of fuel, above the default plugin call budget; running
-it through `gents plugin run` needs gents to grant a larger budget. Curated for a Rust/polyglot repo, each matcher has a
-noise tier - `precise` sorts first into the candidate payload, `noisy` last -
-and its own discovery test that asserts its example snippet fires.
+16.5 s the per-match recount took. A whole-repository `root` scan runs under
+the manifest's declared `limits` (512 MiB, a 300 s wall clock, 4 MiB of
+output - the sandbox's own fixed stdout-capture ceiling for a compiled
+plugin); fuel itself is unbounded, so a large tree's instruction count
+never trips a ceiling on its own. `GENTS_SCAN_MAX_PAYLOAD_CHARS`
+(48 KiB by default) bounds matched-line evidence only; the inventory line
+per candidate file (about 70 bytes each) is never capped, so output still
+grows with the number of candidate files and a tree with tens of
+thousands of them, or a `GENTS_SCAN_MAX_PAYLOAD_CHARS` set near 4 MiB,
+exceeds the fixed 4 MiB output ceiling and fails the `prepare` step
+loudly. Curated for a Rust/polyglot repo, each matcher
+has a noise tier - `precise` sorts first into the candidate payload, `noisy`
+last - and its own discovery test that asserts its example snippet fires.
 
 | Slug | Tier | Flags |
 | --- | --- | --- |

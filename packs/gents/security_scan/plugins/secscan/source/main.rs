@@ -34,11 +34,22 @@ struct PluginOutput {
     candidate_total: usize,
     candidate_files: usize,
     slug_counts: Vec<SlugCount>,
+    /// The same counts as `slug_counts`, pre-rendered as `slug=count` pairs
+    /// joined by a single space (already sorted by count desc, then slug):
+    /// exactly what a scenario `prepare` step's `seed_fields` maps straight
+    /// onto a seed field, so the caller does no string rendering of its own.
+    slug_counts_line: String,
     overflow_count: usize,
 }
 
 impl From<payload::ScanOutput> for PluginOutput {
     fn from(out: payload::ScanOutput) -> Self {
+        let slug_counts_line = out
+            .slug_counts
+            .iter()
+            .map(|(slug, count)| format!("{slug}={count}"))
+            .collect::<Vec<_>>()
+            .join(" ");
         PluginOutput {
             payload: out.payload,
             candidate_total: out.candidate_total,
@@ -48,6 +59,7 @@ impl From<payload::ScanOutput> for PluginOutput {
                 .into_iter()
                 .map(|(slug, count)| SlugCount { slug, count })
                 .collect(),
+            slug_counts_line,
             overflow_count: out.overflow_count,
         }
     }

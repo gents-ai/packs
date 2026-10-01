@@ -17,6 +17,8 @@ help:
 	@echo "make maintain MAINTENANCE_ROOT=<repo>   repo_maintenance"
 	@echo "make defend DEFENDING_ROOT=<repo>       defending_code"
 	@echo "make grok-port GROK_PORT_GENTS_ROOT=<gents> GROK_PORT_CEILING=<dir>  grok_tui_port"
+	@echo "make scan SCAN_ROOT=<repo>              security_scan"
+	@echo "make defend-page GENTS_ROOT=<gents>     live campaign visualizer for make defend (needs a gents checkout)"
 
 list:
 	@printf '%s\n' $(PACKS)

@@ -3,6 +3,9 @@
     "README.md",
     "agent_behaviors/eval_author/system_prompt.md",
     "pack_config.json",
+    "tests/contract.json",
+    "tests/contract_flags.json",
+    "tests/contract_text.json",
     "tests/install.json"
   ],
   "authors": [
@@ -26,5 +29,5 @@
   "tags": [
     "eval"
   ],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

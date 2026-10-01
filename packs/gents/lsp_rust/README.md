@@ -18,8 +18,8 @@ gents pack install ./packs/gents/lsp_rust --home <home> --inference-slot coder=<
 gents pack install gents/lsp_rust --home <home> --inference-slot coder=<profile_id>   # once published to the registry
 ```
 
-Install configuration with `gents pack install lsp_rust --home <home>`, or
-exercise the scenario directly with `gents pack scenario run lsp_rust`. See
+Install configuration with `gents pack install gents/lsp_rust --home <home>`, or
+exercise the scenario directly with `gents pack scenario run ./packs/gents/lsp_rust`. See
 Bindings and prerequisites and Authority below before enabling compiler or
 shell access.
 
@@ -38,7 +38,9 @@ The inference endpoint and model default to
 api); override them to point at a reachable OpenAI-compatible endpoint.
 `GENTS_LSP_WORKSPACE` pins the tool root to an absolute workspace; unset, it
 defaults to `.` and is expected to resolve against `tool_root_markers`
-(`Cargo.toml`, `crates/gents`), i.e. a Gents checkout's root.
+(`Cargo.toml`, `crates/gents`), i.e. a Gents checkout's root. The
+scenario's expected tool calls name files in the Gents tree, so
+`GENTS_LSP_WORKSPACE` must name a gents checkout; this repository is not one.
 
 ## Authority
 
@@ -102,19 +104,18 @@ None recorded yet.
 # rust-analyzer must resolve on PATH
 rust-analyzer --version
 
-# From a gents checkout's root, so init.tool_root `.` is that Gents tree
-gents pack scenario run ./path/to/packs/gents/lsp_rust
-
-# Or pin an absolute workspace
+# Pin the gents checkout the scenario reads
 GENTS_LSP_WORKSPACE=/abs/path/to/gents \
-  gents pack scenario run lsp_rust --keep-home
+  gents pack scenario run ./packs/gents/lsp_rust --keep-home
 ```
 
 From a gents checkout, the ignored live e2e test exercises the same pack
-prompt and lsp_config against a real rust-analyzer:
+prompt and lsp_config against a real rust-analyzer; `GENTS_LSP_RUST_PACK_DIR`
+names this pack's directory:
 
 ```bash
-GENTS_LIVE_LSP=1 cargo test -p gents --features live-e2e --test e2e_live \
+GENTS_LIVE_LSP=1 GENTS_LSP_RUST_PACK_DIR=/abs/path/to/packs/gents/lsp_rust \
+  cargo test -p gents --features live-e2e --test e2e_live \
   lsp_live_model_uses_rust_analyzer \
   -- --ignored --test-threads=1 --nocapture
 ```

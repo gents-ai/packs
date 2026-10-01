@@ -1,0 +1,29 @@
+{
+  "defs": "def row($coll; $key; $id): .config[$coll][] | select(.[$key] == $id); def source_of($trigger): row(\"event_sources\"; \"event_source_id\"; (row(\"triggers\"; \"trigger_id\"; $trigger) | .source.event_source_id)); def workspace($binding; $collection; $prompt): . as $d | row(\"callback_bindings\"; \"binding_id\"; $binding) as $b | $d | row(\"event_sources\"; \"event_source_id\"; $b.event_source_id) | .source_collection == $collection and ($d.assets[$prompt] | (contains(\"make worktree BRANCH=\") | not) and (contains(\"Do not run `git commit`\") or contains(\"Do not run git commit\")));",
+  "jq": [
+    {
+      "name": "the implement workspace callback is bound and the worker may not commit",
+      "expr": "workspace(\"port-implement-workspace\"; \"PortWorkUnit\"; \"tasks/port_implement_task/prompt.md\")"
+    },
+    {
+      "name": "the scenario configures the code_review dependency by environment, with no bundled bindings and no extra profile",
+      "expr": "(.scenario | has(\"bundled_graph_bindings\") | not) and .scenario.graph_dependency_environment.code_review.GENTS_REVIEW_MODEL == \"GLM-5.3-Flash-NVFP4\" and ([.config.inference_profiles[]? | select(.profile_id == \"grok-port-code-review-profile\")] | length) == 0"
+    },
+    {
+      "name": "the scenario no longer requires the ceiling to be a gents checkout",
+      "expr": ".scenario.init.tool_root_markers == []"
+    },
+    {
+      "name": "the final review runs the code_review graph through its input fields",
+      "expr": ".assets[\"tasks/port_final_review_task/prompt.md\"] | contains(\"gents graph run code_review --field repository=. --field base=<job.base_sha> --field head=<head-sha>\") and (test(\"--repo[ =]\") | not)"
+    },
+    {
+      "name": "the recon tools read the ledger from the grok root, which the environment may override",
+      "expr": ".config.tools[] | select(.tools_id == \"port-recon-tools\") | .host.root | endswith(\"/recon_input\") or . == env.GENTS_GROK_PORT_GROK_ROOT"
+    },
+    {
+      "name": "the live task runs the probe scripts from the configured scripts directory",
+      "expr": ".config.tasks[] | select(.task_id == \"port-live-task\") | .prompt_template | (contains(\"packs/grok_tui_port/scripts\") | not) and contains(\"grok_edge_probe.py --edge offline\") and contains(\"grok_stock_pty_probe.py self-test\") and contains(\"grok_stock_pty_probe.py cleanup\")"
+    }
+  ]
+}

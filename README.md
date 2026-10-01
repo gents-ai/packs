@@ -11,7 +11,7 @@ scenario, or reusable assets alone.
 gents pack list
 gents pack show code_review
 gents pack install code_review --home <initialized-home>
-gents graph run code_review --repo . --base origin/main --head HEAD
+gents graph run code_review --field base=origin/main --field head=HEAD
 gents pack install mailbox --home <home>
 gents pack remove mailbox --home <home>
 gents pack prune mailbox
@@ -148,7 +148,7 @@ manifest declares, including each plugin's compiled `.afb`, in the order the
 digest is computed over. A pack is named by its digest, `sha256:<hex>`, and a
 home keeps the packs it has seen under `packs/store/sha256/`. A path is local
 only when written as one (`./dir`, `../dir`, `/abs`, or a `.pack` file); a
-bare name always means the bundled or registry pack. The registry serves
+bare name means `gents/<name>`. The registry serves
 packs only: `gents plugin publish` wraps a plugin in a single-plugin pack, so
 a pack that ships plugins is one artifact rather than an archive plus a pile
 of modules.
@@ -156,22 +156,32 @@ of modules.
 The default registry is `https://registry.dev.gents.xyz`, overridable per
 command with `--registry` and by `GENTS_REGISTRY`.
 
-A pack installed from a registry is the same pack as the one compiled into a
-binary: the digest is over the declared contents, never over the container, so
-neither the route a pack took nor the compression it arrived under changes
+A pack installed from a registry is the same pack as the one built from its
+directory: the digest is over the declared contents, never over the container,
+so neither the route a pack took nor the compression it arrived under changes
 what it is. A download is checked against the digest the registry advertised
 before it is opened.
 
 ## Installation and execution
 
-`pack install` resolves bundled assets by name, without a source checkout.
-Graph packs use the runtime graph installer; document packs use schema-first
-desired-state application. Neither submits scenario seed documents nor prunes
+No pack ships inside the gents binary. `pack install`, `pack show` and
+`pack scenario run` resolve their argument in this order: an explicit
+directory, `.pack` file or `sha256:<hex>` digest; the pack already installed
+in the home; the home's pack store (works offline); then the registry, whose
+download is kept in the store. `NAME` means `gents/NAME`, and `NS/NAME@VERSION`
+pins a version (`pack update` installs the registry's latest this way).
+`pack fetch SPEC --store` fills the store without installing, from a
+directory, a `.pack` or the registry, and `pack list` lists it. Graph packs
+install from any of these sources, exactly like document packs: graph packs
+use the runtime graph installer; document packs use schema-first desired-state
+application. Neither submits scenario seed documents nor prunes
 unrelated configuration. Enabled schedules and triggers can execute when their
 configuration is applied to a serving node; installation is not a dry run.
 Asset-only packs are materialized beneath `<home>/packs/`.
-Declared graph dependencies are installed before the document pack; this is
-not an atomic multi-package transaction. Failures remain visible and installs
+Dependencies are coordinates (`name` or `ns/name`, never a pinned version).
+Declared graph dependencies are installed before the document pack, resolved
+like any other pack; pre-store them with `pack fetch --store` to install
+offline. This is not an atomic multi-package transaction. Failures remain visible and installs
 can be retried through the existing owners.
 Only document packs currently declare package dependencies, and those must be
 graph packs. Graph/asset dependency lists are rejected; recursive installation
@@ -211,20 +221,23 @@ identity checks. Review plugin declarations and host authority before
 installing untrusted content. External dependency commands are documentation,
 never automatically executed.
 
-`pack scenario run`, `init`, and `seed` operate `experiment.json` scenarios. A lexically
-normalized source directory with a snake_case leaf name can be used while
-authoring; bundled names are materialized into the local pack cache when no
-source directory is selected. Run artifacts are under the resolved pack's
-`runs/<job_id>/`. Repository-specific scenarios still need their documented
-checkout, tools and bindings; bundling does not provision a compiler or an
-external model endpoint.
+`pack scenario run`, `init`, and `seed` operate `experiment.json` scenarios. A
+source directory can be used while authoring; a name resolves as `pack install`
+resolves one. `pack scenario run --with-pack DIR_OR_PACK` admits a directory
+or `.pack` to the run's store first, so a graph dependency resolves offline.
+Run artifacts are under the resolved pack's `runs/<job_id>/`.
+Repository-specific scenarios still need their documented checkout, tools and
+bindings; a pack does not provision a compiler or an external model endpoint.
+A scenario's `prepare` steps run a pack plugin (optionally with one
+operator-bound read-only directory) and map its output to seed fields.
 
 `manifest.json` is the sole package dependency declaration, including for
 scenario runs. `experiment.json` may configure scenario-specific graph model
 bindings, but cannot declare another dependency list.
 
-The bundled scenario asset cache is separate from the runtime home selected
-with `pack scenario run --home`: it lives under the default Gents home's `packs/` tree.
+The scenario asset cache of a name-resolved pack is separate from the runtime
+home selected with `pack scenario run --home`: it lives under the default Gents
+home's `packs/` tree.
 The distribution digest covers all declared assets, including documentation;
 the graph execution digest covers only the graph's referenced inputs. Both use
 the existing graph asset hashing routine. Filesystem cache names use the hex
@@ -288,9 +301,7 @@ in prose. A diagram is not proof of runtime completion behavior.
 Keep concise run summaries, reviewed outputs and issue links. Never bundle
 `runs/`, node homes, credentials, build caches or raw logs. Package embedding
 uses declared assets, not recursive discovery of an operator's workspace.
-`gents pack install <name>` resolves a pack compiled into the binary first and
-falls back to the registry. A graph pack installs only from the binary today,
-and there is no GitHub source.
+There is no GitHub source.
 
 ## Tests
 
@@ -307,11 +318,19 @@ any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 | `{"graphs": [...]}` | the graph ids the pack compiles to |
 | `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
 | `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents pack remove` releases them |
+| `{"install": {"graph": "<graph_id>", "slots": [...], "documents": [...]}}` | a graph pack installed from its directory into a fresh home (its dependencies pre-stored, its declared external services registered) activates this graph and binds these inference slots; a reinstall keeps the revision digest; `gents pack remove` deletes exactly these documents (ids derived from the graph digest are compared with the digest elided) |
+| `{"defs": "...", "jq": [{"name": "...", "expr": "..."}]}` | each jq expression is true over one document built once per pack from a single `gents pack show --config`: `{manifest, config, scenario, assets}`, `assets` mapping every UTF-8 declared asset path to its text; `defs` is a shared prelude of jq definitions |
+| `{"eval_case": {"asset": "...", "after": "..."}}` | the first json fence after that heading line of the asset is an eval case `gents eval checks --validate-case -` accepts |
+| `{"cli_flags": {"command": [...], "flags": [...]}}` | `gents <command> --help` documents every flag |
 | `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
 | `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents plugin list` agrees); a reinstall keeps the same set; `gents pack remove` releases them |
 
-A graph pack installs only from the binary today, so its suite asserts its
-compiled graphs rather than an install. Scenarios (`experiment.json`) need a
+Every documents or graph pack also passes the built-in checks: it declares
+inference slots and authors no inference backend, profile, sampling, execution
+or retry documents; no task sets `goal_token_budget`; and every dependency is a
+sibling pack directory with that coordinate, which is built and pre-stored in
+the install's home. Rust plugins run their own `cargo test` when `cargo` is on
+`PATH`. Scenarios (`experiment.json`) need a
 model endpoint and run only on request (`gents pack test --scenario`).
 
 ```sh

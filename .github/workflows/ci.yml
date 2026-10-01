@@ -173,6 +173,7 @@ jobs:
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
       - name: Build the publishable ${{ matrix.pack }} .pack
+        if: matrix.os == 'ubuntu-latest'
         env:
           GENTS: ${{ github.workspace }}/gents-bin/gents
         run: |
@@ -181,6 +182,7 @@ jobs:
           "$GENTS" pack verify "dist/gents.${{ matrix.pack }}.pack"
 
       - uses: actions/upload-artifact@v7
+        if: matrix.os == 'ubuntu-latest'
         with:
           name: pack-${{ matrix.pack }}-${{ runner.os }}
           path: dist/gents.${{ matrix.pack }}.pack

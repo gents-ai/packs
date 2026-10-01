@@ -1,0 +1,13 @@
+{
+  "defs": "def row($coll; $key; $id): .config[$coll][] | select(.[$key] == $id); def source_of($trigger): row(\"event_sources\"; \"event_source_id\"; (row(\"triggers\"; \"trigger_id\"; $trigger) | .source.event_source_id)); def workspace($binding; $collection; $prompt): . as $d | row(\"callback_bindings\"; \"binding_id\"; $binding) as $b | $d | row(\"event_sources\"; \"event_source_id\"; $b.event_source_id) | .source_collection == $collection and ($d.assets[$prompt] | (contains(\"make worktree BRANCH=\") | not) and (contains(\"Do not run `git commit`\") or contains(\"Do not run git commit\")));",
+  "jq": [
+    {
+      "name": "the scenario keeps the minimal tool ceiling",
+      "expr": "(.scenario.init.tool_package // \"minimal\") == \"minimal\" and (.scenario.init.tool_root // null) == null"
+    },
+    {
+      "name": "stage 1 declares a controller-owned goal with least-privilege tools",
+      "expr": "row(\"tasks\"; \"task_id\"; \"exp-stage1-task\") as $t | row(\"tools\"; \"tools_id\"; \"exp-tools-stage1\") as $tools | (($t.goal_objective_template | gsub(\"\\\\s\"; \"\") | length) > 0) and ($t.goal_token_budget == null) and $tools.built_ins.enable_goal_tools == true and ($tools.built_ins | has(\"enable_goal_creation\") | not)"
+    }
+  ]
+}

@@ -54,6 +54,7 @@
     "tasks/defend_triage_task/prompt.md",
     "tasks/defend_verification_plan_task/prompt.md",
     "tasks/defend_verifier_task/prompt.md",
+    "tests/content.json",
     "tests/install.json",
     "tests/workspace_callback.json"
   ],
@@ -106,5 +107,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

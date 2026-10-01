@@ -7,6 +7,7 @@
     "agent_behaviors/review_verify/system_prompt.md",
     "graphs/code_review.plan.json",
     "pack_config.json",
+    "plugins/review_evidence.afb",
     "schemas/candidate_finding.graphql",
     "schemas/evidence_manifest.graphql",
     "schemas/evidence_page.graphql",
@@ -21,7 +22,9 @@
     "tasks/review_scan_task/prompt.md",
     "tasks/review_triage_task/prompt.md",
     "tasks/review_verify_task/prompt.md",
-    "tests/graphs.json"
+    "tests/content.json",
+    "tests/graphs.json",
+    "tests/install.json"
   ],
   "authors": [
     "gents-ai contributors"
@@ -58,6 +61,41 @@
   "manifest_version": 1,
   "name": "code_review",
   "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/review_evidence.afb",
+      "description": "Turns the review entry's collected git_diff and read_only_workspace host facts into the immutable paged evidence documents and the review job's actual input. Runs only as this entry's declared prepare step, never as a direct model tool.",
+      "input_schema": {
+        "type": "object",
+        "description": "The host prepare envelope: the admitted entry input, a per-run nonce, and the collected git_diff and read_only_workspace host facts.",
+        "properties": {
+          "input": {
+            "type": "object"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "host": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "input",
+          "nonce",
+          "host"
+        ],
+        "additionalProperties": false
+      },
+      "language": "rust",
+      "limits": {
+        "memory_mib": 1024,
+        "wall_clock_secs": 120,
+        "max_output_mib": 4
+      },
+      "name": "review_evidence",
+      "source": "plugins/review_evidence"
+    }
+  ],
   "schemas": [
     "schemas/review_job.graphql",
     "schemas/evidence_manifest.graphql",
@@ -73,5 +111,5 @@
   "tags": [
     "graph"
   ],
-  "version": "1.6.0"
+  "version": "1.7.0"
 }

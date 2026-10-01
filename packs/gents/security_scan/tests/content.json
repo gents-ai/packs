@@ -1,0 +1,12 @@
+{
+  "jq": [
+    {
+      "name": "the scenario prepares its seed through the secscan plugin on one bound directory",
+      "expr": ".scenario.prepare | length == 1 and .[0].plugin == \"secscan\" and .[0].bind_dir == \".\" and (.[0].seed_fields | keys) == [\"candidate_files\", \"candidate_total\", \"candidates\", \"overflow_count\", \"slug_counts\"]"
+    },
+    {
+      "name": "the secscan plugin declares the bound directory field and bounded limits",
+      "expr": "[.manifest.plugins[] | select(.name == \"secscan\")][0] | .bind_dir.input_field == \"root\" and (.limits | length) > 0"
+    }
+  ]
+}

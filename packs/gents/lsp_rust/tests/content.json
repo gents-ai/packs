@@ -1,0 +1,12 @@
+{
+  "jq": [
+    {
+      "name": "the scenario holds a read-only ceiling named by GENTS_LSP_WORKSPACE",
+      "expr": ".scenario.init.tool_package == \"readonly\" and (.scenario.init.tool_root | length) > 0 and .scenario.init.tool_root_env_var == \"GENTS_LSP_WORKSPACE\""
+    },
+    {
+      "name": "the scenario expects lsp hover calls with their results",
+      "expr": ".scenario.expect.tool_calls as $calls | ($calls | any(.tool_name == \"lsp\" and .action == \"hover\")) and ($calls | any(.result_contains | index(\"FileToolMode\") != null)) and ([[\"crates/gents-loop/src/tool_policy.rs\", \"meet\", \"Disabled\"], [\"crates/gents/src/toolset/lsp/auth.rs\", \"lsp_advertised\", \"FileToolMode\"]] | all(. as [$file, $symbol, $needle] | $calls | any(.tool_name == \"lsp\" and .action == \"hover\" and .file == $file and .symbol == $symbol and (.result_contains | index($needle) != null))))"
+    }
+  ]
+}

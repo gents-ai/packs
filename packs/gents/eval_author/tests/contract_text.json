@@ -1,0 +1,8 @@
+{
+  "jq": [
+    {
+      "name": "the contract names the reducers scoring reduces and the acceptance tier, and promises nothing",
+      "expr": ".assets[\"agent_behaviors/eval_author/system_prompt.md\"] | contains(\"`all`\") and contains(\"`weighted_mean`\") and contains(\"`last_stage`\") and contains(\"acceptance\") and (contains(\"guaranteed\") | not)"
+    }
+  ]
+}

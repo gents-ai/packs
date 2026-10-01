@@ -1,0 +1,85 @@
+{
+  "expect": {
+    "documents": [
+      {
+        "collection": "CodeReviewEvidenceManifest",
+        "fields": {
+          "evidence_byte_count": "656",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "9d7aabd6ba177c9704a5b1f886dff278087d0c3c9ae22e908089ff8092a6f513",
+          "format_version": "1",
+          "page_count": "1"
+        }
+      },
+      {
+        "collection": "CodeReviewEvidencePage",
+        "fields": {
+          "evidence_byte_count": "656",
+          "evidence_chunk_0": "PINNED BASE: 75c0b319f74163f8fe66899f9d7b4f7886b777f3\nPINNED HEAD: f426e2cec31408e7b27c2fca910175e9bfc7dec3\n\nCHANGED FILES:\nA\tblob.bin\nR100\told_name.txt\tnew_name.txt\n\nDIFF STAT:\nblob.bin                     | Bin 0 -> 8 bytes\n old_name.txt => new_name.txt |   0\n 2 files changed, 0 insertions(+), 0 deletions(-)\n\nCOMPLETE PATCH:\ndiff --git a/blob.bin b/blob.bin\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..a05a86b92934c711131a29bdbe228122f9fd34ba\nGIT binary patch\nliteral 8\nPcmZRWKWQ4ne?}$%4ZH%%\n\nliteral 0\nHcmV?d00001\n\ndiff --git a/old_name.txt b/new_name.txt\nsimilarity index 100%\nrename from old_name.txt\nrename to new_name.txt\n",
+          "evidence_chunk_1": "",
+          "evidence_chunk_10": "",
+          "evidence_chunk_11": "",
+          "evidence_chunk_12": "",
+          "evidence_chunk_13": "",
+          "evidence_chunk_14": "",
+          "evidence_chunk_15": "",
+          "evidence_chunk_2": "",
+          "evidence_chunk_3": "",
+          "evidence_chunk_4": "",
+          "evidence_chunk_5": "",
+          "evidence_chunk_6": "",
+          "evidence_chunk_7": "",
+          "evidence_chunk_8": "",
+          "evidence_chunk_9": "",
+          "evidence_chunk_count": "1",
+          "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+          "evidence_sha256": "9d7aabd6ba177c9704a5b1f886dff278087d0c3c9ae22e908089ff8092a6f513",
+          "page_count": "1",
+          "page_index": "0",
+          "page_key": "00000000-0000-0000-0000-0000000000e1:00000000"
+        }
+      }
+    ],
+    "input": {
+      "base_ref": "75c0b319f74163f8fe66899f9d7b4f7886b777f3",
+      "evidence_chunk_count": "1",
+      "evidence_id": "00000000-0000-0000-0000-0000000000e1",
+      "evidence_summary": "PINNED BASE: 75c0b319f74163f8fe66899f9d7b4f7886b777f3\nPINNED HEAD: f426e2cec31408e7b27c2fca910175e9bfc7dec3\n\nCHANGED FILES:\nA\tblob.bin\nR100\told_name.txt\tnew_name.txt\n\nDIFF STAT:\nblob.bin                     | Bin 0 -> 8 bytes\n old_name.txt => new_name.txt |   0\n 2 files changed, 0 insertions(+), 0 deletions(-)",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head_ref": "f426e2cec31408e7b27c2fca910175e9bfc7dec3",
+      "lens_count": "4",
+      "lens_max": "4",
+      "lens_min": "4",
+      "pr_number": "",
+      "repository_path": ".",
+      "workspace_authority": "readOnly",
+      "workspace_id": "00000000-0000-0000-0000-0000000000w5",
+      "workspace_owner_agent_did": "did:key:golden-owner"
+    }
+  },
+  "input": {
+    "host": {
+      "git_diff": {
+        "base_sha": "75c0b319f74163f8fe66899f9d7b4f7886b777f3",
+        "head_sha": "f426e2cec31408e7b27c2fca910175e9bfc7dec3",
+        "name_status": "A\tblob.bin\nR100\told_name.txt\tnew_name.txt",
+        "patch": "diff --git a/blob.bin b/blob.bin\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..a05a86b92934c711131a29bdbe228122f9fd34ba\nGIT binary patch\nliteral 8\nPcmZRWKWQ4ne?}$%4ZH%%\n\nliteral 0\nHcmV?d00001\n\ndiff --git a/old_name.txt b/new_name.txt\nsimilarity index 100%\nrename from old_name.txt\nrename to new_name.txt\n",
+        "repository": "/tmp/.tmpNW8hoX",
+        "stat": "blob.bin                     | Bin 0 -> 8 bytes\n old_name.txt => new_name.txt |   0\n 2 files changed, 0 insertions(+), 0 deletions(-)"
+      },
+      "workspace": {
+        "authority": "readOnly",
+        "owner_agent_did": "did:key:golden-owner",
+        "workspace_id": "00000000-0000-0000-0000-0000000000w5"
+      }
+    },
+    "input": {
+      "base": "75c0b319f74163f8fe66899f9d7b4f7886b777f3",
+      "focus": "Review the diff for material correctness, safety, durability, and maintainability defects.",
+      "head": "f426e2cec31408e7b27c2fca910175e9bfc7dec3",
+      "repository": "/tmp/.tmpNW8hoX"
+    },
+    "nonce": "00000000-0000-0000-0000-0000000000e1"
+  }
+}

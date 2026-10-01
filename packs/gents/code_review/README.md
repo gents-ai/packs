@@ -4,22 +4,26 @@ Reusable reconnaissance, parallel scanning, verification and triage graph.
 
 ## Installation
 
-A graph pack installs only from the gents binary today:
-`gents pack install code_review`.
+Install from the registry (`gents pack install gents/code_review`), from a
+directory or `.pack`, or from the home's pack store.
 
 ```sh
-gents pack install code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
+gents pack install gents/code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
   --preview \
   --inference-slot coordinator=claude-coordinator \
   --inference-slot worker=glm-worker \
   --inference-slot verifier=grok-verifier
-gents pack install code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
+gents pack install gents/code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
   --inference-slot coordinator=claude-coordinator \
   --inference-slot worker=glm-worker \
   --inference-slot verifier=grok-verifier
 gents graph run code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
-  --repo . --base origin/main --head HEAD --watch
+  --field base=origin/main --watch
 ```
+
+The entry takes `repository` (default `.`), `base` (default `origin/main`),
+`head` (default `HEAD`) and `focus` as `--field NAME=VALUE` or one `--input`
+JSON object (or `@FILE`).
 
 ## Bindings and prerequisites
 
@@ -78,10 +82,12 @@ gents pack test ./packs/gents/code_review
 make test-code_review        # from the repository root
 ```
 
-`tests/graphs.json` pins the compiled graph (`code-review`). A graph pack
-installs only from the gents binary today, so the suite checks, builds,
-verifies and compiles it rather than installing it. The runtime package
-catalog/compiler tests validate the bundled assets and contracts.
+`tests/graphs.json` pins the compiled graph (`code-review`);
+`tests/install.json` installs the pack from its directory into a fresh home,
+reinstalls it and removes it; `tests/content.json` asserts the graph, tool
+authority and evidence-handoff contracts. `gents pack test` also runs the
+`review_evidence` plugin's byte-identity golden cases against its built
+artifact.
 
 ## Operational history
 

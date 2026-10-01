@@ -1,7 +1,7 @@
 {
   "compiler_version": "graph-intent-v4",
   "graph_id": "web-deep-research",
-  "digest": "sha256:937552e503feac8870d41b046368a7ffbabf917725a2fbdb4846a93a17ea88b3",
+  "digest": "sha256:8387b73f7bd7a45c3903bc7096e41e4c96fbdec0057b2b93f4e7ee7167cdd3aa",
   "nodes": [
     {
       "node_id": "adjudicate",
@@ -114,7 +114,41 @@
         "kind": "task",
         "task_id": "research-plan-task"
       },
-      "correlation_field": "run_id"
+      "correlation_field": "run_id",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "default": "A technically literate reader",
+            "type": "string"
+          },
+          "freshness": {
+            "default": "Prefer current sources and record publication dates; retain older primary sources when historically necessary.",
+            "type": "string"
+          },
+          "investigator_count": {
+            "default": "4",
+            "pattern": "^[2-8]$",
+            "type": "string"
+          },
+          "output_requirements": {
+            "default": "A concise Markdown report with claim-local links, counterevidence, a source ledger, and explicit limitations.",
+            "type": "string"
+          },
+          "question": {
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "scope": {
+            "default": "Answer the question directly; include material context, counterevidence, and uncertainty.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "type": "object"
+      }
     }
   ],
   "results": [

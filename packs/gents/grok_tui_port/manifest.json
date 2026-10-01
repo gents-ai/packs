@@ -52,7 +52,6 @@
     "tasks/port_integrate_record_task/prompt.md",
     "tasks/port_integrate_task/prompt.md",
     "tasks/port_live_review_task/prompt.md",
-    "tasks/port_live_task/prompt.md",
     "tasks/port_plan_skip_task/prompt.md",
     "tasks/port_plan_task/prompt.md",
     "tasks/port_publish_task/prompt.md",
@@ -60,6 +59,7 @@
     "tasks/port_recon_task/prompt.md",
     "tasks/port_retry_task/prompt.md",
     "tasks/port_review_task/prompt.md",
+    "tests/content.json",
     "tests/install.json",
     "tests/workspace_callback.json"
   ],
@@ -113,5 +113,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.1.0"
+  "version": "1.2.0"
 }
