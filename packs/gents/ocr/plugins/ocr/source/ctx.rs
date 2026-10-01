@@ -143,6 +143,13 @@ impl Ctx {
         }
     }
 
+    /// The JSON bytes a table may use: what is left, less room for the marker
+    /// and notes around it (an eighth of a small budget, 4 KiB of a large one).
+    pub fn table_budget(&self) -> usize {
+        let left = self.budget.remaining();
+        left.saturating_sub((left / 8).min(4096))
+    }
+
     /// Takes everything a unit added since `mark` back out.
     pub fn rewind(&mut self, acc: &mut DocAcc, mark: &Mark) {
         acc.md.truncate(mark.md);

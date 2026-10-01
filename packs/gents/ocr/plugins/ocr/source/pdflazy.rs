@@ -32,6 +32,8 @@ pub const WINDOW_BYTES: usize = 48 * 1024 * 1024;
 const MAX_DEPTH: usize = 64;
 /// Page attributes a page inherits from the nodes above it.
 const INHERITED: [&str; 4] = ["Resources", "MediaBox", "CropBox", "Rotate"];
+// vertexia: annotations and form fields are not copied into a window, so they
+// are not read; copying them needs their back references (P, Parent) cut.
 /// Page keys that lead away from the page (back to the tree, to annotations
 /// and to structure): never copied, or one page would pull in the whole file.
 const NOT_COPIED: [&str; 5] = ["Parent", "Annots", "B", "Thumb", "StructParents"];

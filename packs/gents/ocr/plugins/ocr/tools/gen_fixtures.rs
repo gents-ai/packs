@@ -702,6 +702,10 @@ fn main() {
     write(dir, "notes.md", b"# Notes\r\n\r\n- one\r\n- two\r\n");
     write(dir, "data.csv", b"name,score\nAna,9\n\"Bo, Jr.\",7\n");
     write(dir, "plain.txt", b"Plain text\nsecond line\n");
+    // Inputs that take several calls with a small max_bytes.
+    write(dir, "many.pdf", &bench_pdf(6));
+    let long: String = (0..400).map(|i| format!("{}\n", sentence(i))).collect();
+    write(dir, "long.txt", long.as_bytes());
     // A directory for the bind cases: a page with a sibling image, a sheet, a
     // corrupt PDF and a file type the plugin does not read.
     write(dir, "tree/page.html", HTML_PAGE.as_bytes());

@@ -59,6 +59,9 @@ pub fn decode_text(bytes: &[u8]) -> Cow<'_, str> {
 
 /// Reads and discards the first `n` bytes of a stream that cannot seek (a
 /// deflated entry), to resume it where an earlier call stopped.
+// vertexia: each continuation re-inflates the part up to its position, so a
+// later piece of one huge part costs more; zran-style access points kept in
+// the cursor would make it constant.
 pub fn skip_bytes(rd: &mut impl Read, n: u64) -> Result<(), String> {
     let got = std::io::copy(&mut rd.take(n), &mut std::io::sink())
         .map_err(|e| format!("cannot read the document: {e}"))?;

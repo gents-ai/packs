@@ -1,0 +1,25 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "documents": [
+      {
+        "figures": [],
+        "format": "text",
+        "markdown": "<!-- document: long.txt (text) -->\n\nsystem cache buffer system kernel token token kernel system buffer cache system query memory.\nstream driver plan stream network design design network stream plan driver stream vector record.\ncache reader kernel cache value table table value cache kernel reader cache memory model.\ndriver index network driver graph queue queue graph driver network index driver record thread.\nreader token value reader system socket socket system reader value token reader model buffer.\nindex design graph index stream engine engine stream index graph design index thread plan.\ntoken table system token cache query query cache token system table token buffer kernel.\ndesign queue stream design driver vector vector driver design stream queue design plan network.\ntable socket cache table reader memory memory reader table cache socket table kernel value.\nqueue engine driver queue index record record index queue driver engine queue network graph.\nsocket query reader socket token model model token socket reader query socket value system.\nengine vector index engine design thread thread design engine index vector engine graph stream.\nquery memory token query table buffer buffer table query token memory query system cache.\nvector record design vector queue plan plan queue vector design record vector stream driver.\nmemory model table memory socket kernel kernel socket memory table model memory cache reader.\nrecord thread queue record engine network network engine record queue thread record driver index.\nmodel buffer socket model query value value query model socket buffer model reader token.\nthread plan engine thread vector graph graph vector thread engine plan thread index design.\nbuffer kernel query buffer memory system system memory buffer query kernel buffer token table.\nplan network vector plan record stream stream record plan vector network plan design queue.\nkernel value memory kernel model cache cache model kernel memory value kernel table socket.\nnetwork graph record network thread driver driver thread network record graph network queue engine.\nvalue system model value buffer reader reader buffer value model system value socket query.\ngraph stream thread graph plan index index plan graph thread stream graph engine vector.\nsystem cache buffer system kernel token token kernel system buffer cache system query memory.\nstream driver plan stream network design design network stream plan driver stream vector record.\ncache reader kernel cache value table table value cache kernel reader cache memory model.\ndriver index network driver graph queue queue graph driver network index driver record thread.\nreader token value reader system socket socket system reader value token reader model buffer.\nindex design graph index stream engine engine stream index graph design index thread plan.\ntoken table system token cache query query cache token system table token buffer kernel.\ndesign queue stream design driver vector vector driver design stream queue design plan network.\ntable socket cache table reader memory memory reader table cache socket table kernel value.\nqueue engine driver queue index record record index queue driver engine queue network graph.\nsocket query reader socket token model model token socket reader query socket value system.\nengine vector index engine design thread thread design engine index vector engine graph stream.\nquery memory token query table buffer buffer table query token memory query system cache.\nvector record design vector queue plan plan queue vector design record vector stream driver.\nmemory model table memory socket kernel kernel socket memory table model memory cache reader.\nrecord thread queue record engine network network engine record queue thread record driver index.\nmodel buffer socket model query value value query model socket buffer model reader token.\nthread plan engine thread vector graph graph vector thread engine plan thread index design.\nbuffer kernel query buffer memory system system memory buffer query kernel buffer token table.",
+        "pages": 1,
+        "source": "long.txt",
+        "warnings": []
+      }
+    ],
+    "next": {
+      "cursor": "ocr1.eyJ2IjoxLCJyZXEiOjEzMDAzNjMyNDgzODQ0ODU4NTkxLCJmaWxlIjowLCJuYW1lIjoibG9uZy50eHQiLCJsZW4iOjM3MjcwLCJmcCI6NDM2NjQyMTIzNjI3NTIwNTU4NywiYXQiOnsidW5pdCI6MSwicG9zIjo0MDA3LCJza2lwIjowLCJqb2ludCI6MSwiZmlnIjowLCJzZWVuIjpbXX19.514e5f8dbc5f1b44",
+      "source": "long.txt"
+    }
+  },
+  "input": {
+    "files": [
+      "long.txt"
+    ],
+    "max_bytes": 4096
+  }
+}

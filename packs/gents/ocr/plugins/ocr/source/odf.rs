@@ -314,7 +314,7 @@ impl Steps for Sheets<'_, '_> {
             .table(sheet);
             let fresh = self.row == 0;
             let cols = rows.iter().map(Vec::len).max().unwrap_or(0);
-            let budget = self.ctx.budget.remaining().saturating_sub(4096);
+            let budget = self.ctx.table_budget();
             let mut tw = TableWriter::new(cols, budget, fresh);
             let mut at = (self.row as usize).min(rows.len());
             if fresh && let Some(first) = rows.first() {
@@ -361,6 +361,7 @@ impl Steps for Sheets<'_, '_> {
 }
 
 /// The text of `content.xml`, which is parsed as one tree and so is bounded.
+// vertexia: bounded by MAX_DOM_BYTES; a streaming reader like the XLSX one lifts it.
 fn content_text(zip: &mut Zip) -> Result<String, String> {
     let content = zip
         .read_limited("content.xml", MAX_DOM_BYTES)

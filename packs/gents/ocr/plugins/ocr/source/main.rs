@@ -26,11 +26,15 @@ mod pdf;
 #[cfg(test)]
 mod pdfgen;
 mod pdflazy;
+#[cfg(test)]
+mod pdflazy_tests;
 mod pdfobj;
 mod pix;
 mod plan;
 mod pptx;
 mod resume;
+#[cfg(test)]
+mod slice_tests;
 mod slicer;
 mod src;
 mod table;

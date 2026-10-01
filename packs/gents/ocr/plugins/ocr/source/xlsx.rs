@@ -22,6 +22,7 @@ use crate::xml::{attr, is, parse};
 
 const MAX_COLS: usize = 16_384;
 /// The shared strings kept in memory take at most about this many bytes; later ones are left out.
+// vertexia: an in-memory table; a seekable index of the strings lifts the bound.
 const SHARED_BYTES: usize = 192 * 1024 * 1024;
 const STREAM_BUFFER: usize = 64 * 1024;
 const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -255,6 +256,7 @@ fn read_sheet<R: BufRead>(
     let mut reader = Reader::from_reader(rd);
     // A slice starts in the middle of the part, so its closing tags have no opening ones.
     reader.config_mut().check_end_names = false;
+    reader.config_mut().allow_unmatched_ends = true;
     let mut writer: Option<TableWriter> = None;
     let (mut row, mut row_started): (Vec<String>, bool) = (Vec::new(), false);
     let (mut col, mut kind, mut style, mut value, mut in_v, mut in_t, mut in_inline) = (
@@ -446,7 +448,7 @@ impl Steps for Book<'_> {
             if !fresh {
                 skip_bytes(&mut entry, self.pos)?;
             }
-            let budget = self.ctx.budget.remaining().saturating_sub(4096);
+            let budget = self.ctx.table_budget();
             let lookup = Lookup {
                 shared: &self.shared,
                 dates: &self.dates,

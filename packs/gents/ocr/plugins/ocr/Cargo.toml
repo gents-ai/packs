@@ -31,6 +31,10 @@ flate2 = "1"
 name = "gen_fixtures"
 path = "tools/gen_fixtures.rs"
 
+[[example]]
+name = "gen_big"
+path = "tools/gen_big.rs"
+
 # Tests run the OCR models natively; unoptimized they are unusably slow.
 [profile.dev]
 opt-level = 2

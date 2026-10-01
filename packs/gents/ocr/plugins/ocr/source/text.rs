@@ -207,7 +207,7 @@ pub fn convert_csv(
     if resume.is_none() {
         ctx.append(&mut acc, &header(source, format));
     }
-    let budget = ctx.budget.remaining().saturating_sub(4096);
+    let budget = ctx.table_budget();
     let mut writer = TableWriter::new(cols, budget, resume.is_none());
     let w = read_window(src, st, pos, window_bytes(st.enc, budget)).map_err(io_err)?;
     let mut rest = w.text.as_str();

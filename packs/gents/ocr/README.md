@@ -60,6 +60,9 @@ file inside it, optionally `files` to pick and order files) or with `name` and
 | `figure_images` | attach each figure image for the model to look at (default `false`) |
 | `max_image_px` | longest side OCR inputs and attached images are scaled down to, 256 to 4096 (default 2000) |
 | `min_figure_px` | images with a shorter side below this are skipped as decorative (default 96) |
+| `cursor` | the `next.cursor` of the previous call: continue exactly where it stopped, with every other field unchanged |
+| `mode` | `read` (default) or `plan`: list what each file holds and the `pages` ranges that cover it, without reading it |
+| `max_bytes`, `max_seconds` | the most JSON bytes (4096 to 3800000, default 3800000) and wall-clock seconds (1 to 860, default 860) of one call before it returns a cursor |
 
 One JSON object out:
 
@@ -70,6 +73,16 @@ One JSON object out:
                "text": "North 42\nSouth 37", "width": 640, "height": 480, "ocr": true}],
   "warnings": []}]}
 ```
+
+A call that stops before the end (the output limit, the wall clock, OCR time)
+also returns `"next": {"cursor": "ocr1....", "source": "big.pdf"}`; calling
+again with the same input and that `cursor` continues at the exact page, row or
+line where it stopped, and a continuation document names how its text joins
+the earlier piece in `joint` (`blank`, `line` or `none`). A file of any size is
+read this way: it is streamed, never loaded whole. `mode: "plan"` returns, per
+file, its unit (page, slide, sheet, section), its count and `chunks` of `pages`
+that cover every unit once, or `read: "cursor"` for a single flow of text; see
+`plugins/ocr/TOOL.md` for the schema.
 
 Markers are `<!-- page N -->` (PDF), `<!-- slide N -->` (PPTX, ODP),
 `<!-- sheet N: name -->` (XLSX, ODS) and `<!-- section N: file -->` (EPUB
@@ -116,11 +129,10 @@ decorative, images over 50 megapixels that were skipped without being decoded
 (also when a page that holds one is not rendered for OCR), figure images past
 a 256 MiB per-page memory cap, an image already listed earlier in the
 document and skipped, repeated headers and footers that were left out, and
-any truncation with the `pages` value that continues it. The output is capped
-below the host's 4 MiB ceiling; a document that hits it is cut at a page,
-section or row boundary and says so; plain text and Markdown are cut at a
-line (or, for one enormous line, at a character) and the warning gives the
-lines and bytes read.
+any limit that applies to what was read. The output is capped below the host's
+4 MiB ceiling; a call that hits it stops at a page, section, row or line
+boundary (or, for one enormous line, at a character) and returns `next`, so
+nothing is dropped and nothing is repeated when the call is continued.
 
 ## Validation
 
@@ -147,7 +159,7 @@ image input; OCR with the ocrs text detection and recognition models.
 | XLSX | zip with `xl/workbook.xml` | sheet | every visible sheet as a table, streamed; shared and inline strings, booleans, errors, dates shown as dates |
 | ODT, ODS, ODP | zip with OpenDocument `mimetype` | one, sheet, slide | headings, lists, tables, links, notes, pictures |
 | HTML, XHTML | extension or `<html` | one | headings, lists, tables, code, quotes, links, figures; relative images are read from beside the file inside the bound directory, `data:` images too |
-| Markdown, text | extension | one | passed through with line endings normalised; over the output limit they are cut at a line, never dropped |
+| Markdown, text | extension | one | passed through with line endings normalised; over the output limit they continue at a line with `next`, never dropped |
 | CSV, TSV | extension | one | a table; the delimiter is sniffed from the first line |
 | PNG, JPEG, GIF, BMP, TIFF, WebP | magic bytes | one | OCR, laid out like a scanned page: a line is never joined across a column gutter, so columns come out in reading order |
 
@@ -185,10 +197,14 @@ far enough apart to read as separate pieces. Small or blurred images read
 worse (a page shrunk to a few hundred pixels across garbles letters): give the
 OCR the largest image you have.
 
-The largest file read is 256 MiB (files are read in chunks; a 250 MiB PDF read
-at a 626 MiB peak in the measurement below); a larger one fails with the limit
-and the way out. An image of more than 50 megapixels is refused, in a PDF with
-a warning naming its size, before anything is decoded.
+There is no file size limit: memory follows the page, row or line being read,
+not the file (see Performance). What is bounded: an image to 50 megapixels
+(refused before anything is decoded, in a PDF with a warning naming its size);
+ODT, ODS and ODP text to 16 MiB; a PDF with damaged cross-reference data or
+encryption is read whole up to 256 MiB; one stream inside a PDF to 128 MiB
+(left out with a warning). Continuing deep inside one compressed part (a DOCX
+body, an XLSX sheet) reads past the compressed bytes before it, so a later
+piece of such a file takes longer than the first.
 
 ## Performance
 
@@ -205,7 +221,26 @@ not natively:
 | the same page as a PNG (OCR) | 5.1 s | | 522 MiB |
 | two-column scanned page as PNG, 8 lines (OCR) | 6.5 s | | 522 MiB |
 | dense scanned A4 page as PDF, 52 lines (OCR) | 119 s | about 2.3 s per line | 548 MiB (one run beside other heavy jobs: 892 MiB) |
-| a 250 MiB PDF (read, one page) or text file (cut at the output limit) | 0.2 s (PDF), 1.7 s (text) | | 625 MiB |
+
+Large inputs, generated with `plugins/ocr/tools/gen_big.rs` (never
+committed) and read to the end by following the cursor, one call per piece of
+up to 3.8 MB, through `wasmtime` with the pack's 1536 MiB memory limit
+(`plugins/ocr/tools/measure.py`; peak is the resident size of the plugin
+process, per call, maximum over all calls; one machine, one run each):
+
+| Input | Calls | Total time | Slowest call | Peak memory |
+| --- | --- | --- | --- | --- |
+| text, 1.07 GiB | 307 | 24 s | 0.09 s | 35 MiB |
+| CSV, 1.07 GiB | 353 | 63 s | 0.49 s | 38 MiB |
+| EPUB, 4,400 chapters, 1.1 GiB of XHTML (325 MB file) | 315 | 64 s | 0.38 s | 36 MiB |
+| DOCX, one 1.1 GiB body (300 MB file) | 294 | 613 s | 11.2 s (first call scans for a Title style; the last call re-inflates 1 GiB, 4.1 s) | 36 MiB |
+| XLSX, one 1.1 GiB sheet (203 MB file) | 95 | 188 s | 3.4 s (grows with the position in the sheet) | 36 MiB |
+| PDF, 274,000 pages (1.2 GiB), about 85 pages/s | 230 | 3,215 s (a pack build and test ran beside it) | 25.9 s (typically 9.5 to 11 s per 1,000 pages) | 63 MiB |
+
+Opening the 274,000-page PDF and reading page 270,000 takes 0.25 s and 62 MiB,
+and a plan of it 0.15 s: the cross-reference data is indexed at 16 bytes per
+object, the page tree is entered by page counts, and only the objects of the
+pages being read are copied out of the file.
 
 Peak memory is the resident size of the whole `gents` process (idle about 365
 MiB with the module loaded). The text PDF, EPUB and scan numbers come from

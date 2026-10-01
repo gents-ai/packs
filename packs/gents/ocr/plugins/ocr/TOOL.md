@@ -31,10 +31,72 @@ Options, all optional:
   and attached images are scaled down to.
 - `min_figure_px`: images whose shorter side is below this (default 96) are
   skipped as decorative and only counted in the warnings.
+- `cursor`: the `next.cursor` of the previous call, to continue where it
+  stopped (see Reading in pieces). Repeat every other field unchanged.
+- `mode`: `read` (default) returns the Markdown; `plan` lists what each file
+  holds without reading it (see Plan).
+- `max_bytes`: the most content one call returns, 4096 to 3800000 (default
+  3800000); `max_seconds`: the wall clock after which a call starts nothing
+  new, 1 to 860 (default 860). A call that stops on either returns a cursor.
 
 Formats are detected from the file's content, not its name. A file that is not
 one of the supported formats, or is corrupt, encrypted or DRM-protected, fails
 with one sentence saying why.
+
+## Reading in pieces
+
+A file of any size is read in pieces: files are streamed, never loaded
+whole, and a call returns at most `max_bytes` of Markdown (about 3.8 MB).
+When a call stops before the end of what you asked for (the output limit, the
+wall clock, or OCR time) the result carries
+
+```json
+"next": {"cursor": "ocr1.eyJ2Ijox...", "source": "big.pdf"}
+```
+
+Call again with the same input plus `"cursor": "<that value>"` and the next
+piece starts exactly where this one ended, with nothing repeated and nothing
+skipped. Repeat until a result has no `next`. A cursor is opaque: pass it back
+unchanged. It is refused, with a sentence saying why, when the other fields
+differ from the request it came from or when the file changed.
+
+A continuation document says how its Markdown joins the text before it, in
+`joint`: `blank` (a blank line), `line` (a line break) or `none` (the earlier
+piece stopped inside a line), so pieces can be concatenated exactly. A
+continuation inside a table also carries `table_header`, the table's header
+and rule lines. Figures keep their ids across pieces. Warnings and `pages`
+describe only what a piece covers or the whole file, as before.
+
+In a directory call the pieces run across files in order and `next.source`
+names the file the next piece starts in. Read a long scan or a huge file with
+the cursor, or split it with `pages` and run the ranges in parallel.
+
+## Plan
+
+`"mode": "plan"` opens each file only far enough to count its parts and
+returns, per file, without any Markdown:
+
+```json
+{"documents": [
+  {"source": "report.pdf", "format": "pdf", "bytes": 18334, "read": "pages",
+   "unit": "page", "count": 812, "chunks": [{"pages": "1-20"}, {"pages": "21-40"}]},
+  {"source": "log.txt", "format": "text", "bytes": 905000000, "read": "cursor",
+   "estimated_calls": 239},
+  {"source": "broken.pdf", "format": "unknown", "bytes": 31, "read": "cursor",
+   "error": "the PDF is corrupt or truncated and cannot be read"}
+], "omitted": 0}
+```
+
+- `read: "pages"`: the file is made of pages, slides, sheets or EPUB
+  sections (`unit`, `count`) and `chunks` are `pages` values that cover every
+  unit exactly once (at most 64 per file); read each with `pages`, in any
+  order or in parallel.
+- `read: "cursor"`: one flow of text (text, Markdown, CSV, HTML, DOCX, ODT,
+  images): read it by following the cursor. `estimated_calls` is the file size
+  divided by `max_bytes`, a rough guide only.
+- `error` names a file that cannot be read; the other files are still planned.
+- `omitted` counts files left out because the plan reached `max_bytes` or the
+  wall clock: plan them with `files`. `pages` and `cursor` do not apply to a plan.
 
 ## Output
 
@@ -67,7 +129,8 @@ One JSON object:
   file, whatever `pages` you asked for.
 - `warnings` says everything that is missing or uncertain: pages that could
   not be read and why, images skipped as decorative, unmapped glyphs, charts
-  that are not read, truncation. Read it before trusting a page.
+  that are not read. Read it before trusting a page.
+- `next` is present when the result stops before the end: see Reading in pieces.
 
 With `figure_images: true` and at least one image attached, the whole result
 is `{"response": {"documents": [...]}, "parts": [{"type": "image", "data":
@@ -100,16 +163,31 @@ same object.
   nothing about structure. Small or blurred images read worse.
 - OCR reads Latin-script text. Expect errors on small, blurred or handwritten
   text; OCR lines carry no confidence, so check numbers that matter.
-- Pages or sections are processed one at a time. Output is capped below 4 MiB;
-  when a document is cut, `warnings` says where and which `pages` value
-  continues. OCR stops starting new images (image files and PDF pages) once the next one
-  might not finish inside the 900 s wall clock of a call; the warning names what
-  was left, and in a directory run each unread image is listed with
+- Pages, slides, sheets and sections are processed one at a time, and the
+  output of a call is capped below 4 MiB. A call stops at a page, section, row
+  or line boundary (inside a page or line only when that one unit is larger
+  than a whole call) and returns `next`. OCR stops starting new images (image
+  files and PDF pages) once the next one might not finish inside the 900 s wall
+  clock: the call returns what it has with a cursor at the first page it left,
+  and in a directory run an image that never got OCR time is listed with
   `not read: the OCR time budget ...`: call again with `files` listing them.
-  Plain text and Markdown over the limit are cut at a line, with the lines
-  and bytes read in `warnings`.
-- A file can be at most 256 MiB, and an image at most 50 megapixels (a PDF image
-  over that is skipped with a warning and its page is not rendered for OCR).
+- Memory follows the unit being read, not the size of the file: a text,
+  CSV or EPUB file, an XLSX sheet or a DOCX body of a gigabyte or more is read
+  with tens of MiB, and a PDF is indexed through its cross-reference data and
+  read in windows of a few pages. Continuing deep inside one compressed part
+  (a DOCX body, an XLSX sheet, an EPUB chapter over 8 MiB) reads past the
+  compressed bytes before it, so each later piece of such a file takes
+  longer than the first.
+- A PDF whose cross-reference data is damaged, or that is encrypted, is read
+  whole when it is at most 256 MiB, and fails with that limit and the way out
+  above it. Annotations and form fields are not read. An image is at most 50
+  megapixels (a PDF image over that is skipped with a warning and its page is
+  not rendered for OCR); a single stream over 128 MiB inside a PDF is left out
+  with a warning.
+- ODT, ODS and ODP text (`content.xml`) is read as one tree and is limited to
+  16 MiB; larger files fail with a sentence saying to export CSV, XLSX or text.
+  A spreadsheet keeps its shared strings in memory up to 192 MiB, and the
+  warnings say how many did not fit.
 - Office files: text boxes, footnotes, tables, pictures and alt text are
   read; headers, footers, comments, charts and equation layout are not.
 - Directory calls keep going when one file fails: that file appears as a

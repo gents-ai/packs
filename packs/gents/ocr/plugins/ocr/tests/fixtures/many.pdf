@@ -1,0 +1,413 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R] /Count 6 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>
+endobj
+6 0 obj
+<< /Length 6550 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 1) Tj ET
+BT /F1 10 Tf 56 760 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 733 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 706 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 679 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 652 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 625 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 598 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 571 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 544 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 517 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 490 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 463 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 436 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 409 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 382 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 355 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 328 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 301 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 274 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 247 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 220 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 193 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 166 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 139 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 112 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 85 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+8 0 obj
+<< /Length 6544 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 2) Tj ET
+BT /F1 10 Tf 56 760 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 733 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 706 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 679 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 652 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 625 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 598 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 571 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 544 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 517 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 490 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 463 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 436 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 409 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 382 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 355 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 328 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 301 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 274 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 247 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 220 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 193 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 166 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 139 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 112 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 85 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 8 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+10 0 obj
+<< /Length 6547 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 3) Tj ET
+BT /F1 10 Tf 56 760 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 733 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 706 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 679 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 652 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 625 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 598 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 571 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 544 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 517 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 490 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 463 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 436 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 409 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 382 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 355 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 328 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 301 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 274 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 247 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 220 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 193 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 166 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 139 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 112 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 85 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 10 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+12 0 obj
+<< /Length 6549 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 4) Tj ET
+BT /F1 10 Tf 56 760 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 733 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 706 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 679 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 652 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 625 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 598 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 571 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 544 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 517 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 490 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 463 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 436 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 409 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 382 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 355 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 328 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 301 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 274 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 247 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 220 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 193 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 166 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 139 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 112 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 85 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 12 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+14 0 obj
+<< /Length 6543 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 5) Tj ET
+BT /F1 10 Tf 56 760 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 733 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 706 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 679 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 652 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 625 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 598 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 571 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 544 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 517 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 490 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 463 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 436 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 409 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 382 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 355 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 328 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 301 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 274 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 247 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 220 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 193 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 166 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 139 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 112 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 85 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 14 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+16 0 obj
+<< /Length 6547 >>
+stream
+BT /F2 18 Tf 56 790 Td (Chapter 6) Tj ET
+BT /F1 10 Tf 56 760 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 746.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 733 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 719.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 706 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 692.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 679 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 665.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 652 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 638.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 625 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 611.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 598 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 584.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 571 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 557.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 544 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 530.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 517 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 503.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 490 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 476.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 463 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 449.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 436 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 422.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 409 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 395.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+BT /F1 10 Tf 56 382 Td (system cache buffer system kernel token token kernel system buffer cache system query memory.) Tj ET
+BT /F1 10 Tf 56 368.5 Td (stream driver plan stream network design design network stream plan driver stream vector record.) Tj ET
+BT /F1 10 Tf 56 355 Td (cache reader kernel cache value table table value cache kernel reader cache memory model.) Tj ET
+BT /F1 10 Tf 56 341.5 Td (driver index network driver graph queue queue graph driver network index driver record thread.) Tj ET
+BT /F1 10 Tf 56 328 Td (reader token value reader system socket socket system reader value token reader model buffer.) Tj ET
+BT /F1 10 Tf 56 314.5 Td (index design graph index stream engine engine stream index graph design index thread plan.) Tj ET
+BT /F1 10 Tf 56 301 Td (token table system token cache query query cache token system table token buffer kernel.) Tj ET
+BT /F1 10 Tf 56 287.5 Td (design queue stream design driver vector vector driver design stream queue design plan network.) Tj ET
+BT /F1 10 Tf 56 274 Td (table socket cache table reader memory memory reader table cache socket table kernel value.) Tj ET
+BT /F1 10 Tf 56 260.5 Td (queue engine driver queue index record record index queue driver engine queue network graph.) Tj ET
+BT /F1 10 Tf 56 247 Td (socket query reader socket token model model token socket reader query socket value system.) Tj ET
+BT /F1 10 Tf 56 233.5 Td (engine vector index engine design thread thread design engine index vector engine graph stream.) Tj ET
+BT /F1 10 Tf 56 220 Td (query memory token query table buffer buffer table query token memory query system cache.) Tj ET
+BT /F1 10 Tf 56 206.5 Td (vector record design vector queue plan plan queue vector design record vector stream driver.) Tj ET
+BT /F1 10 Tf 56 193 Td (memory model table memory socket kernel kernel socket memory table model memory cache reader.) Tj ET
+BT /F1 10 Tf 56 179.5 Td (record thread queue record engine network network engine record queue thread record driver index.) Tj ET
+BT /F1 10 Tf 56 166 Td (model buffer socket model query value value query model socket buffer model reader token.) Tj ET
+BT /F1 10 Tf 56 152.5 Td (thread plan engine thread vector graph graph vector thread engine plan thread index design.) Tj ET
+BT /F1 10 Tf 56 139 Td (buffer kernel query buffer memory system system memory buffer query kernel buffer token table.) Tj ET
+BT /F1 10 Tf 56 125.5 Td (plan network vector plan record stream stream record plan vector network plan design queue.) Tj ET
+BT /F1 10 Tf 56 112 Td (kernel value memory kernel model cache cache model kernel memory value kernel table socket.) Tj ET
+BT /F1 10 Tf 56 98.5 Td (network graph record network thread driver driver thread network record graph network queue engine.) Tj ET
+BT /F1 10 Tf 56 85 Td (value system model value buffer reader reader buffer value model system value socket query.) Tj ET
+BT /F1 10 Tf 56 71.5 Td (graph stream thread graph plan index index plan graph thread stream graph engine vector.) Tj ET
+
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 16 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> /XObject << >> >> >>
+endobj
+xref
+0 18
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000149 00000 n 
+0000000219 00000 n 
+0000000294 00000 n 
+0000000366 00000 n 
+0000006968 00000 n 
+0000007129 00000 n 
+0000013725 00000 n 
+0000013886 00000 n 
+0000020486 00000 n 
+0000020649 00000 n 
+0000027251 00000 n 
+0000027414 00000 n 
+0000034010 00000 n 
+0000034173 00000 n 
+0000040773 00000 n 
+trailer
+<< /Size 18 /Root 1 0 R >>
+startxref
+40936
+%%EOF
