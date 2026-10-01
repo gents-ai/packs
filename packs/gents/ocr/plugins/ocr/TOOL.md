@@ -26,6 +26,11 @@ Options, all optional:
   has no usable text layer; `always` runs OCR on every page (the text layer
   is then ignored); `never` turns OCR off, so a scanned page comes back
   empty with a warning and figures come back without their text.
+- `remote_ocr`: only when the pack's optional `remote_ocr` slot is bound.
+`auto` (default) sends a scanned PDF page or an image to the remote OCR
+backend when the built-in OCR reads it poorly; `force` sends every one that
+needs OCR; `off` keeps the built-in OCR. Text-layer pages and other formats
+are never sent. See Optional: Chandra.
 - `figure_images`: `true` attaches each figure image so you can look at it
   (see Output). Default `false`.
 - `max_image_px`: longest side, 256 to 4096 (default 2000), that OCR inputs
@@ -149,7 +154,7 @@ Name a folder, or one file, in `path` and, to pick files in a folder, `files`.
 The host gives the plugin `path_original`, the real path, when `path` is a one-file
 link; a chunk of a one-file job names that real path.
 
-- An `OcrJob` (`run_id`, `path`, optional `files`, `ocr`, `figure_images`,
+- An `OcrJob` (`run_id`, `path`, optional `files`, `ocr`, `remote_ocr`, `figure_images`,
   `max_image_px`, `min_figure_px`) is planned into `OcrChunk` records: one per
   page range of at most 20 pages, slides or sections (one per sheet), or one
   per file that is read by cursor. A run reads at most 1000 chunks.
@@ -166,6 +171,23 @@ link; a chunk of a one-file job names that real path.
 A chunk is read up to 1.5 MB of Markdown and images. When more remains,
 `complete` is `false` and `cursor` continues it: call the tool with the same
 `path`, `files` (the one `source`), `pages` and options plus that `cursor`.
+
+## Optional: Chandra
+
+With the `remote_ocr` slot unbound, scans are read by the built-in OCR and
+nothing below applies. To read scans with Chandra (or any OpenAI-compatible
+vision endpoint): serve it (`chandra_vllm`), add it to gents as a backend and
+profile, and bind the pack's `remote_ocr` slot to that profile in the desktop
+Packs panel or with `--inference-slot remote_ocr=<profile_id>`. A scanned page
+or image the built-in OCR reads poorly (always, with `remote_ocr: "force"`) is
+then read by the model and returned as Markdown; its tables, lists and
+headings come from the model's HTML. A page the model could not read is read
+by the built-in OCR and the document says so in `warnings`
+(`p.N: remote OCR unavailable (...)`). Pages read remotely are listed in a
+warning and carry text only. A long scan is read in rounds of up to 12 pages,
+so expect a `next.cursor` after them. The README has the details, including
+the licence: the pack bundles nothing, and the operator is responsible for the
+licence of the endpoint they bind.
 
 ## Behaviour to know
 

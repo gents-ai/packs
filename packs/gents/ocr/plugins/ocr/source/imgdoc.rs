@@ -6,6 +6,7 @@ use crate::layout::{Out, layout};
 use crate::model::{DocAcc, Document, Figure};
 use crate::pdfocr::ocr_items;
 use crate::pix::Pix;
+use crate::remote::{self, JPEG_QUALITY, REMOTE_MAX_PX, Read};
 use crate::src::Src;
 
 pub fn convert(
@@ -22,10 +23,29 @@ pub fn convert(
     }
     let full = Pix::decode_from(&mut *src)?;
     let dims = (full.w, full.h);
-    let pix = full.fit(ctx.opts.max_image_px)?;
-    let lines = ctx.ocr_page(&pix)?;
+    // The full image is kept only when a remote request may be made from it.
+    let (pix, mut remote_src) = if ctx.remote.collecting() {
+        (full.clone().fit(ctx.opts.max_image_px)?, Some(full))
+    } else {
+        (full.fit(ctx.opts.max_image_px)?, None)
+    };
     let mut acc = DocAcc::default();
     ctx.append(&mut acc, &header(source, format));
+    let (lines, remote_md) = if ctx.remote.active() {
+        let mut builtin = |ctx: &mut Ctx| ctx.ocr_page_scored(&pix);
+        let mut encode = || {
+            let full = remote_src.take().ok_or("the image is not available")?;
+            full.fit(REMOTE_MAX_PX)?.jpeg(JPEG_QUALITY)
+        };
+        match remote::read_page(ctx, &mut acc, 1, true, &mut builtin, &mut encode) {
+            Read::Remote(md) => (Vec::new(), Some(md)),
+            Read::Pending => (Vec::new(), Some(String::new())),
+            Read::Lines(lines) => (lines, None),
+            Read::Builtin | Read::Wait => (ctx.ocr_page(&pix)?, None),
+        }
+    } else {
+        (ctx.ocr_page(&pix)?, None)
+    };
     let mut blocks = Vec::new();
     if ctx.opts.figure_images {
         let id = "fig-1".to_string();
@@ -69,7 +89,7 @@ pub fn convert(
         }
     }
     let items = ocr_items(&lines);
-    if items.is_empty() {
+    if items.is_empty() && remote_md.as_ref().is_none_or(|md| md.trim().is_empty()) {
         acc.warn("no text was found in the image");
     }
     for o in layout(&items) {
@@ -77,7 +97,16 @@ pub fn convert(
             blocks.push(b);
         }
     }
-    let body = crate::md::render(&blocks);
+    let mut body = crate::md::render(&blocks);
+    if let Some(md) = remote_md.filter(|md| !md.trim().is_empty()) {
+        if !body.is_empty() {
+            body.push_str("\n\n");
+        }
+        body.push_str(&md);
+    }
+    if let Some(w) = ctx.remote.take_read_warning() {
+        acc.warn(w);
+    }
     if !ctx.append(&mut acc, &body) {
         acc.warn("the output size limit was reached and the page text was cut");
     }

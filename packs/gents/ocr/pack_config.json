@@ -18,6 +18,7 @@
         "path",
         "files",
         "ocr",
+        "remote_ocr",
         "figure_images",
         "max_image_px",
         "min_figure_px"
@@ -36,6 +37,7 @@
         "format",
         "pages",
         "ocr",
+        "remote_ocr",
         "figure_images",
         "max_image_px",
         "min_figure_px"

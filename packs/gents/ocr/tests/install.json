@@ -15,7 +15,8 @@
       "ocr"
     ],
     "slots": [
-      "document_reader"
+      "document_reader",
+      "remote_ocr"
     ]
   }
 }

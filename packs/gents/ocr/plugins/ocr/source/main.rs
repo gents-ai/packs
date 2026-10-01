@@ -35,6 +35,7 @@ mod pdfocr;
 mod pix;
 mod plan;
 mod pptx;
+mod remote;
 mod resume;
 #[cfg(test)]
 mod slice_tests;
@@ -184,22 +185,31 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
             ));
         }
     }
+    // Earlier rounds of a model call already used part of the wall clock.
+    let remote = remote::Remote::new(&input, opts.remote_ocr)?;
+    let started = started.checked_sub(remote.carried()).unwrap_or(started);
     let mut ctx = Ctx::started(opts, started);
+    ctx.remote = remote;
     let single = sources.len() == 1;
     let mut docs = Vec::with_capacity(sources.len().min(1024));
     let mut failed = 0usize;
     let mut next: Option<Next> = None;
+    // Where the call stopped, for the second round of a model call.
+    let mut stopped: Option<(u32, u32)> = None;
     for (i, src) in sources.into_iter().enumerate().skip(first) {
         let continuing = resume.take();
+        ctx.remote.set_file(i);
         let stop = continuing.is_none()
             && !docs.is_empty()
             && (ctx.budget.remaining() < BUDGET_FLOOR
                 || !ctx.clock.fits()
+                || ctx.remote.stops_before_file(i)
                 || (ctx.opts.ocr != OcrMode::Never
                     && detect::is_image_name(&src.name)
                     && !ctx.ocr.has_time()));
         if stop {
             next = Some(issue(req, i, &src, None)?);
+            stopped = Some((i as u32, 0));
             break;
         }
         if !single
@@ -218,6 +228,7 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
         match process(&mut ctx, src, &root, continuing.as_ref()) {
             Ok((mut doc, mut srcf)) => {
                 if let Some(at) = doc.next.take() {
+                    stopped = Some((i as u32, at.unit));
                     let fp = srcf
                         .fingerprint()
                         .map_err(|e| format!("cannot read the file: {e}"))?;
@@ -248,6 +259,11 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
                 failed += 1;
             }
         }
+    }
+    if ctx.remote.has_requests() {
+        return ctx
+            .remote
+            .round(stopped, started.elapsed().as_millis() as u64);
     }
     if failed == docs.len() && next.is_none() {
         let reasons: Vec<&str> = docs

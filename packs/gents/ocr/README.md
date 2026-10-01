@@ -144,7 +144,84 @@ the compiler `rust-toolchain.toml` pins, so it needs a Rust toolchain and
 `rustup target add wasm32-wasip1`; a pack fetched pre-built (a `.pack`, the
 home's store or the registry) skips the build. The pack declares one
 inference slot, `document_reader`: any capable profile, and one that accepts
-images also describes figures.
+images also describes figures. An optional second slot, `remote_ocr`, takes a
+vision OCR endpoint (see Optional: Chandra); installing without it is valid.
+
+## Optional: Chandra
+
+The default is zero-config: the built-in OCR reads scans on the machine, with
+no endpoint and no extra setup. For harder scans (dense layouts, tables,
+forms, math, handwriting) the pack can send scanned pages and image files to a
+vision OCR model instead, such as [Chandra](https://github.com/datalab-to/chandra),
+or any OpenAI-compatible endpoint that takes image input.
+
+1. Serve the model. For Chandra, start its vLLM server (`chandra_vllm`, which
+   serves `datalab-to/chandra-ocr-2`) on a GPU machine.
+2. Add the endpoint to gents as an inference backend and a profile for it: in the
+   desktop app, or from the CLI with
+   `gents config backend set --file <backend.json>` and
+   `gents config profile set --file <profile.json>`. The profile's concurrency
+   limit decides how many pages are read at once.
+3. Bind the pack's optional `remote_ocr` slot to that profile: in the desktop
+   Packs panel, or at install with `--inference-slot remote_ocr=<profile_id>`.
+   Leave it unbound and nothing changes.
+
+With the slot bound, the `remote_ocr` input chooses what is sent:
+
+| `remote_ocr` | Behaviour |
+| --- | --- |
+| `auto` (default) | The built-in OCR reads a scanned page or image first; one it reads poorly goes to the backend (see below). |
+| `force` | Every PDF page or image that needs OCR goes to the backend. |
+| `off` | Built-in OCR only. |
+
+Only scanned PDF pages and image files can go remote. A PDF page with a text
+layer, EPUB, Office, OpenDocument, HTML and text files never do, and the text
+inside figures is still read by the built-in OCR. With `ocr: "never"` nothing
+is read by OCR at all.
+
+How a call works: the plugin renders each page that needs it (192 dpi, longest
+side at most 2048 pixels, JPEG) and asks the host to run the requests, up to 12
+pages and about 3 MB of images per round. The host sends them to your backend
+with temperature 0, several at a time up to the profile's limit, and calls the
+plugin again with the answers. A call that has more pages than a round holds
+returns a `next.cursor` like any other call, so a long scan is read round by
+round. The endpoint address and key stay with the host: they never enter the
+sandbox, the plugin's input or output, or the logs.
+
+The prompt is Chandra's own page prompt, which asks for the page as HTML (a
+fixed set of tags: headings, paragraphs, lists, tables with spans, math, code).
+The plugin converts it to the same Markdown the rest of the pack writes, so
+tables arrive as Markdown tables and an `<img alt>` description becomes an
+italic `Figure:` line. An answer that is Markdown already is used as it is. The
+prompt wording was read from the Chandra repository through a summarizing
+fetch and is not verified byte for byte against a release; another model may
+need a different one.
+
+What "reads poorly" means in `auto`: the OCR engine reports no confidence, so the
+output is judged. A page goes remote when the built-in read found no text on a
+page that has ink, when under 60% of the visible characters are letters or
+digits, when more than 60% of at least 8 words are one or two characters, or
+when more than half of at least 8 detected lines were dropped as noise. This
+catches garbled and empty reads, not a fluent misreading, so use `force` when
+the built-in text is wrong in ways that look fluent.
+
+Failures never lose a page. If a request fails, times out or gets no answer,
+the page is read by the built-in OCR and the document carries the warning
+`p.N: remote OCR unavailable (<reason>); read with built-in OCR`; after two
+failed rounds in a row the host stops sending requests for the call, so a dead
+endpoint costs seconds. Pages read remotely are listed in a document warning;
+they come back as text only, with no line boxes (no record in this pack has them
+either). In `auto` the built-in read of a page that read well is repeated in the
+second round of a call that also sent other pages.
+
+Licence. The pack bundles nothing of Chandra and does not download it. Per its
+README and model card, Chandra's code is Apache 2.0 and its weights use a
+modified OpenRAIL-M licence: free for research, personal use and startups
+under USD 2M in funding or revenue, not to be used competitively with the
+vendor's API, with commercial licences available separately. That summary was
+read from those pages, not from the licence text, and may change: the operator
+is responsible for the licence of whatever endpoint they bind, Chandra or
+another model.
 
 ## Authority
 
@@ -177,6 +254,7 @@ working folder) or with `name` and `data_base64` (up to 64 MiB of base64).
 | --- | --- |
 | `pages` | pages, slides, sheets or EPUB sections to read, 1-based, like `"1-3,7"` or `"40-"` |
 | `ocr` | `auto` (default): OCR only where there is no usable text layer; `always`; `never` |
+| `remote_ocr` | with the `remote_ocr` slot bound: `auto` (default) sends a scanned page or image the built-in OCR reads poorly to the backend; `force` sends every one that needs OCR; `off` never |
 | `figure_images` | attach each figure image for the model to look at (default `false`) |
 | `max_image_px` | longest side OCR inputs and attached images are scaled down to, 256 to 4096 (default 2000) |
 | `min_figure_px` | images with a shorter side below this are skipped as decorative (default 96) |
@@ -415,6 +493,11 @@ shasum -a 256 *.rten   # compare with the table above
 The plugin code is separate from the models and licensed like the rest of
 this repository; the `.afb` artifact embeds the models, so redistributing the
 artifact carries the CC BY-SA 4.0 notice for them.
+
+The optional remote backend is not part of the pack. The pack bundles and
+downloads nothing of it, and no model weights are redistributed. If you bind a
+backend such as Chandra, its model licence is yours to check (see Optional:
+Chandra for what was read and what was not).
 
 ## Tests and tooling
 

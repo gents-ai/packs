@@ -19,7 +19,13 @@ const MAX_CHUNKS: usize = 1000;
 /// Fields the graph adds; the ordinary input does not know them.
 const GRAPH_ONLY: [&str; 4] = ["run_id", "chunk", "source", "format"];
 /// Options a chunk repeats from its job.
-const OPTIONS: [&str; 4] = ["ocr", "figure_images", "max_image_px", "min_figure_px"];
+const OPTIONS: [&str; 5] = [
+    "ocr",
+    "remote_ocr",
+    "figure_images",
+    "max_image_px",
+    "min_figure_px",
+];
 /// Formats whose converters write one marker comment per page, slide, sheet or section.
 const PAGED: [&str; 6] = ["pdf", "epub", "pptx", "xlsx", "ods", "odp"];
 
@@ -105,6 +111,12 @@ fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Resul
     chunk.retain(|k, _| !GRAPH_ONLY.contains(&k.as_str()));
     chunk.insert("max_bytes".into(), json!(EXTRACT_MAX_BYTES));
     let read = crate::run_at(&Value::Object(chunk).to_string(), started);
+    // A model call round goes to the host as it is; the host calls again with the answers.
+    if let Ok(raw) = &read
+        && raw.starts_with("{\"model_calls\"")
+    {
+        return read;
+    }
     let mut document = json!({"chunk": index, "source": source});
     let (mut pages, mut figures) = (Vec::new(), Vec::new());
     match read.and_then(|raw| serde_json::from_str::<Value>(&raw).map_err(|e| e.to_string())) {

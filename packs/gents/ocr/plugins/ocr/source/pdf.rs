@@ -22,8 +22,9 @@ use crate::input::OcrMode;
 use crate::layout::{FigBox, Item, Out, Span, layout, take_captions};
 use crate::model::{DocAcc, Document};
 use crate::pdflazy::Lazy;
-use crate::pdfocr::ocr_page;
+use crate::pdfocr::{ocr_items, ocr_lines, remote_jpeg};
 use crate::pix::{MAX_DECODE_PIXELS, Pix};
+use crate::remote::{self, Read};
 use crate::resume::Resume;
 use crate::slicer::{self, Snap, Step, Steps, with_marker};
 use crate::src::Src;
@@ -734,6 +735,9 @@ pub fn convert(
             from = win.after;
         },
     };
+    if let Some(w) = ctx.remote.take_read_warning() {
+        acc.warn(w);
+    }
     if removed > 0 {
         acc.warn(format!("{removed} repeated header or footer line(s) near the page edges (running titles, page numbers) were left out"));
     }
@@ -795,6 +799,10 @@ fn page<'a>(
     n: u32,
     st: &mut State<'a>,
 ) -> String {
+    if ctx.emitted > 0 && ctx.remote.stops_before(n) {
+        ctx.waiting = true;
+        return String::new();
+    }
     let h = page.render_dimensions().1;
     st.seen.clone_from(&acc.seen_images);
     let mut col = collect(
@@ -822,10 +830,11 @@ fn page<'a>(
         f.drop_from(&mut col.spans, h);
     }
     let visual = col.any_image || col.paths > 0;
+    let scanned = (!text_ok && visual) || (col.background && col.mapped < STAMP_CHARS);
     let want_ocr = match ctx.opts.ocr {
         OcrMode::Always => true,
         OcrMode::Never => false,
-        OcrMode::Auto => (!text_ok && visual) || (col.background && col.mapped < STAMP_CHARS),
+        OcrMode::Auto => scanned,
     };
     if !want_ocr && !text_ok && visual && ctx.opts.ocr == OcrMode::Never {
         acc.warn(format!(
@@ -837,11 +846,33 @@ fn page<'a>(
         return String::new();
     }
     if want_ocr {
+        // Only a page that is scanned (never one with a text layer) may go to the remote backend.
+        if scanned
+            && ctx.opts.ocr != OcrMode::Never
+            && ctx.remote.active()
+            && col.oversized.is_none()
+        {
+            let (cache, settings) = (&st.render, &st.settings);
+            let mut builtin = |ctx: &mut Ctx| ocr_lines(ctx, cache, settings, page);
+            let mut encode = || remote_jpeg(cache, settings, page);
+            match remote::read_page(ctx, acc, n, visual, &mut builtin, &mut encode) {
+                Read::Remote(md) => return md,
+                Read::Lines(lines) => {
+                    return blocks_to_md(ctx, acc, n, Vec::new(), ocr_items(&lines));
+                }
+                Read::Pending => return String::new(),
+                Read::Wait => {
+                    ctx.waiting = true;
+                    return String::new();
+                }
+                Read::Builtin => {}
+            }
+        }
         // Rendering decodes every image of the page, so a page holding an
         // oversized one is never rendered.
         let rendered = match col.oversized {
             Some(_) => Err("the page holds an image too large to render safely".to_string()),
-            None => ocr_page(ctx, &st.render, &st.settings, page),
+            None => ocr_lines(ctx, &st.render, &st.settings, page).map(|(l, _)| ocr_items(&l)),
         };
         match rendered {
             Ok(items) => return blocks_to_md(ctx, acc, n, Vec::new(), items),

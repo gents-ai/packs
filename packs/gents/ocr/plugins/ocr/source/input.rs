@@ -35,6 +35,13 @@ pub struct Input {
     pub mode: Option<Mode>,
     pub max_bytes: Option<usize>,
     pub max_seconds: Option<u64>,
+    pub remote_ocr: Option<RemoteOcr>,
+    /// Set by the host only when the pack's remote OCR slot is bound.
+    pub model_calls: Option<bool>,
+    /// The host's answers to the previous round's model requests, by request id.
+    pub model_results: Option<serde_json::Map<String, serde_json::Value>>,
+    /// What the previous round returned in `model_calls.state`, echoed back.
+    pub state: Option<serde_json::Value>,
 }
 
 /// What a call does: read the content, or only describe the structure.
@@ -51,6 +58,18 @@ pub enum OcrMode {
     Auto,
     Always,
     Never,
+}
+
+/// Whether scanned pages and images may be read by the remote OCR backend.
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum RemoteOcr {
+    /// Remote OCR only for pages the built-in OCR reads poorly.
+    #[default]
+    Auto,
+    Off,
+    /// Remote OCR for every page or image that needs OCR.
+    Force,
 }
 
 /// Selected 1-based page, slide, sheet or section numbers.
@@ -113,6 +132,8 @@ pub struct Options {
     pub max_bytes: usize,
     /// The wall clock, in seconds, after which no further unit is started.
     pub max_seconds: u64,
+    /// The effective remote OCR mode: `Off` unless the host offered model calls.
+    pub remote_ocr: RemoteOcr,
 }
 
 impl Options {
@@ -147,6 +168,7 @@ impl Default for Options {
             min_figure_px: DEFAULT_MIN_FIGURE_PX,
             max_bytes: OUTPUT_CAP_BYTES,
             max_seconds: DEFAULT_MAX_SECONDS,
+            remote_ocr: RemoteOcr::Off,
         }
     }
 }
@@ -192,6 +214,11 @@ impl Input {
             min_figure_px,
             max_bytes,
             max_seconds,
+            remote_ocr: if self.model_calls == Some(true) {
+                self.remote_ocr.unwrap_or_default()
+            } else {
+                RemoteOcr::Off
+            },
         })
     }
 
@@ -208,6 +235,16 @@ impl Input {
                 })
                 .as_bytes(),
         );
+        // Only a non-default choice is hashed, so cursors issued without it stay valid.
+        match self.remote_ocr {
+            Some(RemoteOcr::Off) => {
+                h.field(b"remote-off");
+            }
+            Some(RemoteOcr::Force) => {
+                h.field(b"remote-force");
+            }
+            _ => {}
+        }
         h.field(self.pages.as_deref().unwrap_or("").as_bytes());
         h.field(&[u8::from(self.figure_images.unwrap_or(false))]);
         h.field(

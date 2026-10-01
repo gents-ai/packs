@@ -27,3 +27,14 @@ The plugin links these Rust crates, each under its own permissive licence
 (MIT, Apache-2.0 or both): ocrs, rten, hayro, hayro-interpret, hayro-syntax,
 vello_cpu, kurbo, image, zip, roxmltree, quick-xml, html-escape, serde,
 serde_json and base64. Run `cargo tree` in plugins/ocr for the full list.
+
+Optional remote OCR (not bundled). The pack can send scanned pages to a vision
+model that the operator serves and binds to its optional remote_ocr slot, such
+as Chandra (https://github.com/datalab-to/chandra). Nothing of that model, its
+weights or its code is included in this pack or downloaded by it. As read from
+the project's README and model card (not from the licence text): the code is
+Apache 2.0, and the weights use a modified OpenRAIL-M licence, free for
+research, personal use and startups under USD 2M in funding or revenue, and not
+to be used competitively with the vendor's API; commercial licences are sold
+separately. The operator is responsible for the licence of any endpoint they
+bind.
