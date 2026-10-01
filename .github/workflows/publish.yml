@@ -1,0 +1,69 @@
+name: Publish tested packs
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful CI run on the current master commit (artifacts must still exist)
+        required: true
+        type: string
+      packs:
+        description: Space-separated pack names to publish
+        required: true
+        type: string
+        default: 'ocr code_review defending_code eval_author grok_tui_port lsp_rust pipeline repo_maintenance security_scan web_deep_research'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: publish-packs
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      CI_RUN_ID: ${{ inputs.ci_run_id }}
+      PACK_NAMES: ${{ inputs.packs }}
+    steps:
+      - name: Check the source run
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/heads/master ]] || { echo 'Run publishing from master.' >&2; exit 1; }
+          [[ "$CI_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          gh api "repos/$GH_REPO/actions/runs/$CI_RUN_ID" > run.json
+          master_sha="$(gh api "repos/$GH_REPO/commits/master" --jq .sha)"
+          jq -e --arg sha "$master_sha" --arg repo "$GH_REPO" '
+            .conclusion == "success" and .head_branch == "master" and
+            .head_sha == $sha and .head_repository.full_name == $repo and
+            .path == ".github/workflows/ci.yml"
+          ' run.json >/dev/null
+          [[ -n "$PACK_NAMES" ]] || exit 1
+          for pack in $PACK_NAMES; do
+            [[ "$pack" =~ ^[a-z][a-z0-9_]*$ ]] || { echo 'Invalid pack name.' >&2; exit 1; }
+          done
+
+      - name: Download and verify tested artifacts
+        run: |
+          set -euo pipefail
+          gh run download "$CI_RUN_ID" --name gents-cli-Linux-X64 --dir gents-bin
+          chmod +x gents-bin/gents
+          for pack in $PACK_NAMES; do
+            gh run download "$CI_RUN_ID" --name "pack-$pack-Linux" --dir dist
+            gents-bin/gents pack verify "dist/gents.$pack.pack"
+          done
+
+      - name: Publish selected versions
+        env:
+          GENTS_REGISTRY_TOKEN: ${{ secrets.GENTS_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GENTS_REGISTRY_TOKEN" ]] || { echo 'Configure the GENTS_REGISTRY_TOKEN repository secret with publishing access to the gents namespace.' >&2; exit 1; }
+          for pack in $PACK_NAMES; do
+            gents-bin/gents pack publish "dist/gents.$pack.pack" --registry https://registry.dev.gents.xyz
+          done
