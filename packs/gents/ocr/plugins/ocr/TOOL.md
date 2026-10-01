@@ -10,9 +10,10 @@ name: read it.
 
 One JSON object. Name the source in one of two ways:
 
-- `path`: the directory the caller bound for this call (or one file inside
-  it). Every non-hidden file below it is read in name order, or exactly the
-  relative paths listed in `files`, in that order.
+- `path`: the file or folder to read. A relative path starts at the working
+  folder; a folder is read as a whole (every non-hidden file below it in name
+  order, or exactly the relative paths listed in `files`, in that order).
+  Only the file or folder named is readable for the call.
 - `name` and `data_base64`: one file sent inline, `name` carrying the
   extension (`report.pdf`). Up to 64 MiB of base64.
 
@@ -140,6 +141,31 @@ entry of `parts` into an image you can see, in order; `figures[].part` is the
 index of that figure's image. A caller that reads the JSON directly gets the
 same object.
 
+## Graph mode
+
+The pack's `ocr` graph runs this plugin as two nodes. A request that carries
+a `run_id` is a graph node's; nothing else sends one. Name a folder in `path`
+and, to pick files, `files`; a single file path is refused because the
+extract nodes could not be handed the file again.
+
+- An `OcrJob` (`run_id`, `path`, optional `files`, `ocr`, `figure_images`,
+  `max_image_px`, `min_figure_px`) is planned into `OcrChunk` records: one per
+  page range of at most 20 pages, slides or sections (one per sheet), or one
+  per file that is read by cursor. A run reads at most 1000 chunks.
+- An `OcrChunk` is read into one `OcrDocument`, an `OcrPage` per page, slide,
+  sheet or section (a single-section file is page 1) and an `OcrFigure` per
+  figure. Every record carries `run_id`, `chunk` and `source`.
+
+| Record | Fields |
+| --- | --- |
+| `OcrDocument` | `format`, `page_count`, `markdown` (the chunk's Markdown), `complete`, `cursor` (when not complete), `warnings`, `error` (a file that could not be read) |
+| `OcrPage` | `page` (1-based, in the file), `markdown` (from the unit's marker comment) |
+| `OcrFigure` | `figure`, `page`, `caption`, `text`, `width`, `height`, `ocr`, `image_base64` and `mime` (with `figure_images`) |
+
+A chunk is read up to 1.5 MB of Markdown and images. When more remains,
+`complete` is `false` and `cursor` continues it: call the tool with the same
+`path`, `files` (the one `source`), `pages` and options plus that `cursor`.
+
 ## Behaviour to know
 
 - PDF: pages with a text layer are read from it in reading order (columns,
@@ -193,5 +219,6 @@ same object.
 - Directory calls keep going when one file fails: that file appears as a
   document with `format` `unknown` and the reason in `warnings`. A call that
   names a single file fails instead.
-- Without a bound directory the plugin cannot read `path`; send the file
-  inline with `name` and `data_base64` instead.
+- A path outside the working folder and the operator's allowed folders needs
+  the operator's approval; when it is refused, send the file inline with
+  `name` and `data_base64` or tell the user the one sentence the call gave.

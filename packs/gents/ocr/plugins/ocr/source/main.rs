@@ -12,6 +12,7 @@ mod ctx;
 mod detect;
 mod docx;
 mod epub;
+mod graph;
 mod html;
 mod html_doc;
 mod html_md;
@@ -148,6 +149,9 @@ fn check_cursor(p: &Payload, req: u64, sources: &[Source]) -> Result<(), String>
 
 /// Runs a request whose wall clock started at `started`.
 fn run_at(raw: &str, started: Instant) -> Result<String, String> {
+    if let Some(out) = graph::run(raw, started) {
+        return out;
+    }
     let input: Input = serde_json::from_str(raw).map_err(|e| format!("invalid input: {e}"))?;
     input.validate_source()?;
     let opts = input.options()?;
