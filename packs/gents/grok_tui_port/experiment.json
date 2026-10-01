@@ -7,7 +7,7 @@
     "tool_package": "write",
     "tool_root": "${GENTS_GROK_PORT_CEILING:-.}",
     "tool_root_env_var": "GENTS_GROK_PORT_CEILING",
-    "tool_root_markers": ["Cargo.toml"],
+    "tool_root_markers": [],
     "backend_preset": "vllm",
     "openai_wire_api": "chat-completions",
     "max_concurrent": ${GENTS_GROK_PORT_MAX_CONCURRENT_1:-16}
@@ -18,7 +18,7 @@
     "prompt_field": "focus",
     "fields": {
       "gents_root": "${GENTS_GROK_PORT_GENTS_ROOT:-.}",
-      "grok_root": "${GENTS_GROK_PORT_GROK_ROOT:-packs/grok_tui_port/recon_input}",
+      "grok_root": "${GENTS_GROK_PORT_GROK_ROOT:-packs/gents/grok_tui_port/recon_input}",
       "ceiling": "${GENTS_GROK_PORT_CEILING:-.}",
       "surface_min": "${GENTS_GROK_PORT_MIN_SURFACES:-13}",
       "surface_max": "${GENTS_GROK_PORT_MAX_SURFACES:-13}",

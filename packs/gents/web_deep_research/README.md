@@ -4,8 +4,8 @@ Reusable planning, investigation, adjudication and reporting graph.
 
 ## Installation
 
-A graph pack installs only from the gents binary today:
-`gents pack install web_deep_research --home <home>`.
+Install from the registry (`gents pack install gents/web_deep_research
+--home <home>`), from a directory or `.pack`, or from the home's pack store.
 
 Use `gents pack show web_deep_research` for entry/result contracts and
 external dependencies. The research entry's inputs:
@@ -77,10 +77,11 @@ gents pack test ./packs/gents/web_deep_research
 make test-web_deep_research        # from the repository root
 ```
 
-`tests/graphs.json` pins the compiled graph (`web-deep-research`). A graph
-pack installs only from the gents binary today, so the suite checks, builds,
-verifies and compiles it rather than installing it. Bundled catalog and
-compiler tests validate the assets and graph contracts.
+`tests/graphs.json` pins the compiled graph (`web-deep-research`);
+`tests/install.json` installs the pack from its directory into a fresh home
+(with the declared `web-research-mcp` service registered), reinstalls it and
+removes it; `tests/content.json` asserts the stage authority, typed handoffs
+and evidence contracts.
 
 ## Operational history
 

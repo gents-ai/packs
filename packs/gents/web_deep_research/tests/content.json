@@ -1,0 +1,73 @@
+{
+  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agent_behaviors[] | select(.behavior_id == $t.behavior_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def tool_names($id): [entries($id) | .tool_name]; def prompt($id): .config.tasks[] | select(.task_id == $id) | .prompt_template;",
+  "jq": [
+    {
+      "name": "every text asset is non-empty",
+      "expr": "[.assets[]] | all(length > 0)"
+    },
+    {
+      "name": "the plan compiles to 4 nodes, 6 results and the research entry",
+      "expr": "(.assets[\"graphs/web_deep_research.plan.json\"] | fromjson) | (.nodes | length) == 4 and (.results | length) == 6 and (.entries | map(.name)) == [\"research\"]"
+    },
+    {
+      "name": "declares the web-research-mcp external service",
+      "expr": ".manifest.external_dependencies | length == 1 and .[0].service_id == \"web-research-mcp\" and .[0].install_command == \"./scripts/stack install-mcp\""
+    },
+    {
+      "name": "no stage has host tools, memory, history, context budget, subagents, self-config or defra queries",
+      "expr": "stages | length == 4 and all((.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and (.tools.built_ins.enable_memory // false) == false and (.tools.built_ins.enable_session_history_tool // false) == false and (.tools.built_ins.enable_context_budget // false) == false and (.tools.built_ins.enable_goal_creation // false) == false and (.tools.subagents.enabled // false) == false and (.tools.self_config.enable_self_config // false) == false and (.tools.datastore.enable_defra_query // false) == false and .capability.workspace_authority == null)"
+    },
+    {
+      "name": "plan and investigate call only named remote tools of the one required service",
+      "expr": "[\"research-plan\", \"research-investigate\"] as $ids | . as $d | $ids | all(. as $id | $d | stage($id) | .tools.remote.services | length == 1 and .[0].mcp_service_id == \"web-research-mcp\" and .[0].required == true and (.[0].tool_names | length > 0 and all(contains(\"*\") | not)))"
+    },
+    {
+      "name": "adjudicate and report have no remote tools",
+      "expr": ". as $d | [\"research-adjudicate\", \"research-report\"] | all(. as $id | $d | stage($id) | (.tools.remote.services // []) | length == 0)"
+    },
+    {
+      "name": "research-plan-writes grants exactly its datastore tools, each scoped to the run",
+      "expr": "tool_names(\"research-plan-writes\") == [\"write_research_assignment\", \"write_research_plan\"] and ([entries(\"research-plan-writes\")] | all((.filter_fields // .fields) | map(select(.name == \"run_id\")) | length == 1 and .[0].required == false and .[0].fill == \"correlation\"))"
+    },
+    {
+      "name": "research-investigate-writes grants exactly its datastore tools, each scoped to the run",
+      "expr": "tool_names(\"research-investigate-writes\") == [\"write_research_source\", \"write_research_claim\", \"write_research_evidence\", \"write_research_investigation\"] and ([entries(\"research-investigate-writes\")] | all((.filter_fields // .fields) | map(select(.name == \"run_id\")) | length == 1 and .[0].required == false and .[0].fill == \"correlation\"))"
+    },
+    {
+      "name": "research-adjudicate-io grants exactly its datastore tools, each scoped to the run",
+      "expr": "tool_names(\"research-adjudicate-io\") == [\"read_research_investigation\", \"read_research_source\", \"read_research_claim\", \"read_research_evidence\", \"write_research_claim_verdict\", \"write_research_draft\"] and ([entries(\"research-adjudicate-io\")] | all((.filter_fields // .fields) | map(select(.name == \"run_id\")) | length == 1 and .[0].required == false and .[0].fill == \"correlation\"))"
+    },
+    {
+      "name": "research-report-io grants exactly its datastore tools, each scoped to the run",
+      "expr": "tool_names(\"research-report-io\") == [\"read_report_research_source\", \"read_report_research_evidence\", \"read_report_claim_verdict\", \"write_research_result\"] and ([entries(\"research-report-io\")] | all((.filter_fields // .fields) | map(select(.name == \"run_id\")) | length == 1 and .[0].required == false and .[0].fill == \"correlation\"))"
+    },
+    {
+      "name": "each stage reads exactly its surface",
+      "expr": ". as $d | {\"research-plan\": \"research-plan-writes\", \"research-investigate\": \"research-investigate-writes\", \"research-adjudicate\": \"research-adjudicate-io\", \"research-report\": \"research-report-io\"} | to_entries | all(. as $e | $d | stage($e.key) | .tools.datastore.datastore_tool_surface_ids == [$e.value])"
+    },
+    {
+      "name": "typed carrier fields are interpolated into the stage prompts",
+      "expr": ". as $d | {\"research-plan-task\": [\"question\",\"scope\",\"freshness\",\"audience\",\"output_requirements\",\"investigator_count\"], \"research-investigate-task\": [\"assignment_id\",\"question\",\"lens\",\"instructions\",\"query_plan\",\"source_requirements\",\"freshness\"], \"research-report-task\": [\"title\",\"thesis\",\"outline\",\"synthesis\",\"unresolved_questions\"]} | to_entries | all(. as $e | $e.value | all(. as $f | $d | prompt($e.key) | contains(\"{{ doc.\\($f) }}\")))"
+    },
+    {
+      "name": "adjudicate groups by correlation, not by group size",
+      "expr": "prompt(\"research-adjudicate-task\") | contains(\"{{ group.correlation_value }}\") and contains(\"{{ group.count }}\") and (contains(\"event.group_size\") | not)"
+    },
+    {
+      "name": "the investigator write minimums are enforced",
+      "expr": "[entries(\"research-investigate-writes\")] | (map(select(.tool_name == \"write_research_source\"))[0].output_obligation.minimum_writes == 2) and (map(select(.tool_name == \"write_research_claim\"))[0].output_obligation.minimum_writes == 6) and (map(select(.tool_name == \"write_research_evidence\"))[0].output_obligation.minimum_writes == 6)"
+    },
+    {
+      "name": "evidence rows carry no fetch id or content hash field",
+      "expr": "[entries(\"research-investigate-writes\") | select(.tool_name == \"write_research_evidence\") | .fields[].name] | all(. != \"fetch_id\" and . != \"content_hash\")"
+    },
+    {
+      "name": "the evidence schema keeps the fetch id and content hash out",
+      "expr": ".assets[\"schemas/research_evidence.graphql\"] | (contains(\"fetch_id\") | not) and (contains(\"content_hash\") | not)"
+    },
+    {
+      "name": "evidence is typed fields, not a JSON blob",
+      "expr": ".assets | to_entries | map(select(.key | startswith(\"tests/\") | not) | .value) | join(\"\") | (contains(\"evidence_json\") | not) and ([(\"verified_quote\",\"quote_verified\",\"evidence_id\",\"source_id\",\"fetch_id\",\"content_hash\",\"matched_query\",\"retrieval_queries\",\"search_engines\",\"candidate_relevance_score\",\"content_relevance_score\",\"extraction_method\",\"content_integrity_verified\",\"evidence_shortfall\",\"search_degradation\",\"retrieval_failures\",\"relationship\",\"evidence_summary\")] as $fields | . as $all | $fields | all(. as $f | $all | contains($f)))"
+    }
+  ]
+}

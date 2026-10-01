@@ -3,6 +3,8 @@
 #   make maintain MAINTENANCE_ROOT=<repo>
 #   make defend DEFENDING_ROOT=<repo>
 #   make grok-port GROK_PORT_GENTS_ROOT=<gents checkout> GROK_PORT_CEILING=<dir>
+#   make scan SCAN_ROOT=<repo>
+#   make defend-page GENTS_ROOT=<gents checkout>
 # Runs land under packs/gents/<pack>/runs/<job-id>/.
 
 MAINTENANCE_ROOT ?=
@@ -37,6 +39,9 @@ DEFENDING_MIN_AREAS ?= 4
 DEFENDING_MAX_AREAS ?= 10
 DEFENDING_MAX_CONCURRENT ?= 8
 DEFENDING_PORT ?= 19193
+DEFENDING_PAGE_PORT ?= 19194
+GENTS_ROOT ?=
+NPM ?= npm
 DEFENDING_JOB_ID ?=
 DEFENDING_KEEP_HOME ?=
 DEFENDING_CONTEXT_WINDOW ?= 262144
@@ -51,6 +56,11 @@ DEFENDING_STREAM_LIVENESS_SECS ?= 1800
 DEFENDING_STREAM_BATCH_MS ?= 5000
 DEFENDING_RETRY_MAX_TRANSPORT ?= 720
 DEFENDING_RETRY_MAX_RESAMPLE ?= 32
+
+SCAN_ROOT ?=
+SCAN_PORT ?= 19197
+SCAN_JOB_ID ?=
+SCAN_KEEP_HOME ?=
 
 GROK_PORT_CEILING ?=
 GROK_PORT_GENTS_ROOT ?=
@@ -162,6 +172,12 @@ defend:
 grok-port:
 	@test -d "$(GROK_PORT_GENTS_ROOT)" || { echo "set GROK_PORT_GENTS_ROOT to the gents checkout to port into (got: $(GROK_PORT_GENTS_ROOT))" >&2; exit 2; }
 	@test -d "$(GROK_PORT_CEILING)" || { echo "set GROK_PORT_CEILING to the operator tool ceiling (got: $(GROK_PORT_CEILING))" >&2; exit 2; }
+	@test -f "$(GROK_PORT_GENTS_ROOT)/Cargo.toml" || { echo "GROK_PORT_GENTS_ROOT must be a gents checkout with a Cargo.toml (got: $(GROK_PORT_GENTS_ROOT))" >&2; exit 2; }
+	@test -d "$(GROK_PORT_GROK_ROOT)" || { echo "GROK_PORT_GROK_ROOT must be the directory holding the audited ledger (got: $(GROK_PORT_GROK_ROOT))" >&2; exit 2; }
+	@ceiling="$$(cd "$(GROK_PORT_CEILING)" && pwd -P)"; \
+	for inside in "$$(cd "$(GROK_PORT_GENTS_ROOT)" && pwd -P)" "$$(cd "$(CURDIR)" && pwd -P)"; do \
+		case "$$inside/" in "$$ceiling"/*) ;; *) echo "GROK_PORT_CEILING ($$ceiling) must contain both GROK_PORT_GENTS_ROOT and this repository; $$inside is outside it" >&2; exit 2;; esac; \
+	done
 	@case "$(GROK_PORT_MIN_SURFACES)" in ''|*[!0-9]*) echo "GROK_PORT_MIN_SURFACES must be a positive integer: $(GROK_PORT_MIN_SURFACES)" >&2; exit 2;; esac
 	@case "$(GROK_PORT_MAX_SURFACES)" in ''|*[!0-9]*) echo "GROK_PORT_MAX_SURFACES must be a positive integer: $(GROK_PORT_MAX_SURFACES)" >&2; exit 2;; esac
 	@case "$(GROK_PORT_MAX_CONCURRENT_1)" in ''|*[!0-9]*) echo "GROK_PORT_MAX_CONCURRENT_1 must be a positive integer: $(GROK_PORT_MAX_CONCURRENT_1)" >&2; exit 2;; esac
@@ -170,6 +186,9 @@ grok-port:
 	@command -v rust-analyzer >/dev/null 2>&1 || echo "warning: rust-analyzer not found on PATH; grok-tui-port will fall back to file/search tools" >&2
 	@grok_port_job_id="$(GROK_PORT_JOB_ID)"; \
 	if test -z "$$grok_port_job_id"; then grok_port_job_id="grok-port-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	grok_port_dep="$$(mktemp -d)" || exit 2; \
+	trap 'rm -rf "$$grok_port_dep"' EXIT; \
+	"$(GENTS)" pack build "$(CURDIR)/packs/gents/code_review" --out "$$grok_port_dep/code_review.pack" >/dev/null || exit 2; \
 	grok_port_base_sha="$$(git -C "$(abspath $(GROK_PORT_GENTS_ROOT))" rev-parse --verify "$(GROK_PORT_BASE_SHA)^{commit}")" || exit 2; \
 	grok_port_models="$$(curl --fail --silent --show-error --max-time 10 "$(GROK_PORT_ENDPOINT_1)/models")" || { echo "GLM preflight failed: $(GROK_PORT_ENDPOINT_1)/models" >&2; exit 2; }; \
 	case "$$grok_port_models" in *'"id":"$(GROK_PORT_MODEL)"'*) ;; *) echo "GLM preflight did not advertise $(GROK_PORT_MODEL): $(GROK_PORT_ENDPOINT_1)" >&2; exit 2;; esac; \
@@ -177,7 +196,8 @@ grok-port:
 	test "$$grok_port_max_context" -ge "$(GROK_PORT_CONTEXT_WINDOW)" || { echo "GLM preflight context $$grok_port_max_context is smaller than required $(GROK_PORT_CONTEXT_WINDOW): $(GROK_PORT_ENDPOINT_1)" >&2; exit 2; }; \
 	GENTS_GROK_PORT_CEILING="$(abspath $(GROK_PORT_CEILING))" \
 	GENTS_GROK_PORT_GENTS_ROOT="$(abspath $(GROK_PORT_GENTS_ROOT))" \
-	GENTS_GROK_PORT_GROK_ROOT="$(abspath $(GROK_PORT_GROK_ROOT))" \
+	GENTS_GROK_PORT_GROK_ROOT="$$(cd "$(GROK_PORT_GROK_ROOT)" && pwd -P)" \
+	GENTS_GROK_PORT_SCRIPTS_DIR="$$(cd "$(CURDIR)" && pwd -P)/packs/gents/grok_tui_port/scripts" \
 	GENTS_GROK_PORT_PROMPT="$(GROK_PORT_PROMPT)" \
 	GENTS_GROK_PORT_BASE_SHA="$$grok_port_base_sha" \
 	GENTS_GROK_PORT_PR_BASE="$(GROK_PORT_PR_BASE)" \
@@ -211,6 +231,26 @@ grok-port:
 	GENTS_GROK_PORT_RETRY_MAX_TRANSPORT="$(GROK_PORT_RETRY_MAX_TRANSPORT)" \
 	GENTS_GROK_PORT_RETRY_MAX_RESAMPLE="$(GROK_PORT_RETRY_MAX_RESAMPLE)" \
 	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/grok_tui_port" \
+		--with-pack "$$grok_port_dep/code_review.pack" \
 		--http-port "$(GROK_PORT_PORT)" \
 		--job-id "$$grok_port_job_id" \
 		$(if $(GROK_PORT_KEEP_HOME),--keep-home,)
+
+.PHONY: scan
+scan:
+	@test -d "$(SCAN_ROOT)" || { echo "set SCAN_ROOT to the repository to scan (got: $(SCAN_ROOT))" >&2; exit 2; }
+	@scan_job_id="$(SCAN_JOB_ID)"; \
+	if test -z "$$scan_job_id"; then scan_job_id="scan-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	GENTS_SCAN_ROOT="$$(cd "$(SCAN_ROOT)" && pwd -P)" \
+	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/security_scan" \
+		--http-port "$(SCAN_PORT)" \
+		--job-id "$$scan_job_id" \
+		$(if $(SCAN_KEEP_HOME),--keep-home,)
+
+# The live campaign visualizer ships in the gents repository (apps/review-demo).
+.PHONY: defend-page
+defend-page:
+	@test -f "$(GENTS_ROOT)/apps/review-demo/package.json" || { echo "set GENTS_ROOT to a gents checkout that holds apps/review-demo (got: $(GENTS_ROOT))" >&2; exit 2; }
+	@echo "page     http://127.0.0.1:$(DEFENDING_PAGE_PORT)/?pack=defending"
+	@echo "runtime  http://127.0.0.1:$(DEFENDING_PORT)"
+	@DEMO_RUNTIME_PORT="$(DEFENDING_PORT)" DEMO_PAGE_PORT="$(DEFENDING_PAGE_PORT)" VITE_DEMO_MODE=defending $(NPM) --prefix "$(GENTS_ROOT)/apps/review-demo" run dev

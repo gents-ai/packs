@@ -21,7 +21,9 @@
     "tasks/research_investigate_task/prompt.md",
     "tasks/research_plan_task/prompt.md",
     "tasks/research_report_task/prompt.md",
-    "tests/graphs.json"
+    "tests/content.json",
+    "tests/graphs.json",
+    "tests/install.json"
   ],
   "authors": [
     "gents-ai contributors"

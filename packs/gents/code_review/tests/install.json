@@ -1,0 +1,37 @@
+{
+  "install": {
+    "graph": "code-review",
+    "slots": [
+      "coordinator",
+      "verifier",
+      "worker"
+    ],
+    "documents": [
+      "AgentBehavior/review-recon",
+      "AgentBehavior/review-scan",
+      "AgentBehavior/review-triage",
+      "AgentBehavior/review-verify",
+      "AgentContext/review-recon-context",
+      "AgentContext/review-scan-context",
+      "AgentContext/review-triage-context",
+      "AgentContext/review-verify-context",
+      "CompactionConfig/review-compaction",
+      "DatastoreToolSurface/review-recon-writes",
+      "DatastoreToolSurface/review-scan-writes",
+      "DatastoreToolSurface/review-triage-writes",
+      "DatastoreToolSurface/review-verify-writes",
+      "EventSource/graph-trigger-*",
+      "GraphDefinition/code-review",
+      "GraphRevision/*",
+      "Task/review-recon-task",
+      "Task/review-scan-task",
+      "Task/review-triage-task",
+      "Task/review-verify-task",
+      "Tools/review-recon-tools",
+      "Tools/review-scan-tools",
+      "Tools/review-triage-tools",
+      "Tools/review-verify-tools",
+      "Trigger/graph-trigger-*"
+    ]
+  }
+}

@@ -29,13 +29,13 @@ independently rerun all three convergence gates, including
 As in convergence, command exit status is authoritative and failures cannot be
 waived as environmental.
 
-The bundled graph is installed in the orchestration home. For each full review
+The `code_review` graph, this pack's dependency, is installed in the orchestration home. For each full review
 round:
 
 1. Resolve exact HEAD and require it to equal the first round's converged head
    (or the focused fix head on round two).
 2. Run
-   `gents graph run code_review --repo . --base <job.base_sha> --head <head-sha> --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`
+   `gents graph run code_review --field repository=. --field base=<job.base_sha> --field head=<head-sha> --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`
    and capture its run id.
 3. Watch that exact run to terminal state and call `gents graph result` with
    the same home/GraphQL endpoint. Inspect durable findings and the

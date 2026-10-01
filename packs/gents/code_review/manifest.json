@@ -22,7 +22,9 @@
     "tasks/review_scan_task/prompt.md",
     "tasks/review_triage_task/prompt.md",
     "tasks/review_verify_task/prompt.md",
-    "tests/graphs.json"
+    "tests/content.json",
+    "tests/graphs.json",
+    "tests/install.json"
   ],
   "authors": [
     "gents-ai contributors"

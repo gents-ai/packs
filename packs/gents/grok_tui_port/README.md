@@ -5,10 +5,10 @@ fan out eight path-disjoint implementation agents in isolated git worktrees,
 directly review every sealed slice in parallel, serial-apply accepted diffs
 onto the operator checkout, retry rejected attempts in fresh workspaces, and
 give a dedicated convergence agent ownership
-of the semantic merge and compile/test commit. The pack then runs the bundled
-full **code-review** graph, proves that exact reviewed head with live GLM turns,
+of the semantic merge and compile/test commit. The pack then runs the
+full **code-review** graph (its dependency pack), proves that exact reviewed head with live GLM turns,
 and opens one GitHub PR. Small sealed slices use one direct reviewer; the final
-combined edge starts the full multi-stage embedded graph.
+combined edge starts the full multi-stage graph.
 
 Gents is the leader-socket server in this port. It binds the Unix socket and
 stock `grok --leader --leader-socket <path>` connects as the pager client. The
@@ -25,7 +25,7 @@ gents pack install gents/grok_tui_port --home <home> --inference-slot coordinato
 Runtime configuration is authored once in `pack_config.json`. The distribution
 `manifest.json` points to that canonical bundle and lists it with the schema and
 prompt sidecars needed to install the pack; there are no per-collection JSON
-document fragments. The bundled code-review dependency is configured through
+document fragments. The code-review dependency is configured through
 the scenario's dependency environment instead of copied configuration rows.
 
 ## Bindings and prerequisites
@@ -39,16 +39,21 @@ The manifest declares three inference slots; bind all three on install:
   `port-live-review`
 
 (from `manifest.json`'s `inference_slots`). The pack also declares a
-dependency on the `code_review` pack for the bundled full-review graph.
+dependency on the `code_review` pack for the full-review graph; it resolves
+like any pack (the home's store, else the registry), and `make grok-port`
+builds the sibling `code_review` and admits it to the run's home so the run
+needs no registry.
 
 Run `make grok-port` from the root of this repository. `GROK_PORT_GENTS_ROOT`
 is the gents checkout the port lands in and `GROK_PORT_CEILING` the operator
 tool ceiling; neither has a default.
 
-The live stages still resolve `./packs/grok_tui_port/recon_input` and
-`packs/grok_tui_port/scripts/` inside that gents checkout, so the live scenario
-needs a gents checkout that carries this pack at that path until those paths
-are rewired to this repository. Pin the workspace base with
+The recon stage reads the audited ledger from `GENTS_GROK_PORT_GROK_ROOT` and
+the live stage runs the probe scripts from `GENTS_GROK_PORT_SCRIPTS_DIR`;
+`make grok-port` points both at this repository's copies, which must sit
+under `GROK_PORT_CEILING` so the tool ceiling can read them (the target checks
+this, and that `GROK_PORT_GENTS_ROOT` holds a `Cargo.toml`). The live probes
+also need `GENTS_GROK_PORT_GENTS_ROOT`, set from `GROK_PORT_GENTS_ROOT`. Pin the workspace base with
 `GROK_PORT_BASE_SHA`. The PR head is `GROK_PORT_BRANCH` (default
 `agent/grok-tui-port-pack9`).
 
@@ -91,7 +96,7 @@ grants, bound datastore surface):
 | `port-plan-tools` | none | none | - | none | `port-plan-io` |
 | `port-publish-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-publish-writes` |
 | `port-recon-audit-tools` | none | none | - | none | `port-recon-audit-io` |
-| `port-recon-tools` | none | ReadOnly (`./packs/grok_tui_port/recon_input`) | - | none | `port-recon-writes` |
+| `port-recon-tools` | none | ReadOnly (`${GENTS_GROK_PORT_GROK_ROOT}`, default `./packs/gents/grok_tui_port/recon_input`) | - | none | `port-recon-writes` |
 | `port-retry-tools` | none | none | - | none | `port-retry-io` |
 | `port-review-tools` | read-only, allowlisted to `git status`/`rev-parse`/`diff`/`ls-files` and `rust-analyzer` | ReadOnly (`.`) | disabled | none | `port-review-io` |
 
@@ -115,7 +120,7 @@ export GROK_PORT_REASONING_EFFORT=high
 ```
 
 `high` is the pack default for GLM-5.3-Flash stages; override the environment
-variable only for an intentional experiment. The embedded code-review graph
+variable only for an intentional experiment. The code-review graph
 uses `GROK_PORT_CODE_REVIEW_REASONING_EFFORT`, which inherits the same value by
 default.
 
@@ -204,7 +209,7 @@ GrokPortJob
        only that durable receipt -> PortIntegrateResult applied
   -> convergence agent on all 8 applied slices
        reconcile interfaces; fmt; focused test/check; commit exact green HEAD
-  -> full bundled code-review graph on the convergence commit
+  -> full code-review graph on the convergence commit
        focused repair commits; pin exact green HEAD
   -> build that exact HEAD in a separate run-owned live home
   -> stock grok --leader live GLM probes with exact surface-ID coverage

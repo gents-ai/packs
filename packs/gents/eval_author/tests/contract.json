@@ -1,0 +1,6 @@
+{
+  "eval_case": {
+    "asset": "agent_behaviors/eval_author/system_prompt.md",
+    "after": "## The case shape"
+  }
+}

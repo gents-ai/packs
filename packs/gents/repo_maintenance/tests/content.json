@@ -1,0 +1,21 @@
+{
+  "defs": "def row($coll; $key; $id): .config[$coll][] | select(.[$key] == $id); def source_of($trigger): row(\"event_sources\"; \"event_source_id\"; (row(\"triggers\"; \"trigger_id\"; $trigger) | .source.event_source_id)); def workspace($binding; $collection; $prompt): . as $d | row(\"callback_bindings\"; \"binding_id\"; $binding) as $b | $d | row(\"event_sources\"; \"event_source_id\"; $b.event_source_id) | .source_collection == $collection and ($d.assets[$prompt] | (contains(\"make worktree BRANCH=\") | not) and (contains(\"Do not run `git commit`\") or contains(\"Do not run git commit\")));",
+  "jq": [
+    {
+      "name": "the pack keeps its categories and worktree-sized packages",
+      "expr": "(.scenario.expect.prompt_tool_contracts | length) == 6 and (.scenario.expect.result_documents | length) == 6 and (.scenario.default_prompt | contains(\"one shared branch and worktree\")) and .scenario.seed.fields.area_count == \"auto\" and .scenario.seed.fields.history_depth == \"250\" and (.config.tasks | length) == 8 and ([.config.triggers[] | select(.trigger_id == \"maintenance-execute-skip\")] | length) == 1"
+    },
+    {
+      "name": "triage writes work packages",
+      "expr": "row(\"datastore_tool_surfaces\"; \"surface_id\"; \"maintenance-triage-writes\") | tostring | contains(\"MaintenanceWorkPackage\")"
+    },
+    {
+      "name": "publish opens one normal PR, bounds review rounds and uses the graph run flags",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"one normal, non-draft PR\") and contains(\"Bound this at two full review rounds\") and (contains(\"make worktree BRANCH=\") | not) and (test(\"--repo[ =]\") | not) and contains(\"graph run code_review --field repository=\")"
+    },
+    {
+      "name": "the execute workspace callback is bound and the worker may not commit",
+      "expr": "workspace(\"maintenance-execute-workspace\"; \"MaintenanceReport\"; \"tasks/maintenance_execute_task/prompt.md\")"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agent_behaviors[] | select(.behavior_id == $t.behavior_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def field($e; $n): $e.fields[] | select(.name == $n); def nohost: (.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and (.tools.integrations.lsp == null);",
+  "jq": [
+    {
+      "name": "every text asset is non-empty",
+      "expr": "[.assets[]] | all(length > 0)"
+    },
+    {
+      "name": "the plan compiles to 4 nodes, 2 results and the review entry",
+      "expr": "(.assets[\"graphs/code_review.plan.json\"] | fromjson) | (.nodes | length) == 4 and (.results | length) == 2 and (.entries | map(.name)) == [\"review\"]"
+    },
+    {
+      "name": "four stages, each with a goal objective and goal tools but no goal creation",
+      "expr": "stages | length == 4 and all((.task.goal_objective_template | gsub(\"\\\\s\"; \"\") | length) > 0 and .tools.built_ins.enable_goal_tools == true and .tools.built_ins.enable_goal_creation != true)"
+    },
+    {
+      "name": "every stage prompt completes its goal explicitly",
+      "expr": "stages | all(.task.prompt_template | contains(\"`update_goal`\") and contains(\"`status=\\\"complete\\\"`\"))"
+    },
+    {
+      "name": "recon and scan have no host tools and no context budget",
+      "expr": ". as $d | [\"review-recon\", \"review-scan\"] | all(. as $id | $d | stage($id) | nohost and (.tools.built_ins.enable_context_budget // false) == false)"
+    },
+    {
+      "name": "verify reads files and runs offline bash that may write artifacts",
+      "expr": "stage(\"review-verify\") | .tools.host.files.mode == \"ReadOnly\" and .tools.host.bash.mode == \"Unrestricted\" and .tools.host.bash.execution_mode == \"artifact_write\" and .tools.host.bash.network_mode == \"disabled\" and .tools.host.bash.background_enabled == true and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and .tools.built_ins.enable_context_budget == true"
+    },
+    {
+      "name": "scan writes take the area id from the trigger",
+      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"write_candidate_finding\" or .tool_name == \"write_scan_result\")] | length == 2 and all(field(.; \"area_id\") | .required == false and .fill == {\"source_field\": \"area_id\"})"
+    },
+    {
+      "name": "the recon area writer fills the repository and evidence ids and carries no evidence body",
+      "expr": "[entries(\"review-recon-writes\")][0] | (field(.; \"repository_path\") | .required == false and .fill == {\"source_field\": \"repository_path\"}) and (field(.; \"evidence_id\") | .required == false and .fill == {\"source_field\": \"evidence_id\"}) and (field(.; \"expected_total\") | .required == true and .fill == null) and all(.fields[]; .name != \"evidence\")"
+    },
+    {
+      "name": "recon reads only the evidence summary",
+      "expr": "(.config.tasks[] | select(.task_id == \"review-recon-task\") | .prompt_template) | contains(\"{{ doc.evidence_summary }}\") and (contains(\"{{ doc.evidence }}\") | not)"
+    },
+    {
+      "name": "scan pages the evidence by manifest, never inline",
+      "expr": "(.config.tasks[] | select(.task_id == \"review-scan-task\") | .prompt_template) | (contains(\"{{ doc.evidence }}\") | not) and contains(\"read_review_evidence_manifest\") and contains(\"read_review_evidence_page\") and contains(\"page_count - 1\") and contains(\"evidence_chunk_15\")"
+    },
+    {
+      "name": "the evidence manifest query is scoped to the run evidence id",
+      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_manifest\")][0] | .collection == \"CodeReviewEvidenceManifest\" and (.filter_fields | length) == 1 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"}"
+    },
+    {
+      "name": "the evidence page query takes a page index and returns 16 chunks",
+      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_page\")][0] | .collection == \"CodeReviewEvidencePage\" and (.filter_fields | length) == 2 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"} and .filter_fields[1].name == \"page_index\" and .filter_fields[1].required == true and .filter_fields[1].fill == null and ([range(0; 16) | \"evidence_chunk_\\(.)\"] - .fields | length) == 0"
+    },
+    {
+      "name": "the evidence schemas are immutable and paged",
+      "expr": "(.assets[\"schemas/evidence_manifest.graphql\"] | startswith(\"type CodeReviewEvidenceManifest {\")) and (.assets[\"schemas/evidence_page.graphql\"] | startswith(\"type CodeReviewEvidencePage {\") and contains(\"page_key: String @index(unique: true) @immutable\") and contains(\"evidence_chunk_15: String @immutable\"))"
+    }
+  ]
+}

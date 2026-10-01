@@ -9,6 +9,7 @@
     "schemas/experiment_job.graphql",
     "tasks/exp_stage1_task/prompt.md",
     "tasks/exp_stage2_task/prompt.md",
+    "tests/content.json",
     "tests/install.json"
   ],
   "authors": [
@@ -34,5 +35,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

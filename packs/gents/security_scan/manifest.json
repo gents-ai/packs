@@ -21,6 +21,7 @@
     "tasks/scan_plan_task/prompt.md",
     "tasks/scan_report_task/prompt.md",
     "tasks/scan_revalidate_task/prompt.md",
+    "tests/content.json",
     "tests/install.json"
   ],
   "authors": [
