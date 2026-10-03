@@ -520,6 +520,29 @@
           "tool_name": "read_change_unit_closure"
         },
         {
+          "collection": "ChangeUnitReview",
+          "description": "Read the review witness bound to the rejected closure.",
+          "fields": [
+            "review_id",
+            "work_unit_id",
+            "implementation_id",
+            "workspace_id",
+            "writer_receipt_id",
+            "writer_seal_hash",
+            "verdict",
+            "findings",
+            "summary"
+          ],
+          "filter_fields": [
+            {
+              "name": "work_unit_id",
+              "fill": "correlation"
+            }
+          ],
+          "kind": "query",
+          "tool_name": "read_change_unit_review"
+        },
+        {
           "collection": "ChangeUnitResult",
           "description": "Record a rejected review as terminal without integration.",
           "fields": [
@@ -624,7 +647,8 @@
       "event_kind": "created",
       "event_source_id": "change-unit-rejected",
       "filter": "{ status: { _eq: \"rejected\" }, work_unit_id: { _like: \"change-unit:%\" } }",
-      "source_collection": "ChangeUnitClosure"
+      "source_collection": "ChangeUnitClosure",
+      "workspace_authority": "readOnly"
     }
   ],
   "repository_placements": [
@@ -638,35 +662,30 @@
     {
       "behavior_id": "change-unit-writer",
       "display_name": "change-unit-writer-task",
-      "goal_objective_template": "Implement submitted change unit {{ event.correlation }} and persist its writer summary.",
       "prompt_template": "./tasks/change_unit_writer_task/prompt.md",
       "task_id": "change-unit-writer-task"
     },
     {
       "behavior_id": "change-unit-reviewer",
       "display_name": "change-unit-review-task",
-      "goal_objective_template": "Review sealed change unit {{ event.correlation }} and persist a receipt-bound review and closure.",
       "prompt_template": "./tasks/change_unit_review_task/prompt.md",
       "task_id": "change-unit-review-task"
     },
     {
       "behavior_id": "change-unit-integrator",
       "display_name": "change-unit-integrate-task",
-      "goal_objective_template": "Authorize host integration of accepted change unit {{ event.correlation }}.",
       "prompt_template": "./tasks/change_unit_integrate_task/prompt.md",
       "task_id": "change-unit-integrate-task"
     },
     {
       "behavior_id": "change-unit-record",
       "display_name": "change-unit-record-task",
-      "goal_objective_template": "Record host-confirmed integration for change unit {{ event.correlation }}.",
       "prompt_template": "./tasks/change_unit_record_task/prompt.md",
       "task_id": "change-unit-record-task"
     },
     {
       "behavior_id": "change-unit-rejected",
       "display_name": "change-unit-rejected-task",
-      "goal_objective_template": "Close rejected change unit {{ event.correlation }} with its review result.",
       "prompt_template": "./tasks/change_unit_rejected_task/prompt.md",
       "task_id": "change-unit-rejected-task"
     }
