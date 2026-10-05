@@ -536,6 +536,32 @@ for case in "${cases[@]}"; do
   fi
 done
 
+# A plugin may ship tools/wasm_check.py: checks of its real WebAssembly build that case files and
+# native tests cannot express (damaged inputs, output limits, large inputs). It runs once per plugin
+# source, against the pack installed in a fresh home (env GENTS and PACK_HOME), and needs python3.
+wasm_checks() {
+  local plugin source check home name seen=" " args=()
+  while read -r plugin source; do
+    check="$dir/$source/tools/wasm_check.py"
+    [[ -n "$source" && -f "$check" && "$seen" != *" $source "* ]] || continue
+    seen+="$source "
+    command -v python3 >/dev/null 2>&1 || { echo "note: python3 not on PATH; skipping $plugin wasm checks" >&2; continue; }
+    name="wasm-$plugin"
+    home="$(fresh_home "$name")"
+    args=()
+    while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
+    store_dependencies "$home"
+    "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+    if GENTS="$gents" PACK_HOME="$home" python3 "$check" >"$work/$name.log" 2>&1; then
+      pass "plugin $plugin: wasm checks ($(tail -n 2 "$work/$name.log" | head -n 1))"
+    else
+      fail "plugin $plugin: wasm checks failed"
+      cat "$work/$name.log" >&2
+    fi
+  done < <(jq -r '.plugins // [] | .[] | select(.language == "rust") | "\(.name) \(.source // "")"' "$dir/manifest.json")
+}
+wasm_checks
+
 if ((failures > 0)); then
   echo "$pack: $failures failed" >&2
   exit 1
