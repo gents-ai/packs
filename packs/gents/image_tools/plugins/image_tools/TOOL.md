@@ -17,7 +17,8 @@ One JSON object. Name the image in one of two ways:
   (in name order, up to 10000) is used. Hidden entries, links and other files
   are counted and skipped, and folders more than 16 levels deep are named in a
   warning, not read. Only the file or folder named is readable.
-- `data_base64`: one image sent inline (up to 64 MiB of base64), `name` its
+- `data_base64`: one image sent inline (up to 64 MiB of base64; standard or
+  URL-safe letters, padding optional, or a `data:...;base64,` URI), `name` its
   name.
 
 Then say what to do, either one step with its options beside it

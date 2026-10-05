@@ -1,0 +1,48 @@
+{
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 43,
+          "format": "gif",
+          "height": 1,
+          "width": 1
+        },
+        "outputs": [],
+        "source": "dot.gif",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 43,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "gif",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 1,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 1,
+            "oriented_width": 1,
+            "width": 1,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "data_base64": "R0lGODlhAQABAIAAAP+AAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw",
+    "name": "dot.gif",
+    "op": "info"
+  }
+}

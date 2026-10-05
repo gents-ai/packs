@@ -141,6 +141,49 @@ pub fn why(e: &std::io::Error) -> String {
     }
 }
 
+/// Decodes standard base64 with or without its `=` padding.
+const LENIENT: base64::engine::GeneralPurpose = base64::engine::GeneralPurpose::new(
+    &base64::alphabet::STANDARD,
+    base64::engine::GeneralPurposeConfig::new()
+        .with_decode_padding_mode(base64::engine::DecodePaddingMode::Indifferent)
+        .with_decode_allow_trailing_bits(true),
+);
+
+/// The base64 body of `text`: what follows the comma of a `data:...;base64,` URI, else `text`.
+fn base64_body(text: &str) -> Option<&str> {
+    let text = text.trim();
+    if !text
+        .get(..5)
+        .is_some_and(|p| p.eq_ignore_ascii_case("data:"))
+    {
+        return Some(text);
+    }
+    let (head, body) = text.split_once(',')?;
+    head.to_ascii_lowercase()
+        .ends_with(";base64")
+        .then_some(body)
+}
+
+/// Decodes base64 as another node or a browser produces it: standard or URL-safe letters,
+/// padding present or not, line breaks anywhere, and an optional `data:` URI header.
+fn decode_base64(text: &str) -> Option<Vec<u8>> {
+    let body = base64_body(text)?;
+    if let Ok(bytes) = LENIENT.decode(body) {
+        return Some(bytes);
+    }
+    // Slow path, only for input the plain decoder refused: drop whitespace, map URL-safe letters.
+    let clean: Vec<u8> = body
+        .bytes()
+        .filter(|b| !b.is_ascii_whitespace())
+        .map(|b| match b {
+            b'-' => b'+',
+            b'_' => b'/',
+            b => b,
+        })
+        .collect();
+    LENIENT.decode(clean).ok()
+}
+
 /// Decodes an inline base64 image of at most [`MAX_INLINE_BASE64`] characters.
 pub fn inline(b64: &str, name: Option<&str>) -> Result<Source, String> {
     if b64.len() > MAX_INLINE_BASE64 {
@@ -149,11 +192,9 @@ pub fn inline(b64: &str, name: Option<&str>) -> Result<Source, String> {
             MAX_INLINE_BASE64 >> 20
         ));
     }
-    let bytes = base64::engine::general_purpose::STANDARD
-        .decode(b64.trim())
-        .map_err(|_| {
-            "data_base64 is not valid base64; send the image bytes base64 encoded".to_string()
-        })?;
+    let bytes = decode_base64(b64).ok_or_else(|| {
+        "data_base64 is not valid base64; send the image bytes base64 encoded".to_string()
+    })?;
     let name = name
         .and_then(|n| Path::new(n).file_name())
         .map_or_else(|| "inline".to_owned(), |n| n.to_string_lossy().into_owned());
@@ -616,6 +657,68 @@ mod tests {
         let big = "A".repeat(MAX_INLINE_BASE64 + 4);
         assert!(inline(&big, None).err().unwrap().contains("limit"));
         assert!(resolve(Some("/x"), &[], Some("AAAA"), None).is_err());
+    }
+
+    #[test]
+    fn inline_base64_takes_padding_url_safe_letters_line_breaks_and_a_data_uri() {
+        // Bytes whose standard form uses both `+` and `/` and ends in padding.
+        let want = [0xfb, 0xff, 0xfe, 0x01];
+        for (case, text) in [
+            ("standard padded", "+//+AQ=="),
+            ("padding stripped", "+//+AQ"),
+            ("url-safe padded", "-__-AQ=="),
+            ("url-safe unpadded", "-__-AQ"),
+            ("mixed alphabets", "+__-AQ"),
+            ("line breaks", "+//+\r\nAQ=="),
+            ("surrounding space", "  +//+AQ==\n"),
+            ("data uri", "data:image/png;base64,+//+AQ=="),
+            (
+                "data uri unpadded url-safe",
+                "data:image/jpeg;base64,-__-AQ",
+            ),
+            ("data uri upper case", "DATA:IMAGE/PNG;BASE64,+//+AQ=="),
+            (
+                "data uri with a parameter",
+                "data:image/png;charset=x;base64,+//+AQ==",
+            ),
+        ] {
+            let s = inline(text, None).unwrap_or_else(|e| panic!("{case}: {e}"));
+            let Data::Mem(b) = &s.data else {
+                panic!("{case}")
+            };
+            assert_eq!(b.as_slice(), want, "{case}");
+        }
+        // Lengths 0, 1, 2 and 3 modulo 4 without padding all decode.
+        for (text, len) in [("", 0), ("QQ", 1), ("QUI", 2), ("QUJD", 3)] {
+            let Data::Mem(b) = inline(text, None).unwrap().data else {
+                panic!()
+            };
+            assert_eq!(b.len(), len, "{text:?}");
+        }
+    }
+
+    #[test]
+    fn inline_base64_that_is_not_base64_keeps_the_one_sentence_error() {
+        for bad in [
+            "***",
+            "ab=c",
+            "A",
+            "AAAAA",
+            "+//+AQ==AAAA",
+            "data:image/png,+//+AQ==",
+            "data:image/png;base64",
+            "data:;base64,@@",
+            "data:text/plain;charset=utf-8,hello",
+            "+//+ AQ ==x",
+        ] {
+            let e = inline(bad, None)
+                .err()
+                .unwrap_or_else(|| panic!("{bad:?} decoded"));
+            assert_eq!(
+                e, "data_base64 is not valid base64; send the image bytes base64 encoded",
+                "{bad:?}"
+            );
+        }
     }
 
     #[test]
