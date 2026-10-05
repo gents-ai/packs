@@ -396,7 +396,7 @@ mod tests {
 
     #[test]
     fn an_output_name_must_end_in_an_image_extension_and_name_a_file() {
-        let d = dir("ext");
+        let d = dir("ext_names");
         let named = |f: &str| Output {
             file: Some(f.into()),
             ..Output::default()
@@ -428,9 +428,12 @@ mod tests {
             ("deep/y", Format::Gif, "deep/y.gif"),
         ] {
             let v = cx(named(name), Some(d.clone()))
-                .deliver(prep(4, format), "a", None)
-                .ok()
-                .unwrap();
+                .deliver(prep(4, format), "a", None);
+            let v = match v {
+                Ok(v) => v,
+                Err(Fail::Msg(m)) => panic!("{name}: {m}"),
+                Err(_) => panic!("{name}: over"),
+            };
             assert_eq!(v["file"], want, "{name}");
         }
     }
