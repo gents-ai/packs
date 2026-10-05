@@ -97,8 +97,12 @@ fn describe(format: Format, e: &ImageError) -> String {
                 "this {format} image uses a feature that is not supported; convert it to PNG first"
             )
         }
-        _ => format!("the {format} image is corrupt or truncated; use an intact file"),
+        _ => corrupt(format),
     }
+}
+
+fn corrupt(format: Format) -> String {
+    format!("the {format} image is corrupt or truncated; use an intact file")
 }
 
 const NOT_AN_IMAGE: &str = "the file is not a PNG, JPEG, GIF, BMP, TIFF or WebP image";
@@ -112,6 +116,9 @@ pub fn header(src: &Source) -> Result<Header, String> {
     let mut dec = reader.into_decoder().map_err(|e| describe(format, &e))?;
     let (width, height) = dec.dimensions();
     check_size(width, height)?;
+    if format == Format::Jpeg && !crate::jpeg::is_complete(&mut src.open_buf()?) {
+        return Err(corrupt(format));
+    }
     let ext = dec.original_color_type();
     let mut warnings = Vec::new();
     let mut exif = match dec.exif_metadata() {

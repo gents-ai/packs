@@ -141,7 +141,7 @@
         }
       ],
       "warnings": [
-        "1 entries in the folder that are not images were left out"
+        "1 entries in the folder that are hidden, links or not images were left out"
       ]
     }
   },

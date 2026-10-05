@@ -69,8 +69,15 @@ pub fn run(input: &Input) -> Result<Done, String> {
     let mut call_warnings = Vec::new();
     if resolved.skipped > 0 {
         call_warnings.push(format!(
-            "{} entries in the folder that are not images were left out",
+            "{} entries in the folder that are hidden, links or not images were left out",
             resolved.skipped
+        ));
+    }
+    if resolved.too_deep > 0 {
+        call_warnings.push(format!(
+            "{} folders deeper than {} levels were not read; name their images in files to read them",
+            resolved.too_deep,
+            crate::src::MAX_DEPTH
         ));
     }
     let names: Vec<&str> = resolved.sources.iter().map(|s| s.name.as_str()).collect();

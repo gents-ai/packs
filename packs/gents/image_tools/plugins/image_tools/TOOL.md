@@ -14,8 +14,9 @@ One JSON object. Name the image in one of two ways:
 - `path`: the file or folder to work on. A relative path starts at the working
   folder. Inside a folder, `file` (one name) or `files` (a list) pick images by
   their path relative to the folder; with neither, every image in the folder
-  (non-hidden, in name order, up to 10000) is used and other files are counted
-  and skipped. Only the file or folder named is readable.
+  (in name order, up to 10000) is used. Hidden entries, links and other files
+  are counted and skipped, and folders more than 16 levels deep are named in a
+  warning, not read. Only the file or folder named is readable.
 - `data_base64`: one image sent inline (up to 64 MiB of base64), `name` its
   name.
 

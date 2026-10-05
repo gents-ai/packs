@@ -212,6 +212,7 @@ fn every_hostile_file_gives_one_sentence_and_the_good_file_still_works() {
     let names = [
         "truncated.png",
         "truncated.jpg",
+        "truncated_scan.jpg",
         "empty.png",
         "text.png",
         "zero_size.png",
@@ -245,14 +246,11 @@ fn every_hostile_file_gives_one_sentence_and_the_good_file_still_works() {
                 assert!(rec.get("error").is_none(), "{op}: {rec}");
                 continue;
             }
-            // info reads only the header, so a file cut short after its header is a clean info.
+            // info reads only the header, so a PNG cut short after its header is a clean info;
+            // a JPEG is checked to its end marker, so a cut one fails for info too.
             let e = match rec["error"].as_str() {
                 Some(e) => e,
-                None if op["op"] == "info"
-                    || op["op"] == "hash" && name.starts_with("truncated") =>
-                {
-                    continue;
-                }
+                None if op["op"] == "info" && name == "truncated.png" => continue,
                 None => panic!("{name} {op}: {rec}"),
             };
             assert!(
@@ -372,7 +370,7 @@ fn a_folder_lists_images_in_name_order_and_counts_what_it_skipped() {
     assert_eq!(names, ["a.png", "b.jpg", "sub/c.png"]);
     assert_eq!(
         response(&r)["warnings"],
-        json!(["1 entries in the folder that are not images were left out"])
+        json!(["1 entries in the folder that are hidden, links or not images were left out"])
     );
     let one =
         call(&json!({"path": format!("{}/batch", fixtures()), "file": "b.jpg", "op": "info"}))

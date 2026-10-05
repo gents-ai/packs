@@ -48,8 +48,10 @@ pub struct Resolved {
     pub sources: Vec<Source>,
     /// The bound folder, when the call bound one; files are written below it.
     pub root: Option<PathBuf>,
-    /// Files in a folder listing that are not images and were left out.
+    /// Entries in a folder listing that were left out: not images, hidden, or links.
     pub skipped: usize,
+    /// Folders in a listing that lie deeper than [`MAX_DEPTH`] and were not read.
+    pub too_deep: usize,
 }
 
 impl Source {
@@ -237,6 +239,7 @@ pub fn resolve(
             sources: vec![inline(b64, name)?],
             root: None,
             skipped: 0,
+            too_deep: 0,
         });
     }
     let Some(path) = path else {
@@ -263,12 +266,14 @@ pub fn resolve(
             }],
             root: None,
             skipped: 0,
+            too_deep: 0,
         });
     }
     let mut sources = Vec::new();
     let mut skipped = 0;
+    let mut too_deep = 0;
     if files.is_empty() {
-        walk(root, root, 0, &mut sources, &mut skipped)?;
+        walk(root, root, 0, &mut sources, &mut skipped, &mut too_deep)?;
         if sources.is_empty() {
             return Err(format!(
                 "{path} holds no PNG, JPEG, GIF, BMP, TIFF or WebP images"
@@ -286,18 +291,22 @@ pub fn resolve(
         sources,
         root: Some(root.to_path_buf()),
         skipped,
+        too_deep,
     })
 }
 
-/// Lists the images below `dir` in name order, skipping hidden entries and links.
+/// Lists the images below `dir` in name order, counting the hidden entries, links and
+/// non-images it leaves out in `skipped` and the folders below [`MAX_DEPTH`] in `too_deep`.
 fn walk(
     root: &Path,
     dir: &Path,
     depth: usize,
     out: &mut Vec<Source>,
     skipped: &mut usize,
+    too_deep: &mut usize,
 ) -> Result<(), String> {
     if depth > MAX_DEPTH {
+        *too_deep += 1;
         return Ok(());
     }
     let mut entries: Vec<_> = std::fs::read_dir(dir)
@@ -307,6 +316,7 @@ fn walk(
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for e in entries {
         if e.file_name().to_string_lossy().starts_with('.') {
+            *skipped += 1;
             continue;
         }
         let Ok(ft) = e.file_type() else { continue };
@@ -316,7 +326,7 @@ fn walk(
         }
         let p = e.path();
         if ft.is_dir() {
-            walk(root, &p, depth + 1, out, skipped)?;
+            walk(root, &p, depth + 1, out, skipped, too_deep)?;
         } else if ft.is_file() {
             let name = p
                 .strip_prefix(root)
@@ -481,8 +491,47 @@ mod tests {
         let r = resolve(d.to_str(), &[], None, None).unwrap();
         let names: Vec<_> = r.sources.iter().map(|s| s.name.as_str()).collect();
         assert_eq!(names, ["a.bin", "b.png", "sub/c.dat"]);
-        assert_eq!(r.skipped, 1);
+        assert_eq!(r.skipped, 2, "notes.txt and .hidden.png");
         assert_eq!(r.root.as_deref(), Some(d.as_path()));
+    }
+
+    #[test]
+    fn hidden_entries_and_links_are_counted_with_the_skipped() {
+        let d = dir("hidden");
+        std::fs::create_dir_all(d.join(".cache")).unwrap();
+        std::fs::write(d.join(".hidden.png"), PNG).unwrap();
+        std::fs::write(d.join("a.png"), PNG).unwrap();
+        let r = resolve(d.to_str(), &[], None, None).unwrap();
+        assert_eq!(r.sources.len(), 1);
+        assert_eq!((r.skipped, r.too_deep), (2, 0));
+    }
+
+    /// A folder tree `levels` folders deep below `d` with one image at the bottom.
+    fn nested(tag: &str, levels: usize) -> PathBuf {
+        let d = dir(tag);
+        let mut p = d.clone();
+        for i in 0..levels {
+            p.push(format!("d{i}"));
+        }
+        std::fs::create_dir_all(&p).unwrap();
+        std::fs::write(p.join("deep.png"), PNG).unwrap();
+        d
+    }
+
+    #[test]
+    fn the_listing_reads_sixteen_levels_and_reports_folders_below() {
+        // Folders at depth 1..=16 are read, so an image in the 16th folder is listed.
+        let d = nested("depth16", MAX_DEPTH);
+        let r = resolve(d.to_str(), &[], None, None).unwrap();
+        assert_eq!(r.sources.len(), 1);
+        assert_eq!(r.too_deep, 0);
+        // One level more is not read, and the walk says so instead of reading as complete.
+        let d = nested("depth17", MAX_DEPTH + 1);
+        std::fs::write(d.join("top.png"), PNG).unwrap();
+        let r = resolve(d.to_str(), &[], None, None).unwrap();
+        assert_eq!(r.sources.len(), 1, "only the top image is listed");
+        assert_eq!(r.sources[0].name, "top.png");
+        assert_eq!(r.too_deep, 1);
     }
 
     #[test]

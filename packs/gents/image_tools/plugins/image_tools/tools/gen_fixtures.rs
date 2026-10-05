@@ -302,12 +302,31 @@ fn main() {
         b"\x89PNG\r\n\x1a\nthis one is cut short",
     );
 
+    // A folder tree 17 levels deep: the listing reads 16 levels, so `lost.png` is reported, not read.
+    let deep = root.join("deep");
+    let tiny = fx::png(&fx::scene(8, 6));
+    put(&deep, "top.png", &tiny);
+    let levels: PathBuf = (0..17).map(|i| format!("d{i}")).collect();
+    put(
+        &deep
+            .join(&levels)
+            .parent()
+            .expect("a parent folder")
+            .to_path_buf(),
+        "ok_level16.png",
+        &tiny,
+    );
+    put(&deep.join(&levels), "lost.png", &tiny);
+
     // Hostile files: each must give one sentence, never a crash.
     let h = root.join("hostile");
     let full = fx::png(&fx::scene(48, 36));
     put(&h, "truncated.png", &full[..full.len() / 2]);
     let jfull = fx::jpeg(&fx::scene(48, 36), 85);
     put(&h, "truncated.jpg", &jfull[..jfull.len() / 2]);
+    // Cut halfway through the scan data of a 128x128 baseline JPEG: the headers are whole.
+    let sfull = fx::jpeg(&fx::scene(128, 128), 85);
+    put(&h, "truncated_scan.jpg", &sfull[..sfull.len() / 2]);
     put(&h, "empty.png", b"");
     put(
         &h,

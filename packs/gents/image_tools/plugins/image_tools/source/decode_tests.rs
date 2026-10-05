@@ -329,16 +329,57 @@ fn truncated_files_fail_with_one_sentence_per_format() {
         ("gif", fx::encoded(&img, image::ImageFormat::Gif)),
     ];
     for (name, bytes) in files {
-        let mut failures = 0;
-        for cut in [bytes.len() / 2, bytes.len() * 9 / 10, bytes.len() - 1] {
+        // A cut inside a trailer only loses no pixels (PNG IEND is 12 bytes, GIF 1), so every
+        // cut that reaches into the pixel data must fail; JPEG must also fail 1 byte short.
+        let mut cuts = vec![bytes.len() / 2, bytes.len() * 9 / 10, bytes.len() - 16];
+        if name == "jpeg" {
+            cuts.push(bytes.len() - 1);
+        }
+        for cut in cuts {
             let s = mem(bytes[..cut].to_vec());
             let r = header(&s).and_then(|h| decode(&s, &h, &LoadOpts::default()).map(|_| ()));
-            if let Err(e) = r {
-                failures += 1;
-                assert!(!e.is_empty() && !e.contains('\n'), "{name}: {e}");
-            }
+            let e = r
+                .err()
+                .unwrap_or_else(|| panic!("{name}: a cut at {cut} of {} decoded", bytes.len()));
+            assert!(
+                e.contains("corrupt or truncated") && !e.contains('\n'),
+                "{name}: {e}"
+            );
         }
-        assert!(failures >= 1, "{name}: a half file must fail to decode");
+    }
+}
+
+/// A cut inside the scan data of a baseline and of a progressive JPEG: the lenient decoder
+/// would return grey for the missing rows, so header() must refuse it for every op.
+#[test]
+fn a_jpeg_cut_inside_its_scan_data_is_refused_not_greyed() {
+    let img = fx::scene(128, 128);
+    let mut progressive = Vec::new();
+    {
+        let mut enc = jpeg_encoder::Encoder::new(&mut progressive, 80);
+        enc.set_progressive(true);
+        let rgb: Vec<u8> = img.pixels().flat_map(|p| [p[0], p[1], p[2]]).collect();
+        enc.encode(&rgb, 128, 128, jpeg_encoder::ColorType::Rgb)
+            .unwrap();
+    }
+    for (name, jpg) in [
+        ("baseline", fx::jpeg(&img, 90)),
+        ("progressive", progressive),
+    ] {
+        assert!(
+            header(&mem(jpg.clone())).is_ok(),
+            "{name}: the whole file reads"
+        );
+        for pct in [30, 50, 60, 95] {
+            let s = mem(jpg[..jpg.len() * pct / 100].to_vec());
+            let e = header(&s)
+                .err()
+                .unwrap_or_else(|| panic!("{name} at {pct}%"));
+            assert_eq!(
+                e,
+                "the jpeg image is corrupt or truncated; use an intact file"
+            );
+        }
     }
 }
 

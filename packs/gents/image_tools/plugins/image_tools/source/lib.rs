@@ -32,6 +32,7 @@ mod hash;
 mod input;
 #[cfg(test)]
 mod io_tests;
+mod jpeg;
 mod load;
 mod model;
 mod montage;
