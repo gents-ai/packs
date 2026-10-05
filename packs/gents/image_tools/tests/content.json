@@ -11,7 +11,7 @@
     },
     {
       "name": "the input schema is closed and offers every operation",
-      "expr": "(plugin(\"image_tools\") | .input_schema | .additionalProperties == false and (.properties.op.enum == ops) and (.properties.ops.maxItems == 16))"
+      "expr": "(plugin(\"image_tools\") | .input_schema | .additionalProperties == false and (.properties.op.enum == (ops | map(if . == \"montage\" then ., \"contact_sheet\" else . end))) and (.properties.ops.maxItems == 16))"
     },
     {
       "name": "the instructions document every operation by name in its steps table",

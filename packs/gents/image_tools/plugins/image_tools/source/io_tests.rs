@@ -712,3 +712,43 @@ fn a_diff_with_more_regions_than_the_cap_says_so_in_the_warnings() {
     }));
     assert_eq!(record(&few, 0)["warnings"], json!([]));
 }
+
+#[test]
+fn an_output_name_that_is_not_an_image_file_is_refused_before_anything_is_written() {
+    let d = scratch("badname", &["scene.png"]);
+    std::fs::create_dir_all(d.join("sub")).unwrap();
+    for (name, why) in [
+        ("x.txt", "image extension"),
+        ("report.pdf", "image extension"),
+        ("sub/", "names a folder"),
+    ] {
+        let e = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": name}}))
+            .unwrap_err();
+        assert!(e.contains(why) && !e.contains('\n'), "{name}: {e}");
+    }
+    assert_eq!(listing(&d), ["scene.png"], "nothing was written");
+    // With a suffix the source's own extension does not matter, and the format decides the name.
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "convert", "format": "jpeg", "output": {"suffix": "_c"}})).unwrap();
+    assert_eq!(record(&r, 0)["outputs"][0]["file"], "scene_c.jpg");
+}
+
+#[test]
+fn a_mistyped_request_option_is_a_sentence_without_a_type_name() {
+    for (req, want) in [
+        (
+            r#"{"path": 5, "op": "info"}"#,
+            "the request is not valid: path must be text",
+        ),
+        (
+            r#"{"path": "/x", "files": "a.png", "op": "info"}"#,
+            "the request is not valid: files must be a list",
+        ),
+        (
+            r#"{"path": "/x", "op": "resize", "width": 2.5}"#,
+            "step 1 (resize) is not valid: width must be a whole number from 0 to 4294967295",
+        ),
+        ("{", "the request is not valid JSON; send one JSON object"),
+    ] {
+        assert_eq!(crate::run_text(req).unwrap_err(), want, "{req}");
+    }
+}

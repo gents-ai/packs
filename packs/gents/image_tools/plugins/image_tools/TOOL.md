@@ -33,8 +33,8 @@ them. Other request fields:
   layout (then `auto_orient` turns it).
 - `output`: where the produced image goes: `format` (`png` default, `jpeg`,
   `webp` lossless, `gif`, `bmp`, `tiff`), `quality` (1 to 100, JPEG and GIF),
-  `file` (a name inside the folder to write; its extension also picks the
-  format), `suffix` (write one file per image beside the source, such as
+  `file` (a name inside the folder to write, with a png, jpg, webp, gif, bmp
+  or tif extension or none; the extension also picks the format), `suffix` (write one file per image beside the source, such as
   `_small`), `overwrite` (default `false`), `part` (attach the image to the
   result; default: yes unless a file is written) and `keep_icc` (keep the
   colour profile where the format can carry it).

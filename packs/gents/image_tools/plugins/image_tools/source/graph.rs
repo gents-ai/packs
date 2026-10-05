@@ -106,8 +106,7 @@ fn request(f: &Map<String, Value>) -> Result<Value, String> {
 /// Splits a job into the chunks that cover every image once.
 fn plan(job: &Map<String, Value>) -> Result<String, String> {
     let req = request(job)?;
-    let input: Input =
-        serde_json::from_value(req.clone()).map_err(|e| format!("the job is not valid: {e}"))?;
+    let input: Input = crate::typed::from_value(req.clone(), "the job", &[])?;
     let steps = input.plan()?;
     let files: Vec<String> = job
         .get("files")
@@ -202,8 +201,7 @@ fn run_chunk(f: Map<String, Value>, chunk: u64) -> Result<String, String> {
         .to_owned();
     let outcome = request(&f).and_then(|mut req| {
         req["page_bytes"] = json!(RUN_PAGE_BYTES);
-        let input: Input =
-            serde_json::from_value(req).map_err(|e| format!("the chunk is not valid: {e}"))?;
+        let input: Input = crate::typed::from_value(req, "the chunk", &[])?;
         run::run(&input)
     });
     let done = match outcome {

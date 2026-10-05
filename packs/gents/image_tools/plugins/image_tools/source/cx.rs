@@ -67,6 +67,26 @@ pub struct Cx {
     pub started: Instant,
 }
 
+/// The format an output file name's extension names: `None` when it has none (the format
+/// then decides it), an error when it is not an image extension or the name is a folder.
+fn file_format(name: &str) -> Result<Option<Format>, String> {
+    if name.ends_with('/') {
+        return Err(format!(
+            "{name} names a folder; give a file name such as out.png"
+        ));
+    }
+    match std::path::Path::new(name).extension() {
+        None => Ok(None),
+        Some(e) => Format::parse(&e.to_string_lossy())
+            .map(Some)
+            .ok_or_else(|| {
+                format!(
+                    "{name} does not end in an image extension; use a png, jpg, webp, gif, bmp or tif extension"
+                )
+            }),
+    }
+}
+
 impl Cx {
     /// A fresh call state.
     pub fn new(root: Option<PathBuf>, output: Output, budget: usize) -> Self {
@@ -110,12 +130,13 @@ impl Cx {
             .as_deref()
             .map(crate::input::parse_format)
             .transpose()?;
-        let by_ext = self.output.file.as_deref().and_then(|f| {
-            std::path::Path::new(f)
-                .extension()
-                .and_then(|e| e.to_str())
-                .and_then(Format::parse)
-        });
+        let by_ext = self
+            .output
+            .file
+            .as_deref()
+            .map(file_format)
+            .transpose()?
+            .flatten();
         match (named, by_ext) {
             (Some(a), Some(b)) if a != b => Err(format!(
                 "output.file ends in .{} but output.format is {a}; make them agree",
@@ -152,7 +173,7 @@ impl Cx {
         let name = match (&o.file, &o.suffix) {
             (Some(f), _) => {
                 let (stem, ext) = stem_ext(f);
-                if let Some(named) = Format::parse(&ext)
+                if let Some(named) = file_format(f)?
                     && named != format
                 {
                     return Err(format!(
@@ -371,6 +392,47 @@ mod tests {
             "{v}"
         );
         assert!(c.parts.is_empty());
+    }
+
+    #[test]
+    fn an_output_name_must_end_in_an_image_extension_and_name_a_file() {
+        let d = dir("ext");
+        let named = |f: &str| Output {
+            file: Some(f.into()),
+            ..Output::default()
+        };
+        for bad in ["x.txt", "x.pdf", "a/b.svg", "x.png.bak", "x.", "sub/"] {
+            let c = cx(named(bad), Some(d.clone()));
+            let by_format = c.format().err();
+            let by_deliver =
+                match cx(named(bad), Some(d.clone())).deliver(prep(4, Format::Png), "a", None) {
+                    Err(Fail::Msg(m)) => Some(m),
+                    _ => None,
+                };
+            for e in [by_format, by_deliver] {
+                let e = e.unwrap_or_else(|| panic!("{bad} was accepted"));
+                assert!(
+                    e.contains("image extension") || e.contains("names a folder"),
+                    "{bad}: {e}"
+                );
+            }
+        }
+        assert!(!d.join("x.txt").exists() && !d.join("sub.png").exists());
+        // Every image extension in any case is fine, and a name without one takes the format's.
+        for (name, format, want) in [
+            ("x.JPG", Format::Jpeg, "x.JPG"),
+            ("x.tif", Format::Tiff, "x.tif"),
+            ("x.tiff", Format::Tiff, "x.tiff"),
+            ("x.webp", Format::Webp, "x.webp"),
+            ("x", Format::Png, "x.png"),
+            ("deep/y", Format::Gif, "deep/y.gif"),
+        ] {
+            let v = cx(named(name), Some(d.clone()))
+                .deliver(prep(4, format), "a", None)
+                .ok()
+                .unwrap();
+            assert_eq!(v["file"], want, "{name}");
+        }
     }
 
     #[test]

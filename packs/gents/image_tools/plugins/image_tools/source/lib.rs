@@ -49,6 +49,7 @@ mod step_tests;
 #[cfg(test)]
 mod testkit;
 mod tile;
+mod typed;
 
 /// Reads one request from standard input, runs it and prints the result; on failure prints one
 /// sentence on standard error and exits non-zero.
@@ -82,7 +83,8 @@ fn run_text(raw: &str) -> Result<String, String> {
     if let Some(out) = graph::run_node(raw) {
         return out;
     }
-    let input: input::Input =
-        serde_json::from_str(raw).map_err(|e| format!("the request is not valid: {e}"))?;
+    let value: serde_json::Value = serde_json::from_str(raw)
+        .map_err(|_| "the request is not valid JSON; send one JSON object".to_string())?;
+    let input: input::Input = typed::from_value(value, "the request", &[])?;
     run::execute(&input)
 }

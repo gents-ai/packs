@@ -339,7 +339,7 @@ fn parse_op(v: &Value, label: &str) -> Result<Op, String> {
     // `contact_sheet` is another name for `montage`.
     let mut step = v.clone();
     step["op"] = Value::from(name);
-    serde_json::from_value(step).map_err(|e| format!("{label} ({name}) is not valid: {e}"))
+    crate::typed::from_value(step, &format!("{label} ({name})"), &["op"])
 }
 
 /// The format named `name`, or a sentence listing the choices.
@@ -696,6 +696,26 @@ mod tests {
         assert_eq!(e, "ops must hold between 1 and 16 steps");
         let e = plan(json!({"path": "/x", "ops": steps(0)})).err().unwrap();
         assert_eq!(e, "ops must hold between 1 and 16 steps");
+    }
+
+    #[test]
+    fn bad_numeric_options_are_one_sentence_without_a_type_name() {
+        for (v, want) in [
+            (
+                json!({"path": "/x", "op": "resize", "width": -5}),
+                "step 1 (resize) is not valid: width must be a whole number from 0 to 4294967295",
+            ),
+            (
+                json!({"path": "/x", "op": "resize", "width": 1000.0}),
+                "step 1 (resize) is not valid: width must be a whole number from 0 to 4294967295",
+            ),
+            (
+                json!({"path": "/x", "ops": [{"op": "info"}, {"op": "crop", "x": 0, "y": "top", "width": 1, "height": 1}]}),
+                "step 2 (crop) is not valid: y must be a whole number from 0 to 4294967295",
+            ),
+        ] {
+            assert_eq!(plan(v).err().unwrap(), want);
+        }
     }
 
     #[test]

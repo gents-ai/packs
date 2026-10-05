@@ -222,7 +222,7 @@
             "type": "string"
           },
           "op": {
-            "description": "The step to run when you give one: info, view, resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile, montage, annotate, diff, palette, decode_codes or hash. Its options sit beside it.",
+            "description": "The step to run when you give one: info, view, resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile, montage (or contact_sheet), annotate, diff, palette, decode_codes or hash. Its options sit beside it.",
             "enum": [
               "info",
               "view",
@@ -235,6 +235,7 @@
               "strip_metadata",
               "tile",
               "montage",
+              "contact_sheet",
               "annotate",
               "diff",
               "palette",
@@ -536,7 +537,7 @@
             "type": "string"
           },
           "op": {
-            "description": "The step to run when you give one: info, view, resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile, montage, annotate, diff, palette, decode_codes or hash. Its options sit beside it.",
+            "description": "The step to run when you give one: info, view, resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile, montage (or contact_sheet), annotate, diff, palette, decode_codes or hash. Its options sit beside it.",
             "enum": [
               "info",
               "view",
@@ -549,6 +550,7 @@
               "strip_metadata",
               "tile",
               "montage",
+              "contact_sheet",
               "annotate",
               "diff",
               "palette",
