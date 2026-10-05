@@ -351,6 +351,7 @@ builds.
 | Pack | Purpose |
 | --- | --- |
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
+| [charts](packs/gents/charts/README.md) | A Chart maker agent and charts plugins that draw line, area, bar, scatter, bubble, histogram, box, pie, donut, heatmap and combo charts from rows or CSV and JSON files as SVG and PNG |
 | [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
