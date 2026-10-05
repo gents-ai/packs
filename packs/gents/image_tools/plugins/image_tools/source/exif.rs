@@ -310,6 +310,26 @@ mod tests {
     }
 
     #[test]
+    fn a_directory_claiming_65535_entries_is_read_up_to_4096_and_no_further() {
+        // `n` filler entries with the orientation entry (6) at index `at`; the count field says 65535.
+        let block = |n: usize, at: usize| {
+            let mut e = vec![(0x0100u16, 4u16, 1u32, [0u8; 4]); n];
+            e[at] = (0x0112, 3, 1, [0, 6, 0, 0]);
+            let mut b = big_endian(&e);
+            b[8..10].copy_from_slice(&u16::MAX.to_be_bytes());
+            b
+        };
+        let last_read = facts(&block(4097, 4095)).expect("the first 4096 entries are read");
+        assert_eq!(
+            last_read.orientation,
+            Some(6),
+            "entry 4096 is inside the cap"
+        );
+        let first_cut = facts(&block(4097, 4096)).expect("the cap stops the read, not fails it");
+        assert_eq!(first_cut.orientation, None, "entry 4097 is beyond the cap");
+    }
+
+    #[test]
     fn the_block_may_start_inside_a_larger_buffer() {
         let mut file = vec![0xAA; 37];
         file.extend(exif_block(Some(3), None));

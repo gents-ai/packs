@@ -535,6 +535,33 @@ mod tests {
     }
 
     #[test]
+    fn a_files_list_of_the_cap_is_accepted_and_one_more_is_refused() {
+        let d = dir("filescap");
+        let names = |n: usize| (0..n).map(|i| format!("f{i}.png")).collect::<Vec<_>>();
+        let ok = resolve(d.to_str(), &names(MAX_FILES), None, None).unwrap();
+        assert_eq!(ok.sources.len(), MAX_FILES);
+        let e = resolve(d.to_str(), &names(MAX_FILES + 1), None, None)
+            .err()
+            .unwrap();
+        assert_eq!(e, "files lists more than 10000 names; list fewer");
+    }
+
+    #[test]
+    fn a_listing_of_the_cap_is_accepted_and_one_more_image_is_refused() {
+        let d = dir("listcap");
+        for i in 0..MAX_FILES {
+            std::fs::write(d.join(format!("f{i:05}.png")), PNG).unwrap();
+        }
+        assert_eq!(
+            resolve(d.to_str(), &[], None, None).unwrap().sources.len(),
+            MAX_FILES
+        );
+        std::fs::write(d.join("one_more.png"), PNG).unwrap();
+        let e = resolve(d.to_str(), &[], None, None).err().unwrap();
+        assert!(e.contains("holds more than 10000 images"), "{e}");
+    }
+
+    #[test]
     fn an_empty_folder_and_a_missing_path_are_one_sentence() {
         let d = dir("empty");
         let e = resolve(d.to_str(), &[], None, None).err().unwrap();

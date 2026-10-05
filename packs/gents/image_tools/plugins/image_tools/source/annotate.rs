@@ -32,6 +32,11 @@ fn misses(img: &Img, x: i64, y: i64, w: i64, h: i64) -> bool {
     x + w <= 0 || y + h <= 0 || x >= i64::from(img.w) || y >= i64::from(img.h)
 }
 
+/// Glyph scale for text on `img`: doubled once the longer side reaches 800 pixels.
+fn text_scale(img: &Img) -> u32 {
+    if img.w.max(img.h) >= 800 { 2 } else { 1 }
+}
+
 /// Draws `shapes` on `img`.
 pub fn apply(img: &mut Img, shapes: &[Shape]) -> Report {
     let mut report = Report {
@@ -73,7 +78,7 @@ pub fn apply(img: &mut Img, shapes: &[Shape]) -> Report {
                     stroke,
                 );
                 if let Some(text) = label {
-                    let scale = if img.w.max(img.h) >= 800 { 2 } else { 1 };
+                    let scale = text_scale(img);
                     let (_, th) = draw::text_size(text, scale);
                     // Above the box when there is room, else just inside its top edge.
                     let ty = if *y >= i64::from(th) + 2 {
@@ -131,7 +136,7 @@ pub fn apply(img: &mut Img, shapes: &[Shape]) -> Report {
                 background,
                 scale,
             } => {
-                let scale = scale.unwrap_or(if img.w.max(img.h) >= 800 { 2 } else { 1 });
+                let scale = scale.unwrap_or_else(|| text_scale(img));
                 let fg = colour(color, [0, 0, 0, 255]);
                 let bg = background
                     .as_ref()
@@ -291,6 +296,86 @@ mod tests {
         assert_eq!(r.outside, vec![0, 2, 3, 4]);
         assert_eq!(r.shapes, 1);
         assert_eq!(img.get(2, 2), [255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn a_shape_is_outside_exactly_when_it_starts_at_or_past_the_far_edge_or_ends_at_the_near_one() {
+        let outside = |shape: serde_json::Value| {
+            let mut img = white(20, 10);
+            let r = apply(&mut img, &shapes(serde_json::json!([shape])));
+            (
+                r.outside.len() == 1,
+                img.px.chunks(4).any(|p| p != [255, 255, 255, 255]),
+            )
+        };
+        let boxed = |x: i64, y: i64| serde_json::json!({"type": "box", "x": x, "y": y, "width": 5, "height": 5});
+        assert_eq!(outside(boxed(20, 0)), (true, false), "x == width");
+        assert_eq!(
+            outside(boxed(19, 0)),
+            (false, true),
+            "x == width - 1 draws its first column"
+        );
+        assert_eq!(outside(boxed(0, 10)), (true, false), "y == height");
+        assert_eq!(outside(boxed(0, 9)), (false, true), "y == height - 1");
+        assert_eq!(outside(boxed(-5, 0)), (true, false), "ends at x == 0");
+        assert_eq!(outside(boxed(-4, 0)), (false, true), "one column inside");
+        assert_eq!(outside(boxed(0, -5)), (true, false));
+        assert_eq!(outside(boxed(0, -4)), (false, true));
+        let line =
+            |x0: i64, x1: i64| serde_json::json!({"type": "line", "from": [x0, 2], "to": [x1, 2]});
+        assert_eq!(
+            outside(line(20, 30)).0,
+            true,
+            "a segment starting at x == width"
+        );
+        assert_eq!(outside(line(19, 30)).0, false);
+        assert_eq!(outside(line(-3, -1)).0, true);
+        assert_eq!(outside(line(-3, 0)).0, false);
+    }
+
+    /// Rows in column `x` that are not white: the label's text box, whatever glyph is in it.
+    fn painted_rows(img: &Img, x: u32) -> usize {
+        (0..img.h)
+            .filter(|&y| img.get(x, y) != [255, 255, 255, 255])
+            .count()
+    }
+
+    #[test]
+    fn label_text_doubles_at_800_pixels_for_both_label_kinds() {
+        for (long_side, scale) in [(799, 1), (800, 2), (801, 2)] {
+            let mut img = white(long_side, 40);
+            apply(
+                &mut img,
+                &shapes(serde_json::json!([
+                {"type": "label", "x": 0, "y": 0, "text": "H", "background": "yellow"}])),
+            );
+            assert_eq!(
+                painted_rows(&img, 0),
+                8 * scale,
+                "label shape at {long_side}"
+            );
+            // A box label sits above its box, painted in the box colour behind the text.
+            let mut img = white(long_side, 40);
+            apply(
+                &mut img,
+                &shapes(serde_json::json!([
+                {"type": "box", "x": 0, "y": 30, "width": 6, "height": 6, "thickness": 1, "color": "#ffdc00", "label": "H"}])),
+            );
+            let th = 8 * scale;
+            assert_eq!(
+                painted_rows(&img, 0),
+                th + 6,
+                "box label at {long_side}: text rows plus the 6 outline rows"
+            );
+        }
+        // An explicit scale wins over the size rule.
+        let mut img = white(900, 40);
+        apply(
+            &mut img,
+            &shapes(serde_json::json!([
+            {"type": "label", "x": 0, "y": 0, "text": "H", "background": "yellow", "scale": 1}])),
+        );
+        assert_eq!(painted_rows(&img, 0), 8);
     }
 
     #[test]

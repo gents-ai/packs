@@ -310,6 +310,18 @@ fn a_header_claiming_a_huge_size_is_refused_before_any_allocation() {
 }
 
 #[test]
+fn a_header_at_the_side_cap_reads_and_one_pixel_more_is_refused() {
+    let h = header(&mem(fx::png_claiming(32_768, 1))).unwrap();
+    assert_eq!((h.width, h.height), (32_768, 1));
+    let e = header(&mem(fx::png_claiming(32_769, 1))).err().unwrap();
+    assert!(e.contains("limit"), "{e}");
+    let e = header(&mem(fx::png_claiming(1, 32_769))).err().unwrap();
+    assert!(e.contains("limit"), "{e}");
+    assert!(header(&mem(fx::png_claiming(10_000, 5_000))).is_ok());
+    assert!(header(&mem(fx::png_claiming(10_001, 5_000))).is_err());
+}
+
+#[test]
 fn the_size_limit_sentence_names_the_limit() {
     let e = header(&mem(fx::png_claiming(30_000, 30_000)))
         .err()

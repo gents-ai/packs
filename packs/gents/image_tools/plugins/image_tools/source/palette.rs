@@ -239,6 +239,15 @@ mod tests {
     }
 
     #[test]
+    fn alpha_127_is_transparent_and_alpha_128_is_counted() {
+        let mut img = Img::filled(3, 1, [9, 9, 9, 255]).unwrap();
+        img.px[3] = 127;
+        img.px[7] = 128;
+        let p = palette(&img, 3);
+        assert_eq!((p.counted, p.transparent), (2, 1));
+    }
+
+    #[test]
     fn the_same_pixels_give_the_same_palette() {
         let img = crate::fixtures::scene(64, 48);
         let img = Img::from_raw(64, 48, img.into_raw()).unwrap();

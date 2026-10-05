@@ -339,6 +339,41 @@ mod tests {
     }
 
     #[test]
+    fn a_part_of_exactly_the_room_is_attached_and_one_byte_more_is_not() {
+        let mut c = cx(Output::default(), None);
+        c.json_bytes = 3_800_000 - OVERHEAD_BYTES - 40;
+        let room = c.room();
+        assert_eq!(room, 30);
+        let v = c.deliver(prep(room, Format::Png), "a", None).ok().unwrap();
+        assert_eq!(v["part"], 0, "{v}");
+        assert_eq!(c.parts.len(), 1);
+        // The part now uses the room up: the next byte does not fit and is refused.
+        let before = c.room();
+        assert!(matches!(
+            c.deliver(prep(before + 1, Format::Png), "a", None),
+            Err(Fail::Over(n)) if n == before + 1
+        ));
+        // With a file to fall back on, the same size is written and reported not attached.
+        let d = dir("room");
+        let out = Output {
+            file: Some("r.png".into()),
+            part: Some(true),
+            ..Output::default()
+        };
+        let mut c = cx(out, Some(d));
+        c.json_bytes = 3_800_000 - OVERHEAD_BYTES - 40;
+        let v = c
+            .deliver(prep(room + 1, Format::Png), "a", None)
+            .ok()
+            .unwrap();
+        assert!(
+            v.get("part").is_none() && v["not_attached"].is_string(),
+            "{v}"
+        );
+        assert!(c.parts.is_empty());
+    }
+
+    #[test]
     fn writing_needs_a_bound_folder_and_never_leaves_it() {
         let out = Output {
             file: Some("x.png".into()),

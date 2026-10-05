@@ -249,6 +249,10 @@ mod tests {
         assert_eq!(fill_dims(400, 200, 100, 100), ((200, 100), (50, 0)));
         assert_eq!(fill_dims(200, 400, 100, 100), ((100, 200), (0, 50)));
         assert_eq!(fill_dims(100, 100, 50, 50), ((50, 50), (0, 0)));
+        // An odd remainder rounds the centring offset down.
+        assert_eq!(fill_dims(32, 24, 10, 10), ((13, 10), (1, 0)));
+        assert_eq!(fill_dims(24, 32, 10, 10), ((10, 13), (0, 1)));
+        assert_eq!(fill_dims(40, 30, 20, 10), ((20, 15), (0, 2)));
         let ((cw, ch), (ox, oy)) = fill_dims(333, 111, 50, 70);
         assert!(cw >= 50 && ch >= 70 && ox + 50 <= cw && oy + 70 <= ch);
     }

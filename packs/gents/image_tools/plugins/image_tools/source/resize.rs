@@ -212,6 +212,30 @@ mod tests {
     }
 
     #[test]
+    fn fit_to_exactly_the_current_size_is_unchanged_and_one_pixel_less_shrinks() {
+        let run = |w, h| apply(solid(40, 20, [1, 2, 3, 255]), &spec(Mode::Fit, w, h)).unwrap();
+        for (w, h) in [(Some(40), None), (None, Some(20)), (Some(40), Some(20))] {
+            let (img, changed) = run(w, h);
+            assert!(!changed, "{w:?} x {h:?}");
+            assert_eq!((img.w, img.h), (40, 20));
+        }
+        assert_eq!(
+            plan(40, 20, &spec(Mode::Fit, Some(40), None)).unwrap(),
+            None
+        );
+        assert_eq!(
+            plan(40, 20, &spec(Mode::Fit, None, Some(20))).unwrap(),
+            None
+        );
+        let (img, changed) = run(Some(39), None);
+        assert!(changed);
+        assert_eq!((img.w, img.h), (39, 20), "19.5 rounds up");
+        let (img, changed) = run(None, Some(19));
+        assert!(changed);
+        assert_eq!((img.w, img.h), (38, 19));
+    }
+
+    #[test]
     fn exact_stretches_and_fill_covers_then_crops_the_centre() {
         let (img, _) = apply(
             solid(40, 20, [5, 5, 5, 255]),

@@ -677,8 +677,25 @@ mod tests {
         );
         let e = plan(json!({"path": "/x", "op": "sharpen"})).err().unwrap();
         assert!(e.contains("unknown op") && e.contains("palette"), "{e}");
-        let many: Vec<Value> = (0..17).map(|_| json!({"op": "info"})).collect();
-        assert!(plan(json!({"path": "/x", "ops": many})).is_err());
+        let steps = |n: usize| -> Vec<Value> { (0..n).map(|_| json!({"op": "info"})).collect() };
+        assert_eq!(
+            plan(json!({"path": "/x", "ops": steps(1)}))
+                .unwrap()
+                .ops
+                .len(),
+            1
+        );
+        assert_eq!(
+            plan(json!({"path": "/x", "ops": steps(16)}))
+                .unwrap()
+                .ops
+                .len(),
+            16
+        );
+        let e = plan(json!({"path": "/x", "ops": steps(17)})).err().unwrap();
+        assert_eq!(e, "ops must hold between 1 and 16 steps");
+        let e = plan(json!({"path": "/x", "ops": steps(0)})).err().unwrap();
+        assert_eq!(e, "ops must hold between 1 and 16 steps");
     }
 
     #[test]

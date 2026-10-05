@@ -219,6 +219,12 @@ mod tests {
         let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0];
         assert_eq!(Format::sniff(&png), Some(Format::Png));
         assert_eq!(Format::sniff(&[0xFF, 0xD8, 0xFF, 0xE0]), Some(Format::Jpeg));
+        assert_eq!(
+            Format::sniff(&[0xFF, 0xD8, 0x00, 0xE0]),
+            None,
+            "FF D8 alone is not enough"
+        );
+        assert_eq!(Format::sniff(&[0xFF, 0xD8]), None);
         assert_eq!(Format::sniff(b"GIF89a.."), Some(Format::Gif));
         assert_eq!(Format::sniff(b"GIF87a.."), Some(Format::Gif));
         assert_eq!(Format::sniff(b"BM\0\0"), Some(Format::Bmp));
@@ -249,6 +255,22 @@ mod tests {
         assert!(check_size(7000, 7000).is_ok());
         assert!(Img::new(1, 1).is_ok());
         assert!(Img::from_raw(2, 2, vec![0; 15]).is_err());
+    }
+
+    #[test]
+    fn the_pixel_and_side_caps_are_exact_at_their_boundaries() {
+        // 50,000,000 pixels exactly is accepted, one more row is not.
+        assert!(check_size(10_000, 5_000).is_ok());
+        assert!(check_size(10_001, 5_000).is_err());
+        assert!(check_size(10_000, 5_001).is_err());
+        assert!(check_size(5_000, 10_000).is_ok());
+        // The side cap is 32768 and applies to either side.
+        assert!(check_size(MAX_SIDE, 1).is_ok());
+        assert!(check_size(1, MAX_SIDE).is_ok());
+        assert!(check_size(MAX_SIDE + 1, 1).is_err());
+        assert!(check_size(1, MAX_SIDE + 1).is_err());
+        let e = check_size(10_001, 5_000).unwrap_err();
+        assert!(e.contains("10001x5000") && e.contains("50000000"), "{e}");
     }
 
     #[test]

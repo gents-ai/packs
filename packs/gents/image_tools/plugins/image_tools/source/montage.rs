@@ -355,6 +355,35 @@ mod tests {
     }
 
     #[test]
+    fn label_text_doubles_at_a_cell_of_192() {
+        assert_eq!([191, 192, 193].map(label_scale), [1, 2, 2]);
+        // The strip under a cell is the glyph height plus 4 px of padding.
+        let s = [solid("a.png", 8, 8, [0, 0, 0, 255])];
+        let strip = |cell| {
+            let with = make(&s, &spec(cell, 2, true), 0, true).unwrap();
+            let without = make(&s, &spec(cell, 2, false), 0, true).unwrap();
+            with.img.h - without.img.h
+        };
+        assert_eq!([191, 192, 193].map(strip), [12, 20, 20]);
+    }
+
+    #[test]
+    fn a_montage_of_exactly_the_cap_is_made_and_one_more_is_refused() {
+        let at = |n: usize| -> Vec<Source> {
+            (0..n)
+                .map(|i| solid(&format!("{i}.png"), 2, 2, [0, 0, 0, 255]))
+                .collect()
+        };
+        let sheet = make(&at(MAX_IMAGES), &spec(16, 2, false), 0, true).unwrap();
+        assert_eq!(sheet.cells.len(), MAX_IMAGES);
+        assert!(sheet.cells.iter().all(|c| c.error.is_none()));
+        let e = make(&at(MAX_IMAGES + 1), &spec(16, 2, false), 0, true)
+            .err()
+            .unwrap();
+        assert!(e.contains("between 1 and 400"), "{e}");
+    }
+
+    #[test]
     fn non_ascii_names_are_noted() {
         let s = [solid("caf\u{e9}.png", 4, 4, [0, 0, 0, 255])];
         let sheet = make(&s, &spec(64, 2, true), 0, true).unwrap();
