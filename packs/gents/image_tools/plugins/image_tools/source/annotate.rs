@@ -323,14 +323,10 @@ mod tests {
         assert_eq!(outside(boxed(0, -4)), (false, true));
         let line =
             |x0: i64, x1: i64| serde_json::json!({"type": "line", "from": [x0, 2], "to": [x1, 2]});
-        assert_eq!(
-            outside(line(20, 30)).0,
-            true,
-            "a segment starting at x == width"
-        );
-        assert_eq!(outside(line(19, 30)).0, false);
-        assert_eq!(outside(line(-3, -1)).0, true);
-        assert_eq!(outside(line(-3, 0)).0, false);
+        assert!(outside(line(20, 30)).0, "a segment starting at x == width");
+        assert!(!outside(line(19, 30)).0);
+        assert!(outside(line(-3, -1)).0);
+        assert!(!outside(line(-3, 0)).0);
     }
 
     /// Rows in column `x` that are not white: the label's text box, whatever glyph is in it.
