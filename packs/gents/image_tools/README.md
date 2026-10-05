@@ -16,7 +16,7 @@ results as files, and a ready-made **Image helper** agent that uses them.
 | `crop`, `rotate`, `flip`, `auto_orient` | Exact pixel transforms; all eight Exif orientations |
 | `convert`, `strip_metadata` | PNG, JPEG, WebP lossless, GIF, BMP, TIFF; metadata-free output, ICC kept on request |
 | `tile` | Overlapping tiles of a large picture plus an index picture, paged by cursor |
-| `montage` | Several images in one labelled grid |
+| `montage` (or `contact_sheet`) | Several images in one labelled grid |
 | `annotate` | Boxes, labels, arrows and lines from pixel coordinates |
 | `diff` | Changed-pixel share, structural similarity, boxes of the changed regions and a highlighted picture, with tolerance and ignored regions |
 | `palette` | Dominant colours and their share |
@@ -96,7 +96,10 @@ and `name`.
 | `image-run` | one `ImageChunk` | `ImageResult` (one), `ImageOutput` (many) |
 
 `ops` is text: a JSON array of steps, one step object, or one op name such as
-`view`. Every record also has `run_id`, `chunk` and `source`.
+`view`. Every record also has `run_id`, `chunk` and `source`. A chunk's `path`
+is the path the host bound for the job, so the chunk can bind it again.
+(The shell snippet above was not run as written; `tests/graph_folder.json` and
+`tests/graph_file.json` run the same nodes through a real server.)
 
 | Record | Fields |
 | --- | --- |
