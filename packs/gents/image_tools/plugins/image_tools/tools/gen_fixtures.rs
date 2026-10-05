@@ -118,6 +118,8 @@ fn main() {
     let photo = RgbaImage::from_fn(48, 32, |x, y| Rgba([(x * 5) as u8, (y * 7) as u8, 90, 255]));
     let jpg = fx::jpeg_with_icc(&fx::jpeg_with_exif(&fx::jpeg(&photo, 88), &exif), &profile);
     put(&root, "photo_meta.jpg", &jpg);
+    put(&root, "photo_icc.tif", &fx::tiff_rgb(&photo, &profile));
+    put(&root, "transparent.gif", &fx::gif_1x1(true));
     let png = fx::png_with_chunks(
         &fx::png(&photo),
         &[fx::png_icc_chunk(&profile), fx::png_exif_chunk(&exif)],

@@ -134,18 +134,36 @@ pub fn header(src: &Source) -> Result<Header, String> {
         exif = exif::read_facts(&mut src.open()?, 0)
             .filter(|f| f.orientation.is_some() || f.has_exif_ifd || f.has_gps);
     }
-    let icc = dec.icc_profile().unwrap_or_else(|_| {
+    let mut icc = dec.icc_profile().unwrap_or_else(|_| {
         warnings.push("the ICC profile could not be read".into());
         None
     });
+    if format == Format::Tiff {
+        // The decoder does not hand out a TIFF's profile; it is tag 34675 of the first directory.
+        match exif::tiff_icc(&mut src.open()?) {
+            exif::Icc::Found(p) => icc = Some(p),
+            exif::Icc::Absent => {}
+            exif::Icc::Unreadable => {
+                warnings.push("the ICC profile could not be read".into());
+            }
+        }
+    }
     let xmp = matches!(dec.xmp_metadata(), Ok(Some(_)));
     drop(dec);
-    let frames = match format {
-        Format::Gif => gif_frames(&mut src.open()?),
-        Format::Webp => webp_frames(&mut src.open()?),
-        _ => 1,
+    let (mut frames, mut ext) = (1, ext);
+    match format {
+        Format::Gif => {
+            let (n, transparent) = gif_frames(&mut src.open()?);
+            frames = n;
+            // The decoder always reports GIF as RGBA; the file has alpha only when a frame says so.
+            if !transparent {
+                ext = ExtendedColorType::Rgb8;
+            }
+        }
+        Format::Webp => frames = webp_frames(&mut src.open()?),
+        _ => {}
     }
-    .max(1);
+    let frames = frames.max(1);
     Ok(Header {
         format,
         width,
@@ -191,8 +209,9 @@ fn bit_depth(c: ExtendedColorType) -> u32 {
     u32::from(c.bits_per_pixel()) / ch
 }
 
-/// Counts the image frames of a GIF by walking its blocks, without decoding them.
-fn gif_frames<R: Read + Seek>(r: &mut R) -> u32 {
+/// Counts the image frames of a GIF by walking its blocks, without decoding them, and
+/// says whether any frame's graphic control block sets a transparent colour.
+fn gif_frames<R: Read + Seek>(r: &mut R) -> (u32, bool) {
     fn skip_sub_blocks<R: Read + Seek>(r: &mut R) -> Option<()> {
         loop {
             let mut n = [0u8; 1];
@@ -203,17 +222,17 @@ fn gif_frames<R: Read + Seek>(r: &mut R) -> u32 {
             r.seek(SeekFrom::Current(i64::from(n[0]))).ok()?;
         }
     }
-    let walk = |r: &mut R| -> Option<u32> {
+    let walk = |r: &mut R| -> Option<(u32, bool)> {
         let mut head = [0u8; 13];
         r.read_exact(&mut head).ok()?;
         if head[10] & 0x80 != 0 {
             r.seek(SeekFrom::Current(3 << ((head[10] & 7) + 1))).ok()?;
         }
-        let mut frames = 0u32;
+        let (mut frames, mut transparent) = (0u32, false);
         loop {
             let mut b = [0u8; 1];
             if r.read_exact(&mut b).is_err() {
-                return Some(frames);
+                return Some((frames, transparent));
             }
             match b[0] {
                 0x2C => {
@@ -227,15 +246,19 @@ fn gif_frames<R: Read + Seek>(r: &mut R) -> u32 {
                     frames = frames.saturating_add(1);
                 }
                 0x21 => {
-                    r.seek(SeekFrom::Current(1)).ok()?;
+                    // Label, first block length, and for a graphic control block its flags.
+                    let mut l = [0u8; 3];
+                    r.read_exact(&mut l).ok()?;
+                    transparent |= l[0] == 0xF9 && l[1] >= 1 && l[2] & 1 == 1;
+                    r.seek(SeekFrom::Current(-2)).ok()?;
                     skip_sub_blocks(r)?;
                 }
-                _ => return Some(frames),
+                _ => return Some((frames, transparent)),
             }
         }
     };
     r.seek(SeekFrom::Start(0)).ok();
-    walk(r).unwrap_or(1)
+    walk(r).unwrap_or((1, false))
 }
 
 /// Counts the frames of an animated WebP from its `ANMF` chunks.

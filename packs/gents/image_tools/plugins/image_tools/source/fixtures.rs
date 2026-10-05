@@ -452,3 +452,66 @@ pub fn jpeg_claiming(w: u16, h: u16) -> Vec<u8> {
     out.extend([1, 1, 0x11, 0, 0xFF, 0xD9]);
     out
 }
+
+/// A 1x1 GIF with a global colour table; `transparent` sets the transparent-colour flag
+/// of its graphic control block, so the file does or does not have alpha.
+pub fn gif_1x1(transparent: bool) -> Vec<u8> {
+    let mut out = b"GIF89a".to_vec();
+    out.extend([1, 0, 1, 0, 0x80, 0, 0, 0xFF, 0x80, 0x00, 0, 0, 0]);
+    out.extend([0x21, 0xF9, 4, u8::from(transparent), 0, 0, 0, 0]);
+    out.extend([0x2C, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 1, 0, 0x3B]);
+    out
+}
+
+/// A little-endian uncompressed RGB TIFF of `img` whose first directory carries `profile` as its
+/// ICC profile (tag 34675), or none when `profile` is empty.
+pub fn tiff_rgb(img: &RgbaImage, profile: &[u8]) -> Vec<u8> {
+    let (w, h) = img.dimensions();
+    let pixels: Vec<u8> = img.pixels().flat_map(|p| [p[0], p[1], p[2]]).collect();
+    let n: u32 = if profile.is_empty() { 9 } else { 10 };
+    // Header (8) + entry count (2) + entries + next-directory offset (4), then the 6 bytes of
+    // BitsPerSample, the profile and the pixels.
+    let bps_at = 8 + 2 + 12 * n + 4;
+    let icc_at = bps_at + 6;
+    // A profile of 4 bytes or fewer is stored in the entry's value field, not after the directory.
+    let inline = profile.len() <= 4;
+    let strip_at = icc_at + if inline { 0 } else { profile.len() as u32 };
+    let mut out = vec![b'I', b'I', 42, 0, 8, 0, 0, 0];
+    out.extend((n as u16).to_le_bytes());
+    let mut entry = |tag: u16, kind: u16, count: u32, value: u32| {
+        out.extend(tag.to_le_bytes());
+        out.extend(kind.to_le_bytes());
+        out.extend(count.to_le_bytes());
+        out.extend(value.to_le_bytes());
+    };
+    entry(256, 4, 1, w);
+    entry(257, 4, 1, h);
+    entry(258, 3, 3, bps_at);
+    entry(259, 3, 1, 1);
+    entry(262, 3, 1, 2);
+    entry(273, 4, 1, strip_at);
+    entry(277, 3, 1, 3);
+    entry(278, 4, 1, h);
+    entry(279, 4, 1, pixels.len() as u32);
+    if !profile.is_empty() {
+        let mut value = [0u8; 4];
+        value[..profile.len().min(4)].copy_from_slice(&profile[..profile.len().min(4)]);
+        entry(
+            34675,
+            7,
+            profile.len() as u32,
+            if inline {
+                u32::from_le_bytes(value)
+            } else {
+                icc_at
+            },
+        );
+    }
+    out.extend([0u8; 4]);
+    out.extend([8, 0, 8, 0, 8, 0]);
+    if !inline {
+        out.extend(profile);
+    }
+    out.extend(pixels);
+    out
+}

@@ -8,7 +8,21 @@ use std::io::{Read, Seek, SeekFrom};
 const TAG_ORIENTATION: u16 = 0x0112;
 const TAG_EXIF_IFD: u16 = 0x8769;
 const TAG_GPS_IFD: u16 = 0x8825;
+const TAG_ICC: u16 = 0x8773;
 const MAX_ENTRIES: u16 = 4096;
+/// Largest ICC profile read out of a TIFF; real profiles are far smaller.
+const MAX_ICC_BYTES: u32 = 16 << 20;
+
+/// What the first directory of a TIFF file says about an ICC profile.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Icc {
+    /// The directory has no ICC tag, or is not a TIFF directory at all.
+    Absent,
+    /// The profile's bytes.
+    Found(Vec<u8>),
+    /// The tag is there but its bytes are out of range or cut short.
+    Unreadable,
+}
 
 /// A GPS position in decimal degrees, rounded to six decimals.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -97,6 +111,44 @@ pub fn read_facts<R: Read + Seek>(r: &mut R, base: u64) -> Option<Facts> {
         facts.position = gps_position(r, base, at, order);
     }
     Some(facts)
+}
+
+/// Reads the ICC profile (tag 34675) of the TIFF file in `r`, which holds it in the first directory.
+pub fn tiff_icc<R: Read + Seek>(r: &mut R) -> Icc {
+    let read_profile = |r: &mut R| -> Option<Icc> {
+        r.seek(SeekFrom::Start(0)).ok()?;
+        let order = match read::<4, _>(r)? {
+            [b'I', b'I', 42, 0] => Order(true),
+            [b'M', b'M', 0, 42] => Order(false),
+            _ => return Some(Icc::Absent),
+        };
+        let ifd0 = u64::from(order.u32(read(r)?));
+        let entries = directory(r, 0, ifd0, order)?;
+        let Some(e) = entries.iter().find(|e| e.tag == TAG_ICC) else {
+            return Some(Icc::Absent);
+        };
+        let len = e.count;
+        if len == 0 || len > MAX_ICC_BYTES {
+            return Some(Icc::Unreadable);
+        }
+        let mut bytes = Vec::new();
+        if len <= 4 {
+            bytes.extend_from_slice(&e.value[..len as usize]);
+        } else {
+            r.seek(SeekFrom::Start(u64::from(order.u32(e.value))))
+                .ok()?;
+            r.by_ref()
+                .take(u64::from(len))
+                .read_to_end(&mut bytes)
+                .ok()?;
+        }
+        Some(if bytes.len() == len as usize {
+            Icc::Found(bytes)
+        } else {
+            Icc::Unreadable
+        })
+    };
+    read_profile(r).unwrap_or(Icc::Unreadable)
 }
 
 fn directory<R: Read + Seek>(r: &mut R, base: u64, at: u64, order: Order) -> Option<Vec<Entry>> {

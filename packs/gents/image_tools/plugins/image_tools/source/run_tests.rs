@@ -22,7 +22,7 @@ fn info_describes_every_format_from_its_header() {
         ("scene.webp", "webp", "rgba8", true),
         ("scene.bmp", "bmp", "rgb8", false),
         ("scene.tif", "tiff", "rgb8", false),
-        ("scene.gif", "gif", "rgba8", true),
+        ("scene.gif", "gif", "rgb8", false),
     ] {
         let r = call(&on_fixture(file, json!({"op": "info"}))).unwrap();
         let s = step(&r, 0);
@@ -542,6 +542,40 @@ fn keep_icc_keeps_only_the_colour_profile() {
     let h = crate::decode::header(&src).unwrap();
     assert!(h.exif.is_none());
     assert_eq!(h.icc.map(|p| p.len()), Some(160));
+}
+
+#[test]
+fn a_tiff_icc_profile_is_reported_removed_or_kept_by_strip_metadata() {
+    let profile: Vec<u8> = (0..160u32).map(|i| (i * 7 + 3) as u8).collect();
+    let info = call(&on_fixture("photo_icc.tif", json!({"op": "info"}))).unwrap();
+    assert_eq!(
+        step(&info, 0)["icc"],
+        json!({"present": true, "bytes": 160})
+    );
+    let reparse = |r: &Value| {
+        let src = crate::src::Source {
+            name: "x".into(),
+            data: crate::src::Data::Mem(std::sync::Arc::new(part_bytes(r, 0))),
+        };
+        crate::decode::header(&src).unwrap()
+    };
+    let r = call(&on_fixture(
+        "photo_icc.tif",
+        json!({"op": "strip_metadata"}),
+    ))
+    .unwrap();
+    assert_eq!(
+        step(&r, 0)["removed"],
+        json!({"exif": false, "gps": false, "icc": true, "xmp": false})
+    );
+    assert!(reparse(&r).icc.is_none());
+    let r = call(&on_fixture(
+        "photo_icc.tif",
+        json!({"op": "strip_metadata", "keep_icc": true}),
+    ))
+    .unwrap();
+    assert_eq!(step(&r, 0)["removed"]["icc"], false);
+    assert_eq!(reparse(&r).icc.as_deref(), Some(profile.as_slice()));
 }
 
 #[test]

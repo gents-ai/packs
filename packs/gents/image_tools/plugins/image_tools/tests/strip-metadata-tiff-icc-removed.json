@@ -1,0 +1,57 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAIAAADbtmxLAAAAQElEQVR4nO3OMRHAMADEsB/SK8fyB1IIXjNIZwA+2/ds93T27iqGiqFiqBgqhoqhYqgYKoaKoWKoGCqGiqFiqPwr2gKfyDU1pgAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 4908,
+            "format": "tiff",
+            "height": 32,
+            "width": 48
+          },
+          "outputs": [
+            {
+              "bytes": 121,
+              "format": "png",
+              "height": 32,
+              "part": 0,
+              "pixels_sha256": "30011064259c4b3453b9aeb8824f46d5aa9c4944bb41221692cc52c53a52fecb",
+              "role": "result",
+              "sha256": "884be598fe9246ecbc59355c1bf993e76f79ad37209736433f7d71706f598ad2",
+              "width": 48
+            }
+          ],
+          "source": "photo_icc.tif",
+          "steps": [
+            {
+              "op": "strip_metadata",
+              "orientation_baked_in": false,
+              "removed": {
+                "exif": false,
+                "gps": false,
+                "icc": true,
+                "xmp": false
+              }
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "photo_icc.tif"
+    ],
+    "op": "strip_metadata"
+  }
+}

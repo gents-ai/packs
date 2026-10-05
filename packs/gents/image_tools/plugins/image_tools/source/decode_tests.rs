@@ -94,6 +94,77 @@ fn gray_sixteen_bit_and_alpha_colour_types_are_reported_and_decoded() {
 }
 
 #[test]
+fn a_tiff_icc_profile_is_read_from_the_first_directory() {
+    let img = fx::scene(12, 9);
+    let profile: Vec<u8> = (0..300u32).map(|i| (i * 11 + 5) as u8).collect();
+    let s = mem(fx::tiff_rgb(&img, &profile));
+    let h = header(&s).unwrap();
+    assert_eq!(h.icc.as_deref(), Some(profile.as_slice()));
+    assert!(h.warnings.is_empty(), "{:?}", h.warnings);
+    assert_eq!((h.width, h.height, h.color.as_str()), (12, 9, "rgb8"));
+    // The same file without the tag has no profile, and the pixels read the same either way.
+    let plain = mem(fx::tiff_rgb(&img, &[]));
+    assert!(header(&plain).unwrap().icc.is_none());
+    let want = decode(&plain, &header(&plain).unwrap(), &LoadOpts::default())
+        .unwrap()
+        .img;
+    assert_eq!(decode(&s, &h, &LoadOpts::default()).unwrap().img, want);
+    // A profile of 4 bytes or fewer sits inside the entry itself.
+    let tiny = mem(fx::tiff_rgb(&img, &[1, 2, 3]));
+    assert_eq!(header(&tiny).unwrap().icc, Some(vec![1, 2, 3]));
+    // Big-endian files go through the same reader.
+    assert_eq!(
+        crate::exif::tiff_icc(&mut std::io::Cursor::new(
+            b"MM\0*\0\0\0\x08\0\0\0\0\0\0".to_vec()
+        )),
+        crate::exif::Icc::Absent
+    );
+}
+
+#[test]
+fn a_tiff_icc_tag_that_points_outside_the_file_is_a_warning_not_a_failure() {
+    let mut bytes = fx::tiff_rgb(&fx::scene(6, 6), &[7u8; 64]);
+    // The profile offset is the last entry's value: point it far past the end.
+    let at = 8 + 2 + 9 * 12 + 8;
+    bytes[at..at + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+    let h = header(&mem(bytes)).unwrap();
+    assert!(h.icc.is_none());
+    assert_eq!(h.warnings, ["the ICC profile could not be read"]);
+}
+
+#[test]
+fn a_gif_has_alpha_only_when_a_frame_sets_a_transparent_colour() {
+    for (transparent, color, alpha, pixel) in [
+        (false, "rgb8", false, [0xFF, 0x80, 0x00, 255]),
+        (true, "rgba8", true, [0, 0, 0, 0]),
+    ] {
+        let s = mem(fx::gif_1x1(transparent));
+        let h = header(&s).unwrap();
+        assert_eq!(
+            (h.color.as_str(), h.has_alpha, h.bit_depth, h.frames),
+            (color, alpha, 8, 1)
+        );
+        let d = decode(&s, &h, &LoadOpts::default()).unwrap().img;
+        assert_eq!(d.get(0, 0)[3], pixel[3], "the pixels agree with the header");
+        if !transparent {
+            assert_eq!(d.get(0, 0), pixel);
+        }
+    }
+    // Written by the image crate from opaque frames: no transparent colour, so no alpha.
+    let opaque = fx::encoded(&fx::scene(8, 8), image::ImageFormat::Gif);
+    let h = header(&mem(opaque)).unwrap();
+    assert_eq!((h.color.as_str(), h.has_alpha), ("rgb8", false));
+    // A later frame with transparency counts for the whole file.
+    let mut clear = fx::scene(8, 8);
+    clear.put_pixel(0, 0, image::Rgba([0, 0, 0, 0]));
+    let h = header(&mem(fx::gif_animated(&[fx::scene(8, 8), clear], 40))).unwrap();
+    assert_eq!(
+        (h.frames, h.has_alpha, h.color.as_str()),
+        (2, true, "rgba8")
+    );
+}
+
+#[test]
 fn orientation_and_gps_come_from_the_exif_block_of_each_container() {
     let img = fx::scene(16, 12);
     let exif = fx::exif_block(Some(6), Some((48.8566, -2.3522)));
