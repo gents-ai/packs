@@ -110,8 +110,12 @@ fn a_tiff_icc_profile_is_read_from_the_first_directory() {
         .img;
     assert_eq!(decode(&s, &h, &LoadOpts::default()).unwrap().img, want);
     // A profile of 4 bytes or fewer sits inside the entry itself.
-    let tiny = mem(fx::tiff_rgb(&img, &[1, 2, 3]));
-    assert_eq!(header(&tiny).unwrap().icc, Some(vec![1, 2, 3]));
+    for len in 1..=6u8 {
+        let p: Vec<u8> = (1..=len).collect();
+        let s = mem(fx::tiff_rgb(&img, &p));
+        assert_eq!(header(&s).unwrap().icc, Some(p), "a profile of {len} bytes");
+        assert_eq!(header(&s).unwrap().width, 12);
+    }
     // Big-endian files go through the same reader.
     assert_eq!(
         crate::exif::tiff_icc(&mut std::io::Cursor::new(

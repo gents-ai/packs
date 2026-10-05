@@ -162,5 +162,10 @@ mod tests {
             "no marker after SOI"
         );
         assert!(complete(&[0xFF, 0xD8, 0xFF, 0xD9]));
+        assert!(
+            !complete(&[0xFF, 0xE0, 0xFF, 0xD9]),
+            "a stream must start with the SOI marker"
+        );
+        assert!(!complete(&[0xFF, 0xD9]), "an EOI alone is not a picture");
     }
 }

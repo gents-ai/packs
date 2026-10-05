@@ -382,6 +382,39 @@ mod tests {
     }
 
     #[test]
+    fn a_tiff_icc_profile_is_read_whether_it_sits_in_the_entry_or_after_the_directory() {
+        let img = crate::fixtures::scene(4, 4);
+        for len in [1usize, 3, 4, 5, 6, 200] {
+            let profile: Vec<u8> = (0..len).map(|i| i as u8 + 1).collect();
+            let tiff = crate::fixtures::tiff_rgb(&img, &profile);
+            assert_eq!(
+                tiff_icc(&mut Cursor::new(tiff)),
+                Icc::Found(profile),
+                "{len} bytes"
+            );
+        }
+        let none = crate::fixtures::tiff_rgb(&img, &[]);
+        assert_eq!(tiff_icc(&mut Cursor::new(none)), Icc::Absent);
+        for not_tiff in [&b""[..], b"II", b"GIF89a", b"II*\0\xff\xff\xff\xff"] {
+            assert_ne!(
+                tiff_icc(&mut Cursor::new(not_tiff.to_vec())),
+                Icc::Found(vec![]),
+                "{not_tiff:?}"
+            );
+        }
+        // The cap is exact, with the bytes really present: 16 MiB is read, one more is not.
+        let at_cap = vec![5u8; MAX_ICC_BYTES as usize];
+        let found = tiff_icc(&mut Cursor::new(crate::fixtures::tiff_rgb(&img, &at_cap)));
+        assert!(
+            found == Icc::Found(at_cap),
+            "a profile of exactly the cap is read"
+        );
+        let over = vec![5u8; MAX_ICC_BYTES as usize + 1];
+        let tiff = crate::fixtures::tiff_rgb(&img, &over);
+        assert_eq!(tiff_icc(&mut Cursor::new(tiff)), Icc::Unreadable);
+    }
+
+    #[test]
     fn the_block_may_start_inside_a_larger_buffer() {
         let mut file = vec![0xAA; 37];
         file.extend(exif_block(Some(3), None));

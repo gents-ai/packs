@@ -427,8 +427,7 @@ mod tests {
             ("x", Format::Png, "x.png"),
             ("deep/y", Format::Gif, "deep/y.gif"),
         ] {
-            let v = cx(named(name), Some(d.clone()))
-                .deliver(prep(4, format), "a", None);
+            let v = cx(named(name), Some(d.clone())).deliver(prep(4, format), "a", None);
             let v = match v {
                 Ok(v) => v,
                 Err(Fail::Msg(m)) => panic!("{name}: {m}"),
