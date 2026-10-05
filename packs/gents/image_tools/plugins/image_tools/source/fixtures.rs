@@ -10,7 +10,7 @@ use image::{Rgba, RgbaImage};
 /// position (decimal degrees, latitude then longitude).
 pub fn exif_block(orientation: Option<u8>, gps: Option<(f64, f64)>) -> Vec<u8> {
     let mut entries: Vec<[u8; 12]> = Vec::new();
-    let mut entry = |tag: u16, kind: u16, count: u32, value: [u8; 4]| {
+    let entry = |tag: u16, kind: u16, count: u32, value: [u8; 4]| {
         let mut e = [0u8; 12];
         e[0..2].copy_from_slice(&tag.to_le_bytes());
         e[2..4].copy_from_slice(&kind.to_le_bytes());
@@ -52,7 +52,11 @@ pub fn exif_block(orientation: Option<u8>, gps: Option<(f64, f64)>) -> Vec<u8> {
             let deg = v.floor();
             let min = ((v - deg) * 60.0).floor();
             let sec = (v - deg - min / 60.0) * 3600.0;
-            for (num, den) in [(deg as u32, 1u32), (min as u32, 1), ((sec * 1e6).round() as u32, 1_000_000)] {
+            for (num, den) in [
+                (deg as u32, 1u32),
+                (min as u32, 1),
+                ((sec * 1e6).round() as u32, 1_000_000),
+            ] {
                 out.extend(num.to_le_bytes());
                 out.extend(den.to_le_bytes());
             }
@@ -178,7 +182,8 @@ fn riff_file(body: &[u8]) -> Vec<u8> {
 fn vp8l_payload(webp: &[u8]) -> Vec<u8> {
     let mut at = 12;
     while at + 8 <= webp.len() {
-        let len = u32::from_le_bytes([webp[at + 4], webp[at + 5], webp[at + 6], webp[at + 7]]) as usize;
+        let len =
+            u32::from_le_bytes([webp[at + 4], webp[at + 5], webp[at + 6], webp[at + 7]]) as usize;
         if &webp[at..at + 4] == b"VP8L" {
             return webp[at + 8..at + 8 + len].to_vec();
         }
@@ -192,7 +197,13 @@ fn u24(v: u32) -> [u8; 3] {
 }
 
 /// A lossless WebP in the extended format carrying the given ICC and Exif data.
-pub fn webp_with_meta(webp: &[u8], w: u32, h: u32, icc: Option<&[u8]>, exif: Option<&[u8]>) -> Vec<u8> {
+pub fn webp_with_meta(
+    webp: &[u8],
+    w: u32,
+    h: u32,
+    icc: Option<&[u8]>,
+    exif: Option<&[u8]>,
+) -> Vec<u8> {
     let mut flags = 0u8;
     if icc.is_some() {
         flags |= 0x20;
@@ -296,7 +307,11 @@ pub fn qr(text: &str, module: u32) -> RgbaImage {
             && mx < n + quiet
             && my < n + quiet
             && code[((my - quiet) as usize, (mx - quiet) as usize)] == qrcode::Color::Dark;
-        if dark { Rgba([0, 0, 0, 255]) } else { Rgba([255, 255, 255, 255]) }
+        if dark {
+            Rgba([0, 0, 0, 255])
+        } else {
+            Rgba([255, 255, 255, 255])
+        }
     })
 }
 
@@ -308,7 +323,11 @@ pub fn barcode(format: rxing::BarcodeFormat, text: &str, w: i32, h: i32) -> Rgba
         .expect("encoding a fixture barcode");
     let (mw, mh) = (matrix.getWidth(), matrix.getHeight());
     RgbaImage::from_fn(mw, mh, |x, y| {
-        if matrix.get(x, y) { Rgba([0, 0, 0, 255]) } else { Rgba([255, 255, 255, 255]) }
+        if matrix.get(x, y) {
+            Rgba([0, 0, 0, 255])
+        } else {
+            Rgba([255, 255, 255, 255])
+        }
     })
 }
 
@@ -334,7 +353,12 @@ pub fn jpeg(img: &RgbaImage, quality: u8) -> Vec<u8> {
 pub fn webp(img: &RgbaImage) -> Vec<u8> {
     let mut out = Vec::new();
     image::codecs::webp::WebPEncoder::new_lossless(&mut out)
-        .encode(img.as_raw(), img.width(), img.height(), image::ExtendedColorType::Rgba8)
+        .encode(
+            img.as_raw(),
+            img.width(),
+            img.height(),
+            image::ExtendedColorType::Rgba8,
+        )
         .expect("encoding a fixture");
     out
 }

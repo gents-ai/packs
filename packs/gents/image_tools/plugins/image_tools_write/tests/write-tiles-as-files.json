@@ -1,0 +1,185 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 16160,
+          "format": "png",
+          "height": 100,
+          "width": 150
+        },
+        "outputs": [
+          {
+            "bytes": 2089,
+            "file": "tiles/t_index.png",
+            "format": "png",
+            "height": 100,
+            "pixels_sha256": "56d214c546ddc9ea2e10030872368100dd74e4848f1b4d529fb59dac282e0931",
+            "role": "index",
+            "sha256": "17b65ca8aac31bae37ca7a934a8041ca4ecbb0221e0f0bf2d98cf89f8c83ea04",
+            "width": 150
+          },
+          {
+            "bytes": 438,
+            "file": "tiles/t_r1c1.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "da8b47cc00aac27f484ac195c19b84bfc50b403ddcc230046563ecb9583226fa",
+            "role": "tile",
+            "sha256": "ae189e3642b37183c5dfcb02235d77a58cdb302e9bd098c389ca52646f29167d",
+            "tile": 1,
+            "width": 64
+          },
+          {
+            "bytes": 391,
+            "file": "tiles/t_r1c2.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "db2bb185ec962bf892f1f694b22dded7e007ca6aa79d83e5b0cb2610167391a3",
+            "role": "tile",
+            "sha256": "f50b3471ddcaa2e759fcb024531e5bbd93507d18c487618e60a93b27122f0b56",
+            "tile": 2,
+            "width": 64
+          },
+          {
+            "bytes": 425,
+            "file": "tiles/t_r1c3.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "a2716071e6c2a163d43e34ebc9e3b0902bce734a41a28a8a93910e5c3929d6f9",
+            "role": "tile",
+            "sha256": "21bef560023e85c8b212dfb194ee13031e1a384048e729a3766179065f9c1446",
+            "tile": 3,
+            "width": 64
+          },
+          {
+            "bytes": 429,
+            "file": "tiles/t_r2c1.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "d9a7d92cd6c845ee48aaeb9026a90bb20a97d737c3facfcb8530e48c78df9dfd",
+            "role": "tile",
+            "sha256": "3f9221805fee41b57f0096c07d7d94245cefbf42c647323c518ea9641222ed34",
+            "tile": 4,
+            "width": 64
+          },
+          {
+            "bytes": 422,
+            "file": "tiles/t_r2c2.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "fb6b01660270abc3850b929d2071313a08339044cf07a19ab0ddc54820d8e0ad",
+            "role": "tile",
+            "sha256": "7dd5f431a99b766d68cee27b430fb3d05ef558df1cb986c9b3d49b5055726c49",
+            "tile": 5,
+            "width": 64
+          },
+          {
+            "bytes": 413,
+            "file": "tiles/t_r2c3.png",
+            "format": "png",
+            "height": 64,
+            "pixels_sha256": "ff10e24eba151cc0d8e02c195773d4388969a13015e71b9b4f9831429e5507b2",
+            "role": "tile",
+            "sha256": "ad5f605c042073e558d680e42a2f6d89b7d1303ef162127cec539048176b4934",
+            "tile": 6,
+            "width": 64
+          }
+        ],
+        "source": "tile_src.png",
+        "steps": [
+          {
+            "cols": 3,
+            "from": [
+              150,
+              100
+            ],
+            "index": 0,
+            "op": "tile",
+            "overlap": 8,
+            "rows": 2,
+            "size": 64,
+            "tiles": [
+              {
+                "col": 0,
+                "height": 64,
+                "n": 1,
+                "output": 1,
+                "row": 0,
+                "width": 64,
+                "x": 0,
+                "y": 0
+              },
+              {
+                "col": 1,
+                "height": 64,
+                "n": 2,
+                "output": 2,
+                "row": 0,
+                "width": 64,
+                "x": 43,
+                "y": 0
+              },
+              {
+                "col": 2,
+                "height": 64,
+                "n": 3,
+                "output": 3,
+                "row": 0,
+                "width": 64,
+                "x": 86,
+                "y": 0
+              },
+              {
+                "col": 0,
+                "height": 64,
+                "n": 4,
+                "output": 4,
+                "row": 1,
+                "width": 64,
+                "x": 0,
+                "y": 36
+              },
+              {
+                "col": 1,
+                "height": 64,
+                "n": 5,
+                "output": 5,
+                "row": 1,
+                "width": 64,
+                "x": 43,
+                "y": 36
+              },
+              {
+                "col": 2,
+                "height": 64,
+                "n": 6,
+                "output": 6,
+                "row": 1,
+                "width": 64,
+                "x": 86,
+                "y": 36
+              }
+            ],
+            "tiles_total": 6
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "tile_src.png"
+    ],
+    "op": "tile",
+    "output": {
+      "file": "tiles/t.png",
+      "overwrite": true
+    },
+    "overlap": 8,
+    "size": 64
+  }
+}

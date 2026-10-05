@@ -2,7 +2,9 @@
 //! resampler. The resampler is pinned to its portable code path so the pixels
 //! are identical on every CPU, and it weights colour by alpha so transparent
 //! pixels do not bleed into their neighbours.
-use fast_image_resize::{CpuExtensions, FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer, images::Image};
+use fast_image_resize::{
+    CpuExtensions, FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer, images::Image,
+};
 
 use crate::geom;
 use crate::model::{Img, check_size};
@@ -83,9 +85,12 @@ pub struct Spec {
     pub upscale: bool,
 }
 
+/// The size to resample to and, for fill, the window (x, y, width, height) to keep.
+pub type Target = ((u32, u32), Option<(u32, u32, u32, u32)>);
+
 /// The size to resample to and the window to keep, or an error sentence.
 /// `None` means the image is already inside the box and stays as it is.
-pub fn plan(sw: u32, sh: u32, s: &Spec) -> Result<Option<((u32, u32), Option<(u32, u32, u32, u32)>)>, String> {
+pub fn plan(sw: u32, sh: u32, s: &Spec) -> Result<Option<Target>, String> {
     if s.width == Some(0) || s.height == Some(0) {
         return Err("width and height must be at least 1 pixel".into());
     }
@@ -132,7 +137,11 @@ pub fn resample(img: Img, w: u32, h: u32, filter: Filter) -> Result<Img, String>
     // SAFETY: `None` is the portable code path every CPU supports.
     unsafe { resizer.set_cpu_extensions(CpuExtensions::None) };
     resizer
-        .resize(&src, &mut dst, &ResizeOptions::new().resize_alg(filter.alg()))
+        .resize(
+            &src,
+            &mut dst,
+            &ResizeOptions::new().resize_alg(filter.alg()),
+        )
         .map_err(broken)?;
     Img::from_raw(w, h, dst.into_vec())
 }
@@ -160,21 +169,39 @@ mod tests {
     }
 
     fn spec(mode: Mode, w: Option<u32>, h: Option<u32>) -> Spec {
-        Spec { mode, width: w, height: h, filter: Filter::Lanczos3, upscale: false }
+        Spec {
+            mode,
+            width: w,
+            height: h,
+            filter: Filter::Lanczos3,
+            upscale: false,
+        }
     }
 
     #[test]
     fn fit_shrinks_inside_the_box_and_keeps_the_aspect() {
-        let (img, changed) = apply(solid(400, 200, [9, 9, 9, 255]), &spec(Mode::Fit, Some(100), Some(100))).unwrap();
+        let (img, changed) = apply(
+            solid(400, 200, [9, 9, 9, 255]),
+            &spec(Mode::Fit, Some(100), Some(100)),
+        )
+        .unwrap();
         assert!(changed);
         assert_eq!((img.w, img.h), (100, 50));
-        let (img, _) = apply(solid(400, 200, [9, 9, 9, 255]), &spec(Mode::Fit, None, Some(40))).unwrap();
+        let (img, _) = apply(
+            solid(400, 200, [9, 9, 9, 255]),
+            &spec(Mode::Fit, None, Some(40)),
+        )
+        .unwrap();
         assert_eq!((img.w, img.h), (80, 40));
     }
 
     #[test]
     fn fit_leaves_a_smaller_image_alone_unless_upscale_is_set() {
-        let (img, changed) = apply(solid(40, 20, [1, 2, 3, 255]), &spec(Mode::Fit, Some(100), Some(100))).unwrap();
+        let (img, changed) = apply(
+            solid(40, 20, [1, 2, 3, 255]),
+            &spec(Mode::Fit, Some(100), Some(100)),
+        )
+        .unwrap();
         assert!(!changed);
         assert_eq!((img.w, img.h), (40, 20));
         let mut s = spec(Mode::Fit, Some(100), Some(100));
@@ -186,7 +213,11 @@ mod tests {
 
     #[test]
     fn exact_stretches_and_fill_covers_then_crops_the_centre() {
-        let (img, _) = apply(solid(40, 20, [5, 5, 5, 255]), &spec(Mode::Exact, Some(10), Some(10))).unwrap();
+        let (img, _) = apply(
+            solid(40, 20, [5, 5, 5, 255]),
+            &spec(Mode::Exact, Some(10), Some(10)),
+        )
+        .unwrap();
         assert_eq!((img.w, img.h), (10, 10));
         // Left half red, right half blue: filling a square keeps the centre, which is half and half.
         let mut src = solid(40, 20, [255, 0, 0, 255]);
@@ -209,11 +240,31 @@ mod tests {
     #[test]
     fn missing_or_zero_sizes_and_oversize_targets_are_refused() {
         let i = || solid(10, 10, [0, 0, 0, 255]);
-        assert!(apply(i(), &spec(Mode::Fit, None, None)).unwrap_err().contains("fit needs"));
-        assert!(apply(i(), &spec(Mode::Fill, Some(5), None)).unwrap_err().contains("both"));
-        assert!(apply(i(), &spec(Mode::Exact, None, Some(5))).unwrap_err().contains("both"));
-        assert!(apply(i(), &spec(Mode::Fit, Some(0), Some(5))).unwrap_err().contains("at least 1"));
-        assert!(apply(i(), &spec(Mode::Exact, Some(100_000), Some(100_000))).unwrap_err().contains("limit"));
+        assert!(
+            apply(i(), &spec(Mode::Fit, None, None))
+                .unwrap_err()
+                .contains("fit needs")
+        );
+        assert!(
+            apply(i(), &spec(Mode::Fill, Some(5), None))
+                .unwrap_err()
+                .contains("both")
+        );
+        assert!(
+            apply(i(), &spec(Mode::Exact, None, Some(5)))
+                .unwrap_err()
+                .contains("both")
+        );
+        assert!(
+            apply(i(), &spec(Mode::Fit, Some(0), Some(5)))
+                .unwrap_err()
+                .contains("at least 1")
+        );
+        assert!(
+            apply(i(), &spec(Mode::Exact, Some(100_000), Some(100_000)))
+                .unwrap_err()
+                .contains("limit")
+        );
         let mut up = spec(Mode::Fit, Some(30_000), Some(30_000));
         up.upscale = true;
         assert!(apply(i(), &up).unwrap_err().contains("limit"));
@@ -244,9 +295,23 @@ mod tests {
 
     #[test]
     fn a_flat_colour_stays_flat_under_every_filter() {
-        for f in [Filter::Nearest, Filter::Box, Filter::Bilinear, Filter::CatmullRom, Filter::Lanczos3] {
+        for f in [
+            Filter::Nearest,
+            Filter::Box,
+            Filter::Bilinear,
+            Filter::CatmullRom,
+            Filter::Lanczos3,
+        ] {
             let out = resample(solid(37, 29, [10, 120, 230, 255]), 11, 7, f).unwrap();
-            assert!(out.px.chunks_exact(4).all(|p| p == [10, 120, 230, 255]), "{}", f.name());
+            assert!(
+                out.px
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .all(|p| *p == [10, 120, 230, 255]),
+                "{}",
+                f.name()
+            );
         }
     }
 

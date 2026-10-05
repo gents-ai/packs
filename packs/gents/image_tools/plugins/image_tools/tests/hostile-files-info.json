@@ -1,0 +1,175 @@
+{
+  "bind": "fixtures/hostile",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1225,
+          "format": "png",
+          "height": 36,
+          "width": 48
+        },
+        "outputs": [],
+        "source": "truncated.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1225,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 36,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 36,
+            "oriented_width": 48,
+            "width": 48,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "error": "the jpeg image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "truncated.jpg",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the file is not a PNG, JPEG, GIF, BMP, TIFF or WebP image",
+        "outputs": [],
+        "source": "empty.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the file is not a PNG, JPEG, GIF, BMP, TIFF or WebP image",
+        "outputs": [],
+        "source": "text.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the png image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "zero_size.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the png image is over the size limits; use a smaller image",
+        "outputs": [],
+        "source": "bomb.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the png image is over the size limits; use a smaller image",
+        "outputs": [],
+        "source": "bomb_wide.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the gif image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "bomb.gif",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the bmp image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "bomb.bmp",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the tiff image is over the size limits; use a smaller image",
+        "outputs": [],
+        "source": "bomb.tif",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the webp image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "bomb.webp",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "the jpeg image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "bomb.jpg",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 234,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "ok.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 234,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "truncated.png",
+      "truncated.jpg",
+      "empty.png",
+      "text.png",
+      "zero_size.png",
+      "bomb.png",
+      "bomb_wide.png",
+      "bomb.gif",
+      "bomb.bmp",
+      "bomb.tif",
+      "bomb.webp",
+      "bomb.jpg",
+      "ok.png"
+    ],
+    "op": "info"
+  }
+}

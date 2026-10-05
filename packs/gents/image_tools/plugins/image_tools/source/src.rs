@@ -28,6 +28,9 @@ pub enum Data {
     File(PathBuf),
     /// An inline image, shared between the steps that read it.
     Mem(Arc<Vec<u8>>),
+    /// A name that was refused (it leaves the folder or goes through a link);
+    /// opening it gives this sentence, so one bad name fails only its own record.
+    Refused(String),
 }
 
 /// One image to work on.
@@ -66,6 +69,7 @@ impl Source {
                 Ok(Box::new(f))
             }
             Data::Mem(b) => Ok(Box::new(Cursor::new(b.as_slice()))),
+            Data::Refused(why) => Err(why.clone()),
         }
     }
 
@@ -81,6 +85,7 @@ impl Source {
                 .map(|m| m.len())
                 .map_err(|e| cannot_read(&self.name, &e)),
             Data::Mem(b) => Ok(b.len() as u64),
+            Data::Refused(why) => Err(why.clone()),
         }
     }
 
@@ -115,7 +120,10 @@ impl Source {
 }
 
 fn cannot_read(name: &str, e: &std::io::Error) -> String {
-    format!("cannot read {name}: {}; check the name and that the path is bound for this call", why(e))
+    format!(
+        "cannot read {name}: {}; check the name and that the path is bound for this call",
+        why(e)
+    )
 }
 
 /// A short reason for an I/O error, without the OS error number.
@@ -141,7 +149,9 @@ pub fn inline(b64: &str, name: Option<&str>) -> Result<Source, String> {
     }
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(b64.trim())
-        .map_err(|_| "data_base64 is not valid base64; send the image bytes base64 encoded".to_string())?;
+        .map_err(|_| {
+            "data_base64 is not valid base64; send the image bytes base64 encoded".to_string()
+        })?;
     let name = name
         .and_then(|n| Path::new(n).file_name())
         .map_or_else(|| "inline".to_owned(), |n| n.to_string_lossy().into_owned());
@@ -196,14 +206,20 @@ pub fn no_links(root: &Path, rel: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// A name in `files`, checked and joined to `root`, as a source.
-pub fn named(root: &Path, name: &str) -> Result<Source, String> {
-    let rel = safe_rel(name)?;
-    no_links(root, &rel)?;
-    Ok(Source {
-        name: rel.to_string_lossy().into_owned(),
-        data: Data::File(root.join(rel)),
-    })
+/// A name in `files`, checked and joined to `root`, as a source. A name that
+/// is refused still gives a source, which fails with the reason when opened.
+pub fn named(root: &Path, name: &str) -> Source {
+    let checked = safe_rel(name).and_then(|rel| no_links(root, &rel).map(|()| rel));
+    match checked {
+        Ok(rel) => Source {
+            name: rel.to_string_lossy().into_owned(),
+            data: Data::File(root.join(rel)),
+        },
+        Err(why) => Source {
+            name: name.to_owned(),
+            data: Data::Refused(why),
+        },
+    }
 }
 
 /// Resolves the call's sources from `path` (a file or a folder), `files` and inline data.
@@ -228,16 +244,18 @@ pub fn resolve(
     };
     let root = Path::new(path);
     let meta = std::fs::metadata(root).map_err(|e| {
-        format!("cannot read {path}: {}; the path must be bound for this call", why(&e))
+        format!(
+            "cannot read {path}: {}; the path must be bound for this call",
+            why(&e)
+        )
     })?;
     if meta.is_file() {
         if !files.is_empty() {
             return Err("file and files name images inside a folder, but path is a file".into());
         }
-        let name = root.file_name().map_or_else(
-            || path.to_owned(),
-            |n| n.to_string_lossy().into_owned(),
-        );
+        let name = root
+            .file_name()
+            .map_or_else(|| path.to_owned(), |n| n.to_string_lossy().into_owned());
         return Ok(Resolved {
             sources: vec![Source {
                 name,
@@ -252,15 +270,17 @@ pub fn resolve(
     if files.is_empty() {
         walk(root, root, 0, &mut sources, &mut skipped)?;
         if sources.is_empty() {
-            return Err(format!("{path} holds no PNG, JPEG, GIF, BMP, TIFF or WebP images"));
+            return Err(format!(
+                "{path} holds no PNG, JPEG, GIF, BMP, TIFF or WebP images"
+            ));
         }
     } else {
         if files.len() > MAX_FILES {
-            return Err(format!("files lists more than {MAX_FILES} names; list fewer"));
+            return Err(format!(
+                "files lists more than {MAX_FILES} names; list fewer"
+            ));
         }
-        for f in files {
-            sources.push(named(root, f)?);
-        }
+        sources.extend(files.iter().map(|f| named(root, f)));
     }
     Ok(Resolved {
         sources,
@@ -347,7 +367,10 @@ pub fn write_file(root: &Path, rel: &str, bytes: &[u8], overwrite: bool) -> Resu
     tmp.push(".tmp");
     let tmp = PathBuf::from(tmp);
     let denied = |e: std::io::Error| {
-        format!("cannot write {shown}: {}; the call needs read-write access to the folder", why(&e))
+        format!(
+            "cannot write {shown}: {}; the call needs read-write access to the folder",
+            why(&e)
+        )
     };
     let _ = std::fs::remove_file(&tmp);
     let mut f = std::fs::OpenOptions::new()
@@ -363,7 +386,17 @@ pub fn write_file(root: &Path, rel: &str, bytes: &[u8], overwrite: bool) -> Resu
     let moved = if overwrite {
         std::fs::rename(&tmp, &target)
     } else {
-        std::fs::hard_link(&tmp, &target).and_then(|()| std::fs::remove_file(&tmp))
+        // A hard link fails when the name exists, so nothing is replaced even by a racing writer.
+        // vertexia: a host that cannot hard link falls back to check-then-rename, which a racing writer can beat
+        std::fs::hard_link(&tmp, &target)
+            .and_then(|()| std::fs::remove_file(&tmp))
+            .or_else(|e| match e.kind() {
+                std::io::ErrorKind::Unsupported if std::fs::symlink_metadata(&target).is_err() => {
+                    std::fs::rename(&tmp, &target)
+                }
+                std::io::ErrorKind::Unsupported => Err(std::io::ErrorKind::AlreadyExists.into()),
+                _ => Err(e),
+            })
     };
     moved.map_err(|e| {
         let _ = std::fs::remove_file(&tmp);
@@ -392,14 +425,25 @@ mod tests {
     fn safe_rel_accepts_plain_and_nested_names() {
         assert_eq!(safe_rel("a.png").unwrap(), PathBuf::from("a.png"));
         assert_eq!(safe_rel("sub/a.png").unwrap(), PathBuf::from("sub/a.png"));
-        assert_eq!(safe_rel("./sub/./a.png").unwrap(), PathBuf::from("sub/a.png"));
+        assert_eq!(
+            safe_rel("./sub/./a.png").unwrap(),
+            PathBuf::from("sub/a.png")
+        );
     }
 
     #[test]
     fn safe_rel_refuses_every_escape() {
         for bad in [
-            "", "..", "../a.png", "sub/../../a.png", "/etc/passwd", "a/../..",
-            "a\\b.png", "a\0b", ".", "./",
+            "",
+            "..",
+            "../a.png",
+            "sub/../../a.png",
+            "/etc/passwd",
+            "a/../..",
+            "a\\b.png",
+            "a\0b",
+            ".",
+            "./",
         ] {
             let e = safe_rel(bad).unwrap_err();
             assert!(e.contains("bound folder"), "{bad:?}: {e}");
@@ -415,7 +459,7 @@ mod tests {
         std::os::unix::fs::symlink(outside.join("secret.png"), d.join("l.png")).unwrap();
         std::os::unix::fs::symlink(&outside, d.join("ld")).unwrap();
         for name in ["l.png", "ld/secret.png"] {
-            let e = named(&d, name).map(|_| ()).unwrap_err();
+            let e = named(&d, name).open().err().unwrap();
             assert!(e.contains("symbolic link"), "{name}: {e}");
         }
         let e = write_file(&d, "ld/new.png", PNG, true).unwrap_err();
@@ -446,10 +490,32 @@ mod tests {
         let d = dir("empty");
         let e = resolve(d.to_str(), &[], None, None).err().unwrap();
         assert!(e.contains("holds no"), "{e}");
-        let e = resolve(Some("/no/such/place"), &[], None, None).err().unwrap();
+        let e = resolve(Some("/no/such/place"), &[], None, None)
+            .err()
+            .unwrap();
         assert!(e.contains("cannot read"), "{e}");
         let e = resolve(None, &[], None, None).err().unwrap();
         assert!(e.contains("path"), "{e}");
+    }
+
+    #[test]
+    fn a_refused_name_is_a_source_that_fails_with_the_reason() {
+        let d = dir("refused");
+        for bad in ["../x.png", "/etc/passwd", "a/../../b"] {
+            let s = named(&d, bad);
+            assert_eq!(s.name, bad);
+            let e = s.open().err().unwrap();
+            assert!(e.contains("bound folder"), "{bad}: {e}");
+            assert!(s.len().is_err() && s.sha256().is_err() && s.sniff().is_err());
+        }
+        let r = resolve(
+            d.to_str(),
+            &["../x.png".into(), "ok.png".into()],
+            None,
+            None,
+        )
+        .unwrap();
+        assert_eq!(r.sources.len(), 2, "one bad name does not drop the others");
     }
 
     #[test]
@@ -486,7 +552,10 @@ mod tests {
         assert_eq!(std::fs::read(d.join("out/a.png")).unwrap(), b"one");
         write_file(&d, "out/a.png", b"two", true).unwrap();
         assert_eq!(std::fs::read(d.join("out/a.png")).unwrap(), b"two");
-        let left: Vec<_> = std::fs::read_dir(d.join("out")).unwrap().flatten().collect();
+        let left: Vec<_> = std::fs::read_dir(d.join("out"))
+            .unwrap()
+            .flatten()
+            .collect();
         assert_eq!(left.len(), 1, "no temporary file stays behind");
         assert!(write_file(&d, "../x.png", b"x", true).is_err());
         assert!(write_file(&d, "/tmp/x.png", b"x", true).is_err());

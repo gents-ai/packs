@@ -1,0 +1,60 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 3937,
+          "format": "png",
+          "height": 48,
+          "width": 64
+        },
+        "outputs": [],
+        "source": "diff_a.png",
+        "steps": [
+          {
+            "against": "diff_b.png",
+            "changed": 25,
+            "changed_ratio": 0.021701,
+            "compared": 1152,
+            "height": 48,
+            "identical": false,
+            "op": "diff",
+            "regions": [
+              {
+                "changed": 25,
+                "height": 5,
+                "width": 5,
+                "x": 50,
+                "y": 40
+              }
+            ],
+            "regions_total": 1,
+            "same_size": true,
+            "ssim": 0.9779,
+            "tolerance": 0,
+            "width": 64
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "against": "diff_b.png",
+    "files": [
+      "diff_a.png"
+    ],
+    "highlight": false,
+    "ignore": [
+      {
+        "height": 30,
+        "width": 64,
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "op": "diff"
+  }
+}

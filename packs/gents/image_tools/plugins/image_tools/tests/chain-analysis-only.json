@@ -1,0 +1,103 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1237,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          },
+          {
+            "dhash": "0000002000000000",
+            "height": 24,
+            "op": "hash",
+            "phash": "a267cc1c3933c74e",
+            "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+            "sha256": "b51932fe610defb91714944acd5165edf9451f3badaacbc43a1186461d8c9330",
+            "width": 32
+          },
+          {
+            "colors": [
+              {
+                "hex": "#7eb796",
+                "rgb": [
+                  126,
+                  183,
+                  150
+                ],
+                "share": 0.5208
+              },
+              {
+                "hex": "#893055",
+                "rgb": [
+                  137,
+                  48,
+                  85
+                ],
+                "share": 0.4792
+              }
+            ],
+            "op": "palette",
+            "pixels": 768
+          },
+          {
+            "attempt": "none",
+            "codes": [],
+            "found": 0,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "ops": [
+      {
+        "op": "info"
+      },
+      {
+        "op": "hash"
+      },
+      {
+        "colors": 2,
+        "op": "palette"
+      },
+      {
+        "op": "decode_codes"
+      }
+    ]
+  }
+}

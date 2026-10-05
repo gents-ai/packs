@@ -194,11 +194,20 @@ mod tests {
     #[test]
     fn crop_outside_the_image_or_empty_is_refused_with_the_box() {
         let src = letters();
-        for (x, y, w, h) in [(1, 0, 3, 2), (0, 1, 1, 2), (3, 0, 1, 1), (0, 0, 0, 1), (0, 0, 1, 0)] {
+        for (x, y, w, h) in [
+            (1, 0, 3, 2),
+            (0, 1, 1, 2),
+            (3, 0, 1, 1),
+            (0, 0, 0, 1),
+            (0, 0, 1, 0),
+        ] {
             assert!(crop(&src, x, y, w, h).is_err(), "{x},{y} {w}x{h}");
         }
         assert!(crop(&src, 1, 0, 3, 2).unwrap_err().contains("3x2 image"));
-        assert!(crop(&src, u32::MAX, 0, 2, 1).is_err(), "no overflow past the edge");
+        assert!(
+            crop(&src, u32::MAX, 0, 2, 1).is_err(),
+            "no overflow past the edge"
+        );
     }
 
     #[test]
@@ -210,9 +219,29 @@ mod tests {
         assert_eq!(fit_dims(100, 50, Some(30), None), (30, 15));
         assert_eq!(fit_dims(100, 50, None, Some(10)), (20, 10));
         assert_eq!(fit_dims(100, 50, None, None), (100, 50));
-        assert_eq!(fit_dims(1000, 1, Some(10), Some(10)), (10, 1), "a thin image keeps one row");
+        assert_eq!(
+            fit_dims(1000, 1, Some(10), Some(10)),
+            (10, 1),
+            "a thin image keeps one row"
+        );
         assert_eq!(fit_dims(1, 1000, Some(10), Some(10)), (1, 10));
-        assert_eq!(fit_dims(7, 5, Some(3), Some(3)), (3, 2), "5*3/7 = 2.14 rounds to 2");
+        assert_eq!(
+            fit_dims(7, 5, Some(3), Some(3)),
+            (3, 2),
+            "5*3/7 = 2.14 rounds to 2"
+        );
+    }
+
+    #[test]
+    fn fit_rounds_to_the_nearest_pixel_not_down() {
+        // 5 * 5 / 7 = 3.57 -> 4; 7 * 5 / 5 would be exact. A floor would give 3.
+        assert_eq!(fit_dims(7, 5, Some(5), Some(5)), (5, 4));
+        // 9 * 4 / 11 = 3.27 -> 3 and 9 * 6 / 11 = 4.91 -> 5.
+        assert_eq!(fit_dims(11, 9, Some(4), None), (4, 3));
+        assert_eq!(fit_dims(11, 9, Some(6), None), (6, 5));
+        // Exactly half rounds up: 3 * 1 / 2 = 1.5 -> 2.
+        assert_eq!(fit_dims(2, 3, Some(1), None), (1, 2));
+        assert_eq!(fit_dims(3, 2, None, Some(1)), (2, 1));
     }
 
     #[test]

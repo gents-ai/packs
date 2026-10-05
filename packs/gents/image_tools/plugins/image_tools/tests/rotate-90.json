@@ -1,0 +1,56 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAGCAIAAABrW6giAAAALElEQVR4nJ3HMQ0AQAgDwCb/XSqCGf9BBDqYEcGEAZJb7imDbhTY9R3CumQAQIIFW0gcz2oAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 168,
+            "format": "png",
+            "height": 4,
+            "width": 6
+          },
+          "outputs": [
+            {
+              "bytes": 101,
+              "format": "png",
+              "height": 6,
+              "part": 0,
+              "pixels_sha256": "5da02814a62ade68e2ebcdb19657af7b5f607d89ee53929fe983544583d8d813",
+              "role": "result",
+              "sha256": "f4d61414b808f6ef43f6f17891102558b94176ef87970e71e9f6fe9c744dd16d",
+              "width": 4
+            }
+          ],
+          "source": "upright.png",
+          "steps": [
+            {
+              "degrees": 90,
+              "op": "rotate",
+              "to": [
+                4,
+                6
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "degrees": 90,
+    "files": [
+      "upright.png"
+    ],
+    "op": "rotate"
+  }
+}

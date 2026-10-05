@@ -1,0 +1,457 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1237,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 851,
+          "format": "jpeg",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.jpg",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 851,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "jpeg",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 638,
+          "format": "webp",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.webp",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 638,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "webp",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 1463,
+          "format": "gif",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.gif",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1463,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "gif",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 2358,
+          "format": "bmp",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.bmp",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 2358,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "bmp",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 2514,
+          "format": "tiff",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.tif",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 2514,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "tiff",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 414,
+          "format": "gif",
+          "height": 12,
+          "width": 16
+        },
+        "outputs": [],
+        "source": "anim.gif",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 414,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "gif",
+            "frames": 3,
+            "has_alpha": true,
+            "height": 12,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 12,
+            "oriented_width": 16,
+            "width": 16,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 566,
+          "format": "webp",
+          "height": 12,
+          "width": 16
+        },
+        "outputs": [],
+        "source": "anim.webp",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 566,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "webp",
+            "frames": 3,
+            "has_alpha": false,
+            "height": 12,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 12,
+            "oriented_width": 16,
+            "width": 16,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 170,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "gray16.png",
+        "steps": [
+          {
+            "bit_depth": 16,
+            "bytes": 170,
+            "color": "l16",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 151,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "la8.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 151,
+            "color": "la8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 678,
+          "format": "jpeg",
+          "height": 8,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "cmyk.jpg",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 678,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "jpeg",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 8,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 8,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "not_a_png.txt",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1237,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png",
+      "scene.jpg",
+      "scene.webp",
+      "scene.gif",
+      "scene.bmp",
+      "scene.tif",
+      "anim.gif",
+      "anim.webp",
+      "gray16.png",
+      "la8.png",
+      "cmyk.jpg",
+      "not_a_png.txt"
+    ],
+    "op": "info"
+  }
+}

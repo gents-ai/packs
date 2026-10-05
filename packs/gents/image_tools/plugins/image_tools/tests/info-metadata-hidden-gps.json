@@ -1,0 +1,161 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1285,
+          "format": "jpeg",
+          "height": 32,
+          "width": 48
+        },
+        "outputs": [],
+        "source": "photo_meta.jpg",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1285,
+            "color": "rgb8",
+            "exif": {
+              "gps": true,
+              "orientation": 6,
+              "present": true
+            },
+            "format": "jpeg",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 32,
+            "icc": {
+              "bytes": 160,
+              "present": true
+            },
+            "op": "info",
+            "oriented_height": 48,
+            "oriented_width": 32,
+            "width": 48,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 671,
+          "format": "png",
+          "height": 32,
+          "width": 48
+        },
+        "outputs": [],
+        "source": "photo_meta.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 671,
+            "color": "rgba8",
+            "exif": {
+              "gps": true,
+              "orientation": 6,
+              "present": true
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 32,
+            "icc": {
+              "bytes": 160,
+              "present": true
+            },
+            "op": "info",
+            "oriented_height": 48,
+            "oriented_width": 32,
+            "width": 48,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 496,
+          "format": "webp",
+          "height": 32,
+          "width": 48
+        },
+        "outputs": [],
+        "source": "photo_meta.webp",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 496,
+            "color": "rgb8",
+            "exif": {
+              "gps": true,
+              "orientation": 6,
+              "present": true
+            },
+            "format": "webp",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 32,
+            "icc": {
+              "bytes": 160,
+              "present": true
+            },
+            "op": "info",
+            "oriented_height": 48,
+            "oriented_width": 32,
+            "width": 48,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 957,
+          "format": "jpeg",
+          "height": 32,
+          "width": 48
+        },
+        "outputs": [],
+        "source": "photo_noexif.jpg",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 957,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "jpeg",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 32,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 32,
+            "oriented_width": 48,
+            "width": 48,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "photo_meta.jpg",
+      "photo_meta.png",
+      "photo_meta.webp",
+      "photo_noexif.jpg"
+    ],
+    "op": "info"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAIAAADkharWAAAAJUlEQVR4nO3LMQ0AAAjEwIYwoRNN6MUCzP9N18tmKO4HzwxUwAKqSwGrjCGjGwAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "frame": 1,
+          "input": {
+            "bytes": 566,
+            "format": "webp",
+            "height": 12,
+            "width": 16
+          },
+          "outputs": [
+            {
+              "bytes": 94,
+              "format": "png",
+              "height": 12,
+              "part": 0,
+              "pixels_sha256": "ab99b3e5ca44be3b6e22f154b09f09b6d7619371ff7068e4d8425610db7efb1c",
+              "role": "view",
+              "sha256": "f2613b1592685d5dec0eff1645639d41386f831507208bd070b2919718448b4b",
+              "width": 16
+            }
+          ],
+          "source": "anim.webp",
+          "steps": [
+            {
+              "format": "png",
+              "from": [
+                16,
+                12
+              ],
+              "max_bytes": 1000000,
+              "max_side": 1568,
+              "op": "view",
+              "output": 0,
+              "to": [
+                16,
+                12
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "anim.webp"
+    ],
+    "frame": 1,
+    "op": "view"
+  }
+}

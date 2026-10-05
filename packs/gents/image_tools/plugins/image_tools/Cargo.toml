@@ -6,6 +6,10 @@ version = "1.0.0"
 edition = "2024"
 rust-version = "1.92"
 
+[lib]
+name = "image_tools"
+path = "source/lib.rs"
+
 [[bin]]
 name = "image_tools"
 path = "source/main.rs"

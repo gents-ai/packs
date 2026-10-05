@@ -13,9 +13,14 @@ pub const MAX_FILE_BYTES: u64 = 256 << 20;
 pub const MAX_INLINE_BASE64: usize = 64 * 1024 * 1024;
 /// Allocation cap handed to the decoders.
 pub const MAX_ALLOC: u64 = 1 << 30;
-/// Raw image bytes one call attaches as parts; base64 inflates them by a third and
-/// the whole result must stay under the 4 MiB output ceiling.
-pub const PART_BUDGET: usize = 2_600_000;
+/// Bytes of result (JSON plus base64 image parts) one call returns before it pages; under the 4 MiB output ceiling.
+pub const PAGE_BYTES: usize = 3_800_000;
+/// Smallest `page_bytes` a request may ask for.
+pub const MIN_PAGE_BYTES: usize = 20_000;
+/// Room kept for the wrapper around the result.
+pub const OVERHEAD_BYTES: usize = 8192;
+/// Most raw bytes one image part may be.
+pub const MAX_PART_BYTES: usize = 2_500_000;
 /// Wall-clock seconds after which a call starts no further item and returns a cursor.
 pub const WALL_SECS: u64 = 600;
 
@@ -133,7 +138,7 @@ impl Img {
     /// An image of one colour.
     pub fn filled(w: u32, h: u32, rgba: [u8; 4]) -> Result<Self, String> {
         let mut img = Self::new(w, h)?;
-        for p in img.px.chunks_exact_mut(4) {
+        for p in img.px.as_chunks_mut::<4>().0.iter_mut() {
             p.copy_from_slice(&rgba);
         }
         Ok(img)
@@ -163,12 +168,16 @@ impl Img {
 
     /// Whether every pixel is fully opaque.
     pub fn opaque(&self) -> bool {
-        self.px.chunks_exact(4).all(|p| p[3] == 255)
+        self.px.as_chunks::<4>().0.iter().all(|p| p[3] == 255)
     }
 
     /// Whether every pixel has equal red, green and blue.
     pub fn gray(&self) -> bool {
-        self.px.chunks_exact(4).all(|p| p[0] == p[1] && p[1] == p[2])
+        self.px
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .all(|p| p[0] == p[1] && p[1] == p[2])
     }
 }
 

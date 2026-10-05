@@ -12,14 +12,39 @@ use crate::model::Img;
 
 /// cos(k * pi / 64) for k = 0..=32; the rest follow by symmetry.
 const COS: [f64; 33] = [
-    1.0, 0.9987954562051724, 0.9951847266721969, 0.989176509964781, 0.9807852804032304,
-    0.970031253194544, 0.9569403357322088, 0.9415440651830208, 0.9238795325112867,
-    0.9039892931234433, 0.881921264348355, 0.8577286100002721, 0.8314696123025452,
-    0.8032075314806449, 0.773010453362737, 0.7409511253549591, 0.7071067811865476,
-    0.6715589548470183, 0.6343932841636455, 0.5956993044924335, 0.5555702330196023,
-    0.5141027441932217, 0.4713967368259978, 0.4275550934302822, 0.38268343236508984,
-    0.33688985339222005, 0.29028467725446233, 0.24298017990326398, 0.19509032201612833,
-    0.14673047445536175, 0.09801714032956077, 0.049067674327418126, 0.0,
+    1.0,
+    0.9987954562051724,
+    0.9951847266721969,
+    0.989176509964781,
+    0.9807852804032304,
+    0.970031253194544,
+    0.9569403357322088,
+    0.9415440651830208,
+    0.9238795325112867,
+    0.9039892931234433,
+    0.881921264348355,
+    0.8577286100002721,
+    0.8314696123025452,
+    0.8032075314806449,
+    0.773010453362737,
+    0.7409511253549591,
+    std::f64::consts::FRAC_1_SQRT_2,
+    0.6715589548470183,
+    0.6343932841636455,
+    0.5956993044924335,
+    0.5555702330196023,
+    0.5141027441932217,
+    0.4713967368259978,
+    0.4275550934302822,
+    0.38268343236508984,
+    0.33688985339222005,
+    0.29028467725446233,
+    0.24298017990326398,
+    0.19509032201612833,
+    0.14673047445536175,
+    0.09801714032956077,
+    0.049067674327418126,
+    0.0,
 ];
 
 /// cos(m * pi / 64) for any non-negative `m`.
@@ -50,7 +75,7 @@ pub fn gray_cells(img: &Img, tw: usize, th: usize) -> Vec<f64> {
     // Horizontal pass: for every source row, the weighted sums of each target column.
     let mut cols = vec![0u64; sh * tw];
     for (y, row) in img.px.chunks_exact(sw * 4).enumerate() {
-        for (x, p) in row.chunks_exact(4).enumerate() {
+        for (x, p) in row.as_chunks::<4>().0.iter().enumerate() {
             let l = luma_milli(p);
             let first = (x * tw) / sw;
             for j in first..tw.min(first + 2) {
@@ -115,7 +140,8 @@ pub fn phash(img: &Img) -> u64 {
     let mut ac: Vec<f64> = coef[1..].to_vec();
     ac.sort_by(f64::total_cmp);
     let median = ac[ac.len() / 2];
-    coef.iter().fold(0u64, |bits, c| bits << 1 | u64::from(*c > median))
+    coef.iter()
+        .fold(0u64, |bits, c| bits << 1 | u64::from(*c > median))
 }
 
 /// The number of differing bits between two hashes.
@@ -126,11 +152,6 @@ pub fn distance(a: u64, b: u64) -> u32 {
 /// A hash as 16 lower-case hex digits.
 pub fn hex16(h: u64) -> String {
     format!("{h:016x}")
-}
-
-/// Parses 16 hex digits back into a hash.
-pub fn parse16(s: &str) -> Option<u64> {
-    (s.len() == 16).then(|| u64::from_str_radix(s, 16).ok()).flatten()
 }
 
 #[cfg(test)]
@@ -147,7 +168,11 @@ mod tests {
         let mut m = Img::new(w, h).unwrap();
         for y in 0..h {
             for x in 0..w {
-                let v = if rising { x * 255 / (w - 1) } else { 255 - x * 255 / (w - 1) } as u8;
+                let v = if rising {
+                    x * 255 / (w - 1)
+                } else {
+                    255 - x * 255 / (w - 1)
+                } as u8;
                 let i = m.at(x, y);
                 m.px[i..i + 4].copy_from_slice(&[v, v, v, 255]);
             }
@@ -220,7 +245,11 @@ mod tests {
     fn hashes_survive_a_resize_and_a_reencode() {
         let src = img(&fx::scene(256, 192));
         let small = resample(src.clone(), 96, 72, Filter::Lanczos3).unwrap();
-        assert!(distance(phash(&src), phash(&small)) <= 6, "{}", distance(phash(&src), phash(&small)));
+        assert!(
+            distance(phash(&src), phash(&small)) <= 6,
+            "{}",
+            distance(phash(&src), phash(&small))
+        );
         assert!(distance(dhash(&src), dhash(&small)) <= 6);
         assert_eq!(phash(&src), phash(&src.clone()));
     }
@@ -230,8 +259,16 @@ mod tests {
         let a = img(&fx::noise(64, 64, 1));
         let b = img(&fx::noise(64, 64, 2));
         let scene = img(&fx::scene(64, 64));
-        assert!(distance(phash(&a), phash(&scene)) >= 12, "{}", distance(phash(&a), phash(&scene)));
-        assert!(distance(dhash(&a), dhash(&b)) >= 12, "{}", distance(dhash(&a), dhash(&b)));
+        assert!(
+            distance(phash(&a), phash(&scene)) >= 12,
+            "{}",
+            distance(phash(&a), phash(&scene))
+        );
+        assert!(
+            distance(dhash(&a), dhash(&b)) >= 12,
+            "{}",
+            distance(dhash(&a), dhash(&b))
+        );
     }
 
     #[test]
@@ -239,8 +276,5 @@ mod tests {
         assert_eq!(distance(0, u64::MAX), 64);
         assert_eq!(distance(0b1010, 0b0110), 2);
         assert_eq!(hex16(0xAB), "00000000000000ab");
-        assert_eq!(parse16("00000000000000ab"), Some(0xAB));
-        assert_eq!(parse16("zz"), None);
-        assert_eq!(parse16("ab"), None);
     }
 }

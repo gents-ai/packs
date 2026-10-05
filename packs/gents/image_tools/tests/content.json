@@ -1,0 +1,45 @@
+{
+  "defs": "def ops: [\"info\",\"view\",\"resize\",\"crop\",\"rotate\",\"flip\",\"auto_orient\",\"convert\",\"strip_metadata\",\"tile\",\"montage\",\"annotate\",\"diff\",\"palette\",\"decode_codes\",\"hash\"]; def plugin($n): .manifest.plugins[] | select(.name == $n);",
+  "jq": [
+    {
+      "name": "the model tool reads only and the write tool is the one with read-write access",
+      "expr": "(plugin(\"image_tools\") | .bind_dir.access) == \"read\" and (plugin(\"image_tools_write\") | .bind_dir.access) == \"read_write\""
+    },
+    {
+      "name": "both tools are one source with one input schema, bound by path with the real path handed back",
+      "expr": "(plugin(\"image_tools\") | .input_schema) == (plugin(\"image_tools_write\") | .input_schema) and ([.manifest.plugins[] | .source] | unique) == [\"plugins/image_tools\"] and (.manifest.plugins | all(.bind_dir.input_field == \"path\" and .bind_dir.original_field == \"path_original\"))"
+    },
+    {
+      "name": "the input schema is closed and offers every operation",
+      "expr": "(plugin(\"image_tools\") | .input_schema | .additionalProperties == false and (.properties.op.enum == ops) and (.properties.ops.maxItems == 16))"
+    },
+    {
+      "name": "the instructions document every operation by name in its steps table",
+      "expr": ". as $d | ops | all(. as $o | $d.assets[\"plugins/image_tools/TOOL.md\"] | contains(\"| `\" + $o + \"`\"))"
+    },
+    {
+      "name": "the limits are declared and under the host ceilings",
+      "expr": ".manifest.plugins | all(.limits.max_output_mib <= 4 and .limits.memory_mib <= 4096 and .limits.wall_clock_secs <= 900 and .limits.memory_mib >= 1024)"
+    },
+    {
+      "name": "the helper agent is granted exactly the two plugins and nothing else",
+      "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\", \"gents/image_tools_write\"] and (.config.agent_behaviors | map(.behavior_id)) == [\"image-helper\"]"
+    },
+    {
+      "name": "the graph nodes run the read-only plugin and every output collection has a schema",
+      "expr": "(.config.callbacks | all(.handler.plugin == \"image_tools\")) and ([.config.callbacks[].handler.outputs[].collection] | sort) == [\"ImageChunk\", \"ImageOutput\", \"ImageResult\"] and (.manifest.schemas | length) == 4"
+    },
+    {
+      "name": "the agent prompt names both tools and the file-writing rule",
+      "expr": ".assets[\"agent_behaviors/image_helper/system_prompt.md\"] | contains(\"image_tools_write\") and contains(\"output.overwrite\") and contains(\"`view`\")"
+    },
+    {
+      "name": "no em dash or en dash anywhere in the pack's text",
+      "expr": "[.assets[]] | all(contains(\"\\u2014\") | not) and all(contains(\"\\u2013\") | not)"
+    },
+    {
+      "name": "the notice records every runtime crate and says nothing is embedded",
+      "expr": ".assets[\"notice.md\"] | contains(\"embeds no model or data file\") and contains(\"rxing\") and contains(\"fast_image_resize\") and contains(\"font8x8\") and contains(\"image-rs\")"
+    }
+  ]
+}

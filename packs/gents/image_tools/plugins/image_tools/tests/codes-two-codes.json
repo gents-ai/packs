@@ -1,0 +1,90 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1941,
+          "format": "png",
+          "height": 120,
+          "width": 260
+        },
+        "outputs": [],
+        "source": "two_codes.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  17,
+                  17,
+                  63,
+                  63
+                ],
+                "format": "qr_code",
+                "points": [
+                  [
+                    17,
+                    17
+                  ],
+                  [
+                    80,
+                    17
+                  ],
+                  [
+                    80,
+                    80
+                  ],
+                  [
+                    17,
+                    80
+                  ]
+                ],
+                "text": "LEFT"
+              },
+              {
+                "bbox": [
+                  153,
+                  17,
+                  63,
+                  63
+                ],
+                "format": "qr_code",
+                "points": [
+                  [
+                    153,
+                    17
+                  ],
+                  [
+                    216,
+                    17
+                  ],
+                  [
+                    216,
+                    80
+                  ],
+                  [
+                    153,
+                    80
+                  ]
+                ],
+                "text": "RIGHT"
+              }
+            ],
+            "found": 2,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "two_codes.png"
+    ],
+    "op": "decode_codes"
+  }
+}

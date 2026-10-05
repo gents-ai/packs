@@ -31,7 +31,8 @@ pub fn parse_color(s: &str) -> Result<Rgba, String> {
     if let Some([r, g, b]) = named {
         return Ok([r, g, b, 255]);
     }
-    let bad = || format!("{s:?} is not a colour; use a name such as red or a hex code such as #ff8800");
+    let bad =
+        || format!("{s:?} is not a colour; use a name such as red or a hex code such as #ff8800");
     let hex = s.strip_prefix('#').ok_or_else(bad)?;
     if !hex.is_ascii() {
         return Err(bad());
@@ -54,7 +55,11 @@ pub fn parse_color(s: &str) -> Result<Rgba, String> {
 /// Black or white, whichever reads better on `bg`.
 pub fn contrast(bg: Rgba) -> Rgba {
     let luma = (299 * u32::from(bg[0]) + 587 * u32::from(bg[1]) + 114 * u32::from(bg[2])) / 1000;
-    if luma > 140 { [0, 0, 0, 255] } else { [255, 255, 255, 255] }
+    if luma > 140 {
+        [0, 0, 0, 255]
+    } else {
+        [255, 255, 255, 255]
+    }
 }
 
 /// Draws colour `c` over pixel (`x`, `y`) by its alpha; outside the image is ignored.
@@ -68,8 +73,8 @@ pub fn blend(img: &mut Img, x: i64, y: i64, c: Rgba) {
         return;
     }
     let a = u32::from(c[3]);
-    for k in 0..3 {
-        img.px[i + k] = ((u32::from(c[k]) * a + u32::from(img.px[i + k]) * (255 - a) + 127) / 255) as u8;
+    for (dst, &src) in img.px[i..i + 3].iter_mut().zip(&c[..3]) {
+        *dst = ((u32::from(src) * a + u32::from(*dst) * (255 - a) + 127) / 255) as u8;
     }
     let da = u32::from(img.px[i + 3]);
     img.px[i + 3] = (a + (da * (255 - a) + 127) / 255).min(255) as u8;
@@ -94,12 +99,22 @@ pub fn rect_outline(img: &mut Img, x: i64, y: i64, w: u32, h: u32, t: u32, c: Rg
     fill_rect(img, x, y + i64::from(h) - i64::from(t), w, t, c);
     let inner = h.saturating_sub(2 * t);
     fill_rect(img, x, y + i64::from(t), t, inner, c);
-    fill_rect(img, x + i64::from(w) - i64::from(t), y + i64::from(t), t, inner, c);
+    fill_rect(
+        img,
+        x + i64::from(w) - i64::from(t),
+        y + i64::from(t),
+        t,
+        inner,
+        c,
+    );
 }
 
 /// Clips a segment to the image grown by `margin` pixels (Liang-Barsky); `None` when none of it is inside.
 fn clip(p0: [i64; 2], p1: [i64; 2], w: u32, h: u32, margin: i64) -> Option<([i64; 2], [i64; 2])> {
-    let (lo, hi) = ([-margin, -margin], [i64::from(w) + margin, i64::from(h) + margin]);
+    let (lo, hi) = (
+        [-margin, -margin],
+        [i64::from(w) + margin, i64::from(h) + margin],
+    );
     let inside = |p: [i64; 2]| (0..2).all(|k| p[k] >= lo[k] && p[k] <= hi[k]);
     if inside(p0) && inside(p1) {
         return Some((p0, p1));
@@ -107,21 +122,33 @@ fn clip(p0: [i64; 2], p1: [i64; 2], w: u32, h: u32, margin: i64) -> Option<([i64
     let d = [(p1[0] - p0[0]) as f64, (p1[1] - p0[1]) as f64];
     let (mut u0, mut u1) = (0.0f64, 1.0f64);
     for k in 0..2 {
-        for (p, q) in [(-d[k], (p0[k] - lo[k]) as f64), (d[k], (hi[k] - p0[k]) as f64)] {
+        for (p, q) in [
+            (-d[k], (p0[k] - lo[k]) as f64),
+            (d[k], (hi[k] - p0[k]) as f64),
+        ] {
             if p == 0.0 {
                 if q < 0.0 {
                     return None;
                 }
             } else {
                 let r = q / p;
-                if p < 0.0 { u0 = u0.max(r) } else { u1 = u1.min(r) }
+                if p < 0.0 {
+                    u0 = u0.max(r)
+                } else {
+                    u1 = u1.min(r)
+                }
             }
         }
     }
     if u0 > u1 {
         return None;
     }
-    let at = |u: f64| [p0[0] + (u * d[0]).round() as i64, p0[1] + (u * d[1]).round() as i64];
+    let at = |u: f64| {
+        [
+            p0[0] + (u * d[0]).round() as i64,
+            p0[1] + (u * d[1]).round() as i64,
+        ]
+    };
     Some((at(u0), at(u1)))
 }
 
@@ -171,7 +198,13 @@ pub fn arrow(img: &mut Img, from: [i64; 2], to: [i64; 2], t: u32, c: Rgba) {
     for side in [-1.0f64, 1.0] {
         let wx = -(ux * COS - side * uy * SIN) * head;
         let wy = -(side * ux * SIN + uy * COS) * head;
-        line(img, to, [to[0] + wx.round() as i64, to[1] + wy.round() as i64], t, c);
+        line(
+            img,
+            to,
+            [to[0] + wx.round() as i64, to[1] + wy.round() as i64],
+            t,
+            c,
+        );
     }
 }
 
@@ -183,7 +216,15 @@ pub fn text_size(text: &str, scale: u32) -> (u32, u32) {
 /// Draws `text` with its top-left corner at (`x`, `y`) in the 8x8 ASCII font
 /// scaled by `scale`, over `bg` when given. Characters outside ASCII are drawn
 /// as `?`; the count of those is returned.
-pub fn text(img: &mut Img, x: i64, y: i64, text: &str, scale: u32, fg: Rgba, bg: Option<Rgba>) -> usize {
+pub fn text(
+    img: &mut Img,
+    x: i64,
+    y: i64,
+    text: &str,
+    scale: u32,
+    fg: Rgba,
+    bg: Option<Rgba>,
+) -> usize {
     let scale = scale.max(1);
     let (w, h) = text_size(text, scale);
     if let Some(bg) = bg {
@@ -244,7 +285,9 @@ mod tests {
         assert_eq!(parse_color("#f80").unwrap(), [255, 136, 0, 255]);
         assert_eq!(parse_color("#ff8800").unwrap(), [255, 136, 0, 255]);
         assert_eq!(parse_color("#ff880040").unwrap(), [255, 136, 0, 64]);
-        for bad in ["", "#", "#12", "#12345", "#gg0000", "reddish", "ff0000", "#ff00000", "#é00"] {
+        for bad in [
+            "", "#", "#12", "#12345", "#gg0000", "reddish", "ff0000", "#ff00000", "#é00",
+        ] {
             assert!(parse_color(bad).is_err(), "{bad:?}");
         }
     }
@@ -276,11 +319,25 @@ mod tests {
     fn rectangles_fill_and_outline_exactly_and_clip_at_the_edges() {
         let mut img = canvas(6, 6);
         fill_rect(&mut img, 1, 1, 2, 3, K);
-        assert_eq!(marks(&img, K), [(1, 1), (2, 1), (1, 2), (2, 2), (1, 3), (2, 3)]);
+        assert_eq!(
+            marks(&img, K),
+            [(1, 1), (2, 1), (1, 2), (2, 2), (1, 3), (2, 3)]
+        );
         let mut img = canvas(6, 6);
         rect_outline(&mut img, 1, 1, 4, 4, 1, K);
         let want: Vec<(u32, u32)> = vec![
-            (1, 1), (2, 1), (3, 1), (4, 1), (1, 2), (4, 2), (1, 3), (4, 3), (1, 4), (2, 4), (3, 4), (4, 4),
+            (1, 1),
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (1, 2),
+            (4, 2),
+            (1, 3),
+            (4, 3),
+            (1, 4),
+            (2, 4),
+            (3, 4),
+            (4, 4),
         ];
         assert_eq!(marks(&img, K), want);
         let mut img = canvas(4, 4);
@@ -297,8 +354,16 @@ mod tests {
         assert_eq!(img.get(2, 2), K);
         assert_eq!(img.get(7, 7), K);
         assert_eq!(img.get(3, 3), K);
-        assert_eq!(img.get(4, 4), [255, 255, 255, 255], "the inside is untouched");
-        assert_eq!(img.get(1, 1), [255, 255, 255, 255], "nothing outside the box");
+        assert_eq!(
+            img.get(4, 4),
+            [255, 255, 255, 255],
+            "the inside is untouched"
+        );
+        assert_eq!(
+            img.get(1, 1),
+            [255, 255, 255, 255],
+            "nothing outside the box"
+        );
         assert_eq!(img.get(8, 8), [255, 255, 255, 255]);
     }
 
@@ -306,7 +371,10 @@ mod tests {
     fn lines_follow_bresenham_and_include_both_ends() {
         let mut img = canvas(6, 6);
         line(&mut img, [0, 0], [5, 5], 1, K);
-        assert_eq!(marks(&img, K), [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)]);
+        assert_eq!(
+            marks(&img, K),
+            [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)]
+        );
         let mut img = canvas(6, 3);
         line(&mut img, [0, 1], [5, 1], 1, K);
         assert_eq!(marks(&img, K).len(), 6);
@@ -323,7 +391,13 @@ mod tests {
         let mut img = canvas(8, 8);
         let started = std::time::Instant::now();
         line(&mut img, [-4_000_000_000, 4], [4_000_000_000, 4], 1, K);
-        line(&mut img, [-4_000_000_000, -4_000_000_000], [4_000_000_000, 4_000_000_000], 1, K);
+        line(
+            &mut img,
+            [-4_000_000_000, -4_000_000_000],
+            [4_000_000_000, 4_000_000_000],
+            1,
+            K,
+        );
         line(&mut img, [-4_000_000_000, 100], [4_000_000_000, 100], 1, K);
         assert!(started.elapsed().as_millis() < 5_000);
         assert_eq!(img.get(3, 4), K);
@@ -354,22 +428,48 @@ mod tests {
         // The glyph for I: a vertical bar with serifs; check the stem column of its middle rows.
         let on = marks(&img, K);
         assert!(!on.is_empty());
-        assert!(on.iter().all(|&(x, y)| (1..9).contains(&x) && (1..9).contains(&y)));
+        assert!(
+            on.iter()
+                .all(|&(x, y)| (1..9).contains(&x) && (1..9).contains(&y))
+        );
         let mut big = canvas(40, 20);
         text(&mut big, 2, 2, "I", 2, K, None);
-        assert_eq!(marks(&big, K).len(), on.len() * 4, "scale 2 draws every pixel as 2x2");
+        assert_eq!(
+            marks(&big, K).len(),
+            on.len() * 4,
+            "scale 2 draws every pixel as 2x2"
+        );
     }
 
     #[test]
     fn text_fills_its_background_and_replaces_non_ascii() {
         let mut img = canvas(30, 10);
-        let n = text(&mut img, 0, 0, "a\u{e9}", 1, [255, 255, 255, 255], Some([200, 0, 0, 255]));
+        let n = text(
+            &mut img,
+            0,
+            0,
+            "a\u{e9}",
+            1,
+            [255, 255, 255, 255],
+            Some([200, 0, 0, 255]),
+        );
         assert_eq!(n, 1);
         assert_eq!(img.get(0, 0), [200, 0, 0, 255]);
         assert_eq!(text_size("abc", 2), (48, 16));
         let mut same = canvas(30, 10);
-        text(&mut same, 0, 0, "a?", 1, [255, 255, 255, 255], Some([200, 0, 0, 255]));
-        assert_eq!(img, same, "a replaced character looks exactly like a question mark");
+        text(
+            &mut same,
+            0,
+            0,
+            "a?",
+            1,
+            [255, 255, 255, 255],
+            Some([200, 0, 0, 255]),
+        );
+        assert_eq!(
+            img, same,
+            "a replaced character looks exactly like a question mark"
+        );
     }
 
     #[test]

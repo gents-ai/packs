@@ -1,0 +1,27 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "outputs": [],
+    "result": {
+      "chunk": 1,
+      "complete": true,
+      "input_format": "png",
+      "input_height": 148,
+      "input_width": 148,
+      "ok": true,
+      "outputs": 0,
+      "source": "qr_plain.png",
+      "steps": "[{\"attempt\":\"plain\",\"codes\":[{\"bbox\":[17,17,116,116],\"format\":\"qr_code\",\"points\":[[17,17],[133,17],[133,133],[17,133]],\"text\":\"https://example.org/pack?id=42\"}],\"found\":1,\"op\":\"decode_codes\"}]",
+      "warnings": []
+    }
+  },
+  "input": {
+    "chunk": 1,
+    "files": [
+      "qr_plain.png"
+    ],
+    "ops": "decode_codes",
+    "run_id": "r1",
+    "source": "qr_plain.png"
+  }
+}

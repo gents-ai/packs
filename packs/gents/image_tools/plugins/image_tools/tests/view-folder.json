@@ -1,0 +1,152 @@
+{
+  "bind": "fixtures/batch",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAABgAAAASCAIAAADOjonJAAAAi0lEQVR4nN2TQQqAIBBF/0IcKMh9d2nVSaJztepu0TGihLDGxslcNcigw/D4fh0DoIKtYX3mm+BID/U9GzQW0CySG5QgSvZoQGlKHDQtK64xt32WogX3UKg2cLzKwqXvHvXolSISzNaDSPCIxqHjH0+mcJDqpaOdISifcoBcAcqp6CvFgwpQ8Ovp3wDgqRFpOCIUfAAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAABgAAAAQCAIAAACDRijCAAAC9klEQVR4nCVT625kNQy2HTvJybnMTGc7uwsqqBJIvB0vwGPxMvAPpIWuKi7tdHuucdY5lazIcWLL3+fPTN4fF98DZtKBmst2UicdlQ74mFuBgRhuM7baRQwd+K74FkJE6aGJhVsUC0bwrA2ODfriG3YIzZNKS4IIgG7Nzis0iAVEMSqxQlANWoKSKEQADyhQAgCz3MSNcXHhMDUKMno6voYNU0FZhNssaWnnGJOVI1+KtyoFYiHO6rfCGcTOzTryx7DRWhyQi0D+Q9i+d/i5lX71S1LdFpiGx2N697yQEypvxmSXIozCxQuE6kxDDCWTcA4Nirvf6OeHv5b50/uX5t/04lUP48df+/vrzR0CIwhmT+jREIE3yGYWBLD8yyFOJYX2lQ64rXePX+639Y8kl5nXCNkSsft8e44cc5EMFdoGUUg2DVwjskEg48idchn759R8d13/vGzp0XVXoTB9kbzyLBM+t+t4wa42wlS8GYOQNW8OVt9BECvERrFPU9NYl+XMnz6efr/QiC//DPya+mEqXNJtcXq0EmwQwALFo02wuAJOzdCVwgyHFiD23Dyl2CX67Qf45afjLOHbaxoHOU35oP3Dh/OP/8nqJGvIFZrfUHKJG1ZBGF4zXs/Wvgw2S/Dvs//7G35o6P7/ZqVjPjQLZJrwTgUO3lEwOATelUjETnewsHNvE9SbsJDx4Ti7dvZj8rlRUZsmQ0IlelJ6N5PRYWkO2BUrJ46snFSyjKM3vtzQ2ggUvVv5CtSBS8p04LGBk86nGcb2gGFQ+4xSgZSq7Fx9k/1+YlAj23eRnc3Rw8zX4NMqLoerhJx8Nyq+inb9snQM20Z18KqVkYxcTxs/+mrW3Xh2toEBTMehh7CSzLaWxXfWcx+unS2qlHZDQ4QVyK6ACocp2hxrUE0NnvkYHTrzKnn7b8upCqY9R6uIHYZK6s4r5d0njzXC9VWDXVkHsW0EtGUQs+J2pVgXWFe0lEqfUWBBrWshFtlfef/Ab1sC4L4C5VZXw5KnaGMAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAADG0lEQVR4nAEQA+/8ApziaqH68/seiOfeksQIwsSFBjNDYQ69YCDGThT1QCGr1KUW6zHdQI7x9/hGHJ+3HAQmLUZv/2jCVMSrFUgkdL7R6MIYH5CxdgXXsZR/7ur5jsoHz9tP7c8DAtTucS217/8DH3vnnd3+D/WEt9Q7cvnJgoccp3RGid27mICuZ0xmJBUGafM0ZDfO1hQMzwqK/EPDA/2GwC1cAMjYhmSjtAPG+Hyf4o6W/Yh4gQJd3Yk+OeYyQulO7TpKOPbdncP6cPMQDwEh8lTUTbA2J0QXF6CGaPN3sM0WtSBQkd+DmAhJgzaZQV9hCaXzXFLG/f5Jy1wS65EC9M/YLQnCyzCuZBjwUubQF6NrLe4qmW1nJQzuJSD2/76ett6SnjzCv/vI5RNyYo8WAjopp8WrgQrmhEkd+9vLzqi6rQ3sa0fc3K2XsvZsy1ToM7Y5dY4dIcwyIe4n/XDKgAKkcrWxJcVN2wAIcRJ+C2WQXSYBuOm7pSkyP1KYOZQUAphipDG3+uu7jEvTU9X0fU4D/pelz66vFbgO6Ag7z18NP+jiEkhAhwbrnfSwI6GB5FViYTraAedeJ27d45k6Zu15Ah3kHrEBqlMalYCz9iiO+YxjoDrEEiw9qGXvN8AdL1J701DSuoKLQN1EmHRadNHFqwMaVfcVSAZE5N+8JeKyVZ2itQJJ9GS6lnPmj1BXb15Pw8I6yepDhZ1XGvPIcWM/7QsCKU/1A/eiUlvrtQWFQB6YU+kvyBV8mAlfAQ7o0v/MYtx2rJIuuzvX8VVuFKu4k5NHBDCoNd4PNfnzv7UgdyECKYv9vQRZpumKH0YzKAVhB+FdkpNvl7Hw5RccEe/ay8ePbgLmVV8Y+ubB0gQft57PuAQA+9Uck9C6D3oEs925xHytaRr1iJ6LDyYtVI8OxOKdXPUCSfxbETCl7it3FFNO4AfzbSEx88cdyUmqW7ffHMLO9uIpYvGfejwjA2+j3uWYEbs4A6Povmc98cDj726DvEKiWzIsWPeP8AkgG422ROR5IOFOIvdr2KMwt/2O7+NELsLgPBtniyxndNVkAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 791,
+            "format": "png",
+            "height": 18,
+            "width": 24
+          },
+          "outputs": [
+            {
+              "bytes": 196,
+              "format": "png",
+              "height": 18,
+              "part": 0,
+              "pixels_sha256": "0d0592be1f0b1d340ccb086db0d9225d0e3262eb1daca0776cba49277493acd6",
+              "role": "view",
+              "sha256": "a36cf5207a2ecc2d49f2dc5f34cf78d114fac0a59875f05b0b75464543361e43",
+              "width": 24
+            }
+          ],
+          "source": "a.png",
+          "steps": [
+            {
+              "format": "png",
+              "from": [
+                24,
+                18
+              ],
+              "max_bytes": 1000000,
+              "max_side": 24,
+              "op": "view",
+              "output": 0,
+              "to": [
+                24,
+                18
+              ]
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 864,
+            "format": "jpeg",
+            "height": 20,
+            "width": 30
+          },
+          "outputs": [
+            {
+              "bytes": 815,
+              "format": "png",
+              "height": 16,
+              "part": 1,
+              "pixels_sha256": "20c1424e72395161cca7387a147e257cf51f5d81e73a6c792799d92ad2c4d133",
+              "role": "view",
+              "sha256": "843db81bfc41cb73558fce4895fd3270e713e65015d7f5e96d8ae65794fa8301",
+              "width": 24
+            }
+          ],
+          "source": "b.jpg",
+          "steps": [
+            {
+              "format": "png",
+              "from": [
+                30,
+                20
+              ],
+              "max_bytes": 1000000,
+              "max_side": 24,
+              "op": "view",
+              "output": 0,
+              "to": [
+                24,
+                16
+              ]
+            }
+          ],
+          "warnings": [
+            "scaled from 30x20 to 24x16 to fit 24 pixels on the longest side"
+          ]
+        },
+        {
+          "input": {
+            "bytes": 1108,
+            "format": "png",
+            "height": 16,
+            "width": 16
+          },
+          "outputs": [
+            {
+              "bytes": 852,
+              "format": "png",
+              "height": 16,
+              "part": 2,
+              "pixels_sha256": "5507037d10986150a0bf84c635411934470c0c587435c0d452e83537473b0eb7",
+              "role": "view",
+              "sha256": "57628ec21cb55ab5262ab02cc33040b9bdf47846124bb1b5a7d7e4596826f76f",
+              "width": 16
+            }
+          ],
+          "source": "sub/c.png",
+          "steps": [
+            {
+              "format": "png",
+              "from": [
+                16,
+                16
+              ],
+              "max_bytes": 1000000,
+              "max_side": 24,
+              "op": "view",
+              "output": 0,
+              "to": [
+                16,
+                16
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": [
+        "1 entries in the folder that are not images were left out"
+      ]
+    }
+  },
+  "input": {
+    "max_side": 24,
+    "op": "view"
+  }
+}

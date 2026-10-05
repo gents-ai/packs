@@ -1,11 +1,11 @@
 //! The request: which images, which steps, and where the results go. A
 //! request names one `op` with its options at the top level, or a chain in
 //! `ops`; both are normalised to a list of steps before anything is read.
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::draw::parse_color;
-use crate::model::{Format, PART_BUDGET};
+use crate::model::{Format, MAX_PART_BYTES, MIN_PAGE_BYTES, PAGE_BYTES};
 use crate::resize::{Filter, Mode};
 
 /// Steps one chain may hold.
@@ -14,9 +14,21 @@ pub const MAX_STEPS: usize = 16;
 pub const MAX_SHAPES: usize = 1000;
 
 /// Keys that belong to the request, not to a step.
-const COMMON: [&str; 13] = [
-    "path", "path_original", "file", "files", "data_base64", "name", "cursor", "frame", "orient",
-    "output", "ops", "op", "run_id",
+const COMMON: [&str; 14] = [
+    "path",
+    "path_original",
+    "file",
+    "files",
+    "data_base64",
+    "name",
+    "cursor",
+    "frame",
+    "orient",
+    "output",
+    "ops",
+    "op",
+    "run_id",
+    "page_bytes",
 ];
 
 /// The request as sent, with the step options still loose.
@@ -30,6 +42,7 @@ pub struct Input {
     pub cursor: Option<String>,
     pub frame: Option<u32>,
     pub orient: Option<bool>,
+    pub page_bytes: Option<usize>,
     pub output: Option<Output>,
     pub ops: Option<Vec<Value>>,
     #[serde(flatten)]
@@ -37,7 +50,7 @@ pub struct Input {
 }
 
 /// Where and how results are written.
-#[derive(Deserialize, Debug, Default, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Output {
     /// Output format; PNG when absent.
@@ -276,7 +289,10 @@ impl Op {
 
     /// Whether the step ends the chain by producing the output image itself.
     pub fn terminal(&self) -> bool {
-        matches!(self, Self::View(_) | Self::Tile(_) | Self::Diff(_) | Self::Montage(_))
+        matches!(
+            self,
+            Self::View(_) | Self::Tile(_) | Self::Diff(_) | Self::Montage(_)
+        )
     }
 
     /// Whether the step changes the picture or its encoding, so the chain ends by writing an image.
@@ -302,16 +318,28 @@ pub struct Plan {
     pub output: Output,
     pub frame: u32,
     pub orient: bool,
+    pub page_bytes: usize,
 }
 
 fn parse_op(v: &Value, label: &str) -> Result<Op, String> {
-    let name = v.get("op").and_then(Value::as_str).ok_or_else(|| {
-        format!("{label} needs an op; use one of {OP_NAMES}")
-    })?;
+    let name = v
+        .get("op")
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{label} needs an op; use one of {OP_NAMES}"))?;
+    let name = if name == "contact_sheet" {
+        "montage"
+    } else {
+        name
+    };
     if !OP_NAMES.split(", ").any(|n| n == name) {
-        return Err(format!("{label} has the unknown op {name:?}; use one of {OP_NAMES}"));
+        return Err(format!(
+            "{label} has the unknown op {name:?}; use one of {OP_NAMES}"
+        ));
     }
-    serde_json::from_value(v.clone()).map_err(|e| format!("{label} ({name}) is not valid: {e}"))
+    // `contact_sheet` is another name for `montage`.
+    let mut step = v.clone();
+    step["op"] = Value::from(name);
+    serde_json::from_value(step).map_err(|e| format!("{label} ({name}) is not valid: {e}"))
 }
 
 /// The format named `name`, or a sentence listing the choices.
@@ -358,6 +386,7 @@ impl Input {
             output,
             frame: self.frame.unwrap_or(0),
             orient: self.orient.unwrap_or(true),
+            page_bytes: self.page_bytes.unwrap_or(PAGE_BYTES),
         };
         plan.validate()?;
         Ok(plan)
@@ -379,6 +408,11 @@ impl Plan {
             }
             validate_op(op)?;
         }
+        if !(MIN_PAGE_BYTES..=PAGE_BYTES).contains(&self.page_bytes) {
+            return Err(format!(
+                "page_bytes must be between {MIN_PAGE_BYTES} and {PAGE_BYTES}"
+            ));
+        }
         let o = &self.output;
         if let Some(f) = &o.format {
             parse_format(f)?;
@@ -389,7 +423,9 @@ impl Plan {
         if o.file.is_some() && o.suffix.is_some() {
             return Err("give output.file or output.suffix, not both".into());
         }
-        if (o.file.is_some() || o.suffix.is_some()) && !self.ops.iter().any(|op| op.transforms() || op.terminal()) {
+        if (o.file.is_some() || o.suffix.is_some())
+            && !self.ops.iter().any(|op| op.transforms() || op.terminal())
+        {
             return Err("nothing is produced to write; add a step such as resize or view".into());
         }
         if let Some(s) = &o.suffix
@@ -430,8 +466,12 @@ fn validate_op(op: &Op) -> Result<(), String> {
     match op {
         Op::View(v) => {
             range("max_side", v.max_side, 16, 8192)?;
-            if v.max_bytes.is_some_and(|b| !(10_000..=PART_BUDGET).contains(&b)) {
-                return Err(format!("max_bytes must be between 10000 and {PART_BUDGET}"));
+            if v.max_bytes
+                .is_some_and(|b| !(10_000..=MAX_PART_BYTES).contains(&b))
+            {
+                return Err(format!(
+                    "max_bytes must be between 10000 and {MAX_PART_BYTES}"
+                ));
             }
             if let Some(f) = &v.format
                 && !matches!(f.as_str(), "auto" | "png" | "jpeg")
@@ -448,7 +488,9 @@ fn validate_op(op: &Op) -> Result<(), String> {
             if let Some(f) = &r.filter
                 && Filter::parse(f).is_none()
             {
-                return Err("resize filter must be nearest, box, bilinear, catmull_rom or lanczos3".into());
+                return Err(
+                    "resize filter must be nearest, box, bilinear, catmull_rom or lanczos3".into(),
+                );
             }
         }
         Op::Flip(f) if !matches!(f.axis.as_str(), "horizontal" | "vertical") => {
@@ -463,11 +505,15 @@ fn validate_op(op: &Op) -> Result<(), String> {
         Op::Tile(t) => {
             range("size", t.size, 64, 4096)?;
             let size = t.size.unwrap_or(1024);
-            if t.overlap.unwrap_or(64) >= size {
+            if t.overlap.is_some_and(|o| o >= size) {
                 return Err("overlap must be smaller than the tile size".into());
             }
-            if t.max_bytes.is_some_and(|b| !(10_000..=PART_BUDGET).contains(&b)) {
-                return Err(format!("max_bytes must be between 10000 and {PART_BUDGET}"));
+            if t.max_bytes
+                .is_some_and(|b| !(10_000..=MAX_PART_BYTES).contains(&b))
+            {
+                return Err(format!(
+                    "max_bytes must be between 10000 and {MAX_PART_BYTES}"
+                ));
             }
         }
         Op::Montage(m) => {
@@ -488,7 +534,9 @@ fn validate_op(op: &Op) -> Result<(), String> {
         }
         Op::Diff(d) => {
             if d.against.is_none() == d.against_base64.is_none() {
-                return Err("diff needs exactly one of against (a file name) or against_base64".into());
+                return Err(
+                    "diff needs exactly one of against (a file name) or against_base64".into(),
+                );
             }
             if d.ignore.len() > 1000 {
                 return Err("ignore holds at most 1000 regions".into());
@@ -509,7 +557,15 @@ fn validate_op(op: &Op) -> Result<(), String> {
 fn validate_shape(s: &Shape) -> Result<(), String> {
     let colour = |c: &Option<String>| c.as_deref().map_or(Ok([0; 4]), parse_color).map(|_| ());
     match s {
-        Shape::Box { color, fill, thickness, width, height, label, .. } => {
+        Shape::Box {
+            color,
+            fill,
+            thickness,
+            width,
+            height,
+            label,
+            ..
+        } => {
             colour(color)?;
             colour(fill)?;
             if *width == 0 || *height == 0 {
@@ -520,11 +576,22 @@ fn validate_shape(s: &Shape) -> Result<(), String> {
                 return Err("a label holds at most 200 characters".into());
             }
         }
-        Shape::Arrow { color, thickness, .. } | Shape::Line { color, thickness, .. } => {
+        Shape::Arrow {
+            color, thickness, ..
+        }
+        | Shape::Line {
+            color, thickness, ..
+        } => {
             colour(color)?;
             range("thickness", *thickness, 1, 64)?;
         }
-        Shape::Label { color, background, scale, text, .. } => {
+        Shape::Label {
+            color,
+            background,
+            scale,
+            text,
+            ..
+        } => {
             colour(color)?;
             colour(background)?;
             range("scale", *scale, 1, 16)?;
@@ -551,14 +618,20 @@ mod tests {
     use serde_json::json;
 
     fn plan(v: Value) -> Result<Plan, String> {
-        serde_json::from_value::<Input>(v).map_err(|e| e.to_string())?.plan()
+        serde_json::from_value::<Input>(v)
+            .map_err(|e| e.to_string())?
+            .plan()
     }
 
     #[test]
     fn a_single_op_takes_its_options_from_the_top_level() {
-        let p = plan(json!({"path": "/x", "op": "resize", "width": 100, "mode": "fill", "height": 50})).unwrap();
+        let p =
+            plan(json!({"path": "/x", "op": "resize", "width": 100, "mode": "fill", "height": 50}))
+                .unwrap();
         assert_eq!(p.ops.len(), 1);
-        assert!(matches!(&p.ops[0], Op::Resize(r) if r.width == Some(100) && r.mode.as_deref() == Some("fill")));
+        assert!(
+            matches!(&p.ops[0], Op::Resize(r) if r.width == Some(100) && r.mode.as_deref() == Some("fill"))
+        );
         assert_eq!(p.raw_ops[0]["op"], "resize");
         assert!(p.orient && p.frame == 0);
     }
@@ -572,17 +645,36 @@ mod tests {
         .unwrap();
         let names: Vec<_> = p.ops.iter().map(Op::name).collect();
         assert_eq!(names, ["crop", "rotate", "view"]);
-        let e = plan(json!({"path": "/x", "width": 5, "ops": [{"op": "info"}]})).err().unwrap();
+        let e = plan(json!({"path": "/x", "width": 5, "ops": [{"op": "info"}]}))
+            .err()
+            .unwrap();
         assert!(e.contains("width belongs inside a step"), "{e}");
-        let e = plan(json!({"path": "/x", "op": "info", "ops": [{"op": "info"}]})).err().unwrap();
+        let e = plan(json!({"path": "/x", "op": "info", "ops": [{"op": "info"}]}))
+            .err()
+            .unwrap();
         assert!(e.contains("not both"), "{e}");
     }
 
     #[test]
     fn a_missing_empty_or_unknown_op_is_named() {
-        assert!(plan(json!({"path": "/x"})).err().unwrap().contains("give an op"));
-        assert!(plan(json!({"path": "/x", "ops": []})).err().unwrap().contains("between 1 and 16"));
-        assert!(plan(json!({"path": "/x", "ops": [{"width": 1}]})).err().unwrap().contains("step 1 needs an op"));
+        assert!(
+            plan(json!({"path": "/x"}))
+                .err()
+                .unwrap()
+                .contains("give an op")
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": []}))
+                .err()
+                .unwrap()
+                .contains("between 1 and 16")
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"width": 1}]}))
+                .err()
+                .unwrap()
+                .contains("step 1 needs an op")
+        );
         let e = plan(json!({"path": "/x", "op": "sharpen"})).err().unwrap();
         assert!(e.contains("unknown op") && e.contains("palette"), "{e}");
         let many: Vec<Value> = (0..17).map(|_| json!({"op": "info"})).collect();
@@ -591,22 +683,55 @@ mod tests {
 
     #[test]
     fn unknown_and_mistyped_options_are_refused_by_step() {
-        let e = plan(json!({"path": "/x", "op": "resize", "widht": 5})).err().unwrap();
+        let e = plan(json!({"path": "/x", "op": "resize", "widht": 5}))
+            .err()
+            .unwrap();
         assert!(e.contains("resize") && e.contains("widht"), "{e}");
-        let e = plan(json!({"path": "/x", "op": "crop", "x": "a", "y": 0, "width": 1, "height": 1})).err().unwrap();
+        let e =
+            plan(json!({"path": "/x", "op": "crop", "x": "a", "y": 0, "width": 1, "height": 1}))
+                .err()
+                .unwrap();
         assert!(e.contains("crop"), "{e}");
-        let e = plan(json!({"path": "/x", "op": "crop", "x": -1, "y": 0, "width": 1, "height": 1})).err().unwrap();
+        let e = plan(json!({"path": "/x", "op": "crop", "x": -1, "y": 0, "width": 1, "height": 1}))
+            .err()
+            .unwrap();
         assert!(e.contains("crop"), "{e}");
-        assert!(plan(json!({"path": "/x", "op": "rotate"})).err().unwrap().contains("degrees"));
+        assert!(
+            plan(json!({"path": "/x", "op": "rotate"}))
+                .err()
+                .unwrap()
+                .contains("degrees")
+        );
     }
 
     #[test]
     fn step_order_rules_hold() {
-        assert!(plan(json!({"path": "/x", "ops": [{"op": "view"}, {"op": "resize", "width": 5}]})).err().unwrap().contains("must be the last"));
-        assert!(plan(json!({"path": "/x", "ops": [{"op": "tile"}, {"op": "info"}]})).err().unwrap().contains("must be the last"));
-        assert!(plan(json!({"path": "/x", "ops": [{"op": "info"}, {"op": "montage"}]})).err().unwrap().contains("cannot be chained"));
-        assert!(plan(json!({"path": "/x", "ops": [{"op": "resize", "width": 5}, {"op": "view"}]})).is_ok());
-        assert!(plan(json!({"path": "/x", "ops": [{"op": "info"}, {"op": "hash"}, {"op": "palette"}]})).is_ok());
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "view"}, {"op": "resize", "width": 5}]}))
+                .err()
+                .unwrap()
+                .contains("must be the last")
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "tile"}, {"op": "info"}]}))
+                .err()
+                .unwrap()
+                .contains("must be the last")
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "info"}, {"op": "montage"}]}))
+                .err()
+                .unwrap()
+                .contains("cannot be chained")
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "resize", "width": 5}, {"op": "view"}]}))
+                .is_ok()
+        );
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "info"}, {"op": "hash"}, {"op": "palette"}]}))
+                .is_ok()
+        );
     }
 
     #[test]
@@ -627,7 +752,10 @@ mod tests {
         assert!(bad(json!({"op": "palette", "colors": 0})).contains("colors"));
         assert!(bad(json!({"op": "hash", "threshold": 65})).contains("threshold"));
         assert!(bad(json!({"op": "diff"})).contains("exactly one"));
-        assert!(bad(json!({"op": "diff", "against": "a", "against_base64": "b"})).contains("exactly one"));
+        assert!(
+            bad(json!({"op": "diff", "against": "a", "against_base64": "b"}))
+                .contains("exactly one")
+        );
         assert!(bad(json!({"op": "annotate", "shapes": []})).contains("between 1 and"));
         assert!(bad(json!({"op": "annotate", "shapes": [{"type": "box", "x": 0, "y": 0, "width": 0, "height": 5}]})).contains("width"));
         assert!(bad(json!({"op": "annotate", "shapes": [{"type": "line", "from": [0, 0], "to": [1, 1], "color": "x"}]})).contains("not a colour"));
@@ -637,13 +765,26 @@ mod tests {
     #[test]
     fn output_rules_hold() {
         let bad = |v: Value| plan(v).err().unwrap();
-        assert!(bad(json!({"op": "resize", "output": {"format": "svg"}})).contains("not an image format"));
+        assert!(
+            bad(json!({"op": "resize", "output": {"format": "svg"}}))
+                .contains("not an image format")
+        );
         assert!(bad(json!({"op": "resize", "output": {"quality": 101}})).contains("quality"));
-        assert!(bad(json!({"op": "resize", "output": {"file": "a.png", "suffix": "_x"}})).contains("not both"));
+        assert!(
+            bad(json!({"op": "resize", "output": {"file": "a.png", "suffix": "_x"}}))
+                .contains("not both")
+        );
         assert!(bad(json!({"op": "resize", "output": {"suffix": "a/b"}})).contains("slashes"));
-        assert!(bad(json!({"op": "info", "output": {"file": "a.png"}})).contains("nothing is produced"));
+        assert!(
+            bad(json!({"op": "info", "output": {"file": "a.png"}})).contains("nothing is produced")
+        );
         assert!(bad(json!({"op": "resize", "output": {"colour": 1}})).contains("colour"));
-        assert!(plan(json!({"op": "resize", "width": 4, "output": {"file": "a.png", "overwrite": true}})).is_ok());
+        assert!(
+            plan(
+                json!({"op": "resize", "width": 4, "output": {"file": "a.png", "overwrite": true}})
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -660,8 +801,36 @@ mod tests {
     }
 
     #[test]
-    fn frame_and_orient_pass_through() {
-        let p = plan(json!({"op": "info", "frame": 2, "orient": false})).unwrap();
-        assert_eq!((p.frame, p.orient), (2, false));
+    fn contact_sheet_is_another_name_for_montage() {
+        let p = plan(json!({"path": "/x", "op": "contact_sheet", "cell": 64})).unwrap();
+        assert!(p.is_montage());
+        let p = plan(json!({"path": "/x", "ops": [{"op": "contact_sheet"}]})).unwrap();
+        assert!(p.is_montage());
+        assert!(
+            plan(json!({"path": "/x", "ops": [{"op": "info"}, {"op": "contact_sheet"}]}))
+                .err()
+                .unwrap()
+                .contains("cannot be chained")
+        );
+    }
+
+    #[test]
+    fn frame_orient_and_page_size_pass_through() {
+        let p =
+            plan(json!({"op": "info", "frame": 2, "orient": false, "page_bytes": 50000})).unwrap();
+        assert_eq!((p.frame, p.orient, p.page_bytes), (2, false, 50_000));
+        assert_eq!(plan(json!({"op": "info"})).unwrap().page_bytes, PAGE_BYTES);
+        assert!(
+            plan(json!({"op": "info", "page_bytes": 10}))
+                .err()
+                .unwrap()
+                .contains("page_bytes")
+        );
+        assert!(
+            plan(json!({"op": "info", "page_bytes": 9_000_000}))
+                .err()
+                .unwrap()
+                .contains("page_bytes")
+        );
     }
 }

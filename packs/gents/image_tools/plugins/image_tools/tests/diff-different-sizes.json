@@ -1,0 +1,72 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAFAAAAAwCAIAAAAJh2qgAAAAcElEQVR4nO3YsQ2AMAwFURNRMVc2dpu5aIENKGjQ/XtKOjcnufLo7qsq523PjzIqjMF0BtMZTGcwXVzwXh+ca73OHHPWn7jSdAbTGUxnMJ3BdHHBnmnpDKYzmM5gOoPpDKYzmM5gOoPpDKYzmM5guhuUC1YpcwvfKAAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 3937,
+            "format": "png",
+            "height": 48,
+            "width": 64
+          },
+          "outputs": [
+            {
+              "bytes": 169,
+              "format": "png",
+              "height": 48,
+              "part": 0,
+              "pixels_sha256": "4b96155ce085c9402192d67dc3de541173f3cf3fc289711c0d36a41ca57f3e81",
+              "role": "diff",
+              "sha256": "899501a7cc5a881e3fb43d8e3c9b636d57e6514efd63faea621c076e4c61e977",
+              "width": 80
+            }
+          ],
+          "source": "diff_a.png",
+          "steps": [
+            {
+              "against": "diff_wide.png",
+              "changed": 3695,
+              "changed_ratio": 0.96224,
+              "compared": 3840,
+              "height": 48,
+              "highlight": 0,
+              "identical": false,
+              "op": "diff",
+              "regions": [
+                {
+                  "changed": 3695,
+                  "height": 48,
+                  "width": 80,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "regions_total": 1,
+              "same_size": false,
+              "ssim": null,
+              "tolerance": 0,
+              "width": 80
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "against": "diff_wide.png",
+    "files": [
+      "diff_a.png"
+    ],
+    "op": "diff"
+  }
+}

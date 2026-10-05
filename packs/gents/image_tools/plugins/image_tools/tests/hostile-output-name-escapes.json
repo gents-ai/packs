@@ -1,0 +1,46 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "\"../escaped.png\" leaves the bound folder; name a file inside the bound folder",
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "changed": true,
+            "filter": "lanczos3",
+            "from": [
+              32,
+              24
+            ],
+            "mode": "fit",
+            "op": "resize",
+            "to": [
+              8,
+              6
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "op": "resize",
+    "output": {
+      "file": "../escaped.png"
+    },
+    "width": 8
+  }
+}

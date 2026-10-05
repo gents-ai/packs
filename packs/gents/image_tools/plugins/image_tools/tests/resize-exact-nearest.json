@@ -1,0 +1,65 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAALElEQVR4nNWMMQ0AAAjDFsK1GxGIwL8uCAIWXno0veoMDAkKGw44qjYo/PbUWRgDL5Z/NeEAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 168,
+            "format": "png",
+            "height": 4,
+            "width": 6
+          },
+          "outputs": [
+            {
+              "bytes": 101,
+              "format": "png",
+              "height": 8,
+              "part": 0,
+              "pixels_sha256": "93cb7dbb5da1c6d4290e3c72e39be017caa170c27356bab159f767598451b42c",
+              "role": "result",
+              "sha256": "e08307799fc28d54d68ebc4b1063fe0588c20be8f7a45d455872755ead37f3ca",
+              "width": 12
+            }
+          ],
+          "source": "upright.png",
+          "steps": [
+            {
+              "changed": true,
+              "filter": "nearest",
+              "from": [
+                6,
+                4
+              ],
+              "mode": "exact",
+              "op": "resize",
+              "to": [
+                12,
+                8
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "upright.png"
+    ],
+    "filter": "nearest",
+    "height": 8,
+    "mode": "exact",
+    "op": "resize",
+    "width": 12
+  }
+}

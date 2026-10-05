@@ -1,0 +1,55 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "/9j/4AAQSkZJRgABAgAAAQABAAD/wAALCAAGAAgBAREA/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/APQP2Q/2qNZ+Jv2L7WJv3m3O9gf61//Z",
+        "mimeType": "image/jpeg",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 151,
+            "format": "png",
+            "height": 6,
+            "width": 8
+          },
+          "outputs": [
+            {
+              "bytes": 351,
+              "format": "jpeg",
+              "height": 6,
+              "part": 0,
+              "pixels_sha256": "c45856c37309ec7ec67be3c8b3418fe0dcb8d81f8200f5eb57c06ebfbc1b0579",
+              "role": "result",
+              "sha256": "75f7f677f5f1de7e06c66c1459cc357d78ed4495ec901fc727b2084a86263dd1",
+              "width": 8
+            }
+          ],
+          "source": "la8.png",
+          "steps": [
+            {
+              "format": "jpeg",
+              "op": "convert",
+              "quality": null
+            }
+          ],
+          "warnings": [
+            "transparency was flattened onto white because JPEG has no alpha"
+          ]
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "la8.png"
+    ],
+    "format": "jpeg",
+    "op": "convert"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAABZElEQVR4nO2aUQrCQAxEs2tv6VU8hSdWEEXR1iaZJBMo9EMoygsv3WbXWa7ny5Axn9dY/6C5Ox3f1d1d5DREsNdE/+DWtchsTC9oA9n02AIK6AXXQjX0KANl9IIwUEnvN1BM7zRQT+8xQEFvNsBCbzNARC96A1z0WgN09KoCGOnvVDtbiJR+pwFeetnxEFPT/zXATr9toAH9hoEe9GsG2tD/NNCJ/ruAZvTy2UL96N8NtKR/GehK/zDQmF4CjhZT6SXmcDePntCAup+pDFieRh4DxrWExIB9JWQowLWOl7eQ9y1UawDwDi00gJkAqgzA5pcSA8jpK98AeHZMNoCffDMNhMztaQVE7TpyWihwz5RgIHbHF20gfL8aaiBjtx1nIOmsIMhA3klHhIHkxBbYQH5iC2ngSGzVFVCY2AK0UG1iy2ugPLHlMsCQ2LIbIElsGQ3wJLYsBqgSW2oDbIktnQG6/6NujuUTw5fgJcUAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 16160,
+            "format": "png",
+            "height": 100,
+            "width": 150
+          },
+          "outputs": [
+            {
+              "bytes": 413,
+              "format": "png",
+              "height": 64,
+              "part": 0,
+              "pixels_sha256": "ff10e24eba151cc0d8e02c195773d4388969a13015e71b9b4f9831429e5507b2",
+              "role": "tile",
+              "sha256": "ad5f605c042073e558d680e42a2f6d89b7d1303ef162127cec539048176b4934",
+              "tile": 6,
+              "width": 64
+            }
+          ],
+          "source": "tile_src.png",
+          "steps": [
+            {
+              "cols": 3,
+              "from": [
+                150,
+                100
+              ],
+              "op": "tile",
+              "overlap": 8,
+              "rows": 2,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 2,
+                  "height": 64,
+                  "n": 6,
+                  "output": 0,
+                  "row": 1,
+                  "width": 64,
+                  "x": 86,
+                  "y": 36
+                }
+              ],
+              "tiles_total": 6
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "cursor": "imgt1.eyJyZXEiOiJiNjNmYzNlYjY5OWRjZDU3NjZjZWM2NWI5ZmVjNTljYjAwMWQ4OTQ4YzM3YzE0ODk3NjQ2MGE5MjgzZDIzYjhlIiwiaXRlbSI6MCwidGlsZSI6NSwibGVuIjoxNjE2MCwic2hhIjoiYzliNzA2NWY4ZTYzNjdiN2YzZjRiODZkNzA4YTIwNTI1ZmM5YWEzZjI2MWRjM2VlYjEwOGYxOTFiMTUwM2M0NCJ9",
+    "files": [
+      "tile_src.png"
+    ],
+    "op": "tile",
+    "overlap": 8,
+    "page_bytes": 20000,
+    "size": 64
+  }
+}

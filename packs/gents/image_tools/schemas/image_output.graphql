@@ -1,0 +1,15 @@
+type ImageOutput {
+  run_id: String @index
+  chunk: Int
+  source: String
+  role: String
+  tile: Int
+  format: String
+  width: Int
+  height: Int
+  bytes: Int
+  sha256: String
+  pixels_sha256: String
+  mime: String
+  image_base64: String
+}

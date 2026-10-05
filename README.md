@@ -356,6 +356,7 @@ builds.
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
 | [graph_pipeline](packs/gents/graph_pipeline/README.md) | Compiler evaluation fixtures |
 | [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
+| [image_tools](packs/gents/image_tools/README.md) | An Image helper agent and image_tools plugins that show, cut, compare and measure PNG, JPEG, GIF, BMP, TIFF and WebP images: upright model-ready views, tiles, diffs, QR and barcode reading, hashes |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |
 | [mailbox](packs/gents/mailbox/README.md) | Explicit human-attention tool surface |
 | [ocr](packs/gents/ocr/README.md) | A Document reader agent and an ocr plugin that read PDF, EPUB, Office, OpenDocument, HTML and image files into Markdown, OCR included |

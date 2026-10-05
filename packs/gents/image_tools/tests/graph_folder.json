@@ -1,0 +1,83 @@
+{
+  "runtime": {
+    "repository": {
+      "copy": {
+        "pics/scene.png": "plugins/image_tools/tests/fixtures/scene.png",
+        "pics/photo_meta.jpg": "plugins/image_tools/tests/fixtures/photo_meta.jpg",
+        "pics/truncated.png": "plugins/image_tools/tests/fixtures/hostile/truncated.png"
+      }
+    },
+    "seed": {
+      "collection": "ImageJob",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "path": "${REPOSITORY}/pics",
+        "ops": "[{\"op\":\"view\",\"max_side\":16}]"
+      }
+    },
+    "taken": {
+      "collection": "ImageChunk",
+      "fields": {
+        "source": "scene.png"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ImageChunk",
+        "fields": {
+          "source": "photo_meta.jpg"
+        }
+      },
+      {
+        "collection": "ImageResult",
+        "fields": {
+          "source": "scene.png",
+          "ok": true,
+          "complete": true,
+          "input_format": "png",
+          "input_width": 32,
+          "input_height": 24,
+          "outputs": 1
+        }
+      },
+      {
+        "collection": "ImageOutput",
+        "fields": {
+          "source": "scene.png",
+          "role": "view",
+          "format": "png",
+          "mime": "image/png",
+          "width": 16,
+          "height": 12
+        }
+      },
+      {
+        "collection": "ImageResult",
+        "fields": {
+          "source": "photo_meta.jpg",
+          "ok": true,
+          "input_format": "jpeg",
+          "input_width": 48,
+          "input_height": 32
+        }
+      },
+      {
+        "collection": "ImageOutput",
+        "fields": {
+          "source": "photo_meta.jpg",
+          "role": "view",
+          "width": 11,
+          "height": 16
+        }
+      },
+      {
+        "collection": "ImageResult",
+        "fields": {
+          "source": "truncated.png",
+          "ok": false,
+          "outputs": 0
+        }
+      }
+    ]
+  }
+}

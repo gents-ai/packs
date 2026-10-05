@@ -3,7 +3,6 @@
 //! the smallest that holds the image exactly: gray, RGB, or RGBA.
 use std::io::Cursor;
 
-use image::{ExtendedColorType, ImageEncoder};
 use image::codecs::{
     bmp::BmpEncoder,
     gif::{GifEncoder, Repeat},
@@ -12,6 +11,7 @@ use image::codecs::{
     tiff::TiffEncoder,
     webp::WebPEncoder,
 };
+use image::{ExtendedColorType, ImageEncoder};
 
 use crate::model::{Format, Img};
 
@@ -36,9 +36,16 @@ impl Packed {
     fn of(img: &Img) -> Self {
         let opaque = img.opaque();
         if opaque && img.gray() {
-            Self::Gray(img.px.chunks_exact(4).map(|p| p[0]).collect())
+            Self::Gray(img.px.as_chunks::<4>().0.iter().map(|p| p[0]).collect())
         } else if opaque {
-            Self::Rgb(img.px.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]]).collect())
+            Self::Rgb(
+                img.px
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .flat_map(|p| [p[0], p[1], p[2]])
+                    .collect(),
+            )
         } else {
             Self::Rgba(img.px.clone())
         }
@@ -56,7 +63,7 @@ impl Packed {
 /// `img` composited onto white, so formats without alpha show it as a viewer would.
 pub fn flatten(img: &Img) -> Img {
     let mut out = img.clone();
-    for p in out.px.chunks_exact_mut(4) {
+    for p in out.px.as_chunks_mut::<4>().0.iter_mut() {
         let a = u32::from(p[3]);
         for c in &mut p[..3] {
             *c = ((u32::from(*c) * a + 255 * (255 - a) + 127) / 255) as u8;
@@ -72,7 +79,12 @@ fn failed(format: Format) -> String {
 
 /// Encodes `img` as `format`. `quality` (1 to 100) applies to JPEG and GIF;
 /// `icc` is embedded where the format can carry it.
-pub fn encode(img: &Img, format: Format, quality: Option<u8>, icc: Option<&[u8]>) -> Result<Encoded, String> {
+pub fn encode(
+    img: &Img,
+    format: Format,
+    quality: Option<u8>,
+    icc: Option<&[u8]>,
+) -> Result<Encoded, String> {
     let mut notes = Vec::new();
     let flat;
     let source = if format == Format::Jpeg && !img.opaque() {
@@ -83,7 +95,9 @@ pub fn encode(img: &Img, format: Format, quality: Option<u8>, icc: Option<&[u8]>
         img
     };
     if quality.is_some() && !matches!(format, Format::Jpeg | Format::Gif) {
-        notes.push(format!("quality is ignored for {format}, which is written losslessly"));
+        notes.push(format!(
+            "quality is ignored for {format}, which is written losslessly"
+        ));
     }
     if format == Format::Gif && count_colours(img, 257) > 256 {
         notes.push("GIF holds 256 colours, so the colours were reduced".into());
@@ -96,13 +110,19 @@ pub fn encode(img: &Img, format: Format, quality: Option<u8>, icc: Option<&[u8]>
         if let Some(p) = icc
             && enc.set_icc_profile(p.to_vec()).is_err()
         {
-            notes.push(format!("the ICC profile cannot be kept in {name} and was dropped"));
+            notes.push(format!(
+                "the ICC profile cannot be kept in {name} and was dropped"
+            ));
         }
     };
     let q = quality.unwrap_or(DEFAULT_QUALITY).clamp(1, 100);
     let written = match format {
         Format::Png => {
-            let mut e = PngEncoder::new_with_quality(&mut out, CompressionType::Default, FilterType::Adaptive);
+            let mut e = PngEncoder::new_with_quality(
+                &mut out,
+                CompressionType::Default,
+                FilterType::Adaptive,
+            );
             keep_icc(&mut e, format);
             e.write_image(buf, w, h, color)
         }
@@ -127,8 +147,10 @@ pub fn encode(img: &Img, format: Format, quality: Option<u8>, icc: Option<&[u8]>
             // Speed 1 is the best palette search; speed 30 the fastest.
             let speed = 1 + (100 - i32::from(q)) * 29 / 100;
             let mut e = GifEncoder::new_with_speed(&mut out, speed);
-            let rgba = image::RgbaImage::from_raw(w, h, img.px.clone()).ok_or_else(|| failed(format))?;
-            e.set_repeat(Repeat::Finite(0)).map_err(|_| failed(format))?;
+            let rgba =
+                image::RgbaImage::from_raw(w, h, img.px.clone()).ok_or_else(|| failed(format))?;
+            e.set_repeat(Repeat::Finite(0))
+                .map_err(|_| failed(format))?;
             e.encode_frame(image::Frame::new(rgba))
         }
     };
@@ -139,7 +161,7 @@ pub fn encode(img: &Img, format: Format, quality: Option<u8>, icc: Option<&[u8]>
 /// Counts distinct RGBA colours, stopping at `cap`.
 pub fn count_colours(img: &Img, cap: usize) -> usize {
     let mut seen = std::collections::BTreeSet::new();
-    for p in img.px.chunks_exact(4) {
+    for p in img.px.as_chunks::<4>().0.iter() {
         seen.insert(u32::from_le_bytes([p[0], p[1], p[2], p[3]]));
         if seen.len() >= cap {
             break;
@@ -157,7 +179,10 @@ mod tests {
     use std::sync::Arc;
 
     fn back(bytes: Vec<u8>) -> Img {
-        let s = Source { name: "t".into(), data: Data::Mem(Arc::new(bytes)) };
+        let s = Source {
+            name: "t".into(),
+            data: Data::Mem(Arc::new(bytes)),
+        };
         let h = header(&s).unwrap();
         decode(&s, &h, &LoadOpts::default()).unwrap().img
     }
@@ -180,7 +205,7 @@ mod tests {
     #[test]
     fn transparency_survives_png_webp_and_tiff() {
         let mut img = scene(8, 8);
-        for (i, p) in img.px.chunks_exact_mut(4).enumerate() {
+        for (i, p) in img.px.as_chunks_mut::<4>().0.iter_mut().enumerate() {
             p[3] = (i * 4) as u8;
         }
         for f in [Format::Png, Format::Webp, Format::Tiff] {
@@ -192,11 +217,19 @@ mod tests {
     fn the_smallest_colour_layout_is_written() {
         let gray = Img::filled(4, 4, [7, 7, 7, 255]).unwrap();
         let png = encode(&gray, Format::Png, None, None).unwrap().bytes;
-        let h = header(&Source { name: "t".into(), data: Data::Mem(Arc::new(png)) }).unwrap();
+        let h = header(&Source {
+            name: "t".into(),
+            data: Data::Mem(Arc::new(png)),
+        })
+        .unwrap();
         assert_eq!(h.color, "l8");
         let rgb = scene(4, 4);
         let png = encode(&rgb, Format::Png, None, None).unwrap().bytes;
-        let h = header(&Source { name: "t".into(), data: Data::Mem(Arc::new(png)) }).unwrap();
+        let h = header(&Source {
+            name: "t".into(),
+            data: Data::Mem(Arc::new(png)),
+        })
+        .unwrap();
         assert_eq!(h.color, "rgb8");
     }
 
@@ -208,7 +241,10 @@ mod tests {
         assert!(hi.len() > lo.len());
         let err = |bytes: Vec<u8>| -> u64 {
             let b = back(bytes);
-            b.px.iter().zip(&img.px).map(|(a, c)| u64::from(a.abs_diff(*c))).sum()
+            b.px.iter()
+                .zip(&img.px)
+                .map(|(a, c)| u64::from(a.abs_diff(*c)))
+                .sum()
         };
         assert!(err(hi) < err(lo));
     }
@@ -219,7 +255,12 @@ mod tests {
         let e = encode(&img, Format::Jpeg, None, None).unwrap();
         assert!(e.notes.iter().any(|n| n.contains("flattened onto white")));
         let b = back(e.bytes);
-        assert!(b.px.chunks_exact(4).all(|p| p[0] >= 250 && p[1] >= 250 && p[2] >= 250));
+        assert!(
+            b.px.as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| p[0] >= 250 && p[1] >= 250 && p[2] >= 250)
+        );
     }
 
     #[test]
@@ -228,14 +269,22 @@ mod tests {
         let f = flatten(&img);
         // 0*128 + 255*127 = 32385 -> /255 = 127; 100*128 + 32385 = 45185 -> 177; 200*128 + 32385 = 57985 -> 227
         assert_eq!(f.get(0, 0), [127, 177, 227, 255]);
-        assert_eq!(flatten(&Img::filled(1, 1, [9, 8, 7, 255]).unwrap()).get(0, 0), [9, 8, 7, 255]);
+        assert_eq!(
+            flatten(&Img::filled(1, 1, [9, 8, 7, 255]).unwrap()).get(0, 0),
+            [9, 8, 7, 255]
+        );
     }
 
     #[test]
     fn quality_is_noted_as_ignored_for_lossless_formats() {
         let e = encode(&scene(4, 4), Format::Png, Some(50), None).unwrap();
         assert!(e.notes.iter().any(|n| n.contains("ignored for png")));
-        assert!(encode(&scene(4, 4), Format::Jpeg, Some(50), None).unwrap().notes.is_empty());
+        assert!(
+            encode(&scene(4, 4), Format::Jpeg, Some(50), None)
+                .unwrap()
+                .notes
+                .is_empty()
+        );
     }
 
     #[test]
@@ -255,8 +304,15 @@ mod tests {
         let profile: Vec<u8> = (0..200u32).map(|i| (i * 3) as u8).collect();
         for f in [Format::Png, Format::Jpeg, Format::Webp] {
             let e = encode(&img, f, None, Some(&profile)).unwrap();
-            let s = Source { name: "t".into(), data: Data::Mem(Arc::new(e.bytes)) };
-            assert_eq!(header(&s).unwrap().icc.as_deref(), Some(profile.as_slice()), "{f}");
+            let s = Source {
+                name: "t".into(),
+                data: Data::Mem(Arc::new(e.bytes)),
+            };
+            assert_eq!(
+                header(&s).unwrap().icc.as_deref(),
+                Some(profile.as_slice()),
+                "{f}"
+            );
             assert!(e.notes.is_empty(), "{f}: {:?}", e.notes);
         }
     }
@@ -264,7 +320,14 @@ mod tests {
     #[test]
     fn the_same_pixels_always_give_the_same_bytes() {
         let img = scene(50, 40);
-        for f in [Format::Png, Format::Jpeg, Format::Webp, Format::Bmp, Format::Tiff, Format::Gif] {
+        for f in [
+            Format::Png,
+            Format::Jpeg,
+            Format::Webp,
+            Format::Bmp,
+            Format::Tiff,
+            Format::Gif,
+        ] {
             let a = encode(&img, f, None, None).unwrap().bytes;
             let b = encode(&img.clone(), f, None, None).unwrap().bytes;
             assert_eq!(a, b, "{f}");
@@ -275,6 +338,9 @@ mod tests {
     fn colour_counting_stops_at_the_cap() {
         let img = scene(30, 30);
         assert_eq!(count_colours(&img, 10), 10);
-        assert_eq!(count_colours(&Img::filled(3, 3, [1, 2, 3, 4]).unwrap(), 10), 1);
+        assert_eq!(
+            count_colours(&Img::filled(3, 3, [1, 2, 3, 4]).unwrap(), 10),
+            1
+        );
     }
 }

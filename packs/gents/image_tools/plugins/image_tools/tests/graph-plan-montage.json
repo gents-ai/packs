@@ -1,0 +1,21 @@
+{
+  "bind": "fixtures/montage",
+  "expect": [
+    {
+      "chunk": 0,
+      "files": [
+        "blue.png",
+        "broken.png",
+        "green.png",
+        "red.png"
+      ],
+      "ops": "montage",
+      "path": "/home/vcq/projects/packs-image-tools/packs/gents/image_tools/plugins/image_tools/tests/fixtures/montage",
+      "source": "montage"
+    }
+  ],
+  "input": {
+    "ops": "montage",
+    "run_id": "r1"
+  }
+}

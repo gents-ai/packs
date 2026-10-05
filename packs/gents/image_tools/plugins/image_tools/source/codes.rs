@@ -39,12 +39,12 @@ pub struct Found {
     pub omitted: usize,
 }
 
-const FORMATS: [(&str, BarcodeFormat); 16] = [
+// MaxiCode, RSS-14 and RSS Expanded are left out: those readers panic on some damaged pictures.
+const FORMATS: [(&str, BarcodeFormat); 13] = [
     ("qr_code", BarcodeFormat::QR_CODE),
     ("aztec", BarcodeFormat::AZTEC),
     ("data_matrix", BarcodeFormat::DATA_MATRIX),
     ("pdf_417", BarcodeFormat::PDF_417),
-    ("maxicode", BarcodeFormat::MAXICODE),
     ("code_128", BarcodeFormat::CODE_128),
     ("code_39", BarcodeFormat::CODE_39),
     ("code_93", BarcodeFormat::CODE_93),
@@ -54,8 +54,6 @@ const FORMATS: [(&str, BarcodeFormat); 16] = [
     ("upc_a", BarcodeFormat::UPC_A),
     ("upc_e", BarcodeFormat::UPC_E),
     ("itf", BarcodeFormat::ITF),
-    ("rss_14", BarcodeFormat::RSS_14),
-    ("rss_expanded", BarcodeFormat::RSS_EXPANDED),
 ];
 
 /// The format names accepted in a request.
@@ -72,7 +70,12 @@ pub fn parse_formats(names: &[String]) -> Result<Vec<BarcodeFormat>, String> {
                 .iter()
                 .find(|(k, _)| k == n)
                 .map(|(_, f)| *f)
-                .ok_or_else(|| format!("{n:?} is not a code format; use one of {}", format_names().join(", ")))
+                .ok_or_else(|| {
+                    format!(
+                        "{n:?} is not a code format; use one of {}",
+                        format_names().join(", ")
+                    )
+                })
         })
         .collect()
 }
@@ -95,7 +98,13 @@ fn gray_of(img: &Img) -> Gray {
     Gray {
         w: img.w,
         h: img.h,
-        px: img.px.chunks_exact(4).map(|p| (luma_milli(p) / 1000) as u8).collect(),
+        px: img
+            .px
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|p| (luma_milli(p) / 1000) as u8)
+            .collect(),
     }
 }
 
@@ -108,26 +117,30 @@ fn stretch(g: &Gray) -> Option<Gray> {
     let total = g.px.len() as u64;
     let at = |target: u64| {
         let mut run = 0;
-        (0..256).find(|&i| {
-            run += hist[i];
-            run >= target
-        })
-        .unwrap_or(255)
+        (0..256)
+            .find(|&i| {
+                run += hist[i];
+                run >= target
+            })
+            .unwrap_or(255)
     };
     let (lo, hi) = (at(total / 100) as i32, at(total - total / 100) as i32);
     if hi - lo < 16 || (lo <= 8 && hi >= 247) {
         return None;
     }
-    let px = g
-        .px
-        .iter()
-        .map(|&v| ((i32::from(v) - lo) * 255 / (hi - lo)).clamp(0, 255) as u8)
-        .collect();
+    let px =
+        g.px.iter()
+            .map(|&v| ((i32::from(v) - lo) * 255 / (hi - lo)).clamp(0, 255) as u8)
+            .collect();
     Some(Gray { w: g.w, h: g.h, px })
 }
 
 fn invert(g: &Gray) -> Gray {
-    Gray { w: g.w, h: g.h, px: g.px.iter().map(|&v| 255 - v).collect() }
+    Gray {
+        w: g.w,
+        h: g.h,
+        px: g.px.iter().map(|&v| 255 - v).collect(),
+    }
 }
 
 /// Box-averages by the integer factor `k`.
@@ -163,10 +176,15 @@ fn grow(g: &Gray, k: u32) -> Gray {
 
 fn run(g: &Gray, formats: &[BarcodeFormat], scale: f64) -> Vec<Code> {
     let mut hints = DecodeHints::default();
-    if !formats.is_empty() {
-        hints.PossibleFormats = Some(formats.iter().copied().collect::<HashSet<_>>());
-    }
-    let Ok(results) = rxing::helpers::detect_multiple_in_luma_with_hints(g.px.clone(), g.w, g.h, &mut hints) else {
+    let wanted: HashSet<BarcodeFormat> = if formats.is_empty() {
+        FORMATS.iter().map(|(_, f)| *f).collect()
+    } else {
+        formats.iter().copied().collect()
+    };
+    hints.PossibleFormats = Some(wanted);
+    let Ok(results) =
+        rxing::helpers::detect_multiple_in_luma_with_hints(g.px.clone(), g.w, g.h, &mut hints)
+    else {
         return Vec::new();
     };
     results
@@ -175,10 +193,21 @@ fn run(g: &Gray, formats: &[BarcodeFormat], scale: f64) -> Vec<Code> {
             let points: Vec<[i64; 2]> = r
                 .getPoints()
                 .iter()
-                .map(|p| [(f64::from(p.x) / scale).round() as i64, (f64::from(p.y) / scale).round() as i64])
+                .map(|p| {
+                    [
+                        (f64::from(p.x) / scale).round() as i64,
+                        (f64::from(p.y) / scale).round() as i64,
+                    ]
+                })
                 .collect();
-            let (x0, x1) = (points.iter().map(|p| p[0]).min().unwrap_or(0), points.iter().map(|p| p[0]).max().unwrap_or(0));
-            let (y0, y1) = (points.iter().map(|p| p[1]).min().unwrap_or(0), points.iter().map(|p| p[1]).max().unwrap_or(0));
+            let (x0, x1) = (
+                points.iter().map(|p| p[0]).min().unwrap_or(0),
+                points.iter().map(|p| p[0]).max().unwrap_or(0),
+            );
+            let (y0, y1) = (
+                points.iter().map(|p| p[1]).min().unwrap_or(0),
+                points.iter().map(|p| p[1]).max().unwrap_or(0),
+            );
             Code {
                 format: name_of(r.getBarcodeFormat()),
                 text: r.getText().to_owned(),
@@ -195,15 +224,18 @@ pub fn decode(img: &Img, formats: &[BarcodeFormat]) -> Found {
     let stretched = stretch(&plain);
     let base = stretched.as_ref().unwrap_or(&plain);
     let longest = img.w.max(img.h);
-    let mut attempts: Vec<(&'static str, Gray, f64)> = vec![("plain", plain.clone(), 1.0)];
+    let mut attempts: Vec<(&'static str, Gray, f64)> = Vec::new();
+    // A large picture is tried shrunk first: the full-size passes cost the most.
+    if longest > SHRINK_ABOVE {
+        let k = longest.div_ceil(SHRINK_ABOVE);
+        attempts.push(("shrunk", shrink(base, k), 1.0 / f64::from(k)));
+    }
+    attempts.push(("plain", plain.clone(), 1.0));
     if let Some(s) = &stretched {
         attempts.push(("stretched", s.clone(), 1.0));
     }
     attempts.push(("inverted", invert(base), 1.0));
-    if longest > SHRINK_ABOVE {
-        let k = longest.div_ceil(SHRINK_ABOVE);
-        attempts.push(("shrunk", shrink(base, k), 1.0 / f64::from(k)));
-    } else if longest < GROW_BELOW {
+    if longest < GROW_BELOW {
         let k = (600 / longest.max(1)).clamp(2, 8);
         attempts.push(("enlarged", grow(base, k), f64::from(k)));
     }
@@ -214,10 +246,21 @@ pub fn decode(img: &Img, formats: &[BarcodeFormat]) -> Found {
         }
         let mut seen = HashSet::new();
         codes.retain(|c| seen.insert((c.format, c.text.clone())));
-        codes.sort_by(|a, b| (a.bbox[1], a.bbox[0], a.format, &a.text).cmp(&(b.bbox[1], b.bbox[0], b.format, &b.text)));
+        codes.sort_by(|a, b| {
+            (a.bbox[1], a.bbox[0], a.format, &a.text)
+                .cmp(&(b.bbox[1], b.bbox[0], b.format, &b.text))
+        });
         let omitted = codes.len().saturating_sub(MAX_CODES);
         codes.truncate(MAX_CODES);
-        return Found { codes, attempt, omitted };
+        return Found {
+            codes,
+            attempt,
+            omitted,
+        };
     }
-    Found { codes: Vec::new(), attempt: "none", omitted: 0 }
+    Found {
+        codes: Vec::new(),
+        attempt: "none",
+        omitted: 0,
+    }
 }

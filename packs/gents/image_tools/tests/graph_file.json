@@ -1,0 +1,35 @@
+{
+  "runtime": {
+    "repository": {
+      "copy": {
+        "pics/scene.png": "plugins/image_tools/tests/fixtures/scene.png"
+      }
+    },
+    "seed": {
+      "collection": "ImageJob",
+      "fields": {
+        "run_id": "run-${ATTEMPT}",
+        "path": "${REPOSITORY}/pics/scene.png",
+        "ops": "info"
+      }
+    },
+    "taken": {
+      "collection": "ImageChunk",
+      "fields": {
+        "source": "scene.png"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ImageResult",
+        "fields": {
+          "source": "scene.png",
+          "ok": true,
+          "input_format": "png",
+          "input_width": 32,
+          "outputs": 0
+        }
+      }
+    ]
+  }
+}

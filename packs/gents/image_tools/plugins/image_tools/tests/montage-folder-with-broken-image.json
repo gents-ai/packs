@@ -1,0 +1,95 @@
+{
+  "bind": "fixtures/montage",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEwAAABMCAIAAABI9cZ8AAABtElEQVR4nO3aP26DMBQG8I8qV+gFwsTcoVNP0Kkn7dQTdOrQmQku0ENQpChWZIixH47ep8f7higixPIPg//InKZpgvU84QA5BPIEjfw0zfz5+pgnZVm4DhLX2jwPA6rmr22XB3Vu13CZV+skTigtunZqz2SoRy3nPSF0O56KzoQQ6r1rFWdaCIYhZKdzUwiScVLszBGCZzIgcGYKQTXjKXLmCxFNBl4+Kg/NUX4/N2o/1/hS+/kzUfsiIQjnrpvtWSoE5wQ94RQIQbsKWXXKhGBeakVOsRDk68lle8pWLeyL5luVeF3Gjlx9JktDjVzepTInLzIS7nGSIld7GrGTEZnoS2VOOuTmaCFwciEzx8NSZ6O1TTCOY3SkdMRPn38+n8N3lpYUzGny25MCKZ61ZTr1kTvnpTlOZeROYfTfe05NZBVhVALRXgiqCqNylk6dIeSyu4Z6wpAgvN26o9gLeXSZjb8zYCSOtBJHWokjrcSRVuJIKznwW5Ld1xvqpX//zjlt6DpI0/Z94le/Xa3EkVbiSCtxpJU40kocaSWHQPo2gZU40kocaSWOtBJHWokjreQQyH+c79dfgWAdugAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "outputs": [
+            {
+              "bytes": 493,
+              "format": "png",
+              "height": 76,
+              "part": 0,
+              "pixels_sha256": "8260e019e159ed702dd0d0c6b9db08906feac332cb428987362052ff8e564bb3",
+              "role": "montage",
+              "sha256": "dd49f856035e7b303304fc251277929ded26ae6f4be02e9e46be0560b7b51592",
+              "width": 76
+            }
+          ],
+          "source": "montage",
+          "steps": [
+            {
+              "cell": 32,
+              "cells": [
+                {
+                  "col": 0,
+                  "height": 14,
+                  "n": 1,
+                  "row": 0,
+                  "source": "blue.png",
+                  "width": 32,
+                  "x": 4,
+                  "y": 13
+                },
+                {
+                  "col": 1,
+                  "error": "the png image is corrupt or truncated; use an intact file",
+                  "height": 32,
+                  "n": 2,
+                  "row": 0,
+                  "source": "broken.png",
+                  "width": 32,
+                  "x": 40,
+                  "y": 4
+                },
+                {
+                  "col": 0,
+                  "height": 14,
+                  "n": 3,
+                  "row": 1,
+                  "source": "green.png",
+                  "width": 26,
+                  "x": 7,
+                  "y": 49
+                },
+                {
+                  "col": 1,
+                  "height": 14,
+                  "n": 4,
+                  "row": 1,
+                  "source": "red.png",
+                  "width": 20,
+                  "x": 46,
+                  "y": 49
+                }
+              ],
+              "cols": 2,
+              "gap": 4,
+              "height": 76,
+              "images": 4,
+              "op": "montage",
+              "output": 0,
+              "rows": 2,
+              "width": 76
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "cell": 32,
+    "gap": 4,
+    "labels": false,
+    "op": "montage"
+  }
+}

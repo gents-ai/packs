@@ -1,0 +1,36 @@
+{
+  "bind": "fixtures/batch",
+  "expect": [
+    {
+      "chunk": 0,
+      "files": [
+        "a.png"
+      ],
+      "ops": "[{\"op\":\"view\",\"max_side\":16}]",
+      "path": "/home/vcq/projects/packs-image-tools/packs/gents/image_tools/plugins/image_tools/tests/fixtures/batch",
+      "source": "a.png"
+    },
+    {
+      "chunk": 1,
+      "files": [
+        "b.jpg"
+      ],
+      "ops": "[{\"op\":\"view\",\"max_side\":16}]",
+      "path": "/home/vcq/projects/packs-image-tools/packs/gents/image_tools/plugins/image_tools/tests/fixtures/batch",
+      "source": "b.jpg"
+    },
+    {
+      "chunk": 2,
+      "files": [
+        "sub/c.png"
+      ],
+      "ops": "[{\"op\":\"view\",\"max_side\":16}]",
+      "path": "/home/vcq/projects/packs-image-tools/packs/gents/image_tools/plugins/image_tools/tests/fixtures/batch",
+      "source": "sub/c.png"
+    }
+  ],
+  "input": {
+    "ops": "[{\"op\":\"view\",\"max_side\":16}]",
+    "run_id": "r1"
+  }
+}

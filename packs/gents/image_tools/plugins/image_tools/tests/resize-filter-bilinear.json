@@ -1,0 +1,56 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 304,
+            "format": "png",
+            "height": 15,
+            "pixels_sha256": "fc12f8ce6bfbde9be968c7ad0b5fb2f66f6b8c28b5672dfdb1768ac199973144",
+            "role": "result",
+            "sha256": "6e4b532d053f9e9d92f6563bfcfe6b6cd41a205500323678c15a15a1d8c08d70",
+            "width": 20
+          }
+        ],
+        "source": "scene.png",
+        "steps": [
+          {
+            "changed": true,
+            "filter": "bilinear",
+            "from": [
+              32,
+              24
+            ],
+            "mode": "fit",
+            "op": "resize",
+            "to": [
+              20,
+              15
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "filter": "bilinear",
+    "op": "resize",
+    "output": {
+      "part": false
+    },
+    "width": 20
+  }
+}

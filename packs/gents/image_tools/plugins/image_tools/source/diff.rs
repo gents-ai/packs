@@ -143,7 +143,11 @@ fn similarity(a: &Img, b: &Img, skip: &[bool]) -> f64 {
             for yy in y..y + win {
                 for xx in x..x + win {
                     let va = luma(a, xx, yy);
-                    let vb = if skip[yy as usize * w as usize + xx as usize] { va } else { luma(b, xx, yy) };
+                    let vb = if skip[yy as usize * w as usize + xx as usize] {
+                        va
+                    } else {
+                        luma(b, xx, yy)
+                    };
                     sa += va;
                     sb += vb;
                     saa += va * va;
@@ -155,7 +159,8 @@ fn similarity(a: &Img, b: &Img, skip: &[bool]) -> f64 {
             let (ma, mb) = (sa as f64 / n, sb as f64 / n);
             let (va, vb) = (saa as f64 / n - ma * ma, sbb as f64 / n - mb * mb);
             let cov = sab as f64 / n - ma * mb;
-            total += ((2.0 * ma * mb + c1) * (2.0 * cov + c2)) / ((ma * ma + mb * mb + c1) * (va + vb + c2));
+            total += ((2.0 * ma * mb + c1) * (2.0 * cov + c2))
+                / ((ma * ma + mb * mb + c1) * (va + vb + c2));
             windows += 1;
             if x + win >= w {
                 break;
@@ -202,7 +207,12 @@ fn find_regions(mask: &[u8], w: u32, h: u32, gap: u32) -> Vec<Region> {
         let mut changed = 0u64;
         while let Some(cur) = stack.pop() {
             if let Some(e) = blocks[cur] {
-                bounds = [bounds[0].min(e[0]), bounds[1].min(e[1]), bounds[2].max(e[2]), bounds[3].max(e[3])];
+                bounds = [
+                    bounds[0].min(e[0]),
+                    bounds[1].min(e[1]),
+                    bounds[2].max(e[2]),
+                    bounds[3].max(e[3]),
+                ];
                 changed += u64::from(e[4]);
             }
             let (cx, cy) = ((cur % bw) as i64, (cur / bw) as i64);
@@ -235,9 +245,9 @@ pub fn highlight(a: &Img, o: &Outcome) -> Result<Img, String> {
             let p = a.get(x, y);
             let at = out.at(x, y);
             let alpha = u32::from(p[3]);
-            for c in 0..3 {
-                let on_white = (u32::from(p[c]) * alpha + 255 * (255 - alpha) + 127) / 255;
-                out.px[at + c] = ((on_white * 3 + 255 * 7 + 5) / 10) as u8;
+            for (dst, &src) in out.px[at..at + 3].iter_mut().zip(&p[..3]) {
+                let on_white = (u32::from(src) * alpha + 255 * (255 - alpha) + 127) / 255;
+                *dst = ((on_white * 3 + 255 * 7 + 5) / 10) as u8;
             }
         }
     }
@@ -247,7 +257,15 @@ pub fn highlight(a: &Img, o: &Outcome) -> Result<Img, String> {
         }
     }
     for r in &o.regions {
-        draw::rect_outline(&mut out, i64::from(r.x) - 1, i64::from(r.y) - 1, r.width + 2, r.height + 2, 1, [255, 0, 255, 255]);
+        draw::rect_outline(
+            &mut out,
+            i64::from(r.x) - 1,
+            i64::from(r.y) - 1,
+            r.width + 2,
+            r.height + 2,
+            1,
+            [255, 0, 255, 255],
+        );
     }
     Ok(out)
 }
@@ -257,7 +275,11 @@ mod tests {
     use super::*;
 
     fn spec<'a>(tolerance: u8, ignore: &'a [Rect], merge_gap: u32) -> Spec<'a> {
-        Spec { tolerance, ignore, merge_gap }
+        Spec {
+            tolerance,
+            ignore,
+            merge_gap,
+        }
     }
 
     fn white(w: u32, h: u32) -> Img {
@@ -289,7 +311,16 @@ mod tests {
         paint(&mut b, 10, 12, 20, 9, [0, 0, 0, 255]);
         let o = compare(&a, &b, &spec(0, &[], 8));
         assert_eq!(o.changed, 180);
-        assert_eq!(o.regions, vec![Region { x: 10, y: 12, width: 20, height: 9, changed: 180 }]);
+        assert_eq!(
+            o.regions,
+            vec![Region {
+                x: 10,
+                y: 12,
+                width: 20,
+                height: 9,
+                changed: 180
+            }]
+        );
         let ssim = o.ssim.unwrap();
         assert!(ssim < 1.0 && ssim > 0.5, "{ssim}");
     }
@@ -301,7 +332,11 @@ mod tests {
         assert_eq!(compare(&a, &b, &spec(4, &[], 8)).changed, 256);
         assert_eq!(compare(&a, &b, &spec(5, &[], 8)).changed, 0);
         let c = Img::filled(16, 16, [100, 100, 100, 200]).unwrap();
-        assert_eq!(compare(&a, &c, &spec(54, &[], 8)).changed, 256, "alpha counts as a channel");
+        assert_eq!(
+            compare(&a, &c, &spec(54, &[], 8)).changed,
+            256,
+            "alpha counts as a channel"
+        );
         assert_eq!(compare(&a, &c, &spec(55, &[], 8)).changed, 0);
     }
 
@@ -310,15 +345,30 @@ mod tests {
         let a = white(20, 10);
         let mut b = a.clone();
         paint(&mut b, 0, 0, 10, 10, [0, 0, 0, 255]);
-        let ignore = [Rect { x: 0, y: 0, width: 10, height: 10 }];
+        let ignore = [Rect {
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+        }];
         let o = compare(&a, &b, &spec(0, &ignore, 8));
         assert_eq!((o.changed, o.compared, o.regions_total), (0, 100, 0));
         assert_eq!(o.ssim, Some(1.0), "ignored pixels read as equal");
-        let half = [Rect { x: 0, y: 0, width: 5, height: 10 }];
+        let half = [Rect {
+            x: 0,
+            y: 0,
+            width: 5,
+            height: 10,
+        }];
         let o = compare(&a, &b, &spec(0, &half, 8));
         assert_eq!((o.changed, o.compared), (50, 150));
         // An ignore box past the edge is clipped, not an error.
-        let far = [Rect { x: 15, y: 5, width: 100, height: 100 }];
+        let far = [Rect {
+            x: 15,
+            y: 5,
+            width: 100,
+            height: 100,
+        }];
         assert_eq!(compare(&a, &b, &spec(0, &far, 8)).compared, 200 - 25);
     }
 
@@ -331,7 +381,10 @@ mod tests {
         paint(&mut b, 100, 30, 4, 4, [0, 0, 0, 255]);
         let near = compare(&a, &b, &spec(0, &[], 16));
         assert_eq!(
-            near.regions.iter().map(|r| (r.x, r.y, r.width, r.height)).collect::<Vec<_>>(),
+            near.regions
+                .iter()
+                .map(|r| (r.x, r.y, r.width, r.height))
+                .collect::<Vec<_>>(),
             vec![(8, 8, 28, 8), (100, 30, 4, 4)],
             "the first two are 12 px apart and merge"
         );
@@ -372,7 +425,11 @@ mod tests {
         let o = compare(&base, &wide, &spec(0, &[], 0));
         assert_eq!(o.regions_total, 250);
         assert_eq!(o.regions.len(), MAX_REGIONS);
-        assert!(o.regions.windows(2).all(|w| (w[0].y, w[0].x) <= (w[1].y, w[1].x)));
+        assert!(
+            o.regions
+                .windows(2)
+                .all(|w| (w[0].y, w[0].x) <= (w[1].y, w[1].x))
+        );
     }
 
     #[test]
@@ -385,7 +442,16 @@ mod tests {
         assert_eq!(o.changed, 40, "the 4 extra columns are all changed");
         assert_eq!(o.compared, 140);
         assert_eq!(o.ssim, None);
-        assert_eq!(o.regions, vec![Region { x: 10, y: 0, width: 4, height: 10, changed: 40 }]);
+        assert_eq!(
+            o.regions,
+            vec![Region {
+                x: 10,
+                y: 0,
+                width: 4,
+                height: 10,
+                changed: 40
+            }]
+        );
     }
 
     #[test]
@@ -434,12 +500,24 @@ mod tests {
         let hl = highlight(&a, &o).unwrap();
         assert_eq!((hl.w, hl.h), (40, 30));
         assert_eq!(hl.get(12, 12), [255, 0, 0, 255]);
-        assert_eq!(hl.get(9, 9), [255, 0, 255, 255], "box corner one pixel outside the change");
+        assert_eq!(
+            hl.get(9, 9),
+            [255, 0, 255, 255],
+            "box corner one pixel outside the change"
+        );
         assert_eq!(hl.get(16, 16), [255, 0, 255, 255]);
-        assert_eq!(hl.get(30, 20), [255, 255, 255, 255], "unchanged white stays white");
+        assert_eq!(
+            hl.get(30, 20),
+            [255, 255, 255, 255],
+            "unchanged white stays white"
+        );
         let mut dark = a.clone();
         paint(&mut dark, 0, 0, 40, 30, [0, 0, 0, 255]);
         let hl = highlight(&dark, &compare(&dark, &dark.clone(), &spec(0, &[], 8))).unwrap();
-        assert_eq!(hl.get(5, 5), [179, 179, 179, 255], "unchanged areas fade to a pale ghost");
+        assert_eq!(
+            hl.get(5, 5),
+            [179, 179, 179, 255],
+            "unchanged areas fade to a pale ghost"
+        );
     }
 }

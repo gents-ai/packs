@@ -31,12 +31,18 @@ fn a_plain_qr_code_gives_its_payload_position_and_attempt() {
     let code = img(&fx::qr("https://example.org/a?b=1", 4));
     let page = on_page(&code, 300, 260, 50, 30);
     let f = decode(&page, &[]);
-    assert_eq!(texts(&f), vec![("qr_code", "https://example.org/a?b=1".to_string())]);
+    assert_eq!(
+        texts(&f),
+        vec![("qr_code", "https://example.org/a?b=1".to_string())]
+    );
     assert_eq!(f.attempt, "plain");
     let b = f.codes[0].bbox;
     // The finder patterns sit inside the code's own square, which starts 16 px (the quiet zone) in.
     assert!(b[0] >= 50 + 16 && b[1] >= 30 + 16, "{b:?}");
-    assert!(b[0] + b[2] <= 50 + i64::from(code.w) && b[1] + b[3] <= 30 + i64::from(code.h), "{b:?}");
+    assert!(
+        b[0] + b[2] <= 50 + i64::from(code.w) && b[1] + b[3] <= 30 + i64::from(code.h),
+        "{b:?}"
+    );
     assert!(b[2] > 40 && b[3] > 40, "{b:?}");
 }
 
@@ -45,7 +51,11 @@ fn the_payload_survives_rotation_by_quarter_turns() {
     let code = img(&fx::qr("ROTATE-ME-123", 5));
     for deg in [90, 180, 270] {
         let r = geom::rotate(&code, deg).unwrap();
-        assert_eq!(texts(&decode(&r, &[])), vec![("qr_code", "ROTATE-ME-123".to_string())], "{deg} degrees");
+        assert_eq!(
+            texts(&decode(&r, &[])),
+            vec![("qr_code", "ROTATE-ME-123".to_string())],
+            "{deg} degrees"
+        );
     }
 }
 
@@ -53,21 +63,25 @@ fn the_payload_survives_rotation_by_quarter_turns() {
 fn a_light_on_dark_code_is_read_by_the_inverted_attempt() {
     let code = img(&fx::qr("INVERTED", 5));
     let mut inv = code.clone();
-    for p in inv.px.chunks_exact_mut(4) {
+    for p in inv.px.as_chunks_mut::<4>().0.iter_mut() {
         for c in &mut p[..3] {
             *c = 255 - *c;
         }
     }
     let f = decode(&inv, &[]);
     assert_eq!(texts(&f), vec![("qr_code", "INVERTED".to_string())]);
-    assert!(f.attempt == "plain" || f.attempt == "inverted", "{}", f.attempt);
+    assert!(
+        f.attempt == "plain" || f.attempt == "inverted",
+        "{}",
+        f.attempt
+    );
 }
 
 #[test]
 fn a_low_contrast_code_is_read_after_stretching() {
     let code = img(&fx::qr("LOW-CONTRAST", 5));
     let mut faint = code.clone();
-    for p in faint.px.chunks_exact_mut(4) {
+    for p in faint.px.as_chunks_mut::<4>().0.iter_mut() {
         let v = 120 + (u32::from(p[0]) * 40 / 255) as u8;
         p[0] = v;
         p[1] = v;
@@ -88,13 +102,16 @@ fn a_damaged_code_is_read_through_error_correction() {
             code.px[i..i + 3].copy_from_slice(&[0, 0, 0]);
         }
     }
-    assert_eq!(texts(&decode(&code, &[])), vec![("qr_code", "DAMAGED-BUT-READABLE-0123456789".to_string())]);
+    assert_eq!(
+        texts(&decode(&code, &[])),
+        vec![("qr_code", "DAMAGED-BUT-READABLE-0123456789".to_string())]
+    );
 }
 
 #[test]
 fn a_destroyed_code_is_reported_as_none_not_an_error() {
     let mut code = img(&fx::qr("GONE", 5));
-    for p in code.px.chunks_exact_mut(4) {
+    for p in code.px.as_chunks_mut::<4>().0.iter_mut() {
         p[..3].copy_from_slice(&[255, 255, 255]);
     }
     let f = decode(&code, &[]);
@@ -118,7 +135,13 @@ fn one_dimensional_and_matrix_formats_decode_to_their_payloads() {
         (F::PDF_417, "PDF417 PAYLOAD 123", "pdf_417", 400, 120),
     ];
     for (format, text, name, w, h) in cases {
-        let page = on_page(&img(&fx::barcode(format, text, w, h)), w as u32 + 80, h as u32 + 80, 40, 40);
+        let page = on_page(
+            &img(&fx::barcode(format, text, w, h)),
+            w as u32 + 80,
+            h as u32 + 80,
+            40,
+            40,
+        );
         let f = decode(&page, &[]);
         assert_eq!(texts(&f), vec![(name, text.to_string())], "{name}");
     }
@@ -126,7 +149,13 @@ fn one_dimensional_and_matrix_formats_decode_to_their_payloads() {
 
 #[test]
 fn a_vertical_barcode_is_read_after_a_quarter_turn() {
-    let code = on_page(&img(&fx::barcode(F::CODE_128, "VERTICAL-1", 320, 90)), 400, 170, 40, 40);
+    let code = on_page(
+        &img(&fx::barcode(F::CODE_128, "VERTICAL-1", 320, 90)),
+        400,
+        170,
+        40,
+        40,
+    );
     let turned = geom::rotate(&code, 90).unwrap();
     assert!(texts(&decode(&turned, &[])).contains(&("code_128", "VERTICAL-1".to_string())));
 }
@@ -155,10 +184,25 @@ fn several_codes_in_one_picture_are_all_returned_top_to_bottom() {
 #[test]
 fn a_format_filter_restricts_what_is_read() {
     let qr = on_page(&img(&fx::qr("ONLY-QR", 4)), 260, 260, 20, 20);
-    assert_eq!(decode(&qr, &parse_formats(&["qr_code".into()]).unwrap()).codes.len(), 1);
-    assert!(decode(&qr, &parse_formats(&["ean_13".into(), "code_128".into()]).unwrap()).codes.is_empty());
+    assert_eq!(
+        decode(&qr, &parse_formats(&["qr_code".into()]).unwrap())
+            .codes
+            .len(),
+        1
+    );
+    assert!(
+        decode(
+            &qr,
+            &parse_formats(&["ean_13".into(), "code_128".into()]).unwrap()
+        )
+        .codes
+        .is_empty()
+    );
     let e = parse_formats(&["qr".into()]).err().unwrap();
-    assert!(e.contains("not a code format") && e.contains("qr_code"), "{e}");
+    assert!(
+        e.contains("not a code format") && e.contains("qr_code"),
+        "{e}"
+    );
 }
 
 #[test]
@@ -167,7 +211,11 @@ fn a_tiny_code_is_read_after_enlarging() {
     assert!(code.w < 60);
     let f = decode(&code, &[]);
     assert_eq!(texts(&f), vec![("qr_code", "TINY".to_string())]);
-    assert!(f.codes[0].bbox[0] >= 0 && f.codes[0].bbox[0] + f.codes[0].bbox[2] <= i64::from(code.w), "{:?}", f.codes[0].bbox);
+    assert!(
+        f.codes[0].bbox[0] >= 0 && f.codes[0].bbox[0] + f.codes[0].bbox[2] <= i64::from(code.w),
+        "{:?}",
+        f.codes[0].bbox
+    );
 }
 
 #[test]
@@ -177,7 +225,18 @@ fn a_large_picture_is_read_and_positions_map_back_to_its_pixels() {
     let f = decode(&page, &[]);
     assert_eq!(texts(&f), vec![("qr_code", "BIG-PAGE".to_string())]);
     let b = f.codes[0].bbox;
-    assert!(b[0] >= 2000 && b[1] >= 1400 && b[0] + b[2] <= 2000 + i64::from(code.w) && b[1] + b[3] <= 1400 + i64::from(code.h), "{b:?} via {}", f.attempt);
+    assert_eq!(
+        f.attempt, "shrunk",
+        "a 3200 px picture is tried shrunk first"
+    );
+    assert!(
+        b[0] >= 2000
+            && b[1] >= 1400
+            && b[0] + b[2] <= 2000 + i64::from(code.w)
+            && b[1] + b[3] <= 1400 + i64::from(code.h),
+        "{b:?} via {}",
+        f.attempt
+    );
 }
 
 #[test]
@@ -191,4 +250,36 @@ fn duplicate_codes_are_listed_once() {
         }
     }
     assert_eq!(decode(&page, &[]).codes.len(), 1);
+}
+
+#[test]
+fn reading_is_deterministic_run_after_run() {
+    // The reader is handed a hash set of formats, whose order changes per instance: results must not.
+    let mut pictures: Vec<Img> = [
+        "qr_plain",
+        "qr_rot30",
+        "qr_damaged",
+        "code128",
+        "two_codes",
+        "no_code",
+    ]
+    .iter()
+    .map(|n| {
+        let i = image::open(format!("{}/codes/{n}.png", crate::testkit::fixtures()))
+            .unwrap()
+            .to_rgba8();
+        Img::from_raw(i.width(), i.height(), i.into_raw()).unwrap()
+    })
+    .collect();
+    for seed in 1..4 {
+        pictures.push(img(&fx::noise(120, 90, seed)));
+    }
+    for p in &pictures {
+        let first = decode(p, &[]);
+        for _ in 0..25 {
+            let again = decode(p, &[]);
+            assert_eq!(again.codes, first.codes);
+            assert_eq!(again.attempt, first.attempt);
+        }
+    }
 }

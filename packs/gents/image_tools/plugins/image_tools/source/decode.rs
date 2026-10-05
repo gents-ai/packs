@@ -4,7 +4,9 @@
 //! Orientation is reported, not applied: the chain applies it.
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use image::{AnimationDecoder, ExtendedColorType, ImageDecoder, ImageError, ImageFormat, ImageReader, Limits};
+use image::{
+    AnimationDecoder, ExtendedColorType, ImageDecoder, ImageError, ImageFormat, ImageReader, Limits,
+};
 
 use crate::exif::{self, Facts};
 use crate::geom;
@@ -87,11 +89,13 @@ fn limits() -> Limits {
 /// One plain sentence for a decoder error.
 fn describe(format: Format, e: &ImageError) -> String {
     match e {
-        ImageError::Limits(_) => format!(
-            "the {format} image is over the size limits; use a smaller image"
-        ),
+        ImageError::Limits(_) => {
+            format!("the {format} image is over the size limits; use a smaller image")
+        }
         ImageError::Unsupported(_) => {
-            format!("this {format} image uses a feature that is not supported; convert it to PNG first")
+            format!(
+                "this {format} image uses a feature that is not supported; convert it to PNG first"
+            )
         }
         _ => format!("the {format} image is corrupt or truncated; use an intact file"),
     }
@@ -159,8 +163,19 @@ fn has_alpha(c: ExtendedColorType) -> bool {
     use ExtendedColorType as C;
     matches!(
         c,
-        C::A8 | C::La1 | C::La2 | C::La4 | C::La8 | C::La16 | C::Rgba1 | C::Rgba2 | C::Rgba4
-            | C::Rgba8 | C::Rgba16 | C::Bgra8 | C::Rgba32F
+        C::A8
+            | C::La1
+            | C::La2
+            | C::La4
+            | C::La8
+            | C::La16
+            | C::Rgba1
+            | C::Rgba2
+            | C::Rgba4
+            | C::Rgba8
+            | C::Rgba16
+            | C::Bgra8
+            | C::Rgba32F
     )
 }
 
@@ -289,7 +304,10 @@ fn decode_frame(src: &Source, h: &Header, frame: u32) -> Result<Decoded, String>
     match frames.nth(frame as usize) {
         Some(Ok(f)) => from_dynamic(f.into_buffer()),
         Some(Err(e)) => Err(describe(h.format, &e)),
-        None => Err(format!("frame {frame} could not be read from this {} image", h.format)),
+        None => Err(format!(
+            "frame {frame} could not be read from this {} image",
+            h.format
+        )),
     }
 }
 
@@ -308,13 +326,16 @@ fn jpeg_scaled(src: &Source, h: &Header, target: (u32, u32)) -> Option<Decoded> 
         .find(|&k| scaled_side(h.width, k) >= target.0 && scaled_side(h.height, k) >= target.1)?;
     let (sw, sh) = (scaled_side(h.width, k), scaled_side(h.height, k));
     let mut dec = jpeg_decoder::Decoder::new(src.open_buf().ok()?);
-    dec.scale(u16::try_from(sw).ok()?, u16::try_from(sh).ok()?).ok()?;
+    dec.scale(u16::try_from(sw).ok()?, u16::try_from(sh).ok()?)
+        .ok()?;
     let px = dec.decode().ok()?;
     let info = dec.info()?;
     let (w, hh) = (u32::from(info.width), u32::from(info.height));
     let rgba: Vec<u8> = match info.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 if px.len() == (w * hh * 3) as usize => px
-            .chunks_exact(3)
+            .as_chunks::<3>()
+            .0
+            .iter()
             .flat_map(|p| [p[0], p[1], p[2], 255])
             .collect(),
         jpeg_decoder::PixelFormat::L8 if px.len() == (w * hh) as usize => {

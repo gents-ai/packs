@@ -1,0 +1,29 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "this image has 3 frames, numbered 0 to 2; choose a frame in that range",
+        "input": {
+          "bytes": 414,
+          "format": "gif",
+          "height": 12,
+          "width": 16
+        },
+        "outputs": [],
+        "source": "anim.gif",
+        "step": 1,
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "anim.gif"
+    ],
+    "frame": 3,
+    "op": "view"
+  }
+}

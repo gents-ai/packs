@@ -53,8 +53,8 @@ fn box_spread(bins: &[Bin]) -> f64 {
     let (mut count, mut sum, mut sq) = (0u64, [0u64; 3], 0.0);
     for b in bins {
         count += b.count;
-        for c in 0..3 {
-            sum[c] += b.sum[c];
+        for (s, v) in sum.iter_mut().zip(b.sum) {
+            *s += v;
         }
         sq += weight(b);
     }
@@ -84,7 +84,11 @@ fn split(mut bins: Vec<Bin>) -> (Vec<Bin>, Vec<Bin>) {
             lo.2 += weight(b);
             let hi = (
                 hi_all.0 - lo.0,
-                [hi_all.1[0] - lo.1[0], hi_all.1[1] - lo.1[1], hi_all.1[2] - lo.1[2]],
+                [
+                    hi_all.1[0] - lo.1[0],
+                    hi_all.1[1] - lo.1[1],
+                    hi_all.1[2] - lo.1[2],
+                ],
                 hi_all.2 - lo.2,
             );
             let cost = spread(lo.0, lo.1, lo.2) + spread(hi.0, hi.1, hi.2);
@@ -103,17 +107,21 @@ fn split(mut bins: Vec<Bin>) -> (Vec<Bin>, Vec<Bin>) {
 pub fn palette(img: &Img, n: usize) -> Palette {
     let mut hist: Vec<Option<Bin>> = (0..32768).map(|_| None).collect();
     let (mut counted, mut transparent) = (0u64, 0u64);
-    for p in img.px.chunks_exact(4) {
+    for p in img.px.as_chunks::<4>().0.iter() {
         if p[3] < 128 {
             transparent += 1;
             continue;
         }
         counted += 1;
         let key = u16::from(p[0] >> 3) << 10 | u16::from(p[1] >> 3) << 5 | u16::from(p[2] >> 3);
-        let bin = hist[usize::from(key)].get_or_insert(Bin { key, count: 0, sum: [0; 3] });
+        let bin = hist[usize::from(key)].get_or_insert(Bin {
+            key,
+            count: 0,
+            sum: [0; 3],
+        });
         bin.count += 1;
-        for c in 0..3 {
-            bin.sum[c] += u64::from(p[c]);
+        for (s, &v) in bin.sum.iter_mut().zip(&p[..3]) {
+            *s += u64::from(v);
         }
     }
     let all: Vec<Bin> = hist.into_iter().flatten().collect();
@@ -148,7 +156,11 @@ pub fn palette(img: &Img, n: usize) -> Palette {
         })
         .collect();
     swatches.sort_by(|a, b| b.pixels.cmp(&a.pixels).then(a.rgb.cmp(&b.rgb)));
-    Palette { swatches, counted, transparent }
+    Palette {
+        swatches,
+        counted,
+        transparent,
+    }
 }
 
 #[cfg(test)]
@@ -171,7 +183,13 @@ mod tests {
     #[test]
     fn a_solid_image_has_one_swatch_with_the_exact_colour() {
         let p = palette(&Img::filled(5, 5, [12, 200, 77, 255]).unwrap(), 5);
-        assert_eq!(p.swatches, vec![Swatch { rgb: [12, 200, 77], pixels: 25 }]);
+        assert_eq!(
+            p.swatches,
+            vec![Swatch {
+                rgb: [12, 200, 77],
+                pixels: 25
+            }]
+        );
         assert_eq!((p.counted, p.transparent), (25, 0));
     }
 
@@ -185,7 +203,10 @@ mod tests {
         }
         let p = palette(&img, 3);
         let got: Vec<_> = p.swatches.iter().map(|s| (s.rgb, s.pixels)).collect();
-        assert_eq!(got, vec![([255, 0, 0], 44), ([0, 255, 0], 40), ([0, 0, 255], 36)]);
+        assert_eq!(
+            got,
+            vec![([255, 0, 0], 44), ([0, 255, 0], 40), ([0, 0, 255], 36)]
+        );
     }
 
     #[test]
