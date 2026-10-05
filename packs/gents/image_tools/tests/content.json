@@ -6,8 +6,8 @@
       "expr": "(plugin(\"image_tools\") | .bind_dir.access) == \"read\" and (plugin(\"image_tools_write\") | .bind_dir.access) == \"read_write\""
     },
     {
-      "name": "both tools are one source with one input schema, bound by path with the real path handed back",
-      "expr": "(plugin(\"image_tools\") | .input_schema) == (plugin(\"image_tools_write\") | .input_schema) and ([.manifest.plugins[] | .source] | unique) == [\"plugins/image_tools\"] and (.manifest.plugins | all(.bind_dir.input_field == \"path\" and .bind_dir.original_field == \"path_original\"))"
+      "name": "both tools take one input schema and are bound by path, with the real path handed back",
+      "expr": "(plugin(\"image_tools\") | .input_schema) == (plugin(\"image_tools_write\") | .input_schema) and ([.manifest.plugins[] | .source] | sort) == [\"plugins/image_tools\", \"plugins/image_tools_write\"] and (.manifest.plugins | all(.bind_dir.input_field == \"path\" and .bind_dir.original_field == \"path_original\"))"
     },
     {
       "name": "the input schema is closed and offers every operation",
@@ -27,7 +27,7 @@
     },
     {
       "name": "the graph nodes run the read-only plugin and every output collection has a schema",
-      "expr": "(.config.callbacks | all(.handler.plugin == \"image_tools\")) and ([.config.callbacks[].handler.outputs[].collection] | sort) == [\"ImageChunk\", \"ImageOutput\", \"ImageResult\"] and (.manifest.schemas | length) == 4"
+      "expr": "(.config.callbacks | all(.handler.plugin == \"gents/image_tools\")) and ([.config.callbacks[].handler.outputs[].collection] | sort) == [\"ImageChunk\", \"ImageOutput\", \"ImageResult\"] and (.manifest.schemas | length) == 4"
     },
     {
       "name": "the agent prompt names both tools and the file-writing rule",
