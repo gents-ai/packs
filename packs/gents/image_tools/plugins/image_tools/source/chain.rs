@@ -438,6 +438,12 @@ fn do_diff(
     let s = other_source(cx, o.against.as_ref(), o.against_base64.as_ref())?;
     let b = load(&s, plan.frame, plan.orient, None)?;
     let (mut v, highlight) = analyze::diff_step(&a, &b, o, &s.name)?;
+    if let Some(listed) = v.get("regions_listed") {
+        warnings.push(format!(
+            "{} changed regions were found and only the {listed} largest are listed",
+            v["regions_total"]
+        ));
+    }
     if let Some(img) = highlight {
         let format = cx.format()?;
         let e = encode(&img, format, plan.output.quality, None)?;

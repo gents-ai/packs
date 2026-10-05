@@ -675,3 +675,40 @@ fn an_image_that_fails_part_way_leaves_no_orphan_parts_in_the_result() {
         "the file in the way is untouched"
     );
 }
+
+#[test]
+fn a_diff_with_more_regions_than_the_cap_says_so_in_the_warnings() {
+    let n = 201u32;
+    let a = RgbaImage::from_pixel(16 * n, 16, image::Rgba([255, 255, 255, 255]));
+    let mut b = a.clone();
+    for i in 0..n {
+        b.put_pixel(i * 16, 0, image::Rgba([0, 0, 0, 255]));
+    }
+    let enc = |img: &RgbaImage| {
+        base64::engine::general_purpose::STANDARD.encode(crate::fixtures::png(img))
+    };
+    let call_with = |b2: &RgbaImage| {
+        call(&json!({"data_base64": enc(&a), "op": "diff", "against_base64": enc(b2), "highlight": false, "merge_gap": 0})).unwrap()
+    };
+    let r = call_with(&b);
+    let step = &record(&r, 0)["steps"][0];
+    assert_eq!(
+        (
+            step["regions_total"].clone(),
+            step["regions_listed"].clone()
+        ),
+        (json!(201), json!(200))
+    );
+    assert_eq!(
+        record(&r, 0)["warnings"],
+        json!(["201 changed regions were found and only the 200 largest are listed"])
+    );
+    let few = call_with(&RgbaImage::from_fn(16 * n, 16, |x, y| {
+        if y == 0 && x % 16 == 0 && x < 16 * 5 {
+            image::Rgba([0, 0, 0, 255])
+        } else {
+            image::Rgba([255, 255, 255, 255])
+        }
+    }));
+    assert_eq!(record(&few, 0)["warnings"], json!([]));
+}

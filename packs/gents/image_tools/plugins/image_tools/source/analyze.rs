@@ -358,6 +358,34 @@ mod tests {
     }
 
     #[test]
+    fn regions_listed_is_present_only_when_the_cap_cut_the_list() {
+        let op = DiffOp {
+            against: None,
+            against_base64: None,
+            tolerance: None,
+            ignore: vec![],
+            merge_gap: Some(0),
+            highlight: Some(false),
+        };
+        let spots = |n: u32| {
+            let a = Img::filled(16 * n, 16, [255, 255, 255, 255]).unwrap();
+            let mut b = a.clone();
+            for i in 0..n {
+                let at = b.at(i * 16, 0);
+                b.px[at..at + 4].copy_from_slice(&[0, 0, 0, 255]);
+            }
+            diff_step(&a, &b, &op, "x").unwrap().0
+        };
+        let at_cap = spots(diff::MAX_REGIONS as u32);
+        assert_eq!(at_cap["regions_total"], 200);
+        assert!(at_cap.get("regions_listed").is_none());
+        let over = spots(diff::MAX_REGIONS as u32 + 1);
+        assert_eq!(over["regions_total"], 201);
+        assert_eq!(over["regions_listed"], 200);
+        assert_eq!(over["regions"].as_array().unwrap().len(), 200);
+    }
+
+    #[test]
     fn rounding_is_to_fixed_places() {
         assert_eq!(round(0.123456789, 4), 0.1235);
         assert_eq!(round(2.0 / 3.0, 6), 0.666667);

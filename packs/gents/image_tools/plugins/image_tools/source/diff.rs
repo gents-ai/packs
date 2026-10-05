@@ -395,6 +395,81 @@ mod tests {
         assert_eq!(far.regions[2].x, 100);
     }
 
+    /// Two full blocks `empty` empty 8 px blocks apart, as the regions found at `merge_gap`.
+    fn pair_regions(empty: u32, merge_gap: u32) -> Vec<(u32, u32, u32, u32)> {
+        let a = white(8 * (2 + empty), 8);
+        let mut b = a.clone();
+        paint(&mut b, 0, 0, 8, 8, [0, 0, 0, 255]);
+        paint(&mut b, 8 * (1 + empty), 0, 8, 8, [0, 0, 0, 255]);
+        let o = compare(&a, &b, &spec(0, &[], merge_gap));
+        assert_eq!(o.regions_total, o.regions.len());
+        o.regions
+            .iter()
+            .map(|r| (r.x, r.y, r.width, r.height))
+            .collect()
+    }
+
+    #[test]
+    fn the_merge_gap_is_exact_at_each_block_boundary() {
+        // One empty block (8 px) between: apart below a gap of 8, joined from 8 up.
+        let one = |gap| pair_regions(1, gap).len();
+        assert_eq!(
+            [0, 7, 8, 15, 16, 24].map(one),
+            [2, 2, 1, 1, 1, 1],
+            "gaps 0, 7, 8, 15, 16, 24"
+        );
+        assert_eq!(pair_regions(1, 8), vec![(0, 0, 24, 8)]);
+        // Two empty blocks (16 px) between: apart through 15, joined from 16 up.
+        let two = |gap| pair_regions(2, gap).len();
+        assert_eq!([0, 8, 15, 16, 23, 24].map(two), [2, 2, 2, 1, 1, 1]);
+        // Touching blocks join even with no gap.
+        assert_eq!(pair_regions(0, 0), vec![(0, 0, 16, 8)]);
+    }
+
+    #[test]
+    fn the_cap_drops_the_smallest_region_and_keeps_the_rest_in_reading_order() {
+        // 201 changed spots, 16 px apart: all 2 px wide except one 1 px spot in the middle.
+        let n = MAX_REGIONS as u32 + 1;
+        let a = white(16 * n, 16);
+        let mut b = a.clone();
+        for i in 0..n {
+            paint(
+                &mut b,
+                i * 16,
+                0,
+                if i == 100 { 1 } else { 2 },
+                1,
+                [0, 0, 0, 255],
+            );
+        }
+        let o = compare(&a, &b, &spec(0, &[], 0));
+        assert_eq!(o.regions_total, MAX_REGIONS + 1);
+        assert_eq!(o.regions.len(), MAX_REGIONS);
+        assert!(
+            o.regions.iter().all(|r| r.changed == 2),
+            "the one-pixel region is the one dropped"
+        );
+        assert!(!o.regions.iter().any(|r| r.x == 1600));
+        assert_eq!(o.regions[99].x, 99 * 16);
+        assert_eq!(
+            o.regions[100].x,
+            101 * 16,
+            "reading order skips only the dropped one"
+        );
+        assert_eq!(
+            o.changed,
+            2 * MAX_REGIONS as u64 + 1,
+            "the pixel count still includes it"
+        );
+        // Equal sizes tie-break on position: the last in reading order is dropped.
+        let mut c = a.clone();
+        for i in 0..n {
+            paint(&mut c, i * 16, 0, 2, 1, [0, 0, 0, 255]);
+        }
+        let o = compare(&a, &c, &spec(0, &[], 0));
+        assert_eq!(o.regions.last().map(|r| r.x), Some(199 * 16));
+    }
+
     #[test]
     fn regions_are_listed_top_to_bottom_then_left_to_right() {
         let a = white(100, 100);

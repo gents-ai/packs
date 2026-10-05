@@ -306,16 +306,9 @@ fn main() {
     let deep = root.join("deep");
     let tiny = fx::png(&fx::scene(8, 6));
     put(&deep, "top.png", &tiny);
-    let levels: PathBuf = (0..17).map(|i| format!("d{i}")).collect();
-    put(
-        &deep
-            .join(&levels)
-            .parent()
-            .expect("a parent folder")
-            .to_path_buf(),
-        "ok_level16.png",
-        &tiny,
-    );
+    let levels: PathBuf = (0..16).map(|i| format!("d{i}")).collect();
+    put(&deep.join(&levels), "ok_level16.png", &tiny);
+    let levels = levels.join("d16");
     put(&deep.join(&levels), "lost.png", &tiny);
 
     // Hostile files: each must give one sentence, never a crash.
