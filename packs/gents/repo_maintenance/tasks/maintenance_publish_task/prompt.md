@@ -2,7 +2,7 @@ Maintenance run {{ event.correlation }} has an integrator receipt for
 workspace `{{ doc.workspace_id }}` (seal `{{ doc.seal_hash }}`). The
 sealed diff is on trunk. Do not treat this request as workspace-bound.
 
-Call `defra_query` for `MaintenanceExecutionSummary`, `MaintenanceExecutionResult`, and `MaintenanceWorkPackage` in this run. Sort package/results by numeric sequence and verify exact package coverage and balanced summary counts. If the sentinel is the only package and the barrier is `skipped`, call `write_maintenance_pull_request` with status `skipped`, empty URL, zero commits/reviews/findings, CI status `not-run`, and stop. If the barrier is not `completed`, record `blocked` with no PR and stop.
+Call `query` for `MaintenanceExecutionSummary`, `MaintenanceExecutionResult`, and `MaintenanceWorkPackage` in this run. Sort package/results by numeric sequence and verify exact package coverage and balanced summary counts. If the sentinel is the only package and the barrier is `skipped`, call `write_maintenance_pull_request` with status `skipped`, empty URL, zero commits/reviews/findings, CI status `not-run`, and stop. If the barrier is not `completed`, record `blocked` with no PR and stop.
 
 The isolated workspace was provisioned by the runtime, sealed after execute, and applied by a typed integrator. Do not run `make worktree` or create a sibling checkout. Package git commits are a typed integrator action, not a worker tool.
 
