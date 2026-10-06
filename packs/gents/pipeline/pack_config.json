@@ -104,7 +104,10 @@
     },
     {
       "display_name": "Stage-2: no tools (synthesize from finding template)",
-      "tools_id": "exp-tools-stage2"
+      "tools_id": "exp-tools-stage2",
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
     }
   ],
   "triggers": [

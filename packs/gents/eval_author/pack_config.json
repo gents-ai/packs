@@ -25,7 +25,10 @@
           "mode": "Off"
         }
       },
-      "tools_id": "eval-author-tools"
+      "tools_id": "eval-author-tools",
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
     }
   ]
 }
