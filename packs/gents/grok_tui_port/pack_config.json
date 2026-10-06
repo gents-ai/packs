@@ -2527,7 +2527,10 @@
     },
     {
       "display_name": "Live worker: deterministic subagent target, no shell/files/subagents",
-      "tools_id": "port-live-worker-tools"
+      "tools_id": "port-live-worker-tools",
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
     },
     {
       "built_ins": {
