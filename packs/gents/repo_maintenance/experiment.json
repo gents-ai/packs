@@ -75,22 +75,22 @@
       },
       {
         "task_id": "maintenance-verify-task",
-        "required_tool_names": ["defra_query", "write_maintenance_verdict", "write_maintenance_verification_summary"],
+        "required_tool_names": ["query", "write_maintenance_verdict", "write_maintenance_verification_summary"],
         "required_query_collections": ["MaintenanceCandidate"]
       },
       {
         "task_id": "maintenance-triage-task",
-        "required_tool_names": ["defra_query", "write_maintenance_finding", "write_maintenance_work_package", "write_maintenance_report"],
+        "required_tool_names": ["query", "write_maintenance_finding", "write_maintenance_work_package", "write_maintenance_report"],
         "required_query_collections": ["MaintenanceVerdict"]
       },
       {
         "task_id": "maintenance-execute-task",
-        "required_tool_names": ["defra_query", "write_maintenance_execution_result", "write_maintenance_execution_summary"],
+        "required_tool_names": ["query", "write_maintenance_execution_result", "write_maintenance_execution_summary"],
         "required_query_collections": ["MaintenanceWorkPackage", "MaintenanceExecutionResult"]
       },
       {
         "task_id": "maintenance-publish-task",
-        "required_tool_names": ["defra_query", "write_maintenance_pull_request"],
+        "required_tool_names": ["query", "write_maintenance_pull_request"],
         "required_query_collections": ["MaintenanceExecutionSummary", "MaintenanceExecutionResult", "MaintenanceWorkPackage"]
       }
     ],

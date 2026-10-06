@@ -2,7 +2,7 @@ Maintenance run {{ group.correlation_value }} has {{ group.count }} completed ar
 
 {{ group.docs }}
 
-Call `defra_query` for `MaintenanceCandidate` in this run. For each candidate, freshly read the exact artifact, its canonical owner, usages, history, tests, cfg/features, and open issue context. Try to refute it before promoting it.
+Call `query` for `MaintenanceCandidate` in this run. For each candidate, freshly read the exact artifact, its canonical owner, usages, history, tests, cfg/features, and open issue context. Try to refute it before promoting it.
 
 Confirmation requires all of the following:
 
