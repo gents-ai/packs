@@ -1,0 +1,32 @@
+{
+  "agent_principal": {},
+  "event_sources": [
+    {
+      "display_name": "charts-live",
+      "event_kind": "created",
+      "event_source_id": "charts-live",
+      "source_collection": "ChartsLiveJob",
+      "correlation_field": "job_id"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "chart-maker",
+      "display_name": "charts-live-task",
+      "prompt_template": "./tasks/live_task/prompt.md",
+      "task_id": "charts-live-task"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "charts-live",
+      "source": {
+        "event_source_id": "charts-live",
+        "kind": "event"
+      },
+      "task_id": "charts-live-task",
+      "trigger_id": "charts-live"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "charts_live",
+  "description": "charts: plot monthly revenue from sales.csv as a line chart and save chart.png",
+  "init": {
+    "inference_url": "${GENTS_LIVE_ENDPOINT:-http://workstation-1:8000/v1}",
+    "model_name": "${GENTS_LIVE_MODEL:-GLM-5.3-Flash-NVFP4}",
+    "backend_preset": "vllm",
+    "openai_wire_api": "chat-completions",
+    "tool_root": "${GENTS_LIVE_ROOT}",
+    "tool_root_env_var": "GENTS_LIVE_ROOT"
+  },
+  "allowed_folders": [{"path": ".", "access": "read_write"}],
+  "seed": {
+    "collection": "ChartsLiveJob",
+    "job_id_field": "job_id",
+    "prompt_field": "prompt"
+  },
+  "default_prompt": "The file ${GENTS_LIVE_ROOT}/sales.csv holds revenue per month and region. Plot total monthly revenue as a line chart and save it in the folder ${GENTS_LIVE_ROOT} as chart.png and chart.svg. Then tell me in two sentences what the chart shows.",
+  "expect": {
+    "trigger_ids": ["charts-live"],
+    "signed_provenance": true,
+    "projections": ["atif"],
+    "required_tool_call_trigger_ids": ["charts-live"],
+    "tool_calls": [
+      {"trigger_id": "charts-live", "tool_name": "charts", "result_contains": ["chart.png", "chart.svg"]}
+    ]
+  },
+  "await_timeout_secs": ${GENTS_LIVE_AWAIT_TIMEOUT_SECS:-600}
+}

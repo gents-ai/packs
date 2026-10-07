@@ -1,0 +1,28 @@
+{
+  "assets": [
+    "experiment.json",
+    "pack_config.json",
+    "schemas/data_tables_live_job.graphql",
+    "tasks/live_task/prompt.md"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [
+    "data_tables"
+  ],
+  "description": "Live model run of the data_tables pack's Data analyst on a small CSV.",
+  "inference_slots": [],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "data_tables_live",
+  "namespace": "gents",
+  "schemas": [
+    "schemas/data_tables_live_job.graphql"
+  ],
+  "tags": [
+    "scenario"
+  ],
+  "version": "0.1.0"
+}
