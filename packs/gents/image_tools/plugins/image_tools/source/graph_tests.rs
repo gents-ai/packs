@@ -292,3 +292,26 @@ fn unreadable_jobs_fail_the_plan_with_one_sentence() {
             .contains("bound folder")
     );
 }
+
+#[test]
+fn a_graph_output_wider_than_a_model_accepts_keeps_its_bytes() {
+    let d = scratch("graphwide", &[]);
+    image::RgbaImage::from_pixel(9000, 20, image::Rgba([200, 30, 30, 255]))
+        .save(d.join("strip.png"))
+        .unwrap();
+    let dir = d.to_str().unwrap();
+    let chunks = node(json!({"run_id": "r", "path": dir, "files": ["strip.png"], "ops": "[{\"op\":\"flip\",\"axis\":\"vertical\"}]"})).unwrap();
+    let mut chunk = chunks[0].clone();
+    chunk["run_id"] = json!("r");
+    let out = node(chunk).unwrap();
+    assert_eq!(out["result"]["ok"], true, "{out}");
+    let rec = &out["outputs"][0];
+    assert_eq!(
+        (rec["width"].clone(), rec["mime"].clone()),
+        (json!(9000), json!("image/png"))
+    );
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(rec["image_base64"].as_str().unwrap())
+        .unwrap();
+    assert_eq!(image::load_from_memory(&bytes).unwrap().width(), 9000);
+}

@@ -1,0 +1,68 @@
+{
+  "bind": "fixtures/parts",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAIAAADwyuo0AAAAIklEQVR4nGPR05Cs/CT4XsjBmlGb5XWtwZ7fiobsBowMGgBr8wedgnd0MQAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 256,
+            "format": "png",
+            "height": 6,
+            "width": 10
+          },
+          "outputs": [
+            {
+              "bytes": 91,
+              "file": "p20_s.png",
+              "format": "png",
+              "height": 2,
+              "part": 0,
+              "pixels_sha256": "aacaa2b04700906b430d536bcb8a55fd2df9257dc1924ecbd2850ae3a1fd15a8",
+              "role": "result",
+              "sha256": "a2714306c7e737f442cb1f34dfbe5fd751d828b843f29b1ab6156f8bb97ce1c6",
+              "width": 4
+            }
+          ],
+          "source": "p20.png",
+          "steps": [
+            {
+              "changed": true,
+              "filter": "lanczos3",
+              "from": [
+                10,
+                6
+              ],
+              "mode": "fit",
+              "op": "resize",
+              "to": [
+                4,
+                2
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "cursor": "imgt1.eyJyZXEiOiI4MDQ0M2NlNmRjOWU1ODY0ZjhhYTgzMWNhZTM0YjhiN2I0Mjc3ZmQ5YjliYzNiYTg1MjVlM2ZlMGRmMzQyMWNmIiwiaXRlbSI6MjAsInRpbGUiOjAsImxlbiI6MCwic2hhIjoiIn0",
+    "op": "resize",
+    "output": {
+      "part": true
+    },
+    "save": {
+      "overwrite": true,
+      "suffix": "_s"
+    },
+    "width": 4
+  }
+}

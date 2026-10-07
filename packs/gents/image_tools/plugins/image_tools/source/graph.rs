@@ -89,8 +89,6 @@ fn request(f: &Map<String, Value>) -> Result<Value, String> {
     for (from, to) in [
         ("format", "format"),
         ("quality", "quality"),
-        ("suffix", "suffix"),
-        ("overwrite", "overwrite"),
         ("attach", "part"),
     ] {
         if let Some(v) = f.get(from) {
@@ -169,16 +167,7 @@ fn plan(job: &Map<String, Value>) -> Result<String, String> {
                 group[0].name.clone()
             }),
         );
-        for k in [
-            "ops",
-            "format",
-            "quality",
-            "suffix",
-            "overwrite",
-            "attach",
-            "orient",
-            "frame",
-        ] {
+        for k in ["ops", "format", "quality", "attach", "orient", "frame"] {
             if let Some(v) = job.get(k) {
                 c.insert(k.into(), v.clone());
             }
@@ -202,7 +191,7 @@ fn run_chunk(f: Map<String, Value>, chunk: u64) -> Result<String, String> {
     let outcome = request(&f).and_then(|mut req| {
         req["page_bytes"] = json!(RUN_PAGE_BYTES);
         let input: Input = crate::typed::from_value(req, "the chunk", &[])?;
-        run::run(&input)
+        run::run_for(&input, false)
     });
     let done = match outcome {
         Ok(d) => d,

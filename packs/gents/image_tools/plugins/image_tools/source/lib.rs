@@ -1,7 +1,6 @@
 //! image_tools plugin: deterministic image operations for agents. One JSON
 //! value on stdin, one on stdout; a failure is one sentence on stderr and a
-//! non-zero exit (see TOOL.md). The program is this library plus a one-line
-//! `main`, so the pack's read-write entry `image_tools_write` can reuse it.
+//! non-zero exit (see TOOL.md).
 use std::io::{Read, Write};
 
 mod analyze;
@@ -85,6 +84,19 @@ fn run_text(raw: &str) -> Result<String, String> {
     }
     let value: serde_json::Value = serde_json::from_str(raw)
         .map_err(|_| "the request is not valid JSON; send one JSON object".to_string())?;
+    if let Some(k) = value
+        .get("output")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|o| {
+            ["file", "suffix", "overwrite"]
+                .into_iter()
+                .find(|k| o.contains_key(*k))
+        })
+    {
+        return Err(format!(
+            "{k} belongs in save, not output: send \"save\": {{\"{k}\": ...}}"
+        ));
+    }
     let input: input::Input = typed::from_value(value, "the request", &[])?;
     run::execute(&input)
 }

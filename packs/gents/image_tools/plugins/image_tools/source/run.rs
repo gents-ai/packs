@@ -10,9 +10,9 @@ use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::OVERHEAD_BYTES;
+use crate::model::{MAX_PART_SIDE, OVERHEAD_BYTES};
 use crate::montage;
-use crate::src::{Source, resolve};
+use crate::src::{Source, resolve_skipping};
 
 /// The output ceiling of a plugin call.
 const OUTPUT_CEILING: usize = 4 * 1024 * 1024;
@@ -51,20 +51,35 @@ pub fn execute(input: &Input) -> Result<String, String> {
 
 /// Runs one request.
 pub fn run(input: &Input) -> Result<Done, String> {
+    run_for(input, true)
+}
+
+/// Runs one request whose parts go to a model, or to graph records when `for_model` is false.
+pub fn run_for(input: &Input, for_model: bool) -> Result<Done, String> {
     let plan = input.plan()?;
     let files = merge_files(input)?;
-    let resolved = resolve(
+    let resolved = resolve_skipping(
         input.path.as_deref(),
         &files,
         input.data_base64.as_deref(),
         input.name.as_deref(),
+        plan.output.suffix.as_deref(),
     )?;
+    if for_model
+        && plan
+            .ops
+            .iter()
+            .any(|op| matches!(op, Op::View(v) if v.max_side.is_some_and(|m| m > MAX_PART_SIDE)))
+    {
+        return Err(format!(
+            "max_side must be between 16 and {MAX_PART_SIDE} for a picture a model sees"
+        ));
+    }
     let mut cx = Cx::new(resolved.root.clone(), plan.output.clone(), plan.page_bytes);
+    cx.for_model = for_model;
     cx.format()?;
     if plan.output.file.is_some() && resolved.sources.len() > 1 && !plan.is_montage() {
-        return Err(
-            "output.file names one file; use output.suffix to write one file per image".into(),
-        );
+        return Err("save.file names one file; use save.suffix to write one file per image".into());
     }
     let mut call_warnings = Vec::new();
     if resolved.skipped > 0 {
@@ -147,7 +162,10 @@ fn run_items(
     let mut results: Vec<Value> = Vec::new();
     let mut next = None;
     while idx < sources.len() {
-        if !results.is_empty() && (cx.expired() || cx.used() > cx.budget / 3 * 2) {
+        // Stop before an item whose images would pass the part cap, so none is
+        // written without being attached; the next call produces it.
+        let parts_full = cx.wants_part() && cx.parts_full(plan.first_parts());
+        if !results.is_empty() && (cx.expired() || cx.used() > cx.budget / 3 * 2 || parts_full) {
             next = Some(stop_at(&sources[idx], idx, 0)?);
             break;
         }
@@ -214,12 +232,17 @@ fn run_montage(
     let e = encode(&sheet.img, format, plan.output.quality, None)?;
     let mut warnings = sheet.warnings;
     warnings.extend(e.notes);
-    let rec = match cx.deliver(Prepared::new(e.bytes, format, &sheet.img), "montage", None) {
+    let mut rec = match cx.deliver_as(
+        Prepared::new(e.bytes, format, &sheet.img),
+        "montage",
+        None,
+        "use a smaller cell or fewer files",
+    ) {
         Ok(r) => r,
         Err(Fail::Msg(m)) => return Err(m),
         Err(Fail::Over(n)) => {
             return Err(format!(
-                "the sheet is {n} bytes, over the {} bytes one call can attach; use a smaller cell, or write it to a file with output.file",
+                "the sheet is {n} bytes, over the {} bytes one call can attach; use a smaller cell, or write it to a file with save.file",
                 cx.room()
             ));
         }
@@ -249,7 +272,6 @@ fn run_montage(
         "width": sheet.img.w, "height": sheet.img.h,
         "cells": cells, "output": 0,
     });
-    let mut rec = rec;
     rec["role"] = json!("montage");
     Ok(json!({"source": "montage", "steps": [facts], "outputs": [rec], "warnings": warnings}))
 }

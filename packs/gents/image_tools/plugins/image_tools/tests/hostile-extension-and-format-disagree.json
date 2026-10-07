@@ -30,7 +30,7 @@
     ],
     "format": "png",
     "op": "convert",
-    "output": {
+    "save": {
       "file": "x.jpg"
     }
   }

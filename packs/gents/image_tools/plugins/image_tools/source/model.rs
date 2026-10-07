@@ -21,6 +21,12 @@ pub const MIN_PAGE_BYTES: usize = 20_000;
 pub const OVERHEAD_BYTES: usize = 8192;
 /// Most raw bytes one image part may be.
 pub const MAX_PART_BYTES: usize = 2_500_000;
+/// Longest side of an attached image: Anthropic Messages refuses the whole
+/// request for an image over 8000 pixels on a side.
+pub const MAX_PART_SIDE: u32 = 8000;
+/// Images one call attaches: Anthropic Messages shrinks every image of a
+/// request that carries more than 20 to 2000 pixels on a side.
+pub const MAX_PARTS: usize = 20;
 /// Wall-clock seconds after which a call starts no further item and returns a cursor.
 pub const WALL_SECS: u64 = 600;
 
