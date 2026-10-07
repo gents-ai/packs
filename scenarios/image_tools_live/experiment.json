@@ -6,7 +6,7 @@
     "model_name": "${GENTS_LIVE_MODEL:-GLM-5.3-Flash-NVFP4}",
     "backend_preset": "vllm",
     "openai_wire_api": "chat-completions",
-    "tool_root": "${GENTS_LIVE_ROOT}",
+    "tool_root": "${GENTS_LIVE_ROOT:-.}",
     "tool_root_env_var": "GENTS_LIVE_ROOT"
   },
   "allowed_folders": [{"path": "photos", "access": "read_write"}],
@@ -15,7 +15,7 @@
     "job_id_field": "job_id",
     "prompt_field": "prompt"
   },
-  "default_prompt": "Make thumbnails of every photo in the folder ${GENTS_LIVE_ROOT}/photos: resize each to fit within 256x256 pixels and save each one next to its original with the suffix _thumb. Then list the thumbnails you wrote with their sizes.",
+  "default_prompt": "Make thumbnails of every photo in the folder ${GENTS_LIVE_ROOT:-.}/photos: resize each to fit within 256x256 pixels and save each one next to its original with the suffix _thumb. Then list the thumbnails you wrote with their sizes.",
   "expect": {
     "trigger_ids": ["image-tools-live"],
     "signed_provenance": true,

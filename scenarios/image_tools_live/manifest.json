@@ -1,6 +1,10 @@
 {
   "assets": [
+    "README.md",
     "experiment.json",
+    "fixtures/photos/harbor.jpg",
+    "fixtures/photos/meadow.png",
+    "fixtures/photos/sunset.png",
     "pack_config.json",
     "schemas/image_tools_live_job.graphql",
     "tasks/live_task/prompt.md"

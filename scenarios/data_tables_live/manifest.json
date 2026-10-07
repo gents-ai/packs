@@ -1,6 +1,8 @@
 {
   "assets": [
+    "README.md",
     "experiment.json",
+    "fixtures/sales.csv",
     "pack_config.json",
     "schemas/data_tables_live_job.graphql",
     "tasks/live_task/prompt.md"

@@ -6,7 +6,7 @@
     "model_name": "${GENTS_LIVE_MODEL:-GLM-5.3-Flash-NVFP4}",
     "backend_preset": "vllm",
     "openai_wire_api": "chat-completions",
-    "tool_root": "${GENTS_LIVE_ROOT}",
+    "tool_root": "${GENTS_LIVE_ROOT:-.}",
     "tool_root_env_var": "GENTS_LIVE_ROOT"
   },
   "allowed_folders": [{"path": ".", "access": "read_write"}],
@@ -15,7 +15,7 @@
     "job_id_field": "job_id",
     "prompt_field": "prompt"
   },
-  "default_prompt": "Which region had the highest total revenue in ${GENTS_LIVE_ROOT}/sales.csv? Also export the total revenue per region to totals.csv in the folder ${GENTS_LIVE_ROOT}.",
+  "default_prompt": "Which region had the highest total revenue in ${GENTS_LIVE_ROOT:-.}/sales.csv? Also export the total revenue per region to totals.csv in the folder ${GENTS_LIVE_ROOT:-.}.",
   "expect": {
     "trigger_ids": ["data-tables-live"],
     "signed_provenance": true,
