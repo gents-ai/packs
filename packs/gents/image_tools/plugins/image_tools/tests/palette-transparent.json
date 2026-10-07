@@ -1,0 +1,62 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 151,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "la8.png",
+        "steps": [
+          {
+            "colors": [
+              {
+                "hex": "#a5a5a5",
+                "rgb": [
+                  165,
+                  165,
+                  165
+                ],
+                "share": 0.5
+              },
+              {
+                "hex": "#0f0f0f",
+                "rgb": [
+                  15,
+                  15,
+                  15
+                ],
+                "share": 0.25
+              },
+              {
+                "hex": "#4b4b4b",
+                "rgb": [
+                  75,
+                  75,
+                  75
+                ],
+                "share": 0.25
+              }
+            ],
+            "op": "palette",
+            "pixels": 32,
+            "transparent_share": 0.3333
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "colors": 3,
+    "files": [
+      "la8.png"
+    ],
+    "op": "palette"
+  }
+}

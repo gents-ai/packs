@@ -1,0 +1,12 @@
+type ImageJob {
+  run_id: String @index(unique: true) @immutable
+  path: String
+  files: [String]
+  data_base64: String
+  name: String
+  ops: String
+  format: String
+  quality: Int
+  orient: Boolean
+  frame: Int
+}

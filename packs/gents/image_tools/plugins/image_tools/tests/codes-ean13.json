@@ -1,0 +1,54 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 833,
+          "format": "png",
+          "height": 80,
+          "width": 240
+        },
+        "outputs": [],
+        "source": "ean13.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  28,
+                  40,
+                  184,
+                  0
+                ],
+                "format": "ean_13",
+                "points": [
+                  [
+                    28,
+                    40
+                  ],
+                  [
+                    212,
+                    40
+                  ]
+                ],
+                "text": "5901234123457"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "ean13.png"
+    ],
+    "op": "decode_codes"
+  }
+}

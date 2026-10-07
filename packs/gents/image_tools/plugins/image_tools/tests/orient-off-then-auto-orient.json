@@ -1,0 +1,82 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAIAAAAiZtkUAAAAJUlEQVR4nI3IIREAAAwDsQdFxRMxEfWva7Rwd0GRh8VNJOD2qwONMgMnV8TDdAAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 208,
+            "format": "png",
+            "height": 6,
+            "width": 4
+          },
+          "orientation_applied": 5,
+          "outputs": [
+            {
+              "bytes": 94,
+              "format": "png",
+              "height": 4,
+              "part": 0,
+              "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+              "role": "result",
+              "sha256": "c1520ed9b6eaf5612d30f8ddd432e1eccc2d80d4af9225176a348df9f9d0e239",
+              "width": 6
+            }
+          ],
+          "source": "orient_5.png",
+          "steps": [
+            {
+              "dhash": "1515151515151515",
+              "height": 6,
+              "op": "hash",
+              "phash": "9500272877221bff",
+              "pixels_sha256": "d85dbc695abc26532e6a9c29d7351c2e378d7a8500082b5f6f90a76a71b7a62a",
+              "sha256": "f4f9a9246f0422dfff2260f5d8812c1f5499f9515620ee7aadbd9d43659496f9",
+              "width": 4
+            },
+            {
+              "applied": true,
+              "op": "auto_orient",
+              "orientation": 5
+            },
+            {
+              "dhash": "0000000000000000",
+              "height": 4,
+              "op": "hash",
+              "phash": "d5200f0062ff71df",
+              "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+              "sha256": "f4f9a9246f0422dfff2260f5d8812c1f5499f9515620ee7aadbd9d43659496f9",
+              "width": 6
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "orient_5.png"
+    ],
+    "ops": [
+      {
+        "op": "hash"
+      },
+      {
+        "op": "auto_orient"
+      },
+      {
+        "op": "hash"
+      }
+    ],
+    "orient": false
+  }
+}

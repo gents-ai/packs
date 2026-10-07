@@ -1,0 +1,62 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1990,
+          "format": "png",
+          "height": 165,
+          "width": 165
+        },
+        "outputs": [],
+        "source": "qr_damaged.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  21,
+                  21,
+                  125,
+                  125
+                ],
+                "format": "qr_code",
+                "points": [
+                  [
+                    21,
+                    21
+                  ],
+                  [
+                    146,
+                    21
+                  ],
+                  [
+                    146,
+                    146
+                  ],
+                  [
+                    21,
+                    146
+                  ]
+                ],
+                "text": "DAMAGED-BUT-READABLE-0123456789"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "qr_damaged.png"
+    ],
+    "op": "decode_codes"
+  }
+}

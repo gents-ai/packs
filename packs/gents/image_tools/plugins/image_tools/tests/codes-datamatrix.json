@@ -1,0 +1,62 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 956,
+          "format": "png",
+          "height": 100,
+          "width": 100
+        },
+        "outputs": [],
+        "source": "datamatrix.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  2,
+                  2,
+                  96,
+                  96
+                ],
+                "format": "data_matrix",
+                "points": [
+                  [
+                    2,
+                    2
+                  ],
+                  [
+                    98,
+                    2
+                  ],
+                  [
+                    98,
+                    98
+                  ],
+                  [
+                    2,
+                    98
+                  ]
+                ],
+                "text": "DM-PAYLOAD-77"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "datamatrix.png"
+    ],
+    "op": "decode_codes"
+  }
+}

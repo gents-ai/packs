@@ -1,0 +1,62 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 3109,
+          "format": "png",
+          "height": 148,
+          "width": 148
+        },
+        "outputs": [],
+        "source": "qr_lowcontrast.png",
+        "steps": [
+          {
+            "attempt": "stretched",
+            "codes": [
+              {
+                "bbox": [
+                  17,
+                  17,
+                  116,
+                  116
+                ],
+                "format": "qr_code",
+                "points": [
+                  [
+                    17,
+                    17
+                  ],
+                  [
+                    133,
+                    17
+                  ],
+                  [
+                    133,
+                    133
+                  ],
+                  [
+                    17,
+                    133
+                  ]
+                ],
+                "text": "https://example.org/pack?id=42"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "qr_lowcontrast.png"
+    ],
+    "op": "decode_codes"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "bind": "fixtures/batch",
+  "input": {
+    "ops": "[{\"op\":\"view\",\"max_side\":16}]",
+    "run_id": "r1"
+  }
+}

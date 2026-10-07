@@ -1,0 +1,54 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "/9j/4AAQSkZJRgABAgAAAQABAAD/wAARCAAYACADAREAAhEBAxEB/9sAQwAoHB4jHhkoIyEjLSsoMDxkQTw3Nzx7WF1JZJGAmZaPgIyKoLTmw6Cq2q2KjMj/y9ru9f///5vB////+v/m/f/4/9sAQwErLS08NTx2QUF2+KWMpfj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDMWOgSkSiLFHMjqUJ9iRY6sakSrHTNVIYsdY3PIUiQRE96nlO9Yq/QlWOtTNSJVjpmqkMWOsTyFIkWOmaqRKsdUbKRKsdM1Uj/2Q==",
+        "mimeType": "image/jpeg",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 697,
+              "format": "jpeg",
+              "height": 24,
+              "part": 0,
+              "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+              "role": "result",
+              "sha256": "a88403707b874010cbf9c2d7a4b97c6735c06fcabe8bcf644b5fc4e320e76424",
+              "width": 32
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "format": "jpeg",
+              "op": "convert",
+              "quality": 20
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "jpeg",
+    "op": "convert",
+    "quality": 20
+  }
+}

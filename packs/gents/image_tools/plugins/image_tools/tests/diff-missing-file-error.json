@@ -1,0 +1,29 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "cannot read no_such.png: no such file; check the name and that the path is bound for this call",
+        "input": {
+          "bytes": 3937,
+          "format": "png",
+          "height": 48,
+          "width": 64
+        },
+        "outputs": [],
+        "source": "diff_a.png",
+        "step": 1,
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "against": "no_such.png",
+    "files": [
+      "diff_a.png"
+    ],
+    "op": "diff"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAIAAAD/zu84AAAArmlDQ1BfAAB4nAGgAF//AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dzj6vH4/wYNFBsiKTA3PkVMU1phaG92fYSLkpmgp661vMPK0djf5u30+wIJEBceJSwzOkFIT1ZdZGtyeYCHjpWco6qxuL/GzdTb4unw9/4FDBMaISgvNj1ES1JZYGdudXyDipGYn6attLvCydDX3uXs8/oBCA8WHSQrMjlAR05VXGDZS7EVO40fAAAANElEQVR4nO3NMREAMAzEsB9SkmVeKN1CItnk867Ku/nZu052AwAAAAAAAAAAAAAAAAAATNbRHCEG5ldHoQAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 671,
+            "format": "png",
+            "height": 32,
+            "width": 48
+          },
+          "orientation_applied": 6,
+          "outputs": [
+            {
+              "bytes": 295,
+              "format": "png",
+              "height": 48,
+              "part": 0,
+              "pixels_sha256": "759c0ad201ae3bf63bc0a197bc8734dbeee525e83f48945c53aa041251300270",
+              "role": "result",
+              "sha256": "9b33b7704bf425c847b8ce1c768fc9e90c2f518e98978aedefb8f7e0f1cf4a45",
+              "width": 32
+            }
+          ],
+          "source": "photo_meta.png",
+          "steps": [
+            {
+              "op": "strip_metadata",
+              "orientation_baked_in": true,
+              "removed": {
+                "exif": true,
+                "gps": true,
+                "icc": false,
+                "xmp": false
+              }
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "photo_meta.png"
+    ],
+    "keep_icc": true,
+    "op": "strip_metadata"
+  }
+}

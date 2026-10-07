@@ -1,0 +1,162 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 851,
+          "format": "jpeg",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 1191,
+            "format": "png",
+            "height": 24,
+            "pixels_sha256": "dd2160e132a901569959a0837680610b9f5cfcec7fc4fe9182f0ce16f950369c",
+            "role": "result",
+            "sha256": "ef012aeba992b09f2b019e7309e091e4ca3289e61da7e252f144c23327d4a8e7",
+            "width": 32
+          }
+        ],
+        "source": "scene.jpg",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 638,
+          "format": "webp",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 235,
+            "format": "png",
+            "height": 24,
+            "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+            "role": "result",
+            "sha256": "29431dd6ec1e1e452c91a1c07eaf7b1e2d44f19758fcf2e4666a00fcaa6631c5",
+            "width": 32
+          }
+        ],
+        "source": "scene.webp",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 1463,
+          "format": "gif",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 1129,
+            "format": "png",
+            "height": 24,
+            "pixels_sha256": "a1867e4fb11d7e5976928eee0b8deae7f7f856aa5e13e0c6ba43d34c9bca73be",
+            "role": "result",
+            "sha256": "ad56c0c1670299a9369e4290c702e88f8733ab26d1c881ed6e38fed1e5683158",
+            "width": 32
+          }
+        ],
+        "source": "scene.gif",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 2358,
+          "format": "bmp",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 235,
+            "format": "png",
+            "height": 24,
+            "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+            "role": "result",
+            "sha256": "29431dd6ec1e1e452c91a1c07eaf7b1e2d44f19758fcf2e4666a00fcaa6631c5",
+            "width": 32
+          }
+        ],
+        "source": "scene.bmp",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 2514,
+          "format": "tiff",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 235,
+            "format": "png",
+            "height": 24,
+            "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+            "role": "result",
+            "sha256": "29431dd6ec1e1e452c91a1c07eaf7b1e2d44f19758fcf2e4666a00fcaa6631c5",
+            "width": 32
+          }
+        ],
+        "source": "scene.tif",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.jpg",
+      "scene.webp",
+      "scene.gif",
+      "scene.bmp",
+      "scene.tif"
+    ],
+    "format": "png",
+    "op": "convert",
+    "output": {
+      "part": false
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "bind": "fixtures/hostile",
+  "expect": {
+    "results": [
+      {
+        "error": "the jpeg image is corrupt or truncated; use an intact file",
+        "outputs": [],
+        "source": "truncated_scan.jpg",
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "truncated_scan.jpg"
+    ],
+    "op": "hash"
+  }
+}

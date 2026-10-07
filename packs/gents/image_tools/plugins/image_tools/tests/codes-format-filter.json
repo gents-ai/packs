@@ -1,0 +1,77 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1998,
+          "format": "png",
+          "height": 148,
+          "width": 148
+        },
+        "outputs": [],
+        "source": "qr_plain.png",
+        "steps": [
+          {
+            "attempt": "none",
+            "codes": [],
+            "found": 0,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 948,
+          "format": "png",
+          "height": 80,
+          "width": 280
+        },
+        "outputs": [],
+        "source": "code128.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  28,
+                  40,
+                  220,
+                  0
+                ],
+                "format": "code_128",
+                "points": [
+                  [
+                    28,
+                    40
+                  ],
+                  [
+                    248,
+                    40
+                  ]
+                ],
+                "text": "ABC-12345"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "qr_plain.png",
+      "code128.png"
+    ],
+    "formats": [
+      "code_128"
+    ],
+    "op": "decode_codes"
+  }
+}

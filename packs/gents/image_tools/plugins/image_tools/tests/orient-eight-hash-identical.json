@@ -1,0 +1,227 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 168,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "outputs": [],
+        "source": "upright.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "158b1354a15a1d7964e1309e266b79db9a71e14cd35207b33fb34403e7b95386",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 206,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "outputs": [],
+        "source": "orient_1.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "99a92f708adc2fdaa4c8e89f69e031bb88788483e8ba721ce6f2081f280d8c38",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 206,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "orientation_applied": 2,
+        "outputs": [],
+        "source": "orient_2.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "aca5c3e7749513a19a5075378fa843ee7beea213d1511dd03df85862a500d7e5",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 206,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "orientation_applied": 3,
+        "outputs": [],
+        "source": "orient_3.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "b02b7928d680b8ee6aaa065ef0e32f8e22a4b9c4bc0db707890dca225730ca26",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 206,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "orientation_applied": 4,
+        "outputs": [],
+        "source": "orient_4.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "99a069e6a5f5dd7d55188e2e4ddf14b5336afbddc73ad042244fda006aa2e8c4",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 208,
+          "format": "png",
+          "height": 6,
+          "width": 4
+        },
+        "orientation_applied": 5,
+        "outputs": [],
+        "source": "orient_5.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "f4f9a9246f0422dfff2260f5d8812c1f5499f9515620ee7aadbd9d43659496f9",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 208,
+          "format": "png",
+          "height": 6,
+          "width": 4
+        },
+        "orientation_applied": 6,
+        "outputs": [],
+        "source": "orient_6.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "9b4f4ec0620a2b9f4af4fc89e236fbf584b75cf3bc924866cc37dd627305c69b",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 208,
+          "format": "png",
+          "height": 6,
+          "width": 4
+        },
+        "orientation_applied": 7,
+        "outputs": [],
+        "source": "orient_7.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "bb6f1e2f6127989991bd89390278e838727093cc5f21c89ae414512370ac0799",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 208,
+          "format": "png",
+          "height": 6,
+          "width": 4
+        },
+        "orientation_applied": 8,
+        "outputs": [],
+        "source": "orient_8.png",
+        "steps": [
+          {
+            "dhash": "0000000000000000",
+            "height": 4,
+            "op": "hash",
+            "phash": "d5200f0062ff71df",
+            "pixels_sha256": "444072b1d8e01d352eee4705615bb3056524a6ed7d870aa789869f72950dd4ea",
+            "sha256": "f364f086db26e17cee3f3a6ee86cd153c0af6bbdaf219694155bb3f6f1cb7b5b",
+            "width": 6
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "upright.png",
+      "orient_1.png",
+      "orient_2.png",
+      "orient_3.png",
+      "orient_4.png",
+      "orient_5.png",
+      "orient_6.png",
+      "orient_7.png",
+      "orient_8.png"
+    ],
+    "op": "hash"
+  }
+}

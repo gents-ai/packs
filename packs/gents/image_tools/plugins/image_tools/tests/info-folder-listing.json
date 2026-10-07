@@ -1,0 +1,121 @@
+{
+  "bind": "fixtures/batch",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 791,
+          "format": "png",
+          "height": 18,
+          "width": 24
+        },
+        "outputs": [],
+        "source": "a.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 791,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 18,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 18,
+            "oriented_width": 24,
+            "width": 24,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 864,
+          "format": "jpeg",
+          "height": 20,
+          "width": 30
+        },
+        "outputs": [],
+        "source": "b.jpg",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 864,
+            "color": "rgb8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "jpeg",
+            "frames": 1,
+            "has_alpha": false,
+            "height": 20,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 20,
+            "oriented_width": 30,
+            "width": 30,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 1108,
+          "format": "png",
+          "height": 16,
+          "width": 16
+        },
+        "outputs": [],
+        "source": "sub/c.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1108,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 16,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 16,
+            "oriented_width": 16,
+            "width": 16,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": [
+      "1 entries in the folder that are hidden, links or not images were left out"
+    ]
+  },
+  "input": {
+    "op": "info"
+  }
+}

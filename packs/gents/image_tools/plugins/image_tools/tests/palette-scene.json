@@ -1,0 +1,70 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "colors": [
+              {
+                "hex": "#c1306c",
+                "rgb": [
+                  193,
+                  48,
+                  108
+                ],
+                "share": 0.2956
+              },
+              {
+                "hex": "#bdb5b9",
+                "rgb": [
+                  189,
+                  181,
+                  185
+                ],
+                "share": 0.263
+              },
+              {
+                "hex": "#3db872",
+                "rgb": [
+                  61,
+                  184,
+                  114
+                ],
+                "share": 0.2578
+              },
+              {
+                "hex": "#2f302f",
+                "rgb": [
+                  47,
+                  48,
+                  47
+                ],
+                "share": 0.1836
+              }
+            ],
+            "op": "palette",
+            "pixels": 768
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "colors": 4,
+    "files": [
+      "scene.png"
+    ],
+    "op": "palette"
+  }
+}

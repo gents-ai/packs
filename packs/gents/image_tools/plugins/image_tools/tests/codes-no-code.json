@@ -1,0 +1,33 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 37028,
+          "format": "png",
+          "height": 96,
+          "width": 96
+        },
+        "outputs": [],
+        "source": "no_code.png",
+        "steps": [
+          {
+            "attempt": "none",
+            "codes": [],
+            "found": 0,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "no_code.png"
+    ],
+    "op": "decode_codes"
+  }
+}

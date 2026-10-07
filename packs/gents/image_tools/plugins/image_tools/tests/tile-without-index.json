@@ -1,0 +1,101 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAChklEQVR4nO2b3U0DMRCEJ+YaoQ0qoA0ojBcKg1IQQSABB/fj3dnZtUf3gEBCmy+fkztbswC44NKu1+8fVn9J+WsTnGp5nwpqVxOYYWWqBTfhQ+QgBT2zdEldYQmZJU0KSmapk4KMWQlIQcOsHKQgYFYaUog2KxMphJqVjFQgrHykELQMU5JChFlZSYFuVmJS4JqVmxSIZqUnBZZZFUiBYlYRUvA3qw4pb1ilSMFzGVYjBTezCpKCj1k1ScHBrLKkYG3W9kxPL6/g5vn23uoFGpq1892jx27pWJm133N67JaOiVmHPhHoUTLr6GcnPTJmnfiWocfSrPP/69z3cWpYJy09fedCT/Qy7LnHoyfUrM67YXrizOp/bqAnyCyTJyx6IsyyekKmh26W4V4CPVyzbHdd6CHelJrvT6WG1ZikImBRlqHTnic9/mb57Q7T42yW6z46PZ5meZ840ONmFuFshh4fszinWPQ4mEU776PH2izmySg9pmZRz5AfH+74TVZDWDxSuy/ZJqtc7Ve5yapllniTVcgs/SarilkpmqwSZmVpssablajJGmxWriZrpFmzydo9kyYpxC3DpE3WALPyNlnZZqVuslLNyt5k5ZlVoMlKMqtGk5VhVpkmq7tZlZqsvmbNJqvzTJqkXGGVbLK6LMOqTVZ7swo3WY3Nqt1ktTSrMimYmlWcFOzMqk8KRmYNQQoWZo1Cqh/WQKTQtwzHIoUOs4YjhbNmjUgKp8walBSOmzUuKRw0a2hSOGLW6KSw26xJ6gPWtlmT1BcsdpM1K6lNWJPUD1hNbiZNUvjbrElqFVaTm0mTFNbMmqT+gdXkZtIkhe9mTVKbsJrcTJqk8GnWJLXregMGICwe9jQzWQAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAACZ0lEQVR4nO2b203DQBREJ5tthBpoIg1QAGVQAYVQEhXQCUoQSIDBcXwfc2c38keU/IyOztrevZr+gPsDDu1y/f6y+GPIv40wVT+nAtvVCDIspOo4poeoQQp8ZvGSusAiMouaFJjMYicFGrMKkAKHWTVIgcCsMqSQbVYlUkg1qxipRFj1SCFpGZYkhQyzqpJCuFmFSSHWrNqkEGhWeVKIMkuBFELMEiEFf7N0SHnDkiIFz2WoRgpuZgmSgo9ZmqTgYJYsqTOs57dXGH1e7k4mmThJnWHB8EM3gjzYmm4Ki264bXxPEDbL/u6papbLc0bSLK8nsh4sx3cXsWXo+5anZJb7+7CMWRE7Bw2zgvZYAmbF7UarmxW6by9tVvQJR12zEs6CisLKOTWruAzTzhfLmZV5ElvLrOQz60Jm5Z/uVzGLYg5SwiyWiRG/WUSzNXKzuKaQzGbRzWv70+PJsPcpTApkFTpqUpcmq/pk1DAVm1nkTVb1yahhKh6zSjRZKcyq0mTNN6tQkzXZrFpN1kyzZpN1dyZOUshbhkWbrOqTUcNUXX4yapiqy09GDVNFmiXQZA0yS6PJGmGWTJPV3SylJquvWbPJ6pyJk5QrLMkmq/pk1DBVl5+MGqbq8pNRw1S2ZimTgqlZ4qRgZ5Y+KRiZNQQpWJg1Cqn9sAYihX3LcCxS2GHWcKRwq1kjksJNZg1KCtvNGpcUNpo1NClsMWt0UrjarEnqA9a6WZPUF6wjXSZOUquwJqkfsBpdJk5S+NusSWoRVqPLxEkKS2ZNUv/AanSZOEnhu1mT1CqsRpeJkxQ+zZqkrrreARqFLZTq4bK0AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 16160,
+            "format": "png",
+            "height": 100,
+            "width": 150
+          },
+          "outputs": [
+            {
+              "bytes": 703,
+              "format": "png",
+              "height": 100,
+              "part": 0,
+              "pixels_sha256": "52a3847280c97f4ff3a7c5cb30b0a7e60c7ce89229ab5b8d88ba5686f428cc43",
+              "role": "tile",
+              "sha256": "b6da5d97c1ea282c44a66fd26d6fd64e1935fb8d91261160af80dd0e98658530",
+              "tile": 1,
+              "width": 100
+            },
+            {
+              "bytes": 672,
+              "format": "png",
+              "height": 100,
+              "part": 1,
+              "pixels_sha256": "f557a4ea6dabc3152950467296b129459237ece87a95f1fa9b66ed946eb17cc6",
+              "role": "tile",
+              "sha256": "b9f2da6e28a9cfe6208eeb66cd9a6ed4a323786c649a5873676b76c4466d64b2",
+              "tile": 2,
+              "width": 100
+            }
+          ],
+          "source": "tile_src.png",
+          "steps": [
+            {
+              "cols": 2,
+              "from": [
+                150,
+                100
+              ],
+              "op": "tile",
+              "overlap": 10,
+              "rows": 1,
+              "size": 100,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 100,
+                  "n": 1,
+                  "output": 0,
+                  "row": 0,
+                  "width": 100,
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "col": 1,
+                  "height": 100,
+                  "n": 2,
+                  "output": 1,
+                  "row": 0,
+                  "width": 100,
+                  "x": 50,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 2
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "tile_src.png"
+    ],
+    "index": false,
+    "op": "tile",
+    "overlap": 10,
+    "size": 100
+  }
+}

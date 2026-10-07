@@ -1,0 +1,56 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 320,
+            "format": "png",
+            "height": 15,
+            "pixels_sha256": "8f0afc9f2bc39424fcda1786b09e26c67861126cc53df197b057e1684d739747",
+            "role": "result",
+            "sha256": "c76500e021879461d810df56a7839ec197815e677cde57ffa2eacc504e18b616",
+            "width": 20
+          }
+        ],
+        "source": "scene.png",
+        "steps": [
+          {
+            "changed": true,
+            "filter": "catmull_rom",
+            "from": [
+              32,
+              24
+            ],
+            "mode": "fit",
+            "op": "resize",
+            "to": [
+              20,
+              15
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "filter": "catmull_rom",
+    "op": "resize",
+    "output": {
+      "part": false
+    },
+    "width": 20
+  }
+}

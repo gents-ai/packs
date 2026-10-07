@@ -1,0 +1,58 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAIAAADbtmxLAAAArmlDQ1BfAAB4nAGgAF//AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dzj6vH4/wYNFBsiKTA3PkVMU1phaG92fYSLkpmgp661vMPK0djf5u30+wIJEBceJSwzOkFIT1ZdZGtyeYCHjpWco6qxuL/GzdTb4unw9/4FDBMaISgvNj1ES1JZYGdudXyDipGYn6attLvCydDX3uXs8/oBCA8WHSQrMjlAR05VXGDZS7EVO40fAAAAQElEQVR4nO3OMRHAMADEsB/SK8fyB1IIXjNIZwA+2/ds93T27iqGiqFiqBgqhoqhYqgYKoaKoWKoGCqGiqFiqPwr2gKfyDU1pgAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 4908,
+            "format": "tiff",
+            "height": 32,
+            "width": 48
+          },
+          "outputs": [
+            {
+              "bytes": 307,
+              "format": "png",
+              "height": 32,
+              "part": 0,
+              "pixels_sha256": "30011064259c4b3453b9aeb8824f46d5aa9c4944bb41221692cc52c53a52fecb",
+              "role": "result",
+              "sha256": "d2aa4265b55434d1372858634e9c471566ad76c15351a230baea07794ca032af",
+              "width": 48
+            }
+          ],
+          "source": "photo_icc.tif",
+          "steps": [
+            {
+              "op": "strip_metadata",
+              "orientation_baked_in": false,
+              "removed": {
+                "exif": false,
+                "gps": false,
+                "icc": false,
+                "xmp": false
+              }
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "photo_icc.tif"
+    ],
+    "keep_icc": true,
+    "op": "strip_metadata"
+  }
+}

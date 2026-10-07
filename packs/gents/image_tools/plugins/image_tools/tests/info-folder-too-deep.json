@@ -1,0 +1,85 @@
+{
+  "bind": "fixtures/deep",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 234,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "d0/d1/d2/d3/d4/d5/d6/d7/d8/d9/d10/d11/d12/d13/d14/d15/ok_level16.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 234,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 234,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "top.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 234,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": [
+      "1 folders deeper than 16 levels were not read; name their images in files to read them"
+    ]
+  },
+  "input": {
+    "op": "info"
+  }
+}

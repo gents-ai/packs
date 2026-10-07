@@ -1,0 +1,138 @@
+{
+  "agent_behaviors": [
+    {
+      "behavior_id": "image-helper",
+      "context_id": "image-helper-context",
+      "display_name": "Image helper",
+      "inference_profile_id": "gents:inference-slot:image_helper"
+    }
+  ],
+  "agent_principal": {},
+  "callback_bindings": [
+    {
+      "binding_id": "image-plan",
+      "callback_id": "image-plan",
+      "event_source_id": "image-plan",
+      "input_fields": [
+        "run_id",
+        "path",
+        "files",
+        "data_base64",
+        "name",
+        "ops",
+        "format",
+        "quality",
+        "orient",
+        "frame"
+      ]
+    },
+    {
+      "binding_id": "image-run",
+      "callback_id": "image-run",
+      "event_source_id": "image-run",
+      "input_fields": [
+        "run_id",
+        "chunk",
+        "path",
+        "files",
+        "data_base64",
+        "name",
+        "source",
+        "ops",
+        "format",
+        "quality",
+        "orient",
+        "frame",
+        "cursor"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "callback_id": "image-plan",
+      "display_name": "image-plan",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "many",
+            "collection": "ImageChunk",
+            "correlation_field": "run_id",
+            "name": "chunks",
+            "schema": "ImageChunk/v1"
+          }
+        ],
+        "plugin": "image_tools"
+      }
+    },
+    {
+      "callback_id": "image-run",
+      "display_name": "image-run",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "ImageResult",
+            "correlation_field": "run_id",
+            "name": "result",
+            "required": true,
+            "schema": "ImageResult/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "ImageOutput",
+            "correlation_field": "run_id",
+            "name": "outputs",
+            "schema": "ImageOutput/v1"
+          }
+        ],
+        "plugin": "image_tools"
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "image-helper-context",
+      "display_name": "Image helper",
+      "system_prompt": "./agent_behaviors/image_helper/system_prompt.md",
+      "tools_id": "image-helper-tools"
+    }
+  ],
+  "event_sources": [
+    {
+      "correlation_field": "run_id",
+      "display_name": "image-plan",
+      "event_kind": "created",
+      "event_source_id": "image-plan",
+      "source_collection": "ImageJob"
+    },
+    {
+      "correlation_field": "run_id",
+      "display_name": "image-run",
+      "event_kind": "created",
+      "event_source_id": "image-run",
+      "source_collection": "ImageChunk"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Image helper tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/image_tools"
+          },
+          {
+            "plugin": "gents/image_tools_write"
+          }
+        ]
+      },
+      "tools_id": "image-helper-tools"
+    }
+  ]
+}

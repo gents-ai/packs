@@ -1,0 +1,55 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "R0lGODlhIAAYAIAAAAAAAAAAACH5BAgAAAAALAAAAAAgABgAhwAAAAoNCwwPDQ4PD88PfNEPfckQetcQgcQSd78TdboUcw0UENkUhLgVcg8VEg0VEd4WiBEXFCcYIYYZS40ZScAZMBMZFikZIt8ZioEaTcUaLSQaIKAbQcwbKLQbchcbGXgcSpUcRqscOhkcGkscNxsdHEYdNR0dHuIdjXEeSdUeIdceINgeH9oeH9oeH00eOeIejtYfH7IfczEfKS0fJzMgK9MgH1EhPD4hMjchLjghLmohR88hIOQhkLIidFMiPTwiMckjIcMkIWUlSFUmQFwnROUnk18pRmEpR60rdagrI+EtlKkvdd81lac2dos4Kt05lqU7eN0+maFBeNxDmmlEL6BGedtJnJ5KelpKMp5Me9lNnE1ONNhPnZxQfEFRNtdTnjVVOKJWgStXONpXodpaoyhbORJbMR9cNiZcORRdMhheNaJfhhNfMxNgNN1gpxJhNN5lqhFmNaJniRBpNttrqxNuOp9wixNzPJx0i9d2rZR4iBR4P5J7iNZ7rxV8QpF/idOBrxaDRYuEiM+FrxKHRM6Hr4mIiY6KjM2KsM2KsBOMR5GNkNGNs9WNthKQSNWQtxORSZGRkdeTuSWWVRSWTBaXTduXviuYWi6ZXBuaUR2aUxabTxWbThicUN+cwo+dlSqfXOCixSmjXSqnYCmqYeKqySisYYOulSevYuGwzCayYn+ylSS1Yn21lXu4leG4zyG7Y3e8lXW9lHK9k+G90hvBY9/C08XDxLvDv9/E09/E1MHEwrfEvXDFlN3F087GysnGyLHGuqnGttnH0dbHz9PHzrDHuhnIZG7IlKzIuGTJj2fKkmHKjkHLfD/LfEPLfl7MjaXMtkfPgjvPeqTPtlrQjUnRgxTSZaHSt1fUjUzVh1XVjBHWZjbWexPYZyjYc1DYii7ZdzHZeRPZaBfaaiTbciLbcZ3btxvcbR7cb5veuJvmu5rou5nqu5nsvJrtvb/w1JvxwJ3xwZ/xwqHxxJrxv8Px1snx2rvy06XyxqryyLLyzs/y3tLy4Njy4wj/AAUMGDhAgoQLF0yQWJgCBIgJEyhIbNBAQQIDBAocOAABAsEBHwwmVEjiR4qGGSJOrHiRwMaOKB48cGBhw8EZOBTe+LEDpUoPQBskQFCAAQQMKHpY+PChxAkaM3LkfPGjSE+HGTJQkMFVBlAUKGD06GGEhtkaOoCoBUKESJEjSIYM2bGDiV0mSfL6WMLXiN8TZ2jUyJFWbVu4cedOmeKksZO8UKA0mTz5jOUzY8aE+dKis+fOi0NHGR0lspTTpy9nDsP682cvWGJj0SJGTJctuK/ovnL5DJrVrj17Ge6ldm0wyMGQKfPmjeU2a9CkMRMmeOfhYtho146c+Zs44OmI/7djJ8106y32qL8zp/2cMnXi1wEfhw6e+3z+/DGDflAf9XncIaAeBBYYHx/5/SHIgpRgksmDh0Q4yISAAJJHgIYYQkggfnToxyWFhLjIIpQ0+CCEEaaICCMsMpLIi4k44sglND5ioyWbUHLiiSlGKMmPPyoipCKQTHLJJ0hW0kknnngSSig7ZkILK6ygggooWGbZyCRGIimKKKYsyeQppZRCypmkLEMLLa5UaSWWw/TSSy64fGnKnWF2YkssrayySiqplKLmmrS84iYqceZCJy64qKIKLJDaIqmkscTiZzPLJOPLmrO88oorwwwjjJyL/lLLqbVggw0yrIJDDTXPQI9zTTTNMKOpLLJkk4000hwjDC/BGFPML7sU282x2JgDjjjeUHPNNtpYY2syyayDDjq6KnPMMcZ0awwxxHZTTjrqlHvOOOOEoy43067jrrvo7MNPPPHg488/+P5Dzr7kmoPuNuqGo402zLhjsMHszKMPvfHcY2++/PaLbsACa+POOxjbYw89+vCTT7395ItvQAA7",
+        "mimeType": "image/gif",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 1464,
+              "format": "gif",
+              "height": 24,
+              "part": 0,
+              "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+              "role": "result",
+              "sha256": "4bdb89e7768ac75c3d46ff43215396835d5341afb6820f10d4cad470b404bb9d",
+              "width": 32
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "format": "gif",
+              "op": "convert",
+              "quality": null
+            }
+          ],
+          "warnings": [
+            "GIF holds 256 colours, so the colours were reduced"
+          ]
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "gif",
+    "op": "convert"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAIAAAACUFjqAAAA2UlEQVR4nE2OTU7DQAyFn9uhyYydKDRtRYJYwAHYcAMkdlyR63AAOAArxIZFq/5EbaK4M9OmqvRkyXrPn5+5S25n4IXyHDwFl8QlshI8izKomMDbUT4hSZDlatGnAAPOT0M1dySv6+6pXVlsl7Zq7ILUJyTalWtN9vb1+7LcdP3h81G+H3JqDYhxht/w/0/613ToTVMI3TP2g93XnCD9eH+eq5vCFeO8GE00PI6/UYdqDcmO2EJEmdRpqDbA/TKGi7IEi8HzAH8dGmqQRKZEQwZ45S7Z67tT6Ag9kjMnjFdxGQAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 274,
+              "format": "png",
+              "height": 10,
+              "part": 0,
+              "pixels_sha256": "1c1282c59e2c223292c28a6bd58a5c81afd1de9263a438065b5965e82ddf00c2",
+              "role": "result",
+              "sha256": "ca3f7cfaeac816cd72f793c49c164a79e698e22e7e3a10fe7d5269fc269742cc",
+              "width": 10
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "changed": true,
+              "filter": "lanczos3",
+              "from": [
+                32,
+                24
+              ],
+              "mode": "fill",
+              "op": "resize",
+              "to": [
+                10,
+                10
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "height": 10,
+    "mode": "fill",
+    "op": "resize",
+    "width": 10
+  }
+}

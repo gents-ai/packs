@@ -1,0 +1,15 @@
+type ImageResult {
+  run_id: String @index
+  chunk: Int
+  source: String
+  ok: Boolean
+  error: String
+  input_format: String
+  input_width: Int
+  input_height: Int
+  steps: String
+  warnings: [String]
+  outputs: Int
+  complete: Boolean
+  cursor: String
+}

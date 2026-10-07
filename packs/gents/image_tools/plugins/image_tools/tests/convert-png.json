@@ -1,0 +1,53 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAYCAIAAAAUMWhjAAAAsklEQVR4nL2VzQ2AMAiF3wGjaadwEK/uYZzLk4N5cBH/EtNo0ZJCOXCBPPIVKASgBjWoGtZnhQiOgArgfG6I4A3V8UmgU5gjUMPaCxiqnwQunjctK2I2t72o8IMgjDEmJA578IhxBWSPdk/RO4MxJ2vJRRDN+CVIavi7yYkEqeMUHdPDj0PH/TOiYS2waM560byh+vei6RQOp0hf/XoiQ/WbwEodRS6aN1QH/1WoYZlftA0FohPqxSVQTgAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 235,
+              "format": "png",
+              "height": 24,
+              "part": 0,
+              "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+              "role": "result",
+              "sha256": "29431dd6ec1e1e452c91a1c07eaf7b1e2d44f19758fcf2e4666a00fcaa6631c5",
+              "width": 32
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "format": "png",
+              "op": "convert",
+              "quality": null
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "png",
+    "op": "convert"
+  }
+}

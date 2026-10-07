@@ -1,0 +1,28 @@
+{
+  "bind": "fixtures/hostile",
+  "expect": {
+    "outputs": [],
+    "result": {
+      "chunk": 2,
+      "complete": true,
+      "error": "the png image is corrupt or truncated; use an intact file",
+      "input_format": "png",
+      "input_height": 36,
+      "input_width": 48,
+      "ok": false,
+      "outputs": 0,
+      "source": "truncated.png",
+      "steps": "[]",
+      "warnings": []
+    }
+  },
+  "input": {
+    "chunk": 2,
+    "files": [
+      "truncated.png"
+    ],
+    "ops": "view",
+    "run_id": "r1",
+    "source": "truncated.png"
+  }
+}
