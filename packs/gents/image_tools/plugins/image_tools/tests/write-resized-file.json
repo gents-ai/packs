@@ -3,14 +3,24 @@
   "expect": {
     "results": [
       {
-        "error": "\"out/../../escaped.png\" leaves the bound folder; name a file inside the bound folder",
         "input": {
           "bytes": 1237,
           "format": "png",
           "height": 24,
           "width": 32
         },
-        "outputs": [],
+        "outputs": [
+          {
+            "bytes": 289,
+            "file": "out/small.png",
+            "format": "png",
+            "height": 12,
+            "pixels_sha256": "c2acd67dac0a972549f2bd6e1536bdb66e7814737195291b52d5e6ac95e575c9",
+            "role": "result",
+            "sha256": "a9b210620f4de48930f3cf7ea164689dee04cc088e42487a199e0030efbb14e8",
+            "width": 16
+          }
+        ],
         "source": "scene.png",
         "steps": [
           {
@@ -23,8 +33,8 @@
             "mode": "fit",
             "op": "resize",
             "to": [
-              8,
-              6
+              16,
+              12
             ]
           }
         ],
@@ -38,10 +48,10 @@
       "scene.png"
     ],
     "op": "resize",
-    "output": {
-      "file": "out/../../escaped.png",
+    "save": {
+      "file": "out/small.png",
       "overwrite": true
     },
-    "width": 8
+    "width": 16
   }
 }

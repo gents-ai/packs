@@ -10,7 +10,7 @@ use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::OVERHEAD_BYTES;
+use crate::model::{MAX_PART_SIDE, OVERHEAD_BYTES};
 use crate::montage;
 use crate::src::{Source, resolve};
 
@@ -62,9 +62,7 @@ pub fn run(input: &Input) -> Result<Done, String> {
     let mut cx = Cx::new(resolved.root.clone(), plan.output.clone(), plan.page_bytes);
     cx.format()?;
     if plan.output.file.is_some() && resolved.sources.len() > 1 && !plan.is_montage() {
-        return Err(
-            "output.file names one file; use output.suffix to write one file per image".into(),
-        );
+        return Err("save.file names one file; use save.suffix to write one file per image".into());
     }
     let mut call_warnings = Vec::new();
     if resolved.skipped > 0 {
@@ -214,16 +212,23 @@ fn run_montage(
     let e = encode(&sheet.img, format, plan.output.quality, None)?;
     let mut warnings = sheet.warnings;
     warnings.extend(e.notes);
-    let rec = match cx.deliver(Prepared::new(e.bytes, format, &sheet.img), "montage", None) {
+    let mut rec = match cx.deliver(Prepared::new(e.bytes, format, &sheet.img), "montage", None) {
         Ok(r) => r,
         Err(Fail::Msg(m)) => return Err(m),
         Err(Fail::Over(n)) => {
             return Err(format!(
-                "the sheet is {n} bytes, over the {} bytes one call can attach; use a smaller cell, or write it to a file with output.file",
+                "the sheet is {n} bytes, over the {} bytes one call can attach; use a smaller cell, or write it to a file with save.file",
                 cx.room()
             ));
         }
     };
+    // A montage cannot be chained, so the view step deliver suggests does not apply.
+    if rec["not_attached"].is_string() && sheet.img.w.max(sheet.img.h) > MAX_PART_SIDE {
+        rec["not_attached"] = json!(format!(
+            "the sheet is {}x{} pixels, over the {MAX_PART_SIDE} on a side a model accepts, so it is not attached; use a smaller cell or fewer files",
+            sheet.img.w, sheet.img.h
+        ));
+    }
     if let Some(n) = rec["not_attached"].as_str() {
         warnings.push(n.to_owned());
     }
@@ -249,7 +254,6 @@ fn run_montage(
         "width": sheet.img.w, "height": sheet.img.h,
         "cells": cells, "output": 0,
     });
-    let mut rec = rec;
     rec["role"] = json!("montage");
     Ok(json!({"source": "montage", "steps": [facts], "outputs": [rec], "warnings": warnings}))
 }

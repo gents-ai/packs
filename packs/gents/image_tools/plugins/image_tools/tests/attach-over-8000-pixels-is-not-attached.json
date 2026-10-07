@@ -1,0 +1,43 @@
+{
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 660,
+          "format": "png",
+          "height": 20,
+          "width": 9000
+        },
+        "outputs": [
+          {
+            "bytes": 657,
+            "format": "png",
+            "height": 20,
+            "not_attached": "the image is 9000x20 pixels, over the 8000 on a side a model accepts, so it is not attached; end the chain with a view step to look at it",
+            "pixels_sha256": "2289d48efdc2f87d8f99ce365f1c101a046398d827162b1b853544ec305f8ee9",
+            "role": "result",
+            "sha256": "1555e736d5a3b66e4a8041376b4974902c96e6d6ebade3b412caeb384e29455c",
+            "width": 9000
+          }
+        ],
+        "source": "strip.png",
+        "steps": [
+          {
+            "axis": "vertical",
+            "op": "flip"
+          }
+        ],
+        "warnings": [
+          "the image is 9000x20 pixels, over the 8000 on a side a model accepts, so it is not attached; end the chain with a view step to look at it"
+        ]
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "axis": "vertical",
+    "data_base64": "iVBORw0KGgoAAAANSUhEUgAAIygAAAAUCAIAAABvWgE6AAACW0lEQVR42u3dAQkAAAjAMJPYP4qxzHEYLMELfG4XAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBhJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKoyXAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAM4yUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMN4CQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIMF4CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADKMlwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACADOMlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDDeAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAyDBeAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAyjJcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAzjJQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgw3gJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMgwXgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMoyXAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAM4yUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMN4CQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIMF4CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADKMlwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACADOMlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDjAW7LRlcq0gpgAAAAAElFTkSuQmCC",
+    "name": "strip.png",
+    "op": "flip"
+  }
+}

@@ -38,7 +38,7 @@
       "scene.png"
     ],
     "op": "resize",
-    "output": {
+    "save": {
       "file": "../escaped.png",
       "overwrite": true
     },

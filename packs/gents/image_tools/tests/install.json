@@ -12,8 +12,7 @@
       "Tools/image-helper-tools"
     ],
     "plugins": [
-      "image_tools",
-      "image_tools_write"
+      "image_tools"
     ],
     "slots": [
       "image_helper"

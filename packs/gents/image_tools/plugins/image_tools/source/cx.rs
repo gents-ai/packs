@@ -9,7 +9,7 @@ use base64::Engine as _;
 use serde_json::{Value, json};
 
 use crate::input::Output;
-use crate::model::{Format, Img, OVERHEAD_BYTES, WALL_SECS, sha256_hex};
+use crate::model::{Format, Img, MAX_PART_SIDE, MAX_PARTS, OVERHEAD_BYTES, WALL_SECS, sha256_hex};
 use crate::src::write_file;
 
 /// Why an image could not be delivered.
@@ -112,8 +112,12 @@ impl Cx {
             .saturating_sub(self.part_bytes + self.json_bytes + OVERHEAD_BYTES)
     }
 
-    /// Raw image bytes the next part may hold.
+    /// Raw image bytes the next part may hold: none once the call attaches
+    /// [`MAX_PARTS`] images, so the rest pages exactly like the byte budget.
     pub fn room(&self) -> usize {
+        if self.parts.len() >= MAX_PARTS {
+            return 0;
+        }
         self.left() / 4 * 3
     }
 
@@ -124,6 +128,11 @@ impl Cx {
 
     /// The format results are written in: the explicit one, else the file name's extension, else PNG.
     pub fn format(&self) -> Result<Format, String> {
+        Ok(self.requested_format()?.unwrap_or(Format::Png))
+    }
+
+    /// The format `output.format` or the `save.file` extension asks for, if any.
+    pub fn requested_format(&self) -> Result<Option<Format>, String> {
         let named = self
             .output
             .format
@@ -139,11 +148,11 @@ impl Cx {
             .flatten();
         match (named, by_ext) {
             (Some(a), Some(b)) if a != b => Err(format!(
-                "output.file ends in .{} but output.format is {a}; make them agree",
+                "save.file ends in .{} but output.format is {a}; make them agree",
                 b.ext()
             )),
-            (Some(f), _) | (None, Some(f)) => Ok(f),
-            (None, None) => Ok(Format::Png),
+            (Some(f), _) | (None, Some(f)) => Ok(Some(f)),
+            (None, None) => Ok(None),
         }
     }
 
@@ -212,7 +221,8 @@ impl Cx {
                 p.format
             )));
         }
-        let attach = want_part && p.format.viewable();
+        let too_wide = p.width.max(p.height) > MAX_PART_SIDE;
+        let attach = want_part && p.format.viewable() && !too_wide;
         if attach && p.bytes.len() > self.room() && file.is_none() {
             return Err(Fail::Over(p.bytes.len()));
         }
@@ -228,7 +238,12 @@ impl Cx {
             write_file(root, name, &p.bytes, self.output.overwrite)?;
             out["file"] = json!(name);
         }
-        if attach {
+        if want_part && too_wide {
+            out["not_attached"] = json!(format!(
+                "the image is {}x{} pixels, over the {MAX_PART_SIDE} on a side a model accepts, so it is not attached; end the chain with a view step to look at it",
+                p.width, p.height
+            ));
+        } else if attach {
             if p.bytes.len() <= self.room() {
                 out["part"] = json!(self.parts.len());
                 self.part_bytes += p.bytes.len().div_ceil(3) * 4;
@@ -238,11 +253,17 @@ impl Cx {
                     "mimeType": p.format.mime(),
                 }));
             } else {
-                out["not_attached"] = json!(format!(
-                    "the image is {} bytes, over the {} bytes one call can attach; it was written to the file",
-                    p.bytes.len(),
-                    self.room()
-                ));
+                out["not_attached"] = json!(if self.parts.len() >= MAX_PARTS {
+                    format!(
+                        "this call already attaches {MAX_PARTS} images; it was written to the file"
+                    )
+                } else {
+                    format!(
+                        "the image is {} bytes, over the {} bytes one call can attach; it was written to the file",
+                        p.bytes.len(),
+                        self.room()
+                    )
+                });
             }
         }
         Ok(out)
@@ -590,5 +611,47 @@ mod tests {
         );
         assert!(!d.join("x.png").exists());
         assert_eq!(f(None, Some("noext")), Ok(Format::Png));
+    }
+
+    #[test]
+    fn an_image_over_8000_pixels_a_side_is_not_attached_and_names_view() {
+        let wide = |w: u32, h: u32| Prepared {
+            width: w,
+            height: h,
+            ..prep(4, Format::Png)
+        };
+        let mut c = cx(Output::default(), None);
+        let v = c.deliver(wide(8000, 10), "a", None).ok().unwrap();
+        assert_eq!(v["part"], 0, "8000 on a side is still attached");
+        let v = c.deliver(wide(10, 8001), "a", None).ok().unwrap();
+        let note = v["not_attached"].as_str().unwrap();
+        assert!(v.get("part").is_none() && note.contains("view step"), "{v}");
+        assert_eq!(c.parts.len(), 1);
+        let d = dir("wide");
+        let out = Output {
+            file: Some("w.png".into()),
+            part: Some(true),
+            ..Output::default()
+        };
+        let v = cx(out, Some(d.clone()))
+            .deliver(wide(9000, 10), "a", None)
+            .ok()
+            .unwrap();
+        assert!(v["file"] == "w.png" && v["not_attached"].is_string(), "{v}");
+        assert!(d.join("w.png").exists());
+    }
+
+    #[test]
+    fn a_call_attaches_at_most_20_images_and_the_next_one_pages() {
+        let mut c = cx(Output::default(), None);
+        for i in 0..MAX_PARTS {
+            let v = c.deliver(prep(4, Format::Png), "a", None).ok().unwrap();
+            assert_eq!(v["part"], i);
+        }
+        assert_eq!(c.room(), 0);
+        assert!(matches!(
+            c.deliver(prep(4, Format::Png), "a", None),
+            Err(Fail::Over(4))
+        ));
     }
 }

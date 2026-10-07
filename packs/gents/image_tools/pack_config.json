@@ -126,9 +126,6 @@
         "plugins": [
           {
             "plugin": "gents/image_tools"
-          },
-          {
-            "plugin": "gents/image_tools_write"
           }
         ]
       },

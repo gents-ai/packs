@@ -3,7 +3,7 @@
   "expect": {
     "results": [
       {
-        "error": "\"/tmp/escaped.png\" is an absolute path; name a file inside the bound folder",
+        "error": "\"out/../../escaped.png\" leaves the bound folder; name a file inside the bound folder",
         "input": {
           "bytes": 1237,
           "format": "png",
@@ -38,8 +38,8 @@
       "scene.png"
     ],
     "op": "resize",
-    "output": {
-      "file": "/tmp/escaped.png",
+    "save": {
+      "file": "out/../../escaped.png",
       "overwrite": true
     },
     "width": 8

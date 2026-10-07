@@ -59,9 +59,11 @@
     ],
     "op": "resize",
     "output": {
-      "file": "out/both.png",
-      "overwrite": true,
       "part": true
+    },
+    "save": {
+      "file": "out/both.png",
+      "overwrite": true
     },
     "width": 8
   }

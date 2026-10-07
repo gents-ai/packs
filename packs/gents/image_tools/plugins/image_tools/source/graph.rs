@@ -89,8 +89,6 @@ fn request(f: &Map<String, Value>) -> Result<Value, String> {
     for (from, to) in [
         ("format", "format"),
         ("quality", "quality"),
-        ("suffix", "suffix"),
-        ("overwrite", "overwrite"),
         ("attach", "part"),
     ] {
         if let Some(v) = f.get(from) {
@@ -169,16 +167,7 @@ fn plan(job: &Map<String, Value>) -> Result<String, String> {
                 group[0].name.clone()
             }),
         );
-        for k in [
-            "ops",
-            "format",
-            "quality",
-            "suffix",
-            "overwrite",
-            "attach",
-            "orient",
-            "frame",
-        ] {
+        for k in ["ops", "format", "quality", "attach", "orient", "frame"] {
             if let Some(v) = job.get(k) {
                 c.insert(k.into(), v.clone());
             }

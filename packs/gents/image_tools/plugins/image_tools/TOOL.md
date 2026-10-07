@@ -32,13 +32,12 @@ them. Other request fields:
   before the first step that needs pixels, so every coordinate you give and
   every result is in the picture as people see it; `false` keeps the stored
   layout (then `auto_orient` turns it).
-- `output`: where the produced image goes: `format` (`png` default, `jpeg`,
-  `webp` lossless, `gif`, `bmp`, `tiff`), `quality` (1 to 100, JPEG and GIF),
-  `file` (a name inside the folder to write, with a png, jpg, webp, gif, bmp
-  or tif extension or none; the extension also picks the format), `suffix` (write one file per image beside the source, such as
-  `_small`), `overwrite` (default `false`), `part` (attach the image to the
-  result; default: yes unless a file is written) and `keep_icc` (keep the
-  colour profile where the format can carry it).
+- `output`: how the produced image is encoded: `format` (`png` default,
+  `jpeg`, `webp` lossless, `gif`, `bmp`, `tiff`), `quality` (1 to 100, JPEG
+  and GIF), `part` (attach the image to the result; default: yes unless a file
+  is written) and `keep_icc` (keep the colour profile where the format can
+  carry it).
+- `save`: write the produced image into the folder; see Writing files.
 - `cursor`, `page_bytes`: see Reading in pieces.
 
 ## Steps
@@ -46,7 +45,7 @@ them. Other request fields:
 | `op` | Options | What it does |
 | --- | --- | --- |
 | `info` | `gps` | Format, size, colour type, bit depth, alpha, frame count, file size, Exif (present, orientation, whether GPS is present; coordinates only with `gps: true`), ICC profile (present, bytes), XMP present. Reads the header only. |
-| `view` | `max_side` (1568), `max_bytes` (1000000), `format` (`auto`, `png`, `jpeg`) | The picture as a model-ready PNG, or JPEG when PNG would be over `max_bytes`, upright and no longer than `max_side` on its longest side. Large JPEGs are decoded small. Last step. |
+| `view` | `max_side` (1568, at most 8000), `max_bytes` (1000000), `format` (`auto`, `png`, `jpeg`) | The picture as a model-ready PNG, or JPEG when PNG would be over `max_bytes`, upright and no longer than `max_side` on its longest side. Large JPEGs are decoded small. Last step. |
 | `resize` | `mode` (`fit`, `fill`, `exact`), `width`, `height`, `filter` (`lanczos3` default, `catmull_rom`, `bilinear`, `box`, `nearest`), `upscale` | `fit`: largest size inside the box keeping the aspect (one bound is enough; a smaller picture is left alone unless `upscale`). `fill`: cover the box, crop the centre. `exact`: stretch. Never larger than the box. |
 | `crop` | `x`, `y`, `width`, `height` | The box, in pixels of the picture as it is at that step; a box outside the picture is an error, never clamped. |
 | `rotate` | `degrees` | A multiple of 90, clockwise (negative: counter-clockwise). |
@@ -110,16 +109,29 @@ same request plus `"cursor": "<that value>"` and the next piece starts exactly
 where this one ended, nothing repeated and nothing skipped; repeat until there
 is no `next`. A cursor is opaque. It is refused, with a sentence, when the
 request differs from the one it came from or when the file changed.
-`view` fits one image in a call; for a folder, each call returns as many
-images as fit.
+A call attaches at most 20 images, and none over 8000 pixels on a side (its
+record says `not_attached`; end the chain with `view` to look at it). For a
+folder, each call returns as many images as fit.
 
 ## Writing files
 
-This tool only reads. To write the result into the folder use the
-`image_tools_write` tool with `output.file` or `output.suffix`: it needs
-read-write access to the folder, never replaces an existing file unless
-`output.overwrite` is `true`, writes atomically, and keeps every name inside the
-folder (no `..`, no absolute path, no symbolic link).
+`save` writes the result into the folder, and only a call that sets it asks
+for read-write access:
+
+- `file`: one name inside the folder, such as `small/photo.jpg` (the extension
+  also picks the format). For a `tile` step each tile is written as
+  `name_r1c1.ext` and so on, the index picture as `name_index.ext`; a `diff`
+  highlight is `name_diff.ext`.
+- `suffix`: for several images, a text added to each source's name, such as
+  `_small`, so `holiday/a.png` becomes `holiday/a_small.png`.
+- `overwrite`: `false` by default; an existing file, the source included, is
+  never replaced unless it is `true`.
+
+Each written file is listed in `outputs` with its `file` name. Files are
+written atomically and every name stays inside the folder: a name with `..`,
+an absolute path or a path through a symbolic link is refused with one
+sentence. A `path` that is one file cannot be written beside: bind the folder
+and name the image in `files`.
 
 ## Graph mode
 

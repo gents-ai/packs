@@ -3,7 +3,7 @@
   "expect": {
     "results": [
       {
-        "error": "scene.png already exists; choose another name or set overwrite to true",
+        "error": "\"/tmp/escaped.png\" is an absolute path; name a file inside the bound folder",
         "input": {
           "bytes": 1237,
           "format": "png",
@@ -38,8 +38,9 @@
       "scene.png"
     ],
     "op": "resize",
-    "output": {
-      "file": "scene.png"
+    "save": {
+      "file": "/tmp/escaped.png",
+      "overwrite": true
     },
     "width": 8
   }

@@ -219,7 +219,7 @@ pub fn run_item(cx: &mut Cx, src: &Source, plan: &Plan, tile_from: usize) -> Ite
 
 fn too_big(n: usize, room: usize) -> String {
     format!(
-        "the image is {n} bytes, over the {room} bytes one call can attach; use view to fit it, or write it to a file with output.file"
+        "the image is {n} bytes, over the {room} bytes one call can attach; use view to fit it, or write it to a file with save.file"
     )
 }
 
@@ -460,11 +460,22 @@ fn do_diff(
     facts(v)
 }
 
-fn prefer(f: Option<&str>) -> Prefer {
-    match f {
-        Some("png") => Prefer::Png,
-        Some("jpeg") => Prefer::Jpeg,
-        _ => Prefer::Auto,
+/// The encoding a fitted picture may take: the step's own `format`, else the
+/// one `output.format` or the `save.file` extension asks for.
+fn prefer(cx: &Cx, own: Option<&str>) -> Result<Prefer, String> {
+    match own {
+        Some("png") => return Ok(Prefer::Png),
+        Some("jpeg") => return Ok(Prefer::Jpeg),
+        Some(_) => return Ok(Prefer::Auto),
+        None => {}
+    }
+    match cx.requested_format()? {
+        None => Ok(Prefer::Auto),
+        Some(Format::Png) => Ok(Prefer::Png),
+        Some(Format::Jpeg) => Ok(Prefer::Jpeg),
+        Some(other) => Err(format!(
+            "a view or tile is png or jpeg, not {other}; resize or convert the picture to write {other}"
+        )),
     }
 }
 
@@ -494,7 +505,7 @@ fn do_view(
         origin,
         max_side,
         max_bytes,
-        prefer(o.format.as_deref()),
+        prefer(cx, o.format.as_deref())?,
         icc.as_deref(),
     )?;
     warnings.extend(f.notes.iter().cloned());
@@ -573,14 +584,7 @@ fn do_tile(
         let tag = format!("r{}c{}", c.row + 1, c.col + 1);
         let prepared = if part {
             let want = max_bytes.min(cx.room());
-            match fit(
-                t,
-                None,
-                size,
-                want,
-                prefer(plan.output.format.as_deref()),
-                None,
-            ) {
+            match fit(t, None, size, want, prefer(cx, None)?, None) {
                 Ok(f) => {
                     warnings.extend(f.notes.iter().map(|n| format!("tile {}: {n}", c.n)));
                     Prepared::new(f.bytes, f.format, &f.img)
@@ -659,7 +663,7 @@ mod tests {
             s.contains("3000000 bytes")
                 && s.contains("1000 bytes")
                 && s.contains("view")
-                && s.contains("output.file"),
+                && s.contains("save.file"),
             "{s}"
         );
     }

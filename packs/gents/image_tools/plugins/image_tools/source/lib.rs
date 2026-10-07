@@ -1,7 +1,6 @@
 //! image_tools plugin: deterministic image operations for agents. One JSON
 //! value on stdin, one on stdout; a failure is one sentence on stderr and a
-//! non-zero exit (see TOOL.md). The program is this library plus a one-line
-//! `main`, so the pack's read-write entry `image_tools_write` can reuse it.
+//! non-zero exit (see TOOL.md).
 use std::io::{Read, Write};
 
 mod analyze;

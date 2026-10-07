@@ -307,7 +307,7 @@ proptest! {
     fn arbitrary_requests_never_panic(
         keys in proptest::collection::btree_map(
             prop::sample::select(vec![
-                "path", "file", "files", "data_base64", "name", "op", "ops", "frame", "orient", "output", "cursor", "page_bytes",
+                "path", "file", "files", "data_base64", "name", "op", "ops", "frame", "orient", "output", "save", "cursor", "page_bytes",
                 "width", "height", "mode", "x", "y", "degrees", "axis", "format", "quality", "shapes", "against", "tolerance",
                 "ignore", "colors", "formats", "threshold", "max_side", "max_bytes", "size", "overlap", "cell", "cols", "bogus",
             ]),

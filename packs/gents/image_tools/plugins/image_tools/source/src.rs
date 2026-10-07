@@ -414,21 +414,13 @@ pub fn write_file(root: &Path, rel: &str, bytes: &[u8], overwrite: bool) -> Resu
         std::fs::create_dir_all(dir)
             .map_err(|e| format!("cannot create the folder for {shown}: {}; the call needs read-write access to the folder", why(&e)))?;
     }
-    let mut tmp = target.clone().into_os_string();
-    tmp.push(".tmp");
-    let tmp = PathBuf::from(tmp);
     let denied = |e: std::io::Error| {
         format!(
             "cannot write {shown}: {}; the call needs read-write access to the folder",
             why(&e)
         )
     };
-    let _ = std::fs::remove_file(&tmp);
-    let mut f = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&tmp)
-        .map_err(denied)?;
+    let (tmp, mut f) = fresh_temp(&target).map_err(denied)?;
     if let Err(e) = f.write_all(bytes).and_then(|()| f.sync_all()) {
         let _ = std::fs::remove_file(&tmp);
         return Err(denied(e));
@@ -438,7 +430,7 @@ pub fn write_file(root: &Path, rel: &str, bytes: &[u8], overwrite: bool) -> Resu
         std::fs::rename(&tmp, &target)
     } else {
         // A hard link fails when the name exists, so nothing is replaced even by a racing writer.
-        // vertexia: a host that cannot hard link falls back to check-then-rename, which a racing writer can beat
+        // A host that cannot hard link falls back to check-then-rename, which a racing writer can beat.
         std::fs::hard_link(&tmp, &target)
             .and_then(|()| std::fs::remove_file(&tmp))
             .or_else(|e| match e.kind() {
@@ -457,6 +449,27 @@ pub fn write_file(root: &Path, rel: &str, bytes: &[u8], overwrite: bool) -> Resu
             denied(e)
         }
     })
+}
+
+/// Creates a new, empty temporary file beside `target`. Each name is created
+/// with `create_new`, so a file already there (a user's own, or another
+/// writer's) is skipped, never truncated or removed.
+fn fresh_temp(target: &Path) -> std::io::Result<(PathBuf, std::fs::File)> {
+    let dir = target.parent().unwrap_or(Path::new(""));
+    let name = target.file_name().unwrap_or_default().to_string_lossy();
+    for n in 0..100 {
+        let tmp = dir.join(format!(".{name}.{n}.tmp"));
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp)
+        {
+            Ok(f) => return Ok((tmp, f)),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(e) => return Err(e),
+        }
+    }
+    Err(std::io::ErrorKind::AlreadyExists.into())
 }
 
 #[cfg(test)]
@@ -738,6 +751,21 @@ mod tests {
         assert_eq!(left.len(), 1, "no temporary file stays behind");
         assert!(write_file(&d, "../x.png", b"x", true).is_err());
         assert!(write_file(&d, "/tmp/x.png", b"x", true).is_err());
+    }
+
+    #[test]
+    fn a_write_never_touches_an_existing_file_named_like_its_temporary() {
+        let d = dir("sidecar");
+        for name in ["a.png.tmp", ".a.png.0.tmp"] {
+            std::fs::write(d.join(name), b"mine").unwrap();
+        }
+        write_file(&d, "a.png", b"one", false).unwrap();
+        write_file(&d, "a.png", b"two", true).unwrap();
+        assert_eq!(std::fs::read(d.join("a.png")).unwrap(), b"two");
+        for name in ["a.png.tmp", ".a.png.0.tmp"] {
+            assert_eq!(std::fs::read(d.join(name)).unwrap(), b"mine", "{name}");
+        }
+        assert_eq!(std::fs::read_dir(&d).unwrap().count(), 3);
     }
 
     #[test]

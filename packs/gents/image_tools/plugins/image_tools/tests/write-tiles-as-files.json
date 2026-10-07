@@ -175,11 +175,11 @@
       "tile_src.png"
     ],
     "op": "tile",
-    "output": {
+    "overlap": 8,
+    "save": {
       "file": "tiles/t.png",
       "overwrite": true
     },
-    "overlap": 8,
     "size": 64
   }
 }

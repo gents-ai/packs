@@ -267,26 +267,15 @@ fn main() {
             &fx::png(&fx::noise(48, 48, 40 + i)),
         );
     }
-    // The write plugin's own small fixture folder; the files its cases write are git-ignored there.
-    let write_root: PathBuf = [
-        env!("CARGO_MANIFEST_DIR"),
-        "..",
-        "image_tools_write",
-        "tests",
-        "fixtures",
-    ]
-    .iter()
-    .collect();
-    put(&write_root, "scene.png", &fx::png(&scene));
-    put(&write_root, "tile_src.png", &fx::png(&fx::scene(150, 100)));
+    // Sources the write cases resize with a suffix; the files those cases write are git-ignored.
     for (i, name) in ["x.png", "y.png"].iter().enumerate() {
         put(
-            &write_root.join("suffix"),
+            &root.join("suffix"),
             name,
             &fx::png(&fx::scene(20 + 4 * i as u32, 12)),
         );
     }
-    put(&write_root, ".gitignore", b"out/\ntiles/\nsuffix/*_s.png\n");
+    put(&root, ".gitignore", b"out/\ntiles/\nsuffix/*_s.png\n");
     let montage = root.join("montage");
     for (i, c) in [[220u8, 40, 40, 255], [40, 180, 60, 255], [50, 80, 220, 255]]
         .iter()

@@ -5,8 +5,7 @@ correctly oriented pictures and exact facts about them: PNG, JPEG, GIF, BMP,
 TIFF and WebP files, read, shown, cut, compared and measured without a model
 in the loop. The pack ships the `image_tools` plugin (a WebAssembly module, so
 it behaves the same on every operating system gents runs on, pure Rust, no C
-code), a second entry of the same module, `image_tools_write`, for saving
-results as files, and a ready-made **Image helper** agent that uses them.
+code) and a ready-made **Image helper** agent that uses it.
 
 | Operation | What it returns |
 | --- | --- |
@@ -39,10 +38,9 @@ Files in the working folder of the chat are readable at once (the folder you
 gave the agent as its tool root). A file anywhere else raises "Allow
 image_tools to read `<path>`?" with Allow once, Always allow this file, Always
 allow this folder and Deny. The reader sees only the file or folder the
-question names, never its neighbours, and the `image_tools` tool never writes.
-To save a result the agent uses `image_tools_write`, which needs read and
-write access to the folder: the host asks you once, or you allow it up front
-with `gents plugin dirs add <folder> --access read_write`.
+question names, never its neighbours. Only a call that sets `save` writes, and
+it needs read and write access to the folder: the host asks you once, or you
+allow it up front with `gents plugin dirs add <folder> --access read_write`.
 
 From a terminal:
 
@@ -53,10 +51,9 @@ gents chat --behavior-id image-helper "What is in screenshots/login.png?"
 
 ## Use it as a model tool
 
-The `image-helper` behavior's Tools document grants exactly the two plugins as
-model tools (`integrations.plugins: [{"plugin": "gents/image_tools"},
-{"plugin": "gents/image_tools_write"}]`). To give them to another behavior,
-add the same entries to that behavior's Tools. The model calls
+The `image-helper` behavior's Tools document grants exactly the plugin as a
+model tool (`integrations.plugins: [{"plugin": "gents/image_tools"}]`). To
+give it to another behavior, add the same entry to that behavior's Tools. The model calls
 `image_tools` with, for example:
 
 ```json
@@ -126,12 +123,11 @@ gents plugin run gents/image_tools --bind-dir ./screenshots \
 
 A result with image parts prints as `{"response": ..., "parts": [...]}`; save a
 part with `jq -r '.parts[0].data' | base64 -d > out.png`. To write results into
-the folder run `image_tools_write`, which the operator grants read and write
-for that call:
+the folder set `save`; that call needs read and write access to the folder:
 
 ```sh
-gents plugin run gents/image_tools_write --bind-dir ./screenshots \
-  --input '{"path": "./screenshots", "op": "resize", "width": 800, "output": {"suffix": "_800"}}'
+gents plugin run gents/image_tools --bind-dir ./screenshots \
+  --input '{"path": "./screenshots", "op": "resize", "width": 800, "save": {"suffix": "_800"}}'
 ```
 
 A result with `next.cursor` is followed to its end with the same loop as any
@@ -139,14 +135,14 @@ paged plugin: send the same input plus `"cursor"` until `next` is absent.
 
 ## Use it with other packs
 
-- **ocr** reads image files. Write a cleaned picture with `image_tools_write`
-  (for example `{"op": "crop", ...}` with `output.file`) and name that file to
+- **ocr** reads image files. Write a cleaned picture with `image_tools`
+  (for example `{"op": "crop", ...}` with `save.file`) and name that file to
   `ocr`; the two tools share the working folder.
 - A picture another tool produced (a chart from a charts pack, a figure from
   `ocr` with `figure_images`) is passed as `data_base64` and `name`, or as an
   `ImageJob` with `data_base64` in a graph; every step then works on it like a
   file. Chain `view` after `crop` or `tile` to look at part of it.
-- A document pack that embeds pictures can take the files `image_tools_write`
+- A document pack that embeds pictures can take the files `image_tools`
   wrote, or the `image_base64` of an `ImageOutput`; `strip_metadata` first when
   a picture must not carry its location.
 
@@ -188,11 +184,13 @@ one that accepts images also looks at the pictures.
   codes are not read: the reader library panics on some damaged pictures for
   those, and a plugin that can abort on hostile input is worse than a code type
   that is not offered.
-- The `image_tools` tool only reads. `image_tools_write` is the same module
-  declared with read-write access; a pack plugin declares one access level for
-  every call, so two entries are how the read path stays zero-config. Writing
-  needs a folder, not a single bound file, and never replaces an existing file
-  unless `output.overwrite` is `true`.
+- A call reads unless it sets `save`: the manifest declares `save` as the one
+  write field, so a reading call is bound read-only and only a writing call
+  asks for read-write access. Writing needs a folder, not a single bound file,
+  and never replaces an existing file unless `save.overwrite` is `true`.
+- An attached image is at most 8000 pixels on a side and a call attaches at
+  most 20, the limits Anthropic Messages puts on one request; a larger result
+  is listed `not_attached` and the rest page through the cursor.
 - Not done: graph nodes that write files, arbitrary-angle rotation, writing animations, text outside ASCII on annotations, a measured
   performance table (only that a 24 megapixel JPEG view and a 36 megapixel PNG
   view finish well inside the limits; everything else is not measured).
@@ -209,7 +207,7 @@ plugin's own `cargo test` runs the native ones.
 | Property tests (`prop_tests`, proptest, fixed seed) | Four quarter turns and two flips are the identity; every orientation is undone by its inverse; crop gives the asked size; fit never exceeds its box and keeps the aspect within a pixel; PNG to lossless WebP to PNG is pixel-identical; `diff(a, a)` is zero and diff is symmetric; tiles reassemble to the source; perceptual hashes survive a resize and separate unrelated pictures; accepted names never leave the folder; drawing with any coordinates never panics; arbitrary requests never panic |
 | Mutation fuzz (`fuzz_tests`) | Every committed fixture is corrupted 150 times with a fixed seed and run through the pixel steps; damaged code pictures and noise go through the code reader. `IMAGE_TOOLS_FUZZ_SCALE=8` digs deeper |
 | Plugin cases (`plugins/image_tools/tests/*.json`) | Exact output through the real WebAssembly host for every operation, every input format, bind folder, inline data, cursor paging, warnings and hostile files |
-| Pack cases (`tests/*.json`) | Install (behavior, Tools, both plugins; reinstall keeps; remove releases), content assertions, and graph runs through a real server for a folder and a single file |
+| Pack cases (`tests/*.json`) | Install (behavior, Tools, the plugin; reinstall keeps; remove releases), content assertions, and graph runs through a real server for a folder and a single file |
 
 Fixtures are small and committed, written by
 `plugins/image_tools/tools/gen_fixtures.rs` (`cargo run --example gen_fixtures`)
