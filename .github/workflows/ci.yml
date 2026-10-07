@@ -142,8 +142,10 @@ jobs:
     needs: [resolve, gents]
     runs-on: ${{ matrix.os }}
     # The ocr pack links two OCR models and a PDF renderer: its wasm build and
-    # native tests need more than the 20 minutes every other pack fits in.
-    timeout-minutes: 45
+    # native tests need more than the 20 minutes every other pack fits in. The
+    # data_tables pack builds DataFusion twice (native tests, then wasm) and
+    # takes over 45 minutes on the macOS runners.
+    timeout-minutes: ${{ matrix.pack == 'data_tables' && 90 || 45 }}
     strategy:
       fail-fast: false
       matrix:
