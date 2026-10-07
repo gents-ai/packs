@@ -137,6 +137,25 @@ jobs:
           path: gents-bin/gents
           retention-days: 1
 
+  scenarios:
+    name: Check live scenario packs
+    needs: [resolve, gents]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: gents-cli-${{ runner.os }}-${{ runner.arch }}
+          path: gents-bin
+
+      - name: gents pack check scenarios/*_live
+        run: |
+          set -euo pipefail
+          chmod +x gents-bin/gents
+          gents-bin/gents pack check scenarios/*_live
+
   pack:
     name: ${{ matrix.pack }} (${{ matrix.os }})
     needs: [resolve, gents]

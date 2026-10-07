@@ -1,0 +1,4 @@
+type ChartsLiveJob {
+  job_id: String
+  prompt: String
+}
