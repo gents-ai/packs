@@ -835,3 +835,27 @@ fn saved_and_attached_images_stop_at_the_part_cap_and_resume_by_cursor() {
     assert_eq!(record(&rest, 0)["outputs"][0]["file"], "p20_s.png");
     assert!(response(&rest).get("next").is_none());
 }
+
+#[test]
+fn write_options_name_save_and_a_wide_diff_names_its_own_next_step() {
+    let d = scratch("savehint", &["scene.png"]);
+    let e = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "x.png"}}))
+        .unwrap_err();
+    assert!(e.contains("save"), "{e}");
+    for (n, c) in [("a.png", 10u8), ("b.png", 200)] {
+        RgbaImage::from_pixel(9000, 20, image::Rgba([c, c, c, 255]))
+            .save(d.join(n))
+            .unwrap();
+    }
+    let r =
+        call(&json!({"path": dir_str(&d), "files": ["a.png"], "op": "diff", "against": "b.png"}))
+            .unwrap();
+    let note = record(&r, 0)["outputs"][0]["not_attached"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        note.contains("highlight") && !note.contains("view step"),
+        "{note}"
+    );
+}

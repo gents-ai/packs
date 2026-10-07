@@ -10,7 +10,7 @@ use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::{MAX_PART_SIDE, MAX_PARTS, OVERHEAD_BYTES};
+use crate::model::{MAX_PARTS, OVERHEAD_BYTES};
 use crate::montage;
 use crate::src::{Source, resolve};
 
@@ -215,7 +215,12 @@ fn run_montage(
     let e = encode(&sheet.img, format, plan.output.quality, None)?;
     let mut warnings = sheet.warnings;
     warnings.extend(e.notes);
-    let mut rec = match cx.deliver(Prepared::new(e.bytes, format, &sheet.img), "montage", None) {
+    let mut rec = match cx.deliver_as(
+        Prepared::new(e.bytes, format, &sheet.img),
+        "montage",
+        None,
+        "use a smaller cell or fewer files",
+    ) {
         Ok(r) => r,
         Err(Fail::Msg(m)) => return Err(m),
         Err(Fail::Over(n)) => {
@@ -225,13 +230,6 @@ fn run_montage(
             ));
         }
     };
-    // A montage cannot be chained, so the view step deliver suggests does not apply.
-    if rec["not_attached"].is_string() && sheet.img.w.max(sheet.img.h) > MAX_PART_SIDE {
-        rec["not_attached"] = json!(format!(
-            "the sheet is {}x{} pixels, over the {MAX_PART_SIDE} on a side a model accepts, so it is not attached; use a smaller cell or fewer files",
-            sheet.img.w, sheet.img.h
-        ));
-    }
     if let Some(n) = rec["not_attached"].as_str() {
         warnings.push(n.to_owned());
     }

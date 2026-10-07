@@ -401,6 +401,13 @@ impl Input {
             .enumerate()
             .map(|(i, v)| parse_op(v, &format!("step {}", i + 1)))
             .collect::<Result<Vec<_>, _>>()?;
+        if self
+            .save
+            .as_ref()
+            .is_some_and(|s| s.file.is_none() && s.suffix.is_none())
+        {
+            return Err("save needs file or suffix; leave save out to only read".into());
+        }
         let (o, w) = (
             self.output.clone().unwrap_or_default(),
             self.save.clone().unwrap_or_default(),
@@ -860,6 +867,9 @@ mod tests {
         );
         assert!(bad(json!({"op": "resize", "output": {"colour": 1}})).contains("colour"));
         assert!(bad(json!({"op": "resize", "output": {"file": "a.png"}})).contains("file"));
+        assert!(
+            bad(json!({"op": "resize", "save": {"overwrite": true}})).contains("file or suffix")
+        );
         assert!(
             plan(json!({"op": "resize", "width": 4, "save": {"file": "a.png", "overwrite": true}}))
                 .is_ok()

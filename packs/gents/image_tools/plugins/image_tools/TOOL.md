@@ -115,8 +115,8 @@ folder, each call returns as many images as fit.
 
 ## Writing files
 
-`save` writes the result into the folder, and only a call that sets it asks
-for read-write access:
+`save` (with `file` or `suffix`) writes the result into the folder, and only
+a call that sets it asks for read-write access:
 
 - `file`: one name inside the folder, such as `small/photo.jpg` (the extension
   also picks the format). For a `tile` step each tile is written as

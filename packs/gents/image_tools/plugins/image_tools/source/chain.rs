@@ -448,10 +448,11 @@ fn do_diff(
         let format = cx.format()?;
         let e = encode(&img, format, plan.output.quality, None)?;
         warnings.extend(e.notes);
-        let rec = cx.deliver(
+        let rec = cx.deliver_as(
             Prepared::new(e.bytes, format, &img),
             &w.src.name,
             Some("diff"),
+            "crop both pictures before the diff, or set highlight to false",
         )?;
         note_unattached(&rec, warnings);
         v["highlight"] = json!(push(outputs, rec, "diff"));
@@ -460,14 +461,13 @@ fn do_diff(
     facts(v)
 }
 
-/// The encoding a fitted picture may take: the step's own `format`, else the
-/// one `output.format` or the `save.file` extension asks for.
+/// The encoding a fitted picture may take: the step's own `png` or `jpeg`,
+/// else the one `output.format` or the `save.file` extension asks for.
 fn prefer(cx: &Cx, own: Option<&str>) -> Result<Prefer, String> {
     match own {
         Some("png") => return Ok(Prefer::Png),
         Some("jpeg") => return Ok(Prefer::Jpeg),
-        Some(_) => return Ok(Prefer::Auto),
-        None => {}
+        _ => {}
     }
     match cx.requested_format()? {
         None => Ok(Prefer::Auto),
@@ -550,7 +550,7 @@ fn do_tile(
                 None,
                 1024,
                 INDEX_BYTES.min(cx.room() / 2),
-                Prefer::Auto,
+                prefer(cx, None)?,
                 None,
             )?;
             warnings.extend(f.notes.iter().cloned());

@@ -213,6 +213,23 @@ impl Cx {
     /// wanted, and returns the record that describes it. `source` names the
     /// image it came from and `tag` tells tiles apart in file names.
     pub fn deliver(&mut self, p: Prepared, source: &str, tag: Option<&str>) -> Result<Value, Fail> {
+        self.deliver_as(
+            p,
+            source,
+            tag,
+            "end the chain with a view step to look at it",
+        )
+    }
+
+    /// [`Self::deliver`] for a step that must be last, where `too_wide` names
+    /// the next call when the image is too large on a side to attach.
+    pub fn deliver_as(
+        &mut self,
+        p: Prepared,
+        source: &str,
+        tag: Option<&str>,
+        too_wide: &str,
+    ) -> Result<Value, Fail> {
         let file = self.target(source, p.format, tag)?;
         let want_part = self.wants_part();
         if want_part && !p.format.viewable() && self.output.part == Some(true) {
@@ -221,8 +238,8 @@ impl Cx {
                 p.format
             )));
         }
-        let too_wide = p.width.max(p.height) > MAX_PART_SIDE;
-        let attach = want_part && p.format.viewable() && !too_wide;
+        let wide = p.width.max(p.height) > MAX_PART_SIDE;
+        let attach = want_part && p.format.viewable() && !wide;
         if attach && p.bytes.len() > self.room() && file.is_none() {
             return Err(Fail::Over(p.bytes.len()));
         }
@@ -238,9 +255,9 @@ impl Cx {
             write_file(root, name, &p.bytes, self.output.overwrite)?;
             out["file"] = json!(name);
         }
-        if want_part && too_wide {
+        if want_part && wide {
             out["not_attached"] = json!(format!(
-                "the image is {}x{} pixels, over the {MAX_PART_SIDE} on a side a model accepts, so it is not attached; end the chain with a view step to look at it",
+                "the image is {}x{} pixels, over the {MAX_PART_SIDE} on a side a model accepts, so it is not attached; {too_wide}",
                 p.width, p.height
             ));
         } else if attach {
