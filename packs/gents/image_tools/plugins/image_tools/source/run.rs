@@ -6,13 +6,13 @@ use serde_json::{Value, json};
 
 use crate::chain::{file_identity, run_item};
 use crate::cursor::{self, Cursor, fingerprint};
-use crate::cx::{Cx, Fail, Prepared, written_with_suffix};
+use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
 use crate::model::{MAX_PART_SIDE, OVERHEAD_BYTES};
 use crate::montage;
-use crate::src::{Source, resolve};
+use crate::src::{Source, resolve_skipping};
 
 /// The output ceiling of a plugin call.
 const OUTPUT_CEILING: usize = 4 * 1024 * 1024;
@@ -58,22 +58,13 @@ pub fn run(input: &Input) -> Result<Done, String> {
 pub fn run_for(input: &Input, for_model: bool) -> Result<Done, String> {
     let plan = input.plan()?;
     let files = merge_files(input)?;
-    let mut resolved = resolve(
+    let resolved = resolve_skipping(
         input.path.as_deref(),
         &files,
         input.data_base64.as_deref(),
         input.name.as_deref(),
+        plan.output.suffix.as_deref(),
     )?;
-    // A folder scan leaves out the images a suffix write produces, so a later
-    // page lists the same sources and its cursor still matches.
-    if let Some(suffix) = &plan.output.suffix
-        && files.is_empty()
-        && resolved.root.is_some()
-    {
-        resolved
-            .sources
-            .retain(|s| !written_with_suffix(&s.name, suffix));
-    }
     if for_model
         && plan
             .ops

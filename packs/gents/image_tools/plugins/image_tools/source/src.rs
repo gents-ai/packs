@@ -272,6 +272,19 @@ pub fn resolve(
     data_base64: Option<&str>,
     name: Option<&str>,
 ) -> Result<Resolved, String> {
+    resolve_skipping(path, files, data_base64, name, None)
+}
+
+/// [`resolve`], with a folder scan leaving out the images a `save.suffix`
+/// write of `suffix` produces before they count against [`MAX_FILES`], so
+/// every page of a call that writes into the folder lists the same sources.
+pub fn resolve_skipping(
+    path: Option<&str>,
+    files: &[String],
+    data_base64: Option<&str>,
+    name: Option<&str>,
+    suffix: Option<&str>,
+) -> Result<Resolved, String> {
     if let Some(b64) = data_base64 {
         if path.is_some() || !files.is_empty() {
             return Err("give either path or data_base64, not both".into());
@@ -314,7 +327,15 @@ pub fn resolve(
     let mut skipped = 0;
     let mut too_deep = 0;
     if files.is_empty() {
-        walk(root, root, 0, &mut sources, &mut skipped, &mut too_deep)?;
+        walk(
+            root,
+            root,
+            0,
+            suffix,
+            &mut sources,
+            &mut skipped,
+            &mut too_deep,
+        )?;
         if sources.is_empty() {
             return Err(format!(
                 "{path} holds no PNG, JPEG, GIF, BMP, TIFF or WebP images"
@@ -338,10 +359,12 @@ pub fn resolve(
 
 /// Lists the images below `dir` in name order, counting the hidden entries, links and
 /// non-images it leaves out in `skipped` and the folders below [`MAX_DEPTH`] in `too_deep`.
+/// Images a `save.suffix` write of `suffix` produced are left out uncounted.
 fn walk(
     root: &Path,
     dir: &Path,
     depth: usize,
+    suffix: Option<&str>,
     out: &mut Vec<Source>,
     skipped: &mut usize,
     too_deep: &mut usize,
@@ -367,13 +390,16 @@ fn walk(
         }
         let p = e.path();
         if ft.is_dir() {
-            walk(root, &p, depth + 1, out, skipped, too_deep)?;
+            walk(root, &p, depth + 1, suffix, out, skipped, too_deep)?;
         } else if ft.is_file() {
             let name = p
                 .strip_prefix(root)
                 .unwrap_or(&p)
                 .to_string_lossy()
                 .replace('\\', "/");
+            if suffix.is_some_and(|s| crate::cx::written_with_suffix(&name, s)) {
+                continue;
+            }
             let source = Source {
                 name,
                 data: Data::File(p),
