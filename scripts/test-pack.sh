@@ -9,8 +9,9 @@
 #                            into a fresh home creates exactly these
 #                            documents, binds these inference slots and
 #                            installs these dependency packs;
-#                            a reinstall creates nothing new, and a remove
-#                            deletes exactly what the install created
+#                            a reinstall creates nothing new, `config apply`
+#                            accepts the installed configuration, and a
+#                            remove deletes exactly what the install created
 #        {"install": {"assets": [...]}}
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
@@ -265,9 +266,24 @@ install_documents() {
   else
     fail "$(basename "$case"): reinstall created or removed documents"
   fi
+  config_apply_accepts "$(basename "$case")" "$home"
 
   "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
   expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed' "$work/remove.json")"
+}
+
+# `pack install` does not run `config apply`'s live checks (event-source
+# filters and the `doc.*` fields their task templates read, against the
+# installed schema), which scenarios and operators hit; re-apply the
+# installed configuration through them.
+config_apply_accepts() {
+  local label="$1" home="$2" root="$work/apply-$1"
+  if "$gents" config export --home "$home" --root "$root" --force >/dev/null 2>"$work/apply-$label.err" \
+    && NO_COLOR=1 "$gents" config apply --home "$home" --root "$root" >"$work/apply-$label.json" 2>>"$work/apply-$label.err"; then
+    pass "$label: config apply accepts the installed configuration"
+  else
+    fail "$label: config apply refused the installed configuration: $(grep -E 'ERROR|Error' "$work/apply-$label.err" | tail -3 | tr '\n' ' ')"
+  fi
 }
 
 # External service declarations use the canonical configuration owner; the
