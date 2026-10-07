@@ -47,6 +47,46 @@ fn union_x(series: &[Vec<(f64, f64)>]) -> Vec<f64> {
     xs
 }
 
+/// The x positions a stack is drawn at when `xs` has more than
+/// [`MAX_LINE_POINTS`]: the largest-triangle picks (first, last, lowest and
+/// highest included) of every layer's upper boundary, each layer taking an
+/// equal share of the cap. Layers are accumulated one at a time, as
+/// [`stack`] does, so no series-by-position matrix is allocated; picking from
+/// the totals alone would lose a spike that another layer offsets. Values
+/// outside `y_min`/`y_max` are counted on the full boundaries, before sampling.
+fn reduce_positions(
+    ctx: &mut Ctx<'_>,
+    names: &[String],
+    xs: &[f64],
+    data: &[Vec<(f64, f64)>],
+) -> Vec<f64> {
+    let mut pos = vec![0.0; xs.len()];
+    let mut neg = vec![0.0; xs.len()];
+    let share = MAX_LINE_POINTS / data.len().max(1);
+    let mut keep = Vec::new();
+    let mut boundary = Vec::with_capacity(xs.len());
+    for (name, d) in names.iter().zip(data) {
+        let mut values = d.iter().peekable();
+        boundary.clear();
+        for (i, &x) in xs.iter().enumerate() {
+            let v = match values.next_if(|p| p.0 == x) {
+                Some(p) if !p.1.is_nan() => p.1,
+                _ => 0.0,
+            };
+            let base = if v >= 0.0 { &mut pos[i] } else { &mut neg[i] };
+            *base += v;
+            boundary.push((x, *base));
+        }
+        let ys = boundary.iter().map(|p| p.1);
+        let (lo, hi) = (ctx.spec.y_min, ctx.spec.y_max);
+        common::note_cut(&mut ctx.notes, name, "y", ys, lo, hi);
+        keep.extend(lttb(&boundary, share));
+    }
+    keep.sort_unstable();
+    keep.dedup();
+    keep.into_iter().map(|i| xs[i]).collect()
+}
+
 /// Draws the chart.
 pub fn render(ctx: &mut Ctx<'_>, t: &Table) -> Res<Built> {
     let spec = ctx.spec;
@@ -78,6 +118,15 @@ pub fn render(ctx: &mut Ctx<'_>, t: &Table) -> Res<Built> {
             .map(|g| {
                 let mut p = r.points(g, t.rows);
                 p.sort_by(|a, b| a.0.total_cmp(&b.0));
+                let rows = p.len();
+                let p = collapse(&p, spec.agg);
+                if rows > p.len() && !spec.agg_given {
+                    ctx.notes.add(format!(
+                        "series {}: {} rows share an x with an earlier row and are combined by sum; set agg to combine them another way, or give series to draw one line per group",
+                        crate::text::quote(&g.name),
+                        rows - p.len()
+                    ));
+                }
                 p
             })
             .collect()
@@ -91,17 +140,28 @@ pub fn render(ctx: &mut Ctx<'_>, t: &Table) -> Res<Built> {
     let names: Vec<String> = r.groups.iter().map(|g| g.name.clone()).collect();
     let mut layers = Vec::new();
     let mut aligned_x: Vec<f64> = Vec::new();
+    let mut reduced = false;
     if kind == Kind::StackedArea {
-        if r.x.kind != XKind::Cat {
-            for d in &mut data {
-                *d = collapse(d, spec.agg);
-            }
-        }
         aligned_x = if r.x.kind == XKind::Cat {
             (0..r.x.cats.len()).map(|i| i as f64).collect()
         } else {
             union_x(&data)
         };
+        let positions = aligned_x.len();
+        reduced = positions > MAX_LINE_POINTS;
+        for (name, d) in names.iter().zip(&data) {
+            let missing = positions - d.iter().filter(|p| !p.1.is_nan()).count();
+            if missing > 0 {
+                ctx.notes.add(format!("series {name} has no value at {missing} of {positions} positions; it counts as zero there in the stack", name = crate::text::quote(name)));
+            }
+        }
+        if reduced {
+            aligned_x = reduce_positions(ctx, &names, &aligned_x, &data);
+            ctx.notes.add(format!(
+                "the stack has {positions} x positions; {} are drawn, chosen by largest-triangle reduction of each layer's boundary, which keeps the first, last, lowest and highest",
+                aligned_x.len()
+            ));
+        }
         let matrix: Vec<Vec<f64>> = data
             .iter()
             .map(|d| {
@@ -114,12 +174,6 @@ pub fn render(ctx: &mut Ctx<'_>, t: &Table) -> Res<Built> {
                     .collect()
             })
             .collect();
-        for (name, row) in names.iter().zip(&matrix) {
-            let missing = row.iter().filter(|v| v.is_nan()).count();
-            if missing > 0 {
-                ctx.notes.add(format!("series {name} has no value at {missing} of {} positions; it counts as zero there in the stack", row.len(), name = crate::text::quote(name)));
-            }
-        }
         layers = stack(&matrix);
     }
 
@@ -146,7 +200,9 @@ pub fn render(ctx: &mut Ctx<'_>, t: &Table) -> Res<Built> {
         } else {
             Box::new(data[i].iter().map(|p| p.1))
         };
-        common::note_cut(&mut ctx.notes, name, "y", ys, spec.y_min, spec.y_max);
+        if !reduced {
+            common::note_cut(&mut ctx.notes, name, "y", ys, spec.y_min, spec.y_max);
+        }
         if r.x.kind != XKind::Cat {
             let xs = data[i].iter().map(|p| p.0);
             common::note_cut(&mut ctx.notes, name, "x", xs, spec.x_min, spec.x_max);
