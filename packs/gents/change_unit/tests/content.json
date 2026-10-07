@@ -35,6 +35,10 @@
     {
       "name": "atomic stages expose outcomes without routing workers into supervisor sessions",
       "expr": "([.config.tasks[] | select(.task_id == \"change-unit-writer-task\" or .task_id == \"change-unit-review-task\" or .task_id == \"change-unit-integrate-task\") | .emit_outcome == true and .goal_objective_template == null] | all) and ([.config.triggers[] | .session_id_template == null] | all) and ([.config.tasks[] | select(.task_id == \"change-unit-record-task\" or .task_id == \"change-unit-rejected-task\" or .task_id == \"change-unit-failed-task\") | (.emit_outcome // false) == false] | all)"
+    },
+    {
+      "name": "every review, closure and result writer requires the unit's attempt, and terminal stages take it from their trigger",
+      "expr": "([.config.datastore_tool_surfaces[] | .. | objects | select(has(\"tool_name\") and (.kind // \"write\") != \"query\" and (.collection == \"ChangeUnitResult\" or .collection == \"ChangeUnitReview\" or .collection == \"ChangeUnitClosure\"))] | length == 5 and all(.fields | any(.[]; .name == \"attempt\" and .required == true))) and ([.assets[\"tasks/change_unit_record_task/prompt.md\"], .assets[\"tasks/change_unit_rejected_task/prompt.md\"], .assets[\"tasks/change_unit_failed_task/prompt.md\"]] | all(contains(\"{{ doc.attempt }}\") and (contains(\"when present\") | not)))"
     }
   ]
 }

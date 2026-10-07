@@ -506,7 +506,8 @@
               "required": true
             },
             {
-              "name": "attempt"
+              "name": "attempt",
+              "required": true
             },
             {
               "name": "summary",
@@ -610,7 +611,8 @@
               }
             },
             {
-              "name": "attempt"
+              "name": "attempt",
+              "required": true
             },
             {
               "name": "summary",
@@ -694,7 +696,8 @@
               }
             },
             {
-              "name": "attempt"
+              "name": "attempt",
+              "required": true
             },
             {
               "name": "summary",
