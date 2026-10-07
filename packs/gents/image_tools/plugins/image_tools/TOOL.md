@@ -123,7 +123,8 @@ a call that sets it asks for read-write access:
   `name_r1c1.ext` and so on, the index picture as `name_index.ext`; a `diff`
   highlight is `name_diff.ext`.
 - `suffix`: for several images, a text added to each source's name, such as
-  `_small`, so `holiday/a.png` becomes `holiday/a_small.png`.
+  `_small`, so `holiday/a.png` becomes `holiday/a_small.png`. A folder read
+  without `files` leaves out images whose names already end in the suffix.
 - `overwrite`: `false` by default; an existing file, the source included, is
   never replaced unless it is `true`.
 

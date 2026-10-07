@@ -10,7 +10,7 @@ use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::{MAX_PARTS, OVERHEAD_BYTES};
+use crate::model::OVERHEAD_BYTES;
 use crate::montage;
 use crate::src::{Source, resolve};
 
@@ -51,15 +51,33 @@ pub fn execute(input: &Input) -> Result<String, String> {
 
 /// Runs one request.
 pub fn run(input: &Input) -> Result<Done, String> {
+    run_for(input, true)
+}
+
+/// Runs one request whose parts go to a model, or to graph records when `for_model` is false.
+pub fn run_for(input: &Input, for_model: bool) -> Result<Done, String> {
     let plan = input.plan()?;
     let files = merge_files(input)?;
-    let resolved = resolve(
+    let mut resolved = resolve(
         input.path.as_deref(),
         &files,
         input.data_base64.as_deref(),
         input.name.as_deref(),
     )?;
+    // A folder scan leaves out the images a suffix write produces, so a later
+    // page lists the same sources and its cursor still matches.
+    if let Some(suffix) = &plan.output.suffix
+        && files.is_empty()
+        && resolved.root.is_some()
+    {
+        resolved.sources.retain(|s| {
+            !std::path::Path::new(&s.name)
+                .file_stem()
+                .is_some_and(|stem| stem.to_string_lossy().ends_with(suffix.as_str()))
+        });
+    }
     let mut cx = Cx::new(resolved.root.clone(), plan.output.clone(), plan.page_bytes);
+    cx.for_model = for_model;
     cx.format()?;
     if plan.output.file.is_some() && resolved.sources.len() > 1 && !plan.is_montage() {
         return Err("save.file names one file; use save.suffix to write one file per image".into());
@@ -147,7 +165,7 @@ fn run_items(
     while idx < sources.len() {
         // Stop before an item whose images would pass the part cap, so none is
         // written without being attached; the next call produces it.
-        let parts_full = cx.wants_part() && cx.parts.len() + plan.first_parts() > MAX_PARTS;
+        let parts_full = cx.wants_part() && cx.parts_full(plan.first_parts());
         if !results.is_empty() && (cx.expired() || cx.used() > cx.budget / 3 * 2 || parts_full) {
             next = Some(stop_at(&sources[idx], idx, 0)?);
             break;

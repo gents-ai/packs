@@ -65,6 +65,9 @@ pub struct Cx {
     pub output: Output,
     /// When the call started.
     pub started: Instant,
+    /// Whether parts go to a model, which bounds their count and side; a
+    /// graph node stores them in records bounded by bytes alone.
+    pub for_model: bool,
 }
 
 /// The format an output file name's extension names: `None` when it has none (the format
@@ -98,12 +101,18 @@ impl Cx {
             root,
             output,
             started: Instant::now(),
+            for_model: true,
         }
     }
 
     /// Whether the call has used its wall-clock budget.
     pub fn expired(&self) -> bool {
         self.started.elapsed().as_secs() >= WALL_SECS
+    }
+
+    /// Whether `more` parts would pass what one call may attach for a model.
+    pub fn parts_full(&self, more: usize) -> bool {
+        self.for_model && self.parts.len() + more > MAX_PARTS
     }
 
     /// Bytes of the call's budget not yet used.
@@ -115,7 +124,7 @@ impl Cx {
     /// Raw image bytes the next part may hold: none once the call attaches
     /// [`MAX_PARTS`] images, so the rest pages exactly like the byte budget.
     pub fn room(&self) -> usize {
-        if self.parts.len() >= MAX_PARTS {
+        if self.parts_full(1) {
             return 0;
         }
         self.left() / 4 * 3
@@ -238,7 +247,7 @@ impl Cx {
                 p.format
             )));
         }
-        let wide = p.width.max(p.height) > MAX_PART_SIDE;
+        let wide = self.for_model && p.width.max(p.height) > MAX_PART_SIDE;
         let attach = want_part && p.format.viewable() && !wide;
         if attach && p.bytes.len() > self.room() && file.is_none() {
             return Err(Fail::Over(p.bytes.len()));

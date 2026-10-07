@@ -191,7 +191,7 @@ fn run_chunk(f: Map<String, Value>, chunk: u64) -> Result<String, String> {
     let outcome = request(&f).and_then(|mut req| {
         req["page_bytes"] = json!(RUN_PAGE_BYTES);
         let input: Input = crate::typed::from_value(req, "the chunk", &[])?;
-        run::run(&input)
+        run::run_for(&input, false)
     });
     let done = match outcome {
         Ok(d) => d,

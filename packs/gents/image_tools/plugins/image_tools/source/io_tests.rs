@@ -859,3 +859,21 @@ fn write_options_name_save_and_a_wide_diff_names_its_own_next_step() {
         "{note}"
     );
 }
+
+#[test]
+fn a_suffix_write_over_a_scanned_folder_pages_without_reading_its_own_outputs() {
+    let d = scratch("scansave", &[]);
+    let one = std::fs::read(format!("{}/scene.png", fixtures())).unwrap();
+    for i in 0..21 {
+        std::fs::write(d.join(format!("p{i:02}.png")), &one).unwrap();
+    }
+    let req = json!({"path": dir_str(&d), "op": "resize", "width": 8,
+        "output": {"part": true}, "save": {"suffix": "_s"}});
+    let first = call(&req).unwrap();
+    assert_eq!(response(&first)["results"].as_array().unwrap().len(), 20);
+    let mut again = req.clone();
+    again["cursor"] = response(&first)["next"]["cursor"].clone();
+    let rest = call(&again).unwrap();
+    assert_eq!(record(&rest, 0)["source"], "p20.png", "{rest}");
+    assert!(response(&rest).get("next").is_none());
+}
