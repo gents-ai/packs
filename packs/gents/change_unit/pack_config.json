@@ -31,8 +31,15 @@
     {
       "behavior_id": "change-unit-rejected",
       "context_id": "change-unit-rejected-context",
-      "description": "Records a rejected review as a terminal result.",
+      "description": "Records a rejected review as the unit's terminal result.",
       "display_name": "Rejection Recorder",
+      "inference_profile_id": "gents:inference-slot:integrator"
+    },
+    {
+      "behavior_id": "change-unit-failed",
+      "context_id": "change-unit-failed-context",
+      "description": "Records a failed or interrupted stage as the unit's terminal result.",
+      "display_name": "Failure Recorder",
       "inference_profile_id": "gents:inference-slot:integrator"
     }
   ],
@@ -51,7 +58,9 @@
         "caused_by_correlation",
         "handoff_id",
         "reply_session_id",
-        "attempt"
+        "attempt",
+        "adapter",
+        "clone_artifacts"
       ]
     }
   ],
@@ -108,6 +117,12 @@
       "display_name": "Change unit rejected",
       "system_prompt": "./agent_behaviors/change_unit_rejected/system_prompt.md",
       "tools_id": "change-unit-rejected-tools"
+    },
+    {
+      "context_id": "change-unit-failed-context",
+      "display_name": "Change unit failed",
+      "system_prompt": "./agent_behaviors/change_unit_failed/system_prompt.md",
+      "tools_id": "change-unit-failed-tools"
     }
   ],
   "datastore_tool_surfaces": [
@@ -375,46 +390,20 @@
       ]
     },
     {
-      "display_name": "Verify completed integration and record result",
+      "display_name": "Record completed integration from its receipt",
       "surface_id": "change-unit-record-io",
       "entries": [
         {
-          "collection": "ChangeUnitWork",
-          "description": "Read ChangeUnitWork rows for this unit.",
-          "fields": [
-            "work_unit_id",
-            "title",
-            "repository_id",
-            "base_sha",
-            "handoff_id",
-            "reply_session_id",
-            "attempt"
-          ],
-          "filter_fields": [
-            {
-              "name": "work_unit_id",
-              "fill": "correlation"
-            }
-          ],
-          "kind": "query",
-          "tool_name": "read_change_unit_work"
-        },
-        {
           "collection": "ChangeUnitClosure",
-          "description": "Read ChangeUnitClosure rows for this unit.",
+          "description": "Read the accepted closure for this unit.",
           "fields": [
-            "_docID",
             "closure_id",
-            "work_unit_id",
             "implementation_id",
             "review_id",
             "workspace_id",
             "writer_receipt_id",
             "writer_seal_hash",
-            "status",
-            "handoff_id",
-            "reply_session_id",
-            "attempt"
+            "status"
           ],
           "filter_fields": [
             {
@@ -426,110 +415,102 @@
           "tool_name": "read_change_unit_closure"
         },
         {
-          "collection": "ChangeUnitReview",
-          "description": "Read the review witness bound to the accepted closure.",
+          "collection": "WorkspaceReceipt",
+          "description": "Read the integrator receipt produced by the completed integration request.",
           "fields": [
-            "review_id",
-            "work_unit_id",
-            "implementation_id",
+            "receipt_id",
             "workspace_id",
-            "writer_receipt_id",
-            "writer_seal_hash",
-            "verdict"
+            "kind",
+            "seal_hash",
+            "head_sha"
           ],
           "filter_fields": [
             {
               "name": "work_unit_id",
               "fill": "correlation"
-            }
-          ],
-          "kind": "query",
-          "tool_name": "read_change_unit_review"
-        },
-        {
-          "collection": "ChangeUnitImplementation",
-          "description": "Read ChangeUnitImplementation rows for this unit.",
-          "fields": [
-            "implementation_id",
-            "work_unit_id",
-            "workspace_id",
-            "status",
-            "changed_files",
-            "summary"
-          ],
-          "filter_fields": [
+            },
             {
-              "name": "work_unit_id",
-              "fill": "correlation"
+              "name": "produced_by_request_id",
+              "fill": {
+                "source_field": "request_id"
+              }
             }
           ],
           "kind": "query",
-          "tool_name": "read_change_unit_implementation"
+          "tool_name": "read_integrator_receipt"
         },
         {
           "collection": "ChangeUnitResult",
-          "description": "Record successful host integration from its durable receipt.",
+          "description": "Record the host-completed integration as this unit's terminal result.",
           "fields": [
             {
               "name": "result_id",
-              "required": true
+              "fill": "correlation"
             },
             {
               "name": "work_unit_id",
-              "required": true
-            },
-            {
-              "name": "closure_id"
-            },
-            {
-              "name": "implementation_id"
-            },
-            {
-              "name": "review_id"
-            },
-            {
-              "name": "workspace_id"
-            },
-            {
-              "name": "status",
-              "required": true
-            },
-            {
-              "name": "writer_receipt_id"
-            },
-            {
-              "name": "writer_seal_hash"
-            },
-            {
-              "name": "integrator_receipt_id"
-            },
-            {
-              "name": "integrator_seal_hash"
-            },
-            {
-              "name": "head_sha"
-            },
-            {
-              "name": "summary"
+              "fill": "correlation"
             },
             {
               "name": "handoff_id",
+              "fill": {
+                "source_field": "source_handoff_id"
+              }
+            },
+            {
+              "name": "reply_session_id",
+              "fill": {
+                "source_field": "reply_session_id"
+              }
+            },
+            {
+              "name": "status",
+              "fill": {
+                "source_field": "terminal_state"
+              }
+            },
+            {
+              "name": "closure_id",
+              "required": true
+            },
+            {
+              "name": "implementation_id",
+              "required": true
+            },
+            {
+              "name": "review_id",
+              "required": true
+            },
+            {
+              "name": "workspace_id",
+              "required": true
+            },
+            {
+              "name": "writer_receipt_id",
+              "required": true
+            },
+            {
+              "name": "writer_seal_hash",
+              "required": true
+            },
+            {
+              "name": "integrator_receipt_id",
+              "required": true
+            },
+            {
+              "name": "integrator_seal_hash",
+              "required": true
+            },
+            {
+              "name": "head_sha",
               "required": true
             },
             {
               "name": "attempt"
             },
             {
-              "name": "failed_request_id"
-            },
-            {
-              "name": "failure_stage"
-            },
-            {
-              "name": "failure_reason"
-            },
-            {
-              "name": "reply_session_id"
+              "name": "summary",
+              "required": true
             }
           ],
           "output_obligation": {
@@ -537,93 +518,18 @@
             "scope": "trigger"
           },
           "tool_name": "write_change_unit_result"
-        },
-        {
-          "collection": "WorkspaceReceipt",
-          "description": "Read sealed workspace receipts and select the integrator receipt produced by the completed outcome request.",
-          "fields": [
-            "receipt_id",
-            "workspace_id",
-            "produced_by_request_id",
-            "kind",
-            "base_sha",
-            "seal_hash",
-            "work_unit_id",
-            "head_sha"
-          ],
-          "filter_fields": [
-            {
-              "name": "work_unit_id",
-              "fill": "correlation"
-            }
-          ],
-          "kind": "query",
-          "tool_name": "read_workspace_receipts"
         }
       ]
     },
     {
-      "display_name": "Record rejection or failed stage for the initiating session",
+      "display_name": "Record a rejected review",
       "surface_id": "change-unit-rejected-io",
       "entries": [
         {
-          "collection": "FireOutcome",
-          "description": "Read the terminal failed stage outcome that caused this report.",
-          "fields": [
-            "handoff_id",
-            "source_handoff_id",
-            "source_collection",
-            "request_id",
-            "terminal_state",
-            "reason",
-            "reply_session_id",
-            "attempt"
-          ],
-          "filter_fields": [
-            {
-              "name": "source_handoff_id",
-              "fill": "correlation"
-            }
-          ],
-          "kind": "query",
-          "tool_name": "read_change_unit_failure"
-        },
-        {
-          "collection": "ChangeUnitClosure",
-          "description": "Read ChangeUnitClosure rows for this unit.",
-          "fields": [
-            "_docID",
-            "closure_id",
-            "work_unit_id",
-            "implementation_id",
-            "review_id",
-            "workspace_id",
-            "writer_receipt_id",
-            "writer_seal_hash",
-            "status",
-            "handoff_id",
-            "reply_session_id",
-            "attempt"
-          ],
-          "filter_fields": [
-            {
-              "name": "work_unit_id",
-              "fill": "correlation"
-            }
-          ],
-          "kind": "query",
-          "tool_name": "read_change_unit_closure"
-        },
-        {
           "collection": "ChangeUnitReview",
-          "description": "Read the review witness bound to the rejected closure.",
+          "description": "Read the review behind the rejected closure.",
           "fields": [
             "review_id",
-            "work_unit_id",
-            "implementation_id",
-            "workspace_id",
-            "writer_receipt_id",
-            "writer_seal_hash",
             "verdict",
             "findings",
             "summary"
@@ -639,62 +545,162 @@
         },
         {
           "collection": "ChangeUnitResult",
-          "description": "Record a rejected review as terminal without integration.",
+          "description": "Record the rejected review as this unit's terminal result.",
           "fields": [
             {
               "name": "result_id",
-              "required": true
+              "fill": "correlation"
             },
             {
               "name": "work_unit_id",
-              "required": true
-            },
-            {
-              "name": "closure_id"
-            },
-            {
-              "name": "implementation_id"
-            },
-            {
-              "name": "review_id"
-            },
-            {
-              "name": "workspace_id"
-            },
-            {
-              "name": "status",
-              "required": true
-            },
-            {
-              "name": "writer_receipt_id"
-            },
-            {
-              "name": "writer_seal_hash"
+              "fill": "correlation"
             },
             {
               "name": "handoff_id",
-              "required": true
+              "fill": {
+                "source_field": "handoff_id"
+              }
+            },
+            {
+              "name": "reply_session_id",
+              "fill": {
+                "source_field": "reply_session_id"
+              }
+            },
+            {
+              "name": "status",
+              "fill": {
+                "source_field": "status"
+              }
+            },
+            {
+              "name": "closure_id",
+              "fill": {
+                "source_field": "closure_id"
+              }
+            },
+            {
+              "name": "implementation_id",
+              "fill": {
+                "source_field": "implementation_id"
+              }
+            },
+            {
+              "name": "review_id",
+              "fill": {
+                "source_field": "review_id"
+              }
+            },
+            {
+              "name": "workspace_id",
+              "fill": {
+                "source_field": "workspace_id"
+              }
+            },
+            {
+              "name": "writer_receipt_id",
+              "fill": {
+                "source_field": "writer_receipt_id"
+              }
+            },
+            {
+              "name": "writer_seal_hash",
+              "fill": {
+                "source_field": "writer_seal_hash"
+              }
             },
             {
               "name": "attempt"
             },
             {
-              "name": "failed_request_id"
-            },
-            {
-              "name": "failure_stage"
-            },
-            {
-              "name": "failure_reason"
-            },
-            {
-              "name": "reply_session_id"
+              "name": "summary",
+              "required": true
             }
           ],
           "output_obligation": {
             "minimum_writes": 1,
             "scope": "trigger"
           },
+          "tool_name": "write_change_unit_result"
+        }
+      ]
+    },
+    {
+      "display_name": "Record a failed or interrupted stage",
+      "surface_id": "change-unit-failed-io",
+      "entries": [
+        {
+          "collection": "ChangeUnitClosure",
+          "description": "Read this unit's closure; one exists when the reviewer recorded its verdict before failing.",
+          "fields": [
+            "closure_id",
+            "status"
+          ],
+          "filter_fields": [
+            {
+              "name": "work_unit_id",
+              "fill": "correlation"
+            }
+          ],
+          "kind": "query",
+          "tool_name": "read_change_unit_closure"
+        },
+        {
+          "collection": "ChangeUnitResult",
+          "description": "Record the failed stage as this unit's terminal result.",
+          "fields": [
+            {
+              "name": "result_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "work_unit_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "handoff_id",
+              "fill": {
+                "source_field": "source_handoff_id"
+              }
+            },
+            {
+              "name": "reply_session_id",
+              "fill": {
+                "source_field": "reply_session_id"
+              }
+            },
+            {
+              "name": "status",
+              "fill": {
+                "source_field": "terminal_state"
+              }
+            },
+            {
+              "name": "failed_request_id",
+              "fill": {
+                "source_field": "request_id"
+              }
+            },
+            {
+              "name": "failure_stage",
+              "fill": {
+                "source_field": "trigger_id"
+              }
+            },
+            {
+              "name": "failure_reason",
+              "fill": {
+                "source_field": "reason"
+              }
+            },
+            {
+              "name": "attempt"
+            },
+            {
+              "name": "summary",
+              "required": true
+            }
+          ],
           "tool_name": "write_change_unit_result"
         }
       ]
@@ -780,7 +786,7 @@
   ],
   "repository_placements": [
     {
-      "host_path": "${GENTS_CHANGE_UNIT_ROOT:-.}",
+      "host_path": "${GENTS_CHANGE_UNIT_ROOT:-}",
       "repository_id": "change-unit-repository"
     }
   ],
@@ -815,9 +821,15 @@
     },
     {
       "behavior_id": "change-unit-rejected",
-      "display_name": "Record Rejection or Failure",
+      "display_name": "Record Rejection",
       "prompt_template": "./tasks/change_unit_rejected_task/prompt.md",
       "task_id": "change-unit-rejected-task"
+    },
+    {
+      "behavior_id": "change-unit-failed",
+      "display_name": "Record Failure",
+      "prompt_template": "./tasks/change_unit_failed_task/prompt.md",
+      "task_id": "change-unit-failed-task"
     }
   ],
   "tools": [
@@ -841,7 +853,7 @@
         "files": {
           "mode": "ReadWrite"
         },
-        "root": "${GENTS_CHANGE_UNIT_ROOT:-.}"
+        "root": "${GENTS_CHANGE_UNIT_ROOT:-}"
       },
       "tools_id": "change-unit-writer-tools"
     },
@@ -883,7 +895,7 @@
         "files": {
           "mode": "ReadOnly"
         },
-        "root": "${GENTS_CHANGE_UNIT_ROOT:-.}"
+        "root": "${GENTS_CHANGE_UNIT_ROOT:-}"
       },
       "tools_id": "change-unit-review-tools"
     },
@@ -918,8 +930,21 @@
           "change-unit-rejected-io"
         ]
       },
-      "display_name": "Record rejected change unit result",
+      "display_name": "Record a rejected review",
       "tools_id": "change-unit-rejected-tools"
+    },
+    {
+      "built_ins": {
+        "enable_context_budget": true,
+        "enable_goal_tools": true
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "change-unit-failed-io"
+        ]
+      },
+      "display_name": "Record a failed or interrupted stage",
+      "tools_id": "change-unit-failed-tools"
     }
   ],
   "triggers": [
@@ -980,7 +1005,7 @@
         "event_source_id": "change-unit-failed-writer",
         "kind": "event"
       },
-      "task_id": "change-unit-rejected-task",
+      "task_id": "change-unit-failed-task",
       "trigger_id": "change-unit-failed-writer"
     },
     {
@@ -990,7 +1015,7 @@
         "event_source_id": "change-unit-failed-reviewer",
         "kind": "event"
       },
-      "task_id": "change-unit-rejected-task",
+      "task_id": "change-unit-failed-task",
       "trigger_id": "change-unit-failed-reviewer"
     },
     {
@@ -1000,7 +1025,7 @@
         "event_source_id": "change-unit-failed-integrator",
         "kind": "event"
       },
-      "task_id": "change-unit-rejected-task",
+      "task_id": "change-unit-failed-task",
       "trigger_id": "change-unit-failed-integrator"
     }
   ]

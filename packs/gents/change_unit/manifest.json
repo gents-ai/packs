@@ -2,6 +2,7 @@
   "assets": [
     "README.md",
     "pack_config.json",
+    "agent_behaviors/change_unit_failed/system_prompt.md",
     "agent_behaviors/change_unit_integrator/system_prompt.md",
     "agent_behaviors/change_unit_record/system_prompt.md",
     "agent_behaviors/change_unit_rejected/system_prompt.md",
@@ -12,6 +13,7 @@
     "schemas/change_unit_result.graphql",
     "schemas/change_unit_review.graphql",
     "schemas/change_unit_work.graphql",
+    "tasks/change_unit_failed_task/prompt.md",
     "tasks/change_unit_integrate_task/prompt.md",
     "tasks/change_unit_record_task/prompt.md",
     "tasks/change_unit_rejected_task/prompt.md",
@@ -44,6 +46,7 @@
     },
     {
       "behaviors": [
+        "change-unit-failed",
         "change-unit-integrator",
         "change-unit-record",
         "change-unit-rejected"
@@ -60,7 +63,7 @@
     "workspace",
     "review"
   ],
-  "version": "1.0.2",
+  "version": "1.0.0",
   "schemas": [
     "schemas/change_unit_closure.graphql",
     "schemas/change_unit_implementation.graphql",

@@ -42,7 +42,8 @@
       {
         "collection": "IsolatedWorkspace",
         "fields": {
-          "lifecycle_state": "ready"
+          "lifecycle_state": "ready",
+          "adapter": "git_worktree"
         }
       }
     ]

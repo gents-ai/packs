@@ -9,6 +9,8 @@ type ChangeUnitWork {
   title: String @immutable
   instructions: String @immutable
   owned_files: String @immutable
+  adapter: String @default(value: "git_worktree") @immutable
+  clone_artifacts: [String]
   status: String @index @immutable
   caused_by_correlation: String @index @immutable
 }

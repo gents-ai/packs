@@ -54,6 +54,10 @@
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
 # and is pre-stored in the install's home.
+# Every variable the pack's config requires (`${VAR}`, or `${VAR:-}` so pack
+# check accepts it; not the GENTS_PACK_* values gents supplies) names an
+# operator path: the suite sets it to a scratch directory, and a runtime case
+# to its repository.
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -79,6 +83,16 @@ name="$(jq -r '.name' "$dir/manifest.json")"
 kind="$(jq -r '.kind' "$dir/manifest.json")"
 pack="$namespace/$name"
 failures=0
+
+required_vars=()
+while read -r var; do required_vars+=("$var"); done < <(
+  jq -r '.. | strings' "$dir/$(jq -r '.config // "pack_config.json"' "$dir/manifest.json")" 2>/dev/null \
+    | grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*(:-)?\}' | sed -E 's/^..//; s/(:-)?}$//' | grep -v '^GENTS_PACK_' | sort -u || true)
+export_required() {
+  local var
+  for var in ${required_vars[@]+"${required_vars[@]}"}; do export "$var=$1"; done
+}
+export_required "$work"
 
 pass() { printf 'ok    %s: %s\n' "$pack" "$1"; }
 fail() {
@@ -376,6 +390,7 @@ runtime_case() {
   # The workspace callback may only create workspaces inside the operator
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
+  export_required "$repo"
   "$gents" plugin dirs add "$repo" --home "$home" >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
@@ -384,7 +399,7 @@ runtime_case() {
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
   url="http://127.0.0.1:$port/api/v0/graphql"
   log="$work/$name-server.log"
-  # The repository placement's host path "." is the server's working directory.
+  # A repository placement's host path "." is the server's working directory.
   (cd "$repo" && NO_COLOR=1 exec "$gents" server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) >"$log" 2>&1 &
   pid=$!
   servers+=("$pid")
@@ -433,6 +448,7 @@ runtime_case() {
     fi
   done < <(jq -c '.runtime.expect[]' "$case")
   kill "$pid" 2>/dev/null || true
+  export_required "$work"
 }
 
 install_plugins() {

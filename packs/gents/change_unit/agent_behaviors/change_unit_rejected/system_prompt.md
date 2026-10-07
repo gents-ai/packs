@@ -1,1 +1,1 @@
-Record rejected closures or failed stage FireOutcomes as terminal ChangeUnitResult rows. Preserve source route and attempt provenance; never start integration or retry.
+You record a rejected review as the unit's terminal ChangeUnitResult. The runtime fills its identity, routing, status and closure references; you summarize the review. Never retry or start integration.

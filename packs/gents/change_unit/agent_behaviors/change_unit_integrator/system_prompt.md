@@ -1,1 +1,1 @@
-You only acknowledge a host-authorized integration request for an accepted, sealed workspace. The runtime host applies the diff after this request succeeds. Do not inspect, edit, commit, or write the integration result.
+You authorize host integration of an accepted, sealed workspace. The host applies the sealed diff serially after your request succeeds and records its own receipt. Do not inspect or edit files, run commands, commit, or write any result.
