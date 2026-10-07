@@ -812,3 +812,26 @@ fn a_view_is_written_in_the_format_the_request_names() {
         .unwrap();
     assert!(err(&r).contains("png or jpeg"), "{r}");
 }
+
+#[test]
+fn saved_and_attached_images_stop_at_the_part_cap_and_resume_by_cursor() {
+    let d = scratch("saveparts", &[]);
+    let one = std::fs::read(format!("{}/scene.png", fixtures())).unwrap();
+    let names: Vec<String> = (0..21).map(|i| format!("p{i:02}.png")).collect();
+    for n in &names {
+        std::fs::write(d.join(n), &one).unwrap();
+    }
+    let req = json!({"path": dir_str(&d), "files": names, "op": "resize", "width": 8,
+        "output": {"part": true}, "save": {"suffix": "_s"}});
+    let first = call(&req).unwrap();
+    assert_eq!(first["parts"].as_array().unwrap().len(), 20);
+    assert_eq!(response(&first)["results"].as_array().unwrap().len(), 20);
+    assert_eq!(response(&first)["next"]["source"], "p20.png");
+    assert!(d.join("p19_s.png").exists() && !d.join("p20_s.png").exists());
+    let mut again = req.clone();
+    again["cursor"] = response(&first)["next"]["cursor"].clone();
+    let rest = call(&again).unwrap();
+    assert_eq!(rest["parts"].as_array().unwrap().len(), 1);
+    assert_eq!(record(&rest, 0)["outputs"][0]["file"], "p20_s.png");
+    assert!(response(&rest).get("next").is_none());
+}

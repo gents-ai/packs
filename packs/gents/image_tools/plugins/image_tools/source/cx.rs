@@ -253,17 +253,11 @@ impl Cx {
                     "mimeType": p.format.mime(),
                 }));
             } else {
-                out["not_attached"] = json!(if self.parts.len() >= MAX_PARTS {
-                    format!(
-                        "this call already attaches {MAX_PARTS} images; it was written to the file"
-                    )
-                } else {
-                    format!(
-                        "the image is {} bytes, over the {} bytes one call can attach; it was written to the file",
-                        p.bytes.len(),
-                        self.room()
-                    )
-                });
+                out["not_attached"] = json!(format!(
+                    "the image is {} bytes, over the {} bytes one call can attach; it was written to the file",
+                    p.bytes.len(),
+                    self.room()
+                ));
             }
         }
         Ok(out)

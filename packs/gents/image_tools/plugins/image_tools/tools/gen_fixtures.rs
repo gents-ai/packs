@@ -275,7 +275,19 @@ fn main() {
             &fx::png(&fx::scene(20 + 4 * i as u32, 12)),
         );
     }
-    put(&root, ".gitignore", b"out/\ntiles/\nsuffix/*_s.png\n");
+    // One image more than a call attaches, for saving with parts across that cap.
+    for i in 0..21u32 {
+        put(
+            &root.join("parts"),
+            &format!("p{i:02}.png"),
+            &fx::png(&fx::scene(8 + i % 3, 6)),
+        );
+    }
+    put(
+        &root,
+        ".gitignore",
+        b"out/\ntiles/\nsuffix/*_s.png\nparts/*_s.png\n",
+    );
     let montage = root.join("montage");
     for (i, c) in [[220u8, 40, 40, 255], [40, 180, 60, 255], [50, 80, 220, 255]]
         .iter()

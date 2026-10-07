@@ -483,6 +483,15 @@ impl Plan {
         }
     }
 
+    /// Images one item attaches before it can stop part way: a tile step's
+    /// index picture and its first tile, otherwise the one result.
+    pub fn first_parts(&self) -> usize {
+        match self.ops.last() {
+            Some(Op::Tile(t)) if t.index.unwrap_or(true) => 2,
+            _ => 1,
+        }
+    }
+
     /// Whether the chain's only source is the montage's own list.
     pub fn is_montage(&self) -> bool {
         matches!(self.ops.as_slice(), [Op::Montage(_)])

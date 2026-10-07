@@ -10,7 +10,7 @@ use crate::cx::{Cx, Fail, Prepared};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::{MAX_PART_SIDE, OVERHEAD_BYTES};
+use crate::model::{MAX_PART_SIDE, MAX_PARTS, OVERHEAD_BYTES};
 use crate::montage;
 use crate::src::{Source, resolve};
 
@@ -145,7 +145,10 @@ fn run_items(
     let mut results: Vec<Value> = Vec::new();
     let mut next = None;
     while idx < sources.len() {
-        if !results.is_empty() && (cx.expired() || cx.used() > cx.budget / 3 * 2) {
+        // Stop before an item whose images would pass the part cap, so none is
+        // written without being attached; the next call produces it.
+        let parts_full = cx.wants_part() && cx.parts.len() + plan.first_parts() > MAX_PARTS;
+        if !results.is_empty() && (cx.expired() || cx.used() > cx.budget / 3 * 2 || parts_full) {
             next = Some(stop_at(&sources[idx], idx, 0)?);
             break;
         }
