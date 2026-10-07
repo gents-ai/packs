@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::draw::parse_color;
-use crate::model::{Format, MAX_PART_BYTES, MAX_PART_SIDE, MIN_PAGE_BYTES, PAGE_BYTES};
+use crate::model::{Format, MAX_PART_BYTES, MIN_PAGE_BYTES, PAGE_BYTES};
 use crate::resize::{Filter, Mode};
 
 /// Steps one chain may hold.
@@ -515,7 +515,7 @@ fn range(name: &str, v: Option<u32>, lo: u32, hi: u32) -> Result<(), String> {
 fn validate_op(op: &Op) -> Result<(), String> {
     match op {
         Op::View(v) => {
-            range("max_side", v.max_side, 16, MAX_PART_SIDE)?;
+            range("max_side", v.max_side, 16, 8192)?;
             if v.max_bytes
                 .is_some_and(|b| !(10_000..=MAX_PART_BYTES).contains(&b))
             {

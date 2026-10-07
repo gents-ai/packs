@@ -6,11 +6,11 @@ use serde_json::{Value, json};
 
 use crate::chain::{file_identity, run_item};
 use crate::cursor::{self, Cursor, fingerprint};
-use crate::cx::{Cx, Fail, Prepared};
+use crate::cx::{Cx, Fail, Prepared, written_with_suffix};
 use crate::draw::parse_color;
 use crate::encode::encode;
 use crate::input::{Input, MontageOp, Op, Plan};
-use crate::model::OVERHEAD_BYTES;
+use crate::model::{MAX_PART_SIDE, OVERHEAD_BYTES};
 use crate::montage;
 use crate::src::{Source, resolve};
 
@@ -70,11 +70,19 @@ pub fn run_for(input: &Input, for_model: bool) -> Result<Done, String> {
         && files.is_empty()
         && resolved.root.is_some()
     {
-        resolved.sources.retain(|s| {
-            !std::path::Path::new(&s.name)
-                .file_stem()
-                .is_some_and(|stem| stem.to_string_lossy().ends_with(suffix.as_str()))
-        });
+        resolved
+            .sources
+            .retain(|s| !written_with_suffix(&s.name, suffix));
+    }
+    if for_model
+        && plan
+            .ops
+            .iter()
+            .any(|op| matches!(op, Op::View(v) if v.max_side.is_some_and(|m| m > MAX_PART_SIDE)))
+    {
+        return Err(format!(
+            "max_side must be between 16 and {MAX_PART_SIDE} for a picture a model sees"
+        ));
     }
     let mut cx = Cx::new(resolved.root.clone(), plan.output.clone(), plan.page_bytes);
     cx.for_model = for_model;

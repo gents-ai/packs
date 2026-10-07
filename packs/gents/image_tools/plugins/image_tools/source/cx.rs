@@ -90,6 +90,28 @@ fn file_format(name: &str) -> Result<Option<Format>, String> {
     }
 }
 
+/// Whether `name` is one a `save.suffix` write produces: its stem, less a
+/// trailing tag [`Cx::target`] adds (`_index`, `_diff`, `_r<N>c<M>`), ends
+/// in `suffix`.
+pub fn written_with_suffix(name: &str, suffix: &str) -> bool {
+    let Some(stem) = std::path::Path::new(name).file_stem() else {
+        return false;
+    };
+    let stem = stem.to_string_lossy();
+    let untagged = stem.rsplit_once('_').and_then(|(head, tag)| {
+        let tile = tag
+            .strip_prefix('r')
+            .and_then(|t| t.split_once('c'))
+            .is_some_and(|(r, c)| {
+                [r, c]
+                    .iter()
+                    .all(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+            });
+        (tag == "index" || tag == "diff" || tile).then_some(head)
+    });
+    stem.ends_with(suffix) || untagged.is_some_and(|head| head.ends_with(suffix))
+}
+
 impl Cx {
     /// A fresh call state.
     pub fn new(root: Option<PathBuf>, output: Output, budget: usize) -> Self {
@@ -673,5 +695,27 @@ mod tests {
             c.deliver(prep(4, Format::Png), "a", None),
             Err(Fail::Over(4))
         ));
+    }
+
+    #[test]
+    fn names_a_suffix_write_produces_are_recognised_with_their_tags() {
+        for name in [
+            "a_s.png",
+            "d/a_s.jpg",
+            "a_s_index.png",
+            "a_s_diff.png",
+            "a_s_r1c12.webp",
+        ] {
+            assert!(written_with_suffix(name, "_s"), "{name}");
+        }
+        for name in [
+            "a.png",
+            "a_s_x.png",
+            "a_s_r1.png",
+            "a_sx_index.png",
+            "a_index.png",
+        ] {
+            assert!(!written_with_suffix(name, "_s"), "{name}");
+        }
     }
 }

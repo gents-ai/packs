@@ -1,0 +1,747 @@
+{
+  "bind": "fixtures/parts",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAXUlEQVR4nG2Muw2AMAwFbZSSKizggir0dEgswUDMQskMLMAA1AyRKk3iRPlKebIty7qzsNCP4CY1P9rwco0bgeTavxPZoGP979djNviI0QAlyzVl8GOZMpiDDVa9ciPoEohwpVK9AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAU0lEQVR4nG2MsQ2AMAwEr3BJZQ8ATZowFnNRMQ2bZAAqKqzYKE2kL87/OguwotuIBQhVQc/nhXYtxTki7J3u5mpyDt04aokP/2BhGKPK041J6/kAWBULyVAdlcMAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAAX0lEQVR4nHWMuw2AMAxEbZSSxj1uKENJgRiEXViEKViCBWizQFZIGSlxUuRT5CSfLN27UwGGUnKs1895eZ75WIAYSPw0N0qPr92+fyJDXkGsPdBUg0ZTso1avAg7uN+M8OAShW4VI/YAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAATklEQVR4nG2MoQ3AMAwEDxiWmLckMF2pa3WDLtNZQgsLYjlREmDpZJ1k3Quwo8bhdxUhK+jz/VDuLZkPhNPtLTbQff68u3JqU1EX0buQCvUGC/Bwc+4HAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAX0lEQVR4nH2MsQ2AMAwEbZSSwi1u6ENBwQQMwSDMRMkYTEDDCExAH5woSuREykv+wv/3xkFLRo7teH2xdvQrAw1A4suzo7x5m9/z9qELJURFg6WcaXXeJiqgJFRINf4Du4sSg6QVRj8AAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAU0lEQVR4nHWMsQ2AMAwEr3CJFLehonamYAoGpGIUpqGhBxOhSFES62T79foXIBJmNKLtFiyAHvcDl7NPq8uCkPJ3upcnaW3bdzZbSmEvPeBPj3gBLF0NOuwVBiEAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAXUlEQVR4nG2Muw2AMAwFbZSSKizggir0dEgswUDMQskMLMAA1AyRKk3iRPlKebIty7qzsNCP4CY1P9rwco0bgeTavxPZoGP979djNviI0QAlyzVl8GOZMpiDDVa9ciPoEohwpVK9AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAU0lEQVR4nG2MsQ2AMAwEr3BJZQ8ATZowFnNRMQ2bZAAqKqzYKE2kL87/OguwotuIBQhVQc/nhXYtxTki7J3u5mpyDt04aokP/2BhGKPK041J6/kAWBULyVAdlcMAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAAX0lEQVR4nHWMuw2AMAxEbZSSxj1uKENJgRiEXViEKViCBWizQFZIGSlxUuRT5CSfLN27UwGGUnKs1895eZ75WIAYSPw0N0qPr92+fyJDXkGsPdBUg0ZTso1avAg7uN+M8OAShW4VI/YAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAATklEQVR4nG2MoQ3AMAwEDxiWmLckMF2pa3WDLtNZQgsLYjlREmDpZJ1k3Quwo8bhdxUhK+jz/VDuLZkPhNPtLTbQff68u3JqU1EX0buQCvUGC/Bwc+4HAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAX0lEQVR4nH2MsQ2AMAwEbZSSwi1u6ENBwQQMwSDMRMkYTEDDCExAH5woSuREykv+wv/3xkFLRo7teH2xdvQrAw1A4suzo7x5m9/z9qELJURFg6WcaXXeJiqgJFRINf4Du4sSg6QVRj8AAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAU0lEQVR4nHWMsQ2AMAwEr3CJFLehonamYAoGpGIUpqGhBxOhSFES62T79foXIBJmNKLtFiyAHvcDl7NPq8uCkPJ3upcnaW3bdzZbSmEvPeBPj3gBLF0NOuwVBiEAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAXUlEQVR4nG2Muw2AMAwFbZSSKizggir0dEgswUDMQskMLMAA1AyRKk3iRPlKebIty7qzsNCP4CY1P9rwco0bgeTavxPZoGP979djNviI0QAlyzVl8GOZMpiDDVa9ciPoEohwpVK9AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAU0lEQVR4nG2MsQ2AMAwEr3BJZQ8ATZowFnNRMQ2bZAAqKqzYKE2kL87/OguwotuIBQhVQc/nhXYtxTki7J3u5mpyDt04aokP/2BhGKPK041J6/kAWBULyVAdlcMAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAAX0lEQVR4nHWMuw2AMAxEbZSSxj1uKENJgRiEXViEKViCBWizQFZIGSlxUuRT5CSfLN27UwGGUnKs1895eZ75WIAYSPw0N0qPr92+fyJDXkGsPdBUg0ZTso1avAg7uN+M8OAShW4VI/YAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAkAAAAGCAIAAACepSOSAAAATklEQVR4nG2MoQ3AMAwEDxiWmLckMF2pa3WDLtNZQgsLYjlREmDpZJ1k3Quwo8bhdxUhK+jz/VDuLZkPhNPtLTbQff68u3JqU1EX0buQCvUGC/Bwc+4HAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAX0lEQVR4nH2MsQ2AMAwEbZSSwi1u6ENBwQQMwSDMRMkYTEDDCExAH5woSuREykv+wv/3xkFLRo7teH2xdvQrAw1A4suzo7x5m9/z9qELJURFg6WcaXXeJiqgJFRINf4Du4sSg6QVRj8AAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAAU0lEQVR4nHWMsQ2AMAwEr3CJFLehonamYAoGpGIUpqGhBxOhSFES62T79foXIBJmNKLtFiyAHvcDl7NPq8uCkPJ3upcnaW3bdzZbSmEvPeBPj3gBLF0NOuwVBiEAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAXUlEQVR4nG2Muw2AMAwFbZSSKizggir0dEgswUDMQskMLMAA1AyRKk3iRPlKebIty7qzsNCP4CY1P9rwco0bgeTavxPZoGP979djNviI0QAlyzVl8GOZMpiDDVa9ciPoEohwpVK9AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      },
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAU0lEQVR4nG2MsQ2AMAwEr3BJZQ8ATZowFnNRMQ2bZAAqKqzYKE2kL87/OguwotuIBQhVQc/nhXYtxTki7J3u5mpyDt04aokP/2BhGKPK041J6/kAWBULyVAdlcMAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "next": {
+        "cursor": "imgt1.eyJyZXEiOiJkOTBjNzY1NjU4Nzg5Nzc2Zjc0ZTczMGI4YzJjMDU5OWY3NzVhNjYwZGNiNGNiMjg4ODdjMTA3OGU3OTQyYzQyIiwiaXRlbSI6MTAsInRpbGUiOjAsImxlbiI6MCwic2hhIjoiIn0",
+        "source": "p10.png"
+      },
+      "results": [
+        {
+          "input": {
+            "bytes": 234,
+            "format": "png",
+            "height": 6,
+            "width": 8
+          },
+          "outputs": [
+            {
+              "bytes": 150,
+              "file": "p00_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 0,
+              "pixels_sha256": "839ae5924a1efcdcd67e5607794fb769c29e240e5c5102c14fd5d7113f15dff6",
+              "role": "index",
+              "sha256": "f8b7f414a46d72104248680153a7e69673ab63428b3d7b6c1556cd4167aea6ed",
+              "width": 8
+            },
+            {
+              "bytes": 140,
+              "file": "p00_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 1,
+              "pixels_sha256": "a631b3e7c9bd40e96d5c4e22d50d6ae389ceb60e01e0c4fd2c4f8d597f3825d3",
+              "role": "tile",
+              "sha256": "44b7d186ba53cac19a1f8e2d8fb063714c784bc351be4865cef38fc2776f645b",
+              "tile": 1,
+              "width": 8
+            }
+          ],
+          "source": "p00.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                8,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 8,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 245,
+            "format": "png",
+            "height": 6,
+            "width": 9
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p01_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 2,
+              "pixels_sha256": "0f829f47bd8581e831157a199de6f229992bf62cdf3947e46b9377b09015cd74",
+              "role": "index",
+              "sha256": "a61bd1b4535cae005ea778f8ac9e6c8af4567b8bfb2f1b0a168e4539ce881dde",
+              "width": 9
+            },
+            {
+              "bytes": 135,
+              "file": "p01_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 3,
+              "pixels_sha256": "107e430f11e6faa8029696237c69533620a481c63e7915e4196277d8b4b47017",
+              "role": "tile",
+              "sha256": "b9e42014003bb47a5da12d9d841f37b296ab02236cd298247efa2fa2e16337b6",
+              "tile": 1,
+              "width": 9
+            }
+          ],
+          "source": "p01.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                9,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 9,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 256,
+            "format": "png",
+            "height": 6,
+            "width": 10
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p02_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 4,
+              "pixels_sha256": "79f29f53ea902139776e1de5bef63a6cfa0a5b7a214669b74b0512723f3b71a0",
+              "role": "index",
+              "sha256": "eb8a018cb66d3eba7e3b23113017da5bbc08804973a5bfe0cd6639232d23bc98",
+              "width": 10
+            },
+            {
+              "bytes": 140,
+              "file": "p02_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 5,
+              "pixels_sha256": "ac8527d1f4a4287760bc1f97671430ca57ee12edd7b790542c02a9a247b07ca1",
+              "role": "tile",
+              "sha256": "6c857515a3ab1a2164f9bbe27f79d454b9558873974f7d27575ab0e5c84a02cd",
+              "tile": 1,
+              "width": 10
+            }
+          ],
+          "source": "p02.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                10,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 10,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 234,
+            "format": "png",
+            "height": 6,
+            "width": 8
+          },
+          "outputs": [
+            {
+              "bytes": 150,
+              "file": "p03_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 6,
+              "pixels_sha256": "839ae5924a1efcdcd67e5607794fb769c29e240e5c5102c14fd5d7113f15dff6",
+              "role": "index",
+              "sha256": "f8b7f414a46d72104248680153a7e69673ab63428b3d7b6c1556cd4167aea6ed",
+              "width": 8
+            },
+            {
+              "bytes": 140,
+              "file": "p03_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 7,
+              "pixels_sha256": "a631b3e7c9bd40e96d5c4e22d50d6ae389ceb60e01e0c4fd2c4f8d597f3825d3",
+              "role": "tile",
+              "sha256": "44b7d186ba53cac19a1f8e2d8fb063714c784bc351be4865cef38fc2776f645b",
+              "tile": 1,
+              "width": 8
+            }
+          ],
+          "source": "p03.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                8,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 8,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 245,
+            "format": "png",
+            "height": 6,
+            "width": 9
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p04_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 8,
+              "pixels_sha256": "0f829f47bd8581e831157a199de6f229992bf62cdf3947e46b9377b09015cd74",
+              "role": "index",
+              "sha256": "a61bd1b4535cae005ea778f8ac9e6c8af4567b8bfb2f1b0a168e4539ce881dde",
+              "width": 9
+            },
+            {
+              "bytes": 135,
+              "file": "p04_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 9,
+              "pixels_sha256": "107e430f11e6faa8029696237c69533620a481c63e7915e4196277d8b4b47017",
+              "role": "tile",
+              "sha256": "b9e42014003bb47a5da12d9d841f37b296ab02236cd298247efa2fa2e16337b6",
+              "tile": 1,
+              "width": 9
+            }
+          ],
+          "source": "p04.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                9,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 9,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 256,
+            "format": "png",
+            "height": 6,
+            "width": 10
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p05_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 10,
+              "pixels_sha256": "79f29f53ea902139776e1de5bef63a6cfa0a5b7a214669b74b0512723f3b71a0",
+              "role": "index",
+              "sha256": "eb8a018cb66d3eba7e3b23113017da5bbc08804973a5bfe0cd6639232d23bc98",
+              "width": 10
+            },
+            {
+              "bytes": 140,
+              "file": "p05_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 11,
+              "pixels_sha256": "ac8527d1f4a4287760bc1f97671430ca57ee12edd7b790542c02a9a247b07ca1",
+              "role": "tile",
+              "sha256": "6c857515a3ab1a2164f9bbe27f79d454b9558873974f7d27575ab0e5c84a02cd",
+              "tile": 1,
+              "width": 10
+            }
+          ],
+          "source": "p05.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                10,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 10,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 234,
+            "format": "png",
+            "height": 6,
+            "width": 8
+          },
+          "outputs": [
+            {
+              "bytes": 150,
+              "file": "p06_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 12,
+              "pixels_sha256": "839ae5924a1efcdcd67e5607794fb769c29e240e5c5102c14fd5d7113f15dff6",
+              "role": "index",
+              "sha256": "f8b7f414a46d72104248680153a7e69673ab63428b3d7b6c1556cd4167aea6ed",
+              "width": 8
+            },
+            {
+              "bytes": 140,
+              "file": "p06_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 13,
+              "pixels_sha256": "a631b3e7c9bd40e96d5c4e22d50d6ae389ceb60e01e0c4fd2c4f8d597f3825d3",
+              "role": "tile",
+              "sha256": "44b7d186ba53cac19a1f8e2d8fb063714c784bc351be4865cef38fc2776f645b",
+              "tile": 1,
+              "width": 8
+            }
+          ],
+          "source": "p06.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                8,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 8,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 245,
+            "format": "png",
+            "height": 6,
+            "width": 9
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p07_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 14,
+              "pixels_sha256": "0f829f47bd8581e831157a199de6f229992bf62cdf3947e46b9377b09015cd74",
+              "role": "index",
+              "sha256": "a61bd1b4535cae005ea778f8ac9e6c8af4567b8bfb2f1b0a168e4539ce881dde",
+              "width": 9
+            },
+            {
+              "bytes": 135,
+              "file": "p07_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 15,
+              "pixels_sha256": "107e430f11e6faa8029696237c69533620a481c63e7915e4196277d8b4b47017",
+              "role": "tile",
+              "sha256": "b9e42014003bb47a5da12d9d841f37b296ab02236cd298247efa2fa2e16337b6",
+              "tile": 1,
+              "width": 9
+            }
+          ],
+          "source": "p07.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                9,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 9,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 256,
+            "format": "png",
+            "height": 6,
+            "width": 10
+          },
+          "outputs": [
+            {
+              "bytes": 152,
+              "file": "p08_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 16,
+              "pixels_sha256": "79f29f53ea902139776e1de5bef63a6cfa0a5b7a214669b74b0512723f3b71a0",
+              "role": "index",
+              "sha256": "eb8a018cb66d3eba7e3b23113017da5bbc08804973a5bfe0cd6639232d23bc98",
+              "width": 10
+            },
+            {
+              "bytes": 140,
+              "file": "p08_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 17,
+              "pixels_sha256": "ac8527d1f4a4287760bc1f97671430ca57ee12edd7b790542c02a9a247b07ca1",
+              "role": "tile",
+              "sha256": "6c857515a3ab1a2164f9bbe27f79d454b9558873974f7d27575ab0e5c84a02cd",
+              "tile": 1,
+              "width": 10
+            }
+          ],
+          "source": "p08.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                10,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 10,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        },
+        {
+          "input": {
+            "bytes": 234,
+            "format": "png",
+            "height": 6,
+            "width": 8
+          },
+          "outputs": [
+            {
+              "bytes": 150,
+              "file": "p09_s_index.png",
+              "format": "png",
+              "height": 6,
+              "part": 18,
+              "pixels_sha256": "839ae5924a1efcdcd67e5607794fb769c29e240e5c5102c14fd5d7113f15dff6",
+              "role": "index",
+              "sha256": "f8b7f414a46d72104248680153a7e69673ab63428b3d7b6c1556cd4167aea6ed",
+              "width": 8
+            },
+            {
+              "bytes": 140,
+              "file": "p09_s_r1c1.png",
+              "format": "png",
+              "height": 6,
+              "part": 19,
+              "pixels_sha256": "a631b3e7c9bd40e96d5c4e22d50d6ae389ceb60e01e0c4fd2c4f8d597f3825d3",
+              "role": "tile",
+              "sha256": "44b7d186ba53cac19a1f8e2d8fb063714c784bc351be4865cef38fc2776f645b",
+              "tile": 1,
+              "width": 8
+            }
+          ],
+          "source": "p09.png",
+          "steps": [
+            {
+              "cols": 1,
+              "from": [
+                8,
+                6
+              ],
+              "index": 0,
+              "op": "tile",
+              "overlap": 16,
+              "rows": 1,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 6,
+                  "n": 1,
+                  "output": 1,
+                  "row": 0,
+                  "width": 8,
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "tiles_total": 1
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "op": "tile",
+    "output": {
+      "part": true
+    },
+    "save": {
+      "overwrite": true,
+      "suffix": "_s"
+    },
+    "size": 64
+  }
+}

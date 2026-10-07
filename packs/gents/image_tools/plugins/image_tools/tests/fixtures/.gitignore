@@ -2,3 +2,4 @@ out/
 tiles/
 suffix/*_s.png
 parts/*_s.png
+parts/*_s_*.png
