@@ -1,5 +1,6 @@
 mod clean;
 mod library;
+mod timestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -133,6 +134,9 @@ fn load_plan(v: &Value, root: &Path) -> Result<(Plan, String)> {
     Ok((plan, hash(&bytes)))
 }
 fn prepare(v: &Value, root: &Path) -> Result<Value> {
+    if !timestamp::timestamp(field(v, "modified")?) {
+        return Err("modified must be a valid UTC timestamp YYYY-MM-DDTHH:MM:SSZ".into());
+    }
     let source: Value =
         serde_json::from_slice(&read(root, field(v, "structured")?)?).map_err(|e| e.to_string())?;
     let edition = field(v, "run_id")?;
@@ -254,21 +258,13 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     )
 }
 fn review_attempt(plan: &Plan, chunk: &Chunk, path: &str, file: &str) -> Value {
-    json!({"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
+    json!({"attempt_id":format!("{}:{}:0",plan.edition_id,chunk.key),"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
         "chunk_ref":chunk.key,"title":chunk.title,"attempt":"0","feedback":"",
         "blocks_json":serde_json::to_string(&chunk.blocks).unwrap(),
         "lane":if chunk.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}})
 }
-fn apply(v: &Value, root: &Path) -> Result<Value> {
-    let (plan, digest) = load_plan(v, root)?;
-    let key = field(v, "chunk_ref")?;
-    let chunk = plan
-        .chunks
-        .iter()
-        .find(|c| c.key == key)
-        .ok_or("unknown polish chunk")?;
-    let edits: Vec<Edit> =
-        serde_json::from_str(field(v, "edits_json")?).map_err(|e| format!("edits_json: {e}"))?;
+fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Result<Reviewed> {
+    let edits: Vec<Edit> = serde_json::from_str(raw).map_err(|e| format!("edits_json: {e}"))?;
     if edits.len() > 50 {
         return Err("at most 50 focused edits are allowed per review".into());
     }
@@ -305,10 +301,62 @@ fn apply(v: &Value, root: &Path) -> Result<Value> {
         b.markdown = next;
         reviewed.edits.push(edit);
     }
+    Ok(reviewed)
+}
+#[derive(Debug)]
+enum ApplyFailure {
+    Edit(String),
+    Execution(String),
+}
+impl From<String> for ApplyFailure {
+    fn from(error: String) -> Self {
+        Self::Execution(error)
+    }
+}
+impl From<&str> for ApplyFailure {
+    fn from(error: &str) -> Self {
+        Self::Execution(error.into())
+    }
+}
+fn apply(v: &Value, root: &Path) -> std::result::Result<Value, ApplyFailure> {
+    let (plan, digest) = load_plan(v, root)?;
+    let key = field(v, "chunk_ref")?;
+    let chunk = plan
+        .chunks
+        .iter()
+        .find(|c| c.key == key)
+        .ok_or("unknown polish chunk")?;
     let file = format!("{}-{key}.json", field(v, "plan")?.trim_end_matches(".json"));
-    save(root, &file, &json!(reviewed))?;
+    // The file is the durable acceptance checkpoint. Replaying it must also
+    // replay the receipt after a crash between the file and database commits.
+    let reviewed = match fs::symlink_metadata(root.join(&file)) {
+        Ok(_) => {
+            let accepted: Reviewed =
+                serde_json::from_slice(&read(root, &file)?).map_err(|e| e.to_string())?;
+            if accepted.plan_hash != digest
+                || accepted.key != key
+                || accepted.blocks.len() != chunk.blocks.len()
+                || accepted
+                    .blocks
+                    .iter()
+                    .zip(&chunk.blocks)
+                    .any(|(a, b)| a.id != b.id || a.sources != b.sources)
+            {
+                return Err("accepted checkpoint does not match the immutable plan".into());
+            }
+            accepted
+        }
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            let candidate = validate_review(chunk, key, digest, field(v, "edits_json")?)
+                .map_err(ApplyFailure::Edit)?;
+            save(root, &file, &json!(candidate))?;
+            candidate
+        }
+        Err(e) => return Err(e.to_string().into()),
+    };
+    let file = format!("{}-{key}.json", field(v, "plan")?.trim_end_matches(".json"));
     Ok(
-        json!({"run_id":plan.edition_id,"book_id":plan.book_id,"path":v["path_original"].as_str().unwrap_or(field(v,"path")?),"plan":v["plan"],"chunk_ref":key,"expected_total":plan.chunks.len(),"sha256":hash(&read(root,&file)?),"edit_count":reviewed.edits.len()}),
+        json!({"receipt_id":format!("{}:{key}",plan.edition_id),"run_id":plan.edition_id,"book_id":plan.book_id,"path":v["path_original"].as_str().unwrap_or(field(v,"path")?),"plan":v["plan"],"chunk_ref":key,"expected_total":plan.chunks.len(),"sha256":hash(&read(root,&file)?),"edit_count":reviewed.edits.len()}),
     )
 }
 fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
@@ -336,7 +384,8 @@ fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
             };
             Ok(json!({"chunk":chunk,"retry":next,"failure":null}))
         }
-        Err(error) => {
+        Err(ApplyFailure::Execution(error)) => Err(error),
+        Err(ApplyFailure::Edit(error)) => {
             let (plan, _) = load_plan(v, root)?;
             let key = field(v, "chunk_ref")?;
             let chunk = plan
@@ -354,7 +403,7 @@ fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
                 );
             }
             Ok(
-                json!({"chunk":null,"failure":null,"retry":{"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":v["plan"],"chunk_ref":key,"title":chunk.title,"attempt":(attempt+1).to_string(),"feedback":error,"lane":if key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"},"blocks_json":serde_json::to_string(&chunk.blocks).unwrap()}}),
+                json!({"chunk":null,"failure":null,"retry":{"attempt_id":format!("{}:{key}:{}",plan.edition_id,attempt+1),"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":v["plan"],"chunk_ref":key,"title":chunk.title,"attempt":(attempt+1).to_string(),"feedback":error,"lane":if key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"},"blocks_json":serde_json::to_string(&chunk.blocks).unwrap()}}),
             )
         }
     }
@@ -413,7 +462,7 @@ fn finish(v: &Value, root: &Path) -> Result<Value> {
     )?;
     let path = v["path_original"].as_str().unwrap_or(field(v, "path")?);
     Ok(
-        json!({"prepared":{"run_id":plan.edition_id,"book_id":plan.book_id,"edition_id":plan.edition_id,"path":path,"structured_file":structured,"manuscript":manuscript,"passage_count":passages.len(),"edit_count":edits.len()},"passages":passages,"export":{"run_id":plan.edition_id,"book_id":plan.book_id,"edition_id":plan.edition_id,"path":path,"manuscript":manuscript,"output":plan.output}}),
+        json!({"prepared":{"run_id":plan.edition_id,"book_id":plan.book_id,"edition_id":plan.edition_id,"path":path,"structured_file":structured,"manuscript":manuscript,"passage_count":passages.len(),"edit_count":edits.len()},"passages":passages,"export":{"run_id":plan.edition_id,"book_id":plan.book_id,"edition_id":plan.edition_id,"path":path,"manuscript":manuscript,"output":plan.output,"structured_file":structured}}),
     )
 }
 fn run(v: Value) -> Result<Value> {
@@ -486,7 +535,16 @@ mod tests {
         let accepted = run(first.clone()).unwrap();
         assert_eq!(accepted["chunk"]["expected_total"], 17);
         assert_eq!(accepted["retry"]["chunk_ref"], "c0016");
+        assert_eq!(run(first.clone()).unwrap(), accepted);
+        first["edits_json"] = json!("a conflicting duplicate must not replace accepted text");
         assert_eq!(run(first).unwrap(), accepted);
+        let mut missing = prepared["chunks"][1].clone();
+        missing["plan"] = json!("absent.json");
+        missing["edits_json"] = json!("[]");
+        assert!(
+            run(missing).is_err(),
+            "infrastructure failure must not create a model repair"
+        );
         let mut rejected = prepared["chunks"][1].clone();
         rejected["edits_json"] = json!("invalid");
         let repair = run(rejected).unwrap();
@@ -504,6 +562,9 @@ mod tests {
         let book = json!({"book_id":"book-1","title":"Example","author":"Author","language":"en","page_count":2,"chapters":[{"title":"One","level":1,"matter_type":"body","pages":[{"source":"one.pdf","page":1,"markdown":"A mistkae in a paragraph.\n\n1"}]},{"title":"Two","level":1,"matter_type":"body","pages":[{"source":"one.pdf","page":2,"markdown":"A second paragraph.\n\n2"}]}]});
         save(root, "source.json", &book).unwrap();
         let request = json!({"run_id":"edition-1","book_id":"book-1","path":root,"structured":"source.json","modified":"2026-10-08T00:00:00Z","output":"book.epub"});
+        let mut invalid = request.clone();
+        invalid["modified"] = json!("2026-02-30T00:00:00Z");
+        assert!(run(invalid).is_err());
         let prepared = run(request.clone()).unwrap();
         assert_eq!(run(request).unwrap(), prepared);
         let chunks = prepared["chunks"].as_array().unwrap();
@@ -573,6 +634,6 @@ mod tests {
         bad["edits_json"] = json!(
             "[{\"block_id\":\"unknown\",\"old_text\":\"a\",\"new_text\":\"b\",\"reason\":\"bad\"}]"
         );
-        assert!(apply(&bad, root).is_err());
+        assert!(apply(&bad, root).is_ok());
     }
 }

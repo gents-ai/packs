@@ -1,3 +1,5 @@
+mod timestamp;
+use timestamp::timestamp;
 mod render;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -22,6 +24,7 @@ struct Request {
     #[serde(default = "default_manuscript")]
     manuscript: String,
     output: String,
+    structured_file: Option<String>,
 }
 fn default_manuscript() -> String {
     "manuscript.json".into()
@@ -186,7 +189,11 @@ fn run(request: Request) -> Result<Value, String> {
         receipt.as_object_mut().unwrap().remove("bytes");
         receipt["book_id"] = json!(request.book_id);
         receipt["edition_id"] = json!(request.edition_id);
-        Ok(receipt)
+        let index = request.structured_file.as_ref().map(|file| json!({
+            "read_id":request.run_id,"run_id":request.run_id,"book_id":request.book_id,"edition_id":request.edition_id,
+            "path":request.path_original.as_deref().unwrap_or(&request.path),"structured_file":file
+        }));
+        Ok(json!({"edition":receipt,"index":index}))
     } else {
         Ok(receipt)
     }
@@ -202,39 +209,6 @@ fn xml(text: &str) -> Result<String, String> {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
         .replace('\'', "&apos;"))
-}
-
-fn timestamp(s: &str) -> bool {
-    let b = s.as_bytes();
-    if b.len() != 20
-        || [4, 7, 10, 13, 16, 19]
-            .into_iter()
-            .zip(b"--T::Z")
-            .any(|(i, c)| b[i] != *c)
-        || b.iter()
-            .enumerate()
-            .any(|(i, c)| ![4, 7, 10, 13, 16, 19].contains(&i) && !c.is_ascii_digit())
-    {
-        return false;
-    }
-    let n = |a: usize, z: usize| s[a..z].parse::<u32>().unwrap_or(0);
-    let year = n(0, 4);
-    let month = n(5, 7);
-    let day = n(8, 10);
-    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-    let days = match month {
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if leap {
-                29
-            } else {
-                28
-            }
-        }
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        _ => 0,
-    };
-    year > 0 && day > 0 && day <= days && n(11, 13) < 24 && n(14, 16) < 60 && n(17, 19) < 60
 }
 
 fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
@@ -483,6 +457,7 @@ mod tests {
         let fixture = include_str!("../tests/fixtures/manuscript.json");
         fs::write(dir.path().join("manuscript.json"), fixture).unwrap();
         let req = || Request {
+            structured_file: None,
             run_id: None,
             book_id: None,
             edition_id: None,

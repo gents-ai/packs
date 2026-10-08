@@ -9,7 +9,9 @@
       "CallbackBinding/ocr-plan",
       "EventSource/ocr-extract",
       "EventSource/ocr-plan",
-      "Tools/document-reader-tools"
+      "Tools/document-reader-tools",
+      "EventSource/ocr-continue",
+      "CallbackBinding/ocr-continue"
     ],
     "plugins": [
       "ocr"

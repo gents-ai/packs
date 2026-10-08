@@ -26,6 +26,31 @@ def unit(ordinal, text, kind="pdf_page", locator=None):
 
 
 class SourceIntake(unittest.TestCase):
+    def test_invalid_spans_order_and_timestamps_are_rejected(self):
+        first=unit(1,"First");second=unit(2,"Second")
+        first["char_end"] += 1
+        with self.assertRaisesRegex(ValueError,"character span"):
+            intake.stage_work(work(),[first])
+        first=unit(1,"First"); first["ordinal"]=2; second["ordinal"]=1
+        with self.assertRaisesRegex(ValueError,"ordinal order"):
+            intake.stage_work(work(),[first,second])
+        with self.assertRaises(ValueError):
+            intake.stage_work(work(modified="2026-02-30T00:00:00Z"),[unit(1,"Text")])
+
+    def test_transcription_change_creates_a_new_edition_and_prefixes_are_explicit(self):
+        original=intake.stage_work(work(),[unit(1,"mistkae")])
+        corrected=intake.stage_work(work(),[unit(1,"mistake")])
+        self.assertNotEqual(original["edition"]["edition_id"],corrected["edition"]["edition_id"])
+        rows=[unit(1,"Ships.","ancient_citation",{"citation":"1.1"}),unit(2,"Cargo.","ancient_citation",{"citation":"1.2"})]
+        staged=intake.stage_work(work(),rows)
+        source={u["unit_id"]:u for u in rows}
+        for passage in staged["passages"]:
+            rebuilt=""
+            for loc in json.loads(passage["source_spans_json"]):
+                u=source[loc["unit_id"]]
+                rebuilt += loc["generated_prefix"] + u["text"][loc["start_char"]:loc["end_char"]]
+            self.assertEqual(passage["text"],rebuilt)
+
     def test_migrated_chapter_keeps_coarse_range_and_export_hash_scope(self):
         source = unit(1, "word " * 2000, "chapter_range", {
             "chapter_id": "old-chapter", "title": "Trade", "start_page": 12, "end_page": 28})
@@ -106,7 +131,7 @@ class SourceIntake(unittest.TestCase):
         source = unit(1, "Ships arrived.")
         original = intake.stage_work(work(source_url="https://example.org/one"), [source])
         changed = intake.stage_work(work(source_url="https://example.org/two"), [source])
-        self.assertEqual(original["edition"]["edition_id"], changed["edition"]["edition_id"])
+        self.assertNotEqual(original["edition"]["edition_id"], changed["edition"]["edition_id"])
         self.assertNotEqual(original["passages"][0]["record_hash"],
                             changed["passages"][0]["record_hash"])
 

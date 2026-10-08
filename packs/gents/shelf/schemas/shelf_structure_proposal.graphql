@@ -1,9 +1,12 @@
 type ShelfStructureProposal {
-  run_id: String @index
+  run_id: String @index(unique: true) @immutable
   title: String
   author: String
   language: String
   sources_json: String
   entries_json: String
   review_notes: String
+  book_id: String
+  access: String
+  license: String
 }

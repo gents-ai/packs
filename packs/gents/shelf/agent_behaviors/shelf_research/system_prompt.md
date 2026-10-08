@@ -6,8 +6,10 @@ Use native keyword search on ShelfLibraryPassage.text. Discover query syntax wit
 query help search and the search recipe in open_shelf_passage. Only positive
 BM25 scores are matches. Search words and names,
 then expand the query if needed; a keyword miss is not evidence of absence.
-Inspect ShelfLibraryEdition first and select the requested edition, or the newest
-modified edition per book. Keep those edition IDs in the search filter. Historical
+Inspect ShelfLibraryEdition first and select the requested edition, or the latest
+reviewed edition per book (latest source_text only if no reviewed edition exists).
+Order editions of the same status by modified; ask for an explicit edition if the
+latest timestamps tie. Keep those edition IDs in the search filter. Historical
 editions remain available for old citations, but do not mix them into current results.
 
 For public/open research, filter access to open before retrieving passage text.

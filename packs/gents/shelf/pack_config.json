@@ -189,7 +189,7 @@
       "display_name": "Shelf plan",
       "handler": {
         "correlation_field": "run_id",
-        "digest": "sha256:cc6215a8c74aac6009fad787525d57a98d76b041f936fb5381f8720f93b59a0e",
+        "digest": "sha256:049a6abdb586a4403294dfb26a99688161fb1c808a563501e8aef969dfd733bf",
         "kind": "plugin",
         "outputs": [
           {
@@ -209,7 +209,7 @@
       "display_name": "Shelf extract",
       "handler": {
         "correlation_field": "run_id",
-        "digest": "sha256:cc6215a8c74aac6009fad787525d57a98d76b041f936fb5381f8720f93b59a0e",
+        "digest": "sha256:049a6abdb586a4403294dfb26a99688161fb1c808a563501e8aef969dfd733bf",
         "kind": "plugin",
         "outputs": [
           {
@@ -217,7 +217,7 @@
             "collection": "ShelfExtract",
             "correlation_field": "run_id",
             "name": "document",
-            "required": true,
+            "required": false,
             "schema": "ShelfExtract/v1"
           },
           {
@@ -235,6 +235,14 @@
             "name": "figures",
             "required": false,
             "schema": "ShelfFigure/v1"
+          },
+          {
+            "name": "continuation",
+            "collection": "ShelfReadRequest",
+            "schema": "ShelfReadRequest/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
           }
         ],
         "plugin": "gents/ocr"
@@ -291,6 +299,14 @@
             "correlation_field": "edition_id",
             "cardinality": "one",
             "required": true
+          },
+          {
+            "name": "index",
+            "collection": "ShelfIndexJob",
+            "schema": "ShelfIndexJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
           }
         ]
       }
@@ -437,6 +453,25 @@
           }
         ]
       }
+    },
+    {
+      "callback_id": "shelf-analysis-ready",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_structure",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "job",
+            "collection": "ShelfOutlineJob",
+            "schema": "ShelfOutlineJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          }
+        ]
+      }
     }
   ],
   "callback_bindings": [
@@ -452,7 +487,10 @@
         "remote_ocr",
         "figure_images",
         "max_image_px",
-        "min_figure_px"
+        "min_figure_px",
+        "book_id",
+        "access",
+        "license"
       ]
     },
     {
@@ -471,7 +509,13 @@
         "remote_ocr",
         "figure_images",
         "max_image_px",
-        "min_figure_px"
+        "min_figure_px",
+        "chunk_id",
+        "expected_total",
+        "sources_json",
+        "book_id",
+        "access",
+        "license"
       ]
     },
     {
@@ -485,7 +529,10 @@
         "language",
         "sources_json",
         "entries_json",
-        "review_notes"
+        "review_notes",
+        "book_id",
+        "access",
+        "license"
       ]
     },
     {
@@ -498,7 +545,8 @@
         "edition_id",
         "path",
         "manuscript",
-        "output"
+        "output",
+        "structured_file"
       ]
     },
     {
@@ -563,6 +611,52 @@
         "chunk_ref",
         "expected_total"
       ]
+    },
+    {
+      "binding_id": "shelf-continue",
+      "callback_id": "shelf-extract",
+      "event_source_id": "shelf-continue",
+      "input_fields": [
+        "run_id",
+        "chunk",
+        "path",
+        "files",
+        "source",
+        "format",
+        "pages",
+        "ocr",
+        "remote_ocr",
+        "figure_images",
+        "max_image_px",
+        "min_figure_px",
+        "chunk_id",
+        "expected_total",
+        "sources_json",
+        "book_id",
+        "cursor",
+        "graph_state",
+        "read_id",
+        "access",
+        "license"
+      ]
+    },
+    {
+      "binding_id": "shelf-analysis-ready",
+      "callback_id": "shelf-analysis-ready",
+      "event_source_id": "shelf-analysis-ready",
+      "input_fields": [
+        "run_id",
+        "chunk",
+        "chunk_id",
+        "book_id",
+        "expected_total",
+        "sources_json",
+        "extraction_state",
+        "format",
+        "error",
+        "access",
+        "license"
+      ]
     }
   ],
   "event_sources": [
@@ -588,7 +682,7 @@
       "correlation_field": "run_id"
     },
     {
-      "event_source_id": "shelf-outline",
+      "event_source_id": "shelf-analysis-ready",
       "display_name": "Shelf outline",
       "source_collection": "ShelfChunkAnalysis",
       "event_kind": "created",
@@ -652,7 +746,7 @@
     },
     {
       "event_source_id": "shelf-index",
-      "source_collection": "ShelfPreparedBook",
+      "source_collection": "ShelfIndexJob",
       "event_kind": "created",
       "correlation_field": "run_id"
     },
@@ -666,6 +760,18 @@
           "source_field": "expected_total"
         }
       }
+    },
+    {
+      "event_source_id": "shelf-continue",
+      "source_collection": "ShelfReadRequest",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-outline",
+      "source_collection": "ShelfOutlineJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
     }
   ],
   "tasks": [
@@ -764,11 +870,15 @@
             },
             {
               "name": "chunk",
-              "required": true
+              "fill": {
+                "source_field": "chunk"
+              }
             },
             {
               "name": "expected_total",
-              "required": true
+              "fill": {
+                "source_field": "expected_total"
+              }
             },
             {
               "name": "source",
@@ -777,12 +887,10 @@
               }
             },
             {
-              "name": "complete",
-              "required": true
-            },
-            {
               "name": "page_count",
-              "required": true
+              "fill": {
+                "source_field": "page_count"
+              }
             },
             {
               "name": "analysis",
@@ -790,7 +898,51 @@
             },
             {
               "name": "error",
-              "required": true
+              "fill": {
+                "source_field": "error"
+              }
+            },
+            {
+              "name": "chunk_id",
+              "fill": {
+                "source_field": "chunk_id"
+              }
+            },
+            {
+              "name": "sources_json",
+              "fill": {
+                "source_field": "sources_json"
+              }
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "format",
+              "fill": {
+                "source_field": "format"
+              }
+            },
+            {
+              "name": "extraction_state",
+              "fill": {
+                "source_field": "extraction_state"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
             }
           ],
           "output_obligation": {
@@ -802,7 +954,7 @@
           "kind": "query",
           "tool_name": "read_shelf_chunks",
           "collection": "ShelfChunk",
-          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
           "fields": [
             "chunk",
             "source",
@@ -844,7 +996,9 @@
             },
             {
               "name": "sources_json",
-              "required": true
+              "fill": {
+                "source_field": "sources_json"
+              }
             },
             {
               "name": "entries_json",
@@ -853,6 +1007,24 @@
             {
               "name": "review_notes",
               "required": true
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
             }
           ],
           "output_obligation": {
@@ -864,7 +1036,7 @@
           "kind": "query",
           "tool_name": "read_shelf_chunks",
           "collection": "ShelfChunk",
-          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
           "fields": [
             "chunk",
             "source",
@@ -885,7 +1057,7 @@
           "fields": [
             "chunk",
             "source",
-            "complete",
+            "extraction_state",
             "analysis",
             "error"
           ],
@@ -1015,6 +1187,24 @@
             {
               "name": "review_notes",
               "required": true
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
             }
           ],
           "output_obligation": {
@@ -1026,7 +1216,7 @@
           "kind": "query",
           "tool_name": "read_shelf_chunks",
           "collection": "ShelfChunk",
-          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
           "fields": [
             "chunk",
             "source",
@@ -1047,7 +1237,7 @@
           "fields": [
             "chunk",
             "source",
-            "complete",
+            "extraction_state",
             "analysis",
             "error"
           ],
@@ -1167,6 +1357,18 @@
             {
               "name": "remote_ocr",
               "required": false
+            },
+            {
+              "name": "book_id",
+              "required": false
+            },
+            {
+              "name": "access",
+              "required": false
+            },
+            {
+              "name": "license",
+              "required": false
             }
           ]
         },
@@ -1278,6 +1480,12 @@
               "name": "attempt",
               "fill": {
                 "source_field": "attempt"
+              }
+            },
+            {
+              "name": "attempt_id",
+              "fill": {
+                "source_field": "attempt_id"
               }
             }
           ],

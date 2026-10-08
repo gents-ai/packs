@@ -1,5 +1,5 @@
 type ShelfPrepareJob {
-  run_id: String @index
+  run_id: String @index(unique: true) @immutable
   book_id: String
   path: String
   structured: String

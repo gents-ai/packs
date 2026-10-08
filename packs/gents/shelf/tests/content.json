@@ -6,7 +6,7 @@
     },
     {
       "name": "outline waits for every chunk analysis",
-      "expr": ".config.event_sources[] | select(.event_source_id == \"shelf-outline\") | .group.expected_count.source_field == \"expected_total\""
+      "expr": ".config.event_sources[] | select(.event_source_id == \"shelf-analysis-ready\") | .group.expected_count.source_field == \"expected_total\""
     },
     {
       "name": "pipeline agents have only scoped reads",

@@ -8,6 +8,7 @@ section files. The generated edition is labelled source_text, not reviewed.
 """
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -60,7 +61,7 @@ def chapter(unit):
         return "chapter:" + locator["chapter_id"], locator["title"]
     if kind == "epub_spine":
         key = f"spine:{locator['spine_index']}:{locator['href']}"
-        return key, Path(locator["href"]).stem.replace("_", " ")
+        return key, locator.get("title") or Path(locator["href"]).stem.replace("_", " ")
     if kind in {"chapter_marker", "page_marker"}:
         label = locator["label"]
         return f"marker:{locator.get('file', '')}:{label}", label
@@ -102,13 +103,21 @@ def locator_summary(spans):
         return f"{first['locator']['href']}, chars {first['start_char']}–{last['end_char']}"
     if kind in {"page_marker", "chapter_marker"}:
         return first["locator"]["label"]
+    if kind == "xml_element":
+        loc = first["locator"]
+        parts = loc.get("division_path", []) + ([loc["n"]] if loc.get("n") else [])
+        section = ".".join(parts) or loc.get("xml_id") or str(loc["ordinal"])
+        return f"{loc['element']} {section}, chars {first['start_char']}–{last['end_char']}"
     return f"chars {first['start_char']}–{last['end_char']}"
 
 
 def stage_work(work, units):
     work_id = work["work_id"]
     source_hash = work["source_sha256"]
-    edition_id = "source-" + digest(canonical([VERSION, work_id, source_hash]))[:24]
+    edition_id = "source-" + digest(canonical([VERSION, work, units]))[:24]
+    modified = work.get("modified", SOURCE_MODIFIED)
+    if datetime.datetime.strptime(modified, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%dT%H:%M:%SZ") != modified:
+        raise ValueError("modified must be a UTC timestamp YYYY-MM-DDTHH:MM:SSZ")
     access = access_label(work.get("access", ""))
     license_name = work.get("license") or "unknown"
     if access == "open" and license_name in {"unknown", "not_recorded"}:
@@ -150,6 +159,7 @@ def stage_work(work, units):
         })
         pending, pending_spans = [], []
 
+    previous_ordinal = 0
     for unit in units:
         if unit["work_id"] != work_id or unit["source_sha256"] != source_hash:
             raise ValueError(f"source unit does not match work/source hash: {work_id}")
@@ -159,6 +169,12 @@ def stage_work(work, units):
         if digest(unit["text"]) != unit["text_sha256"]:
             raise ValueError(f"source unit text hash mismatch: {unit['unit_id']}")
         text = unit["text"]
+        if unit["char_start"] < 0 or unit["char_end"] - unit["char_start"] != len(text):
+            raise ValueError("source unit character span does not match its text")
+        ordinal = unit.get("ordinal", previous_ordinal + 1)
+        if ordinal <= previous_ordinal:
+            raise ValueError("source units must be in increasing ordinal order")
+        previous_ordinal = ordinal
         if not text.strip():
             blank += 1
             continue
@@ -169,13 +185,17 @@ def stage_work(work, units):
         for start, end, part in windows(text):
             if not part.strip():
                 continue
-            rendered = (f"⟦{unit['locator']['citation']}⟧ " + part
-                        if unit["locator_kind"] == "ancient_citation" and unit["locator"].get("citation")
-                        else part)
+            prefix = (f"⟦{unit['locator']['citation']}⟧ "
+                      if unit["locator_kind"] == "ancient_citation" and unit["locator"].get("citation")
+                      and not part.startswith(f"⟦{unit['locator']['citation']}⟧") else "")
+            rendered = prefix + part
             if pending and sum(map(len, pending)) + len(rendered) > 4500:
                 flush()
-            pending.append(rendered)
-            pending_spans.append(span(unit, start, end))
+            separator = "\n\n" if pending else ""
+            pending.append(separator + rendered)
+            location = span(unit, start, end)
+            location["generated_prefix"] = separator + prefix
+            pending_spans.append(location)
         if unit["locator_kind"] != "ancient_citation":
             flush()  # never merge separate physical pages or EPUB spine spans
     flush()
@@ -199,7 +219,7 @@ def stage_work(work, units):
         "title": work["title"], "author": work.get("authors") or "Unknown",
         "language": language, "access": access, "license": license_name,
         "source_hash": source_hash, "source_hash_scope": work.get("source_hash_scope", "original_source"),
-        "revision": revision, "modified": SOURCE_MODIFIED,
+        "revision": revision, "modified": modified,
         "passage_count": len(passages), "status": "source_text",
         "source_metadata_json": canonical(metadata),
     }

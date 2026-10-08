@@ -1,4 +1,4 @@
-type ShelfChunk {
+type OcrReadRequest {
   run_id: String @index
   chunk: Int
   path: String
@@ -11,10 +11,13 @@ type ShelfChunk {
   figure_images: Boolean
   max_image_px: Int
   min_figure_px: Int
-  chunk_id: String @index(unique: true) @immutable
+  chunk_id: String
   expected_total: Int
   sources_json: String
   book_id: String
+  cursor: String
+  graph_state: String
+  read_id: String @index(unique: true) @immutable
   access: String
   license: String
 }

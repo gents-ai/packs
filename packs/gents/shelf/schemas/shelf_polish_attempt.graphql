@@ -9,4 +9,5 @@ type ShelfPolishAttempt {
   lane: String
   title: String
   blocks_json: String
+  attempt_id: String @index(unique: true) @immutable
 }

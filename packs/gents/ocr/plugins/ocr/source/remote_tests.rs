@@ -189,7 +189,7 @@ fn auto_sends_a_page_the_built_in_ocr_finds_nothing_on() {
 }
 
 #[test]
-fn off_and_a_host_without_model_calls_leave_the_output_unchanged() {
+fn off_preserves_output_and_an_unbound_requested_slot_is_reported() {
     let plain = call(&json!({"path": fixtures(), "files": ["scan.pdf", "letter.png"]})).unwrap();
     for extra in [
         json!({"remote_ocr": "off", "model_calls": true}),
@@ -206,7 +206,20 @@ fn off_and_a_host_without_model_calls_leave_the_output_unchanged() {
             .as_object_mut()
             .unwrap()
             .extend(extra.as_object().unwrap().clone());
-        assert_eq!(call(&input).unwrap(), plain, "{extra}");
+        let mut actual = call(&input).unwrap();
+        if extra["remote_ocr"] == "auto" || extra["remote_ocr"] == "force" {
+            for doc in actual["documents"].as_array_mut().unwrap() {
+                assert!(
+                    doc["warnings"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|w| w.as_str().unwrap().contains("no model slot"))
+                );
+                doc["warnings"] = json!([]);
+            }
+        }
+        assert_eq!(actual, plain, "{extra}");
     }
 }
 
@@ -502,4 +515,72 @@ fn a_failed_answer_leaves_an_eighth_of_the_clock_for_the_fallback() {
     let late = with(json!({"f0p2": {"error": "x"}}), json!({"ms": 790_000}));
     assert_eq!(late.spent(800).as_millis(), 790_000);
     assert_eq!(Remote::off().spent(800).as_millis(), 0);
+}
+
+#[test]
+fn graph_continues_vision_batches_before_publishing_one_complete_chunk() {
+    let dir = blank_scan("graph_batches", 20);
+    let mut input = json!({"run_id":"r","book_id":"book","chunk":0,"chunk_id":"r:0",
+        "expected_total":1,"sources_json":"[{\"source\":\"scan.pdf\",\"page_count\":20}]",
+        "path":dir,"files":["scan.pdf"],"source":"scan.pdf","format":"pdf","pages":"1-20",
+        "remote_ocr":"force","model_calls":true});
+    let mut continuations = 0;
+    let mut seen = std::collections::BTreeSet::new();
+    for _ in 0..12 {
+        let out = call(&input).unwrap();
+        if let Some(mc) = out.get("model_calls") {
+            let results = mc["requests"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|r| {
+                    let id = r["id"].as_str().unwrap();
+                    assert!(seen.insert(id.to_string()), "paid for the same page twice");
+                    (
+                        id.to_string(),
+                        json!({"text":format!("Transcription for {id}")}),
+                    )
+                })
+                .collect();
+            input["model_results"] = Value::Object(results);
+            input["state"] = mc["state"].clone();
+        } else if out["continuation"].is_object() {
+            assert!(out["document"].is_null());
+            assert!(out["pages"].as_array().unwrap().is_empty());
+            input = out["continuation"].clone();
+            input["run_id"] = json!("r");
+            input["model_calls"] = json!(true);
+            continuations += 1;
+        } else {
+            assert!(continuations > 0);
+            assert_eq!(out["document"]["complete"], true, "{out}");
+            assert_eq!(out["document"]["book_id"], "book");
+            assert_eq!(seen.len(), 20);
+            let pages = out["pages"].as_array().unwrap();
+            assert_eq!(pages.len(), 20);
+            for (i, p) in pages.iter().enumerate() {
+                assert_eq!(p["page"], i + 1);
+                assert!(
+                    p["markdown"]
+                        .as_str()
+                        .unwrap()
+                        .contains(&format!("Transcription for f0p{}", i + 1))
+                );
+            }
+            return;
+        }
+    }
+    panic!("graph never completed");
+}
+
+#[test]
+fn empty_or_refused_vision_answers_use_bundled_text() {
+    for answer in ["", "<p> </p>", "I cannot transcribe this image."] {
+        let (md, warnings, _) = drive(&force(&fixtures(), "scan.pdf"), |_| json!({"text":answer}));
+        assert!(md.to_lowercase().contains("quick brown fox"), "{md}");
+        assert!(
+            warnings.iter().any(|w| w.contains("empty or refused")),
+            "{warnings:?}"
+        );
+    }
 }

@@ -1,10 +1,16 @@
 type ShelfChunkAnalysis {
   run_id: String @index
-  chunk: Int
-  expected_total: Int
+  chunk: String
+  expected_total: String
   source: String
-  complete: Boolean
-  page_count: Int
+  page_count: String
   analysis: String
   error: String
+  chunk_id: String @index(unique: true) @immutable
+  sources_json: String
+  book_id: String
+  format: String
+  extraction_state: String
+  access: String
+  license: String
 }

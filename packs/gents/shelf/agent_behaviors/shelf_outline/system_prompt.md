@@ -11,9 +11,9 @@ not a chapter opening; confirm the first page where the chapter's body begins.
 Preserve front matter, body and back matter. Check gaps between sequential chapter
 numbers and investigate unexpected long spans. Notes/index mentions are not starts.
 
-Write sources_json as an ordered JSON array of {"source":"file.pdf","page_count":N}.
-Order comes from ShelfJob.files, or its single source. Derive each page_count from
-the planned page ranges and verify coverage in ShelfPage. Write entries_json as an
+The host supplies sources_json from the native source manifest. Do not supply or
+recalculate it in a write. Use that source order and page bounds when writing
+entries_json as an
 ordered JSON array of leaf section starts:
 {"title":"...","source":"file.pdf","page":N,"level":1,"matter_type":"body",
  "content_type":"chapter","review_notes":"evidence or uncertainty"}.

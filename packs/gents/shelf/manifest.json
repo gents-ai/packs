@@ -55,7 +55,10 @@
     "schemas/shelf_edition_failure.graphql",
     "schemas/shelf_library_passage.graphql",
     "schemas/shelf_library_edition.graphql",
-    "schemas/shelf_finalize_job.graphql"
+    "schemas/shelf_finalize_job.graphql",
+    "schemas/shelf_read_request.graphql",
+    "schemas/shelf_outline_job.graphql",
+    "schemas/shelf_index_job.graphql"
   ],
   "plugins": [
     {
@@ -97,6 +100,9 @@
             "type": "string"
           },
           "edition_id": {
+            "type": "string"
+          },
+          "structured_file": {
             "type": "string"
           }
         },
@@ -278,6 +284,10 @@
     "schemas/shelf_finalize_job.graphql",
     "tests/finalize.json",
     "plugins/shelf_prepare/tests/fixtures/finalize/plan.json",
-    "plugins/shelf_prepare/tests/fixtures/finalize/plan_c0000.json"
+    "plugins/shelf_prepare/tests/fixtures/finalize/plan_c0000.json",
+    "schemas/shelf_read_request.graphql",
+    "schemas/shelf_outline_job.graphql",
+    "schemas/shelf_index_job.graphql",
+    "tests/analysis_ready.json"
   ]
 }

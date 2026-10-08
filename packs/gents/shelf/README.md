@@ -39,6 +39,12 @@ From the packs checkout, an isolated run and validated JSON export can be starte
 python3 scripts/shelf-book.py run /path/to/book.pdf --endpoint http://host:8000/v1 --directory runs/shelf/book
 ```
 
+Add `--epub` to continue through editorial review, EPUB export and indexing; the
+launcher prints the EPUB path after its index receipt arrives. Use `--book-id`
+to retain a work identity across separate runs. Catalog rights default to
+`local_only` / `unknown`; supply `--access` and `--license` when known. An open
+work requires an explicit license.
+
 Use `--structure-endpoint` for a second model server. For a multi-part book, pass
 its files in reading order. The script retains its isolated home and checks that
 every extracted page occurs exactly once in the exported chapter ranges.
@@ -95,7 +101,7 @@ leave a review outstanding; no incomplete edition is published. Editions above
 limit. This path currently handles page-based structured input, not direct EPUB,
 HTML or TEI intake.
 
-Each prepared edition triggers native indexing into ShelfLibraryEdition and
+Each successfully exported EPUB triggers native indexing into ShelfLibraryEdition and
 ShelfLibraryPassage. DefraDB maintains a BM25 full-text index over the final
 reviewed passage text. No embedding service or model call is needed for indexing.
 Select the `shelf-research` behavior to search and open cited passages using
@@ -162,8 +168,11 @@ python3 scripts/shelf-book.py open-passage --home /path/to/home --book-id BOOK -
 ```
 
 Search defaults to open-access material, excludes zero scores, and selects the
-newest indexed edition per book by its UTC `modified` timestamp (edition ID breaks
-ties). Use `--edition-id` for historical research. License/access come from the
+latest reviewed edition per book, or the latest source-text edition when no
+reviewed edition exists. Editions of the same status are ordered by UTC
+`modified`. Ambiguous books are omitted with a warning from library-wide search;
+a book-specific search requires an explicit `--edition-id` to resolve the tie.
+Use `--edition-id` for historical research. License/access come from the
 structured source's `license` and `access`; absent values remain `unknown` and
 `local_only`. These labels are catalog filters, not database authorization rules.
 Use DefraDB authorization for readers who must not access restricted documents.
@@ -191,3 +200,22 @@ then run `scripts/shelf-book.py export --home /path/to/home --run-id RUN
 --output /path/to/book.json --mcp-endpoint http://127.0.0.1:PORT/mcp`.
 The artifact retains OCR markdown, page provenance and review notes; it does not
 claim corrected prose or restored layout.
+
+The reviewed scan workflow currently requires PDFs. Its native plan supplies
+source order, page counts, work identity, chunk identity and fan-in size. Agents
+write analysis and section proposals; host-filled fields preserve that manifest
+through verification. Incomplete or non-PDF extractions cannot pass the native
+outline barrier. Use source-text intake for other formats.
+
+OCR chunk reads resume through durable `ShelfReadRequest` documents when the
+vision batch or time budget is exhausted. Only the completed chunk publishes
+its pages and extraction receipt. Excessively large or non-progressing reads
+fail explicitly. Accepted polish checkpoints are immutable: duplicate proposals
+replay the accepted receipt and cannot consume repair attempts or replace text.
+
+Use `run --book-id WORK` or `book_id` on a batch item to share a work identity
+with direct source intake. Normalization records source modification time; an
+operator can supply `modified` in the catalog to order revised transcriptions.
+Metadata or text corrections produce a new source edition. Generated citation
+prefixes and separators are recorded on each source span so exact passage text
+can be reconstructed from source units.

@@ -10,16 +10,14 @@
       }
     },
     "seed": {
-      "collection": "ShelfPreparedBook",
+      "collection": "ShelfIndexJob",
       "fields": {
         "run_id": "search-fixture",
         "book_id": "search-book",
         "edition_id": "search-fixture",
         "path": "${REPOSITORY}",
         "structured_file": "book.json",
-        "manuscript": "manuscript-${ATTEMPT}.json",
-        "passage_count": 1,
-        "edit_count": 0
+        "read_id": "index-${ATTEMPT}"
       }
     },
     "expect": [

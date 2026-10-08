@@ -14,6 +14,49 @@ spec.loader.exec_module(normal)
 
 
 class RawFormats(unittest.TestCase):
+    def test_document_metadata_is_excluded_and_nested_tei_text_is_not_duplicated(self):
+        html = '<html><head><title>Metadata title</title></head><body><nav>Menu</nav><h1>Real <em>Chapter</em></h1><p>Body text.</p></body></html>'
+        rows = list(normal.html_units(html, "c.xhtml", 1))
+        text = "".join(r[2] for r in rows)
+        self.assertNotIn("Metadata title", text)
+        self.assertNotIn("Menu", text)
+        self.assertEqual(rows[0][1]["title"], "Real Chapter")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/"source.xml"
+            path.write_text('<TEI><teiHeader><p>License metadata</p></teiHeader><text><div n="2"><p n="3">Body <note><p>Inline note</p></note> end.</p></div></text></TEI>')
+            rows = list(normal.xml_units(path))
+            self.assertEqual(len(rows), 1)
+            self.assertNotIn("License metadata", rows[0][2])
+            self.assertEqual(rows[0][2].count("Inline note"), 1)
+            self.assertEqual(rows[0][1]["division_path"], ["2"])
+
+    def test_epub_decodes_hrefs_and_rejects_missing_spine_items(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/"book.epub"
+            with zipfile.ZipFile(path,"w") as archive:
+                archive.writestr("META-INF/container.xml", '<container><rootfile full-path="book.opf"/></container>')
+                archive.writestr("book.opf", '<package><manifest><item id="a" href="chapter%20one#start" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="a"/></spine></package>')
+                archive.writestr("chapter one", '<h1 id="start">Trade</h1><p>Ships.</p>')
+            self.assertEqual(list(normal.epub_units(path))[0][1]["href"], "chapter one")
+            missing=Path(directory)/"missing.epub"
+            with zipfile.ZipFile(missing,"w") as archive:
+                archive.writestr("META-INF/container.xml", '<container><rootfile full-path="book.opf"/></container>')
+                archive.writestr("book.opf", '<package><spine><itemref idref="absent"/></spine></package>')
+            with self.assertRaisesRegex(ValueError,"missing item"):
+                list(normal.epub_units(missing))
+
+    def test_tei_p4_divisions_keep_verse_speech_tables_and_loose_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/"verse.xml"
+            path.write_text('<TEI><text><div1 n="3">Opening <hi>aside</hi> tail<lg><l>First verse</l><l>Second verse</l></lg><sp><speaker>Captain</speaker><p>We sail.</p></sp><list><item>Grain</item></list><table><row><cell>Ships</cell><cell>12</cell></row></table><trailer>End</trailer></div1></text></TEI>')
+            rows=list(normal.xml_units(path))
+            text="\n".join(r[2] for r in rows)
+            for word in ['Opening','aside','tail','First verse','Second verse','Captain','We sail.','Grain','Ships','12','End']:
+                self.assertEqual(text.count(word),1,word)
+            verses=[r for r in rows if r[1]['element']=='lg']
+            self.assertEqual(len(verses),1)
+            self.assertEqual(verses[0][1]['division_path'],['3'])
+
     def test_epub_spine_order_href_and_anchor(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "book.epub"

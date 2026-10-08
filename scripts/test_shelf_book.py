@@ -16,7 +16,7 @@ spec.loader.exec_module(shelf)
 
 class BatchSubmission(unittest.TestCase):
     def test_search_catalog_retries_truncated_pages_without_losing_editions(self):
-        rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01",
+        rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01T00:00:00Z", status="source_text",
                      access="open", language="en") for i in range(205)]
         offsets = []
         def call(*args):
@@ -33,6 +33,20 @@ class BatchSubmission(unittest.TestCase):
         with patch.object(shelf, "call", call):
             shelf.search_library(args)
         self.assertEqual(offsets, [(0, 100), (0, 50), (50, 50), (100, 50), (150, 50), (200, 50)])
+
+    def test_ambiguous_book_does_not_disable_other_books_and_reviewed_wins(self):
+        args=SimpleNamespace(home="unused",text="grain",limit=5,book_id=None,edition_id=None,language=None,access="all")
+        rows=[]
+        for book,edition,status,stamp in [('ambiguous','a','source_text','2026-01-01T00:00:00Z'),('ambiguous','b','source_text','2026-01-01T00:00:00Z'),('usable','raw-a','source_text','2026-01-01T00:00:00Z'),('usable','raw-b','source_text','2026-01-01T00:00:00Z'),('usable','reviewed','reviewed','2025-01-01T00:00:00Z')]:
+            rows.append(dict(book_id=book,edition_id=edition,status=status,modified=stamp,access="open",language="en"))
+        def call(*argv):
+            if argv[1]=='find':return {"results":rows}
+            self.assertEqual(json.loads(argv[argv.index('--filter')+1])['edition_id']['_in'],['reviewed'])
+            return {"results":[{"book_id":"usable"}]}
+        with patch.object(shelf,'call',call):
+            result=shelf.search_library(args)
+            self.assertEqual(result['results'][0]['book_id'],'usable')
+            self.assertEqual(result['warnings'][0]['book_id'],'ambiguous')
 
     def test_resume_after_partial_submission_and_refuse_conflicting_identity(self):
         with tempfile.TemporaryDirectory() as directory:

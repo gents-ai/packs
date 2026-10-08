@@ -13,7 +13,8 @@
     "schemas/ocr_page.graphql",
     "tests/graph_file.json",
     "tests/graph_folder.json",
-    "tests/install.json"
+    "tests/install.json",
+    "schemas/ocr_read_request.graphql"
   ],
   "authors": [
     "gents contributors"
@@ -167,7 +168,8 @@
     "schemas/ocr_chunk.graphql",
     "schemas/ocr_document.graphql",
     "schemas/ocr_page.graphql",
-    "schemas/ocr_figure.graphql"
+    "schemas/ocr_figure.graphql",
+    "schemas/ocr_read_request.graphql"
   ],
   "tags": [
     "ocr",

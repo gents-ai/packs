@@ -9,6 +9,12 @@ use std::{
 #[serde(deny_unknown_fields)]
 struct Proposal {
     run_id: String,
+    #[serde(default)]
+    book_id: String,
+    #[serde(default)]
+    access: String,
+    #[serde(default)]
+    license: String,
     title: String,
     author: String,
     language: String,
@@ -45,10 +51,17 @@ fn main() {
         if raw.len() > 4_000_000 {
             return Err("proposal exceeds 4 MB; reduce outline notes".into());
         }
-        let input: Value =
+        let mut input: Value =
             serde_json::from_str(&raw).map_err(|e| format!("invalid proposal: {e}"))?;
+        if let Some(fields) = input.as_object_mut() {
+            fields.retain(|_, v| !v.is_null());
+        }
         if input.is_array() {
-            finish_signal(input)
+            if input[0].get("chunk_ref").is_some() {
+                finish_signal(input)
+            } else {
+                analysis_ready(input)
+            }
         } else {
             assemble(serde_json::from_value(input).map_err(|e| format!("invalid proposal: {e}"))?)
         }
@@ -97,9 +110,81 @@ fn finish_signal(input: Value) -> Result<Value, String> {
     Ok(Value::Object(result))
 }
 
+fn canonical_count(value: &Value) -> Option<u64> {
+    value.as_u64().or_else(|| {
+        let text = value.as_str()?;
+        if text.is_empty()
+            || !text.bytes().all(|c| c.is_ascii_digit())
+            || (text.len() > 1 && text.starts_with('0'))
+        {
+            return None;
+        }
+        text.parse().ok()
+    })
+}
+
+fn analysis_ready(input: Value) -> Result<Value, String> {
+    let rows = input.as_array().ok_or("expected analysis receipts")?;
+    let first = rows.first().ok_or("empty analysis group")?;
+    let expected = canonical_count(&first["expected_total"]).ok_or("missing planned count")?;
+    if expected == 0 || rows.len() as u64 != expected {
+        return Err("analysis group is incomplete".into());
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for row in rows {
+        for key in [
+            "run_id",
+            "book_id",
+            "sources_json",
+            "expected_total",
+            "access",
+            "license",
+        ] {
+            if row[key] != first[key] || row[key].is_null() {
+                return Err(format!("analysis group mixes {key}"));
+            }
+        }
+        let chunk = canonical_count(&row["chunk"]).ok_or("missing chunk")?;
+        if chunk >= expected || !seen.insert(chunk) {
+            return Err("analysis group has duplicate or unplanned chunks".into());
+        }
+        if row["extraction_state"] != "complete"
+            || row["error"].as_str().is_some_and(|e| !e.is_empty())
+        {
+            return Err(format!(
+                "chunk {chunk} extraction failed; inspect ShelfExtract before retrying"
+            ));
+        }
+        if row["format"] != "pdf" {
+            return Err("the reviewed scan workflow requires PDFs; normalize other formats through source-text intake".into());
+        }
+    }
+    let sources: Vec<Source> = serde_json::from_str(
+        first["sources_json"]
+            .as_str()
+            .ok_or("missing source manifest")?,
+    )
+    .map_err(|e| e.to_string())?;
+    if sources.is_empty() || sources.iter().any(|s| s.page_count == 0) {
+        return Err("invalid native source manifest".into());
+    }
+    Ok(
+        json!({"run_id":first["run_id"],"book_id":first["book_id"],"sources_json":first["sources_json"],"expected_total":expected,"access":first["access"],"license":first["license"]}),
+    )
+}
+
 /// Sources retain operator order. A leaf owns the half-open interval up to the
 /// next leaf; container headings sharing a start must be resolved before this boundary.
-fn assemble(p: Proposal) -> Result<Value, String> {
+fn assemble(mut p: Proposal) -> Result<Value, String> {
+    if p.access.is_empty() {
+        p.access = "local_only".into();
+    }
+    if p.license.is_empty() {
+        p.license = "unknown".into();
+    }
+    if p.book_id.is_empty() {
+        p.book_id = p.run_id.clone();
+    }
     for (name, value) in [
         ("run_id", &p.run_id),
         ("title", &p.title),
@@ -189,7 +274,7 @@ fn assemble(p: Proposal) -> Result<Value, String> {
             }
         }
         covered += end - start + 1;
-        chapters.push(json!({"book_id":p.run_id,"chapter_key":format!("{}:{:05}",p.run_id,i+1),"sequence":i+1,
+        chapters.push(json!({"book_id":p.book_id,"chapter_key":format!("{}:{:05}",p.run_id,i+1),"sequence":i+1,
             "title":e.title,"level":e.level,"matter_type":e.matter_type,"content_type":e.content_type,
             "start_page":start,"end_page":end,"source_ranges_json":serde_json::to_string(&ranges).unwrap(),"review_notes":e.review_notes}));
     }
@@ -197,15 +282,35 @@ fn assemble(p: Proposal) -> Result<Value, String> {
         return Err("chapter ranges do not cover the source pages".into());
     }
     Ok(
-        json!({"book":{"book_id":p.run_id,"title":p.title,"author":p.author,"language":p.language,
+        json!({"book":{"access":p.access,"license":p.license,"book_id":p.book_id,"title":p.title,"author":p.author,"language":p.language,
         "source_manifest":serde_json::to_string(&sources).unwrap(),"page_count":total,"chapter_count":chapters.len(),"review_notes":p.review_notes},
-        "report":{"book_id":p.run_id,"page_count":total,"chapter_count":chapters.len(),"covered_pages":covered,"review_notes":p.review_notes},"chapters":chapters}),
+        "report":{"book_id":p.book_id,"page_count":total,"chapter_count":chapters.len(),"covered_pages":covered,"review_notes":p.review_notes},"chapters":chapters}),
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn analysis_barrier_rejects_missing_duplicate_failed_and_mixed_source_chunks() {
+        let one = json!({"run_id":"r","book_id":"b","sources_json":"[{\"source\":\"scan.pdf\",\"page_count\":40}]","expected_total":2,"chunk":0,"access":"local_only","license":"unknown","extraction_state":"complete","format":"pdf"});
+        let mut two = one.clone();
+        two["chunk"] = json!(1);
+        let good = json!([one, two]);
+        assert_eq!(analysis_ready(good.clone()).unwrap()["book_id"], "b");
+        assert!(analysis_ready(json!([good[0]])).is_err());
+        assert!(analysis_ready(json!([good[0], good[0]])).is_err());
+        for (key, value) in [
+            ("sources_json", json!("[]")),
+            ("extraction_state", json!("failed")),
+            ("format", json!("epub")),
+            ("chunk", json!(2)),
+        ] {
+            let mut bad = good.clone();
+            bad[1][key] = value;
+            assert!(analysis_ready(bad).is_err(), "{key}");
+        }
+    }
     #[test]
     fn grouped_reviews_require_distinct_members_and_one_book_path() {
         let first = json!({"run_id":"edition","book_id":"book","path":"/exports/book",
@@ -223,7 +328,7 @@ mod tests {
         assert!(finish_signal(json!([first, second])).is_err());
     }
     fn proposal() -> Proposal {
-        Proposal {run_id:"book".into(),title:"Title".into(),author:"Author".into(),language:"en".into(),
+        Proposal { access: String::new(), license: String::new(), book_id: String::new(),run_id:"book".into(),title:"Title".into(),author:"Author".into(),language:"en".into(),
         sources_json:r#"[{"source":"part-1.pdf","page_count":4},{"source":"part-2.pdf","page_count":6}]"#.into(),
         entries_json:r#"[{"title":"One","source":"part-1.pdf","page":3,"level":1,"matter_type":"body","content_type":"chapter"},{"title":"Two","source":"part-2.pdf","page":3,"level":1,"matter_type":"body","content_type":"chapter"}]"#.into(),review_notes:String::new()}
     }

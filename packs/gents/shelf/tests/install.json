@@ -67,7 +67,12 @@
       "DatastoreToolSurface/shelf-research-reads",
       "Callback/shelf-ready-edition",
       "CallbackBinding/shelf-ready-edition",
-      "EventSource/shelf-ready-edition"
+      "EventSource/shelf-ready-edition",
+      "EventSource/shelf-continue",
+      "CallbackBinding/shelf-continue",
+      "EventSource/shelf-analysis-ready",
+      "CallbackBinding/shelf-analysis-ready",
+      "Callback/shelf-analysis-ready"
     ],
     "plugins": [
       "shelf_export",

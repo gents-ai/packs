@@ -42,23 +42,26 @@ def submit_batch(args):
         raise RuntimeError("batch manifest must be a nonempty array of {run_id, sources} objects")
     jobs = {}
     for item in items:
-        if (not isinstance(item, dict) or set(item) != {"run_id", "sources"}
+        if (not isinstance(item, dict) or not {"run_id", "sources"} <= set(item) or set(item) - {"run_id", "sources", "book_id", "access", "license"}
                 or not isinstance(item["run_id"], str) or not item["run_id"].strip()
+                or ("book_id" in item and (not isinstance(item["book_id"], str) or not item["book_id"].strip()))
                 or not isinstance(item["sources"], list)
                 or not all(isinstance(p, str) and p for p in item["sources"])):
-            raise RuntimeError("each batch item must contain only a nonempty run_id and a sources array")
+            raise RuntimeError("each batch item needs a nonempty run_id, sources array and optional nonempty book_id")
         run_id = item["run_id"]
         if run_id in jobs:
             raise RuntimeError(f"duplicate batch run_id: {run_id}")
         jobs[run_id] = dict(run_id=run_id, **source_fields(item["sources"], manifest.parent))
+        for key in ["book_id","access","license"]:
+            if item.get(key): jobs[run_id][key] = item[key]
         jobs[run_id]["remote_ocr"] = getattr(args, "remote_ocr", "off")
     pending = []
     # Inspect the whole batch before submitting, so a conflicting ID cannot partially enqueue it.
     for run_id, fields in jobs.items():
-        existing = query(args.home, "ShelfJob", run_id, ["path", "files", "ocr", "remote_ocr", "figure_images"])
+        existing = query(args.home, "ShelfJob", run_id, ["path", "files", "ocr", "remote_ocr", "figure_images", "book_id", "access", "license"])
         expected = {k: v for k, v in fields.items() if k != "run_id"}
         if existing:
-            actual = {k: v for k, v in existing[0].items() if not (k == "files" and not v)}
+            actual = {k: v for k, v in existing[0].items() if not (k in {"files", "book_id", "access", "license"} and not v)}
             if len(existing) != 1 or actual != expected:
                 raise RuntimeError(f"run_id {run_id} already belongs to a different job; use a new ID")
         else:
@@ -95,7 +98,7 @@ def search_library(args):
     while True:
         result = call("query", "find", "--home", args.home, "--collection", "ShelfLibraryEdition",
                       "--filter", json.dumps(catalog_filter), "--field", "book_id", "--field", "edition_id",
-                      "--field", "modified", "--field", "language", "--field", "access", "--limit", page_size, "--offset", offset)
+                      "--field", "modified", "--field", "status", "--field", "language", "--field", "access", "--limit", page_size, "--offset", offset)
         if result.get("truncated"):
             if page_size == 1:
                 raise RuntimeError("one edition exceeds the catalog output limit; narrow the book filter")
@@ -105,26 +108,43 @@ def search_library(args):
         if len(result["results"]) < page_size:
             break
         offset += page_size
+    warnings = []
     if args.edition_id:
         candidates = [e for e in editions if e["edition_id"] == args.edition_id]
     else:
         latest = {}
+        def rank(edition):
+            stamp = edition["modified"]
+            try:
+                parsed = datetime.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ")
+            except (ValueError, TypeError) as error:
+                raise RuntimeError("invalid edition timestamp; select an explicit edition") from error
+            return (edition["status"] == "reviewed", parsed)
+        grouped = {}
         for edition in editions:
-            previous = latest.get(edition["book_id"])
-            if previous is None or (edition["modified"], edition["edition_id"]) > (previous["modified"], previous["edition_id"]):
-                latest[edition["book_id"]] = edition
+            grouped.setdefault(edition["book_id"], []).append(edition)
+        for book, choices in grouped.items():
+            best = max(map(rank, choices))
+            winners = [edition for edition in choices if rank(edition) == best]
+            if len({edition["edition_id"] for edition in winners}) != 1:
+                if args.book_id:
+                    raise RuntimeError(f"ambiguous current edition for {book}; select --edition-id or supply distinct revision timestamps")
+                warnings.append({"book_id":book,"reason":"ambiguous current edition; select --edition-id","edition_ids":[e["edition_id"] for e in winners]})
+                continue
+            latest[book] = winners[0]
         candidates = list(latest.values())
     selected = [e["edition_id"] for e in candidates
                 if (args.access == "all" or e["access"] == args.access)
                 and (not args.language or e["language"] == args.language)]
     if not selected:
-        return {"ranking": "bm25", "results": [], "returned_count": 0}
+        return {"ranking": "bm25", "results": [], "returned_count": 0, "warnings": warnings}
     conditions.update(edition_id={"_in": selected}, _alias={"_score": {"_gt": 0}})
     command = ["query", "search", "--home", args.home, "--collection", "ShelfLibraryPassage",
                "--text", args.text, "--search-field", "text", "--filter", json.dumps(conditions), "--limit", args.limit]
     for name in SEARCH_FIELDS:
         command += ["--field", name]
     result = call(*command)
+    if warnings: result["warnings"] = warnings
     if result.get("truncated"):
         result["next"] = "Narrow the query; open-passage retrieves exact full text after selecting a citation."
     return result
@@ -220,16 +240,16 @@ def query(home, collection, run_id, fields, limit=1000, offset=0, reader=None):
 
 def export(home, run_id, output, mcp_endpoint=None):
     read = functools.partial(query, reader=FieldReader(mcp_endpoint) if mcp_endpoint else None)
-    books = read(home, "ShelfBook", run_id, ["book_id", "title", "author", "language", "source_manifest", "page_count", "chapter_count", "review_notes"])
+    books = read(home, "ShelfBook", run_id, ["book_id", "title", "author", "language", "access", "license", "source_manifest", "page_count", "chapter_count", "review_notes"])
     if len(books) != 1:
         raise RuntimeError(f"expected one assembled book for {run_id}, found {len(books)}")
     book = books[0]
     chunks = read(home, "ShelfChunk", run_id, ["chunk", "source", "pages"])
     extracts = read(home, "ShelfExtract", run_id, ["chunk", "source", "complete", "error", "cursor", "warnings"])
-    chunk_keys = {(row["chunk"], row["source"]) for row in chunks}
+    chunk_ids = {(row["chunk"], row["source"]) for row in chunks}
     extraction_keys = {(row["chunk"], row["source"]) for row in extracts}
-    if (not chunks or len(chunk_keys) != len(chunks) or len(extraction_keys) != len(extracts)
-            or chunk_keys != extraction_keys
+    if (not chunks or len(chunk_ids) != len(chunks) or len(extraction_keys) != len(extracts)
+            or chunk_ids != extraction_keys
             or any(not row["complete"] or row.get("error") or row.get("cursor") for row in extracts)):
         raise RuntimeError("source extraction is incomplete or inconsistent; inspect ShelfExtract")
     reports = read(home, "ShelfStructureReport", run_id, ["covered_pages", "page_count", "chapter_count"])
@@ -324,6 +344,10 @@ def run(args):
             install += ["--inference-slot", slot]
         call(*install)
     call("plugin", "dirs", "add", inputs[0].parent, "--home", home, json_output=False)
+    edition_dir = directory / "edition" if args.epub else directory
+    if args.epub:
+        edition_dir.mkdir()
+        call("plugin", "dirs", "add", edition_dir, "--home", home, json_output=False)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
@@ -344,14 +368,38 @@ def run(args):
                 time.sleep(1)
             fields = dict(run_id=run_id, **source_fields(inputs))
             fields["remote_ocr"] = args.remote_ocr
+            fields["access"] = args.access
+            fields["license"] = args.license
+            if args.book_id:
+                fields["book_id"] = args.book_id
             call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(fields))
             print(f"Shelf run {run_id}; persisted state: {home}", flush=True)
+            edition_id = None
             while time.monotonic() < deadline:
                 if server.poll() is not None:
                     raise RuntimeError("runtime exited; inspect server.log")
-                if query(home, "ShelfStructureReport", run_id, ["book_id"]):
-                    export(home, run_id, directory / "structured-book.json", f"http://127.0.0.1:{port}/mcp")
-                    return
+                failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
+                if failed:
+                    raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
+                if edition_id is None and query(home, "ShelfStructureReport", run_id, ["book_id"]):
+                    structured = edition_dir / "structured-book.json"
+                    export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
+                    if not args.epub:
+                        return
+                    book = json.loads(structured.read_text())
+                    edition_id = run_id + "-readable"
+                    call("document", "create", "ShelfPrepareJob", "--home", home, "--json", json.dumps({
+                        "run_id":edition_id,"book_id":book["book_id"],"path":str(edition_dir),
+                        "structured":structured.name,"output":"book.epub",
+                        "modified":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
+                    print(f"Reviewing edition {edition_id}", flush=True)
+                if edition_id:
+                    failures = query(home, "ShelfEditionFailure", edition_id, ["chunk_ref", "error"])
+                    if failures:
+                        raise RuntimeError(f"edition needs review; persisted failures: {failures}")
+                    if query(home, "ShelfLibraryEdition", edition_id, ["edition_id"]):
+                        print(json.dumps({"edition_id":edition_id,"epub":str(edition_dir/"book.epub")}),flush=True)
+                        return
                 time.sleep(10)
             raise RuntimeError("timed out; persisted state is retained in the run home")
         finally:
@@ -390,6 +438,10 @@ def main():
     open_parser.add_argument("--home", type=Path, required=True)
     open_parser.add_argument("--mcp-endpoint")
     run_parser = sub.add_parser("run")
+    run_parser.add_argument("--access", choices=["open","local_only","restricted"], default="local_only")
+    run_parser.add_argument("--license", default="unknown")
+    run_parser.add_argument("--epub", action="store_true", help="Continue through text review, EPUB export and native indexing")
+    run_parser.add_argument("--book-id", help="Stable work ID shared with source-text intake; defaults to the run ID")
     run_parser.add_argument("sources", type=Path, nargs="+")
     run_parser.add_argument("--endpoint", required=True, help="OpenAI-compatible /v1 endpoint exposing one model")
     run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for outline and verification")

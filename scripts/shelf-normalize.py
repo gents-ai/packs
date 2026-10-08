@@ -8,6 +8,7 @@ catalog/units pair accepted by shelf-intake.py. This command makes no model call
 """
 
 import argparse
+import datetime
 from collections import Counter
 import hashlib
 from html.parser import HTMLParser
@@ -17,6 +18,7 @@ import posixpath
 import re
 import subprocess
 import zipfile
+from urllib.parse import unquote, urlsplit
 from xml.etree import ElementTree as ET
 
 PAGE = re.compile(r"(?m)^=====PAGE\s+([^\n]+)\n?")
@@ -114,6 +116,8 @@ class TextHTML(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts, self.anchors, self.length, self.skip = [], [], 0, 0
+        self.headings = []
+        self.heading = None
 
     def add(self, value):
         self.parts.append(value)
@@ -125,20 +129,25 @@ class TextHTML(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if tag in {"script", "style"}:
+        if tag in {"script", "style", "head", "nav"}:
             self.skip += 1
             return
         if self.skip:
             return
         if tag in BLOCKS:
             self.newline()
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.heading = [self.length, int(tag[1]), []]
         if attrs.get("id"):
             self.anchors.append({"id": attrs["id"], "char_offset": self.length})
         if tag == "img" and attrs.get("alt"):
             self.add(f"[image: {attrs['alt']}]")
 
     def handle_endtag(self, tag):
-        if tag in {"script", "style"}:
+        if self.heading and tag == f"h{self.heading[1]}":
+            self.headings.append({"char_offset":self.heading[0], "level":self.heading[1], "title":"".join(self.heading[2]).strip()})
+            self.heading = None
+        if tag in {"script", "style", "head", "nav"}:
             self.skip = max(0, self.skip - 1)
         elif not self.skip and tag in BLOCKS:
             self.newline()
@@ -146,6 +155,8 @@ class TextHTML(HTMLParser):
     def handle_data(self, value):
         if not self.skip:
             self.add(value)
+            if self.heading is not None:
+                self.heading[2].append(value)
 
 
 def html_units(path, href=None, spine_index=None):
@@ -161,6 +172,11 @@ def html_units(path, href=None, spine_index=None):
         else:
             kind, locator = "epub_spine", {"spine_index": spine_index, "href": href,
                                             "char_start": start, "char_end": end}
+        headings = [dict(h, char_offset=h["char_offset"]-start) for h in parser.headings if start <= h["char_offset"] < end]
+        if headings:
+            locator["headings"] = headings
+        if parser.headings:
+            locator["title"] = parser.headings[0]["title"]
         yield kind, locator, part, start, end, anchors
 
 
@@ -172,13 +188,21 @@ def epub_units(path):
         opf_path = next(node.attrib["full-path"] for node in container.iter()
                         if node.tag.endswith("rootfile"))
         opf = ET.fromstring(archive.read(opf_path))
-        items = {node.attrib["id"]: node.attrib["href"] for node in opf.iter()
+        items = {node.attrib["id"]: (node.attrib["href"], node.attrib.get("media-type", "")) for node in opf.iter()
                  if node.tag.endswith("item") and "id" in node.attrib}
         spine = [node.attrib["idref"] for node in opf.iter() if node.tag.endswith("itemref")]
         for number, item_id in enumerate(spine, 1):
-            entry = posixpath.normpath(posixpath.join(posixpath.dirname(opf_path), items[item_id]))
-            if not entry.lower().endswith((".html", ".htm", ".xhtml")):
-                continue
+            if item_id not in items:
+                raise ValueError(f"EPUB spine references missing item: {item_id}")
+            href, media = items[item_id]
+            parsed = urlsplit(href)
+            if parsed.scheme or parsed.netloc:
+                raise ValueError(f"EPUB spine is not a local resource: {href}")
+            entry = posixpath.normpath(posixpath.join(posixpath.dirname(opf_path), unquote(parsed.path)))
+            if media and media not in {"application/xhtml+xml", "text/html"}:
+                raise ValueError(f"unsupported EPUB spine media type: {media}")
+            if not media and not entry.lower().endswith((".html", ".htm", ".xhtml")):
+                raise ValueError(f"EPUB spine has no supported content type: {entry}")
             if entry.startswith("../") or entry.startswith("/"):
                 raise ValueError(f"EPUB spine escapes archive: {entry}")
             yield from html_units(archive.read(entry).decode("utf-8", errors="replace"),
@@ -188,20 +212,40 @@ def epub_units(path):
 def xml_units(path):
     root = ET.parse(path).getroot()
     number = 0
-    for element in root.iter():
-        tag = element.tag.rsplit("}", 1)[-1].lower()
-        if tag not in {"p", "l", "ab", "head"}:
-            continue
-        text = "".join(element.itertext())
+    blocks = {"p", "l", "ab", "head", "item", "speaker", "stage", "note", "quote", "cit", "cell", "row", "trailer", "byline", "lg", "sp"}
+
+    def emit(element, text, context, segment="element"):
+        nonlocal number
         if not text.strip():
-            continue
+            return
         number += 1
+        tag = element.tag.rsplit("}", 1)[-1].lower()
         for start, end, part in spans(text):
             yield "xml_element", {"element": tag, "n": element.attrib.get("n", ""),
-                                  "xml_id": element.attrib.get("{http://www.w3.org/XML/1998/namespace}id", ""),
-                                  "ordinal": number, "start": start, "end": end}, part, start, end, []
+                "division_path": context, "segment": segment,
+                "xml_id": element.attrib.get("{http://www.w3.org/XML/1998/namespace}id", ""),
+                "ordinal": number, "start": start, "end": end}, part, start, end, []
+
+    def walk(element, parents):
+        tag = element.tag.rsplit("}", 1)[-1].lower()
+        if tag == "teiheader":
+            return
+        context = parents + ([element.attrib["n"]] if re.fullmatch(r"div[0-9]*", tag) and element.attrib.get("n") else [])
+        if tag in blocks:
+            if tag in {"lg", "sp", "row"}:
+                text = (element.text or "") + "\n".join("".join(child.itertext()) + (child.tail or "") for child in element)
+            else:
+                text = "".join(element.itertext())
+            yield from emit(element, text, context)
+            return
+        yield from emit(element, element.text or "", context, "text")
+        for index, child in enumerate(element):
+            yield from walk(child, context)
+            yield from emit(element, child.tail or "", context, f"tail:{index}")
+
+    yield from walk(root, [])
     if number == 0:
-        yield from marked_text("".join(root.itertext()))
+        raise ValueError("XML has no text outside its metadata header")
 
 
 def directory_units(path, sections_path=None):
@@ -244,7 +288,7 @@ def pdf_units(path, text_path=None):
     if text_path:
         text = text_path.read_text(errors="replace")
     else:
-        result = subprocess.run(["pdftotext", "-layout", str(path), "-"], capture_output=True,
+        result = subprocess.run(["pdftotext", str(path), "-"], capture_output=True,
                                 text=True, errors="replace", check=True)
         text = result.stdout
     if "\f" not in text:
@@ -296,6 +340,11 @@ def normalize(catalog, root, output_catalog, output_units):
                 units = xml_units(path)
             else:
                 units = marked_text((text_path or path).read_text(errors="replace"))
+            if "modified" not in work:
+                candidates = [path] + ([text_path] if text_path else []) + ([sections_path] if sections_path else [])
+                files = [f for candidate in candidates for f in (candidate.rglob("*") if candidate.is_dir() else [candidate]) if f.is_file()]
+                modified = max(f.stat().st_mtime for f in files)
+                work["modified"] = datetime.datetime.fromtimestamp(modified, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             catalog_stream.write(json.dumps(work, ensure_ascii=False) + "\n")
             ordinal = 0
             for ordinal, (kind, locator, text, start, end, anchors) in enumerate(units, 1):
@@ -328,7 +377,7 @@ def main():
     args.output_units.parent.mkdir(parents=True, exist_ok=True)
     try:
         print(json.dumps(normalize(args.catalog, args.root, args.output_catalog, args.output_units)))
-    except (OSError, ValueError, subprocess.CalledProcessError, ET.ParseError) as error:
+    except (OSError, ValueError, KeyError, StopIteration, zipfile.BadZipFile, subprocess.CalledProcessError, ET.ParseError) as error:
         parser.exit(1, f"shelf-normalize: {error}\n")
 
 

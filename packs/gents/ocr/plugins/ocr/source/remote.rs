@@ -436,6 +436,23 @@ pub fn read_page(
     match ctx.remote.take_answer(&id) {
         Some(Answer::Text(text)) => {
             let md = markdown(ctx, acc, unit, &text);
+            if !md.chars().any(char::is_alphanumeric)
+                || [
+                    "i'm sorry",
+                    "i am sorry",
+                    "i cannot transcribe",
+                    "i cannot read this image",
+                    "i can't read this image",
+                ]
+                .iter()
+                .any(|prefix| md.trim().to_lowercase().starts_with(prefix))
+            {
+                acc.warn(fallback_warning(
+                    unit,
+                    "empty or refused vision transcription",
+                ));
+                return Read::Builtin;
+            }
             ctx.remote.note_read(unit);
             return Read::Remote(md);
         }
@@ -495,7 +512,20 @@ impl Resolver for NoImages {
 pub fn markdown(ctx: &mut Ctx, acc: &mut DocAcc, unit: u32, text: &str) -> String {
     let text = unfence(text);
     if !looks_like_html(text) {
-        return text.to_string();
+        return text
+            .lines()
+            .map(|line| {
+                if ["<!-- page ", "<!-- slide ", "<!-- sheet ", "<!-- section "]
+                    .iter()
+                    .any(|p| line.starts_with(p))
+                {
+                    line.replace('<', "&lt;")
+                } else {
+                    line.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
     }
     let mut nodes = crate::html::parse(text);
     describe_images(&mut nodes);

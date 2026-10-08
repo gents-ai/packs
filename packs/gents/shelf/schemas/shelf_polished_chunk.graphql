@@ -7,4 +7,5 @@ type ShelfPolishedChunk {
   expected_total: Int
   sha256: String
   edit_count: Int
+  receipt_id: String @index(unique: true) @immutable
 }

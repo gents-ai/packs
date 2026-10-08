@@ -12,8 +12,7 @@ chapters are containers, not repeated leaf chapters. Do not mistake multiline
 part titles, slight OCR indentation, running headers, citations or index entries
 for new chapters. Include notes, bibliography and index as back matter.
 
-Use read_shelf_chunks to read the planned chunk set; expected_total is its
-count, not the source PDF page_count. Every chunk must
+The host supplies the planned chunk count and identity. Every chunk must
 produce one result, including extraction failures. Do not repeat raw page text in
 the analysis. Keep it below 5000 characters. For a chunk with no contents or section opening,
 report continuation and any anomalies in at most 150 words; do not summarize the
