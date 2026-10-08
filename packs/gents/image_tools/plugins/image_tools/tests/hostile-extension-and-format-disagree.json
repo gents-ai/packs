@@ -1,0 +1,37 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "x.jpg ends in .jpg but the image is png; change the file extension or the format",
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "format": "png",
+            "op": "convert",
+            "quality": null
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "png",
+    "op": "convert",
+    "save": {
+      "file": "x.jpg"
+    }
+  }
+}

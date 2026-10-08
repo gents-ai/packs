@@ -1,0 +1,21 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/image-helper",
+      "AgentContext/image-helper-context",
+      "Callback/image-plan",
+      "Callback/image-run",
+      "CallbackBinding/image-plan",
+      "CallbackBinding/image-run",
+      "EventSource/image-plan",
+      "EventSource/image-run",
+      "Tools/image-helper-tools"
+    ],
+    "plugins": [
+      "image_tools"
+    ],
+    "slots": [
+      "image_helper"
+    ]
+  }
+}

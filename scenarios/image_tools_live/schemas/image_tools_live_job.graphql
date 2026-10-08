@@ -1,0 +1,4 @@
+type ImageToolsLiveJob {
+  job_id: String
+  prompt: String
+}

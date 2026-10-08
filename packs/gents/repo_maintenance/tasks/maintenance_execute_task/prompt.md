@@ -4,8 +4,8 @@ The runtime already provisioned this isolated workspace and bound it as the file
 
 The report declared the ordered work packages. You are the single execution owner.
 
-1. Call `defra_query` for `MaintenanceWorkPackage` in this run. Require exactly the declared unique packages. Parse `sequence` numerically, sort ascending, and require the exact contiguous range 1..N. If the ledger is incomplete, write blocked results and a blocked `MaintenanceExecutionSummary`. Do not edit.
-2. Call `defra_query` for `MaintenanceExecutionResult` in this run before editing. If a complete ledger already exists, close it with the summary instead of duplicating work.
+1. Call `query` for `MaintenanceWorkPackage` in this run. Require exactly the declared unique packages. Parse `sequence` numerically, sort ascending, and require the exact contiguous range 1..N. If the ledger is incomplete, write blocked results and a blocked `MaintenanceExecutionSummary`. Do not edit.
+2. Call `query` for `MaintenanceExecutionResult` in this run before editing. If a complete ledger already exists, close it with the summary instead of duplicating work.
 3. If the only package has `finding_ids` exactly `none`, write its result as `skipped`, create no workspace edits, then write a skipped summary and stop.
 4. Process packages strictly in numeric order. Implement only that package in the bound tree. A package may span code areas, but it must remain a focused, reviewable unit.
 5. Run the package validation and every repository gate proportional to the touched boundary. For Gents, use the full `cargo test -p gents` suite and `cargo check --workspace --all-targets` where required; never substitute `--lib`.

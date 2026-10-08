@@ -1,0 +1,45 @@
+[workspace]
+
+[package]
+name = "image_tools"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.92"
+
+[lib]
+name = "image_tools"
+path = "source/lib.rs"
+
+[[bin]]
+name = "image_tools"
+path = "source/main.rs"
+
+[dependencies]
+base64 = "0.22"
+fast_image_resize = { version = "5", default-features = false }
+font8x8 = { version = "0.3", default-features = false }
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "gif", "bmp", "tiff", "webp"] }
+jpeg-decoder = { version = "0.3", default-features = false }
+rxing = { version = "0.8", default-features = false, features = ["encoding_rs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std"] }
+qrcode = { version = "0.14", default-features = false }
+jpeg-encoder = { version = "0.6", default-features = false, features = ["std"] }
+
+[[example]]
+name = "gen_fixtures"
+path = "tools/gen_fixtures.rs"
+
+[profile.dev]
+opt-level = 2
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

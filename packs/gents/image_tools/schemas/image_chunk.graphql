@@ -1,0 +1,15 @@
+type ImageChunk {
+  run_id: String @index
+  chunk: Int
+  path: String
+  files: [String]
+  data_base64: String
+  name: String
+  source: String
+  ops: String
+  format: String
+  quality: Int
+  orient: Boolean
+  frame: Int
+  cursor: String
+}

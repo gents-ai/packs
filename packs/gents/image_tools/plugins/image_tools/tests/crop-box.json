@@ -1,0 +1,64 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAHCAIAAAC+zks0AAAARklEQVR4nH2MuwkAIBBDU0QQHcJGcGpns3ARv1h4pyGEg3cJU4gWtDDTvJLwBMw0ZXb8ZBhtt69cKoTOOKFpja8PFbtfuwEsaAQoKhSWJgAAAABJRU5ErkJggg==",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 127,
+              "format": "png",
+              "height": 7,
+              "part": 0,
+              "pixels_sha256": "a3052bb5bfee9d4ab2c70504d9a153cb0100f4f527267803bab311c50cb9e596",
+              "role": "result",
+              "sha256": "32b22a2ae56f56c94dd97e147aafc5f60f9e95b16ac2669e8f43020dfc9967e5",
+              "width": 10
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "box": [
+                5,
+                3,
+                10,
+                7
+              ],
+              "from": [
+                32,
+                24
+              ],
+              "op": "crop"
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "height": 7,
+    "op": "crop",
+    "width": 10,
+    "x": 5,
+    "y": 3
+  }
+}

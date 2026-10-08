@@ -25,7 +25,10 @@
           "mode": "Off"
         }
       },
-      "tools_id": "prompt-proposer-tools"
+      "tools_id": "prompt-proposer-tools",
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
     }
   ]
 }

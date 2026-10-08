@@ -1,0 +1,44 @@
+{
+  "jq": [
+    {
+      "name": "callback, receipt and closure sources are scoped to this pack and correlate by work unit",
+      "expr": "(.config.event_sources[] | select(.event_source_id == \"change-unit-workspace\") | .correlation_field == \"work_unit_id\" and (.filter | contains(\"change-unit:%\"))) and (.config.event_sources[] | select(.event_source_id == \"change-unit-write\") | .correlation_field == \"work_unit_id\" and (.filter | contains(\"change-unit:%\"))) and (.config.event_sources[] | select(.event_source_id == \"change-unit-review\") | .source_collection == \"WorkspaceReceipt\" and .workspace_authority == \"readOnly\" and .correlation_field == \"work_unit_id\" and (.filter | contains(\"writer\")) and (.filter | contains(\"change-unit:%\"))) and (.config.event_sources[] | select(.event_source_id == \"change-unit-record\") | .source_collection == \"FireOutcome\" and .correlation_field == \"source_handoff_id\" and (.filter | contains(\"completed\")) and (.filter | contains(\"change-unit-integrate\")) and (.filter | contains(\"change-unit:%\"))) and ([.config.event_sources[] | select(.event_source_id == \"change-unit-integrate\" or .event_source_id == \"change-unit-rejected\") | (.filter | contains(\"change-unit:%\"))] | all)"
+    },
+    {
+      "name": "writer workspaces default to the plain git_worktree adapter and pass adapter parameters to the callback",
+      "expr": "(.assets[\"schemas/change_unit_work.graphql\"] | contains(\"adapter: String @default(value: \\\"git_worktree\\\")\") and contains(\"clone_artifacts: [String]\")) and (.config.callback_bindings[] | select(.binding_id == \"change-unit-workspace\") | .input_fields | index(\"adapter\") != null and index(\"clone_artifacts\") != null)"
+    },
+    {
+      "name": "the reviewer sees the receipt's changed paths",
+      "expr": ".assets[\"tasks/change_unit_review_task/prompt.md\"] | contains(\"{{ doc.changed_files }}\")"
+    },
+    {
+      "name": "approval persists exact writer receipt and seal",
+      "expr": ".config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-review-io\") | any(.entries.entries[]; .tool_name == \"write_change_unit_closure\" and (.fields | any(.[]; .name == \"writer_receipt_id\" and .fill.source_field == \"receipt_id\")) and (.fields | any(.[]; .name == \"writer_seal_hash\" and .fill.source_field == \"seal_hash\")))"
+    },
+    {
+      "name": "terminal results take identity, routing and status from the triggering document",
+      "expr": "((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-record-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | (.fields | any(.[]; .name == \"result_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"work_unit_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"handoff_id\" and .fill.source_field == \"source_handoff_id\")) and (.fields | any(.[]; .name == \"reply_session_id\" and .fill.source_field == \"reply_session_id\")) and (.fields | any(.[]; .name == \"status\" and .fill.source_field == \"terminal_state\"))) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-rejected-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | (.fields | any(.[]; .name == \"result_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"work_unit_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"handoff_id\" and .fill.source_field == \"handoff_id\")) and (.fields | any(.[]; .name == \"reply_session_id\" and .fill.source_field == \"reply_session_id\")) and (.fields | any(.[]; .name == \"status\" and .fill.source_field == \"status\"))) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-failed-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | (.fields | any(.[]; .name == \"result_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"work_unit_id\" and .fill == \"correlation\")) and (.fields | any(.[]; .name == \"handoff_id\" and .fill.source_field == \"source_handoff_id\")) and (.fields | any(.[]; .name == \"reply_session_id\" and .fill.source_field == \"reply_session_id\")) and (.fields | any(.[]; .name == \"status\" and .fill.source_field == \"terminal_state\"))) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-rejected-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | (.fields | any(.[]; .name == \"closure_id\" and .fill.source_field == \"closure_id\")) and (.fields | any(.[]; .name == \"implementation_id\" and .fill.source_field == \"implementation_id\")) and (.fields | any(.[]; .name == \"review_id\" and .fill.source_field == \"review_id\")) and (.fields | any(.[]; .name == \"workspace_id\" and .fill.source_field == \"workspace_id\")) and (.fields | any(.[]; .name == \"writer_receipt_id\" and .fill.source_field == \"writer_receipt_id\")) and (.fields | any(.[]; .name == \"writer_seal_hash\" and .fill.source_field == \"writer_seal_hash\"))) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-failed-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | (.fields | any(.[]; .name == \"failed_request_id\" and .fill.source_field == \"request_id\")) and (.fields | any(.[]; .name == \"failure_stage\" and .fill.source_field == \"trigger_id\")) and (.fields | any(.[]; .name == \"failure_reason\" and .fill.source_field == \"reason\"))) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-record-io\") | .entries.entries[] | select(.tool_name == \"read_integrator_receipt\")) | .filter_fields | any(.[]; .name == \"produced_by_request_id\" and .fill.source_field == \"request_id\"))"
+    },
+    {
+      "name": "failed stages share one recorder that may write nothing after a reviewer closure",
+      "expr": "([.config.triggers[] | select(.trigger_id | startswith(\"change-unit-failed-\")) | .task_id == \"change-unit-failed-task\"] | length == 3 and all) and ((.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-failed-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\")) | .output_obligation == null) and ([.config.datastore_tool_surfaces[] | select(.surface_id == \"change-unit-record-io\" or .surface_id == \"change-unit-rejected-io\") | .entries.entries[] | select(.tool_name == \"write_change_unit_result\") | .output_obligation.minimum_writes == 1] | length == 2 and all)"
+    },
+    {
+      "name": "the repository root has no fallback, so an unset variable leaves the placement empty and install fails",
+      "expr": "(.config.repository_placements[] | select(.repository_id == \"change-unit-repository\") | .host_path == \"\") and ([.config.tools[] | select(.tools_id == \"change-unit-writer-tools\" or .tools_id == \"change-unit-review-tools\") | .host.root == \"\"] | all) and (.assets[\"pack_config.json\"] | contains(\":-.\") | not)"
+    },
+    {
+      "name": "integration is serialized",
+      "expr": ".config.triggers[] | select(.trigger_id == \"change-unit-integrate\") | .concurrency == \"queued_serial\""
+    },
+    {
+      "name": "atomic stages expose outcomes without routing workers into supervisor sessions",
+      "expr": "([.config.tasks[] | select(.task_id == \"change-unit-writer-task\" or .task_id == \"change-unit-review-task\" or .task_id == \"change-unit-integrate-task\") | .emit_outcome == true and .goal_objective_template == null] | all) and ([.config.triggers[] | .session_id_template == null] | all) and ([.config.tasks[] | select(.task_id == \"change-unit-record-task\" or .task_id == \"change-unit-rejected-task\" or .task_id == \"change-unit-failed-task\") | (.emit_outcome // false) == false] | all)"
+    },
+    {
+      "name": "every review, closure and result writer requires the unit's attempt, and terminal stages take it from their trigger",
+      "expr": "([.config.datastore_tool_surfaces[] | .. | objects | select(has(\"tool_name\") and (.kind // \"write\") != \"query\" and (.collection == \"ChangeUnitResult\" or .collection == \"ChangeUnitReview\" or .collection == \"ChangeUnitClosure\"))] | length == 5 and all(.fields | any(.[]; .name == \"attempt\" and .required == true))) and ([.assets[\"tasks/change_unit_record_task/prompt.md\"], .assets[\"tasks/change_unit_rejected_task/prompt.md\"], .assets[\"tasks/change_unit_failed_task/prompt.md\"]] | all(contains(\"{{ doc.attempt }}\") and (contains(\"when present\") | not)))"
+    }
+  ]
+}

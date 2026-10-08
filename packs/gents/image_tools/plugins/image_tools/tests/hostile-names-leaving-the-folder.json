@@ -1,0 +1,82 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "\"../scene.png\" leaves the bound folder; name a file inside the bound folder",
+        "outputs": [],
+        "source": "../scene.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "\"/etc/passwd\" is an absolute path; name a file inside the bound folder",
+        "outputs": [],
+        "source": "/etc/passwd",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "\"a/../../scene.png\" leaves the bound folder; name a file inside the bound folder",
+        "outputs": [],
+        "source": "a/../../scene.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "error": "\"sub/../../../x.png\" leaves the bound folder; name a file inside the bound folder",
+        "outputs": [],
+        "source": "sub/../../../x.png",
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 1237,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 24,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 24,
+            "oriented_width": 32,
+            "width": 32,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "../scene.png",
+      "/etc/passwd",
+      "a/../../scene.png",
+      "sub/../../../x.png",
+      "scene.png"
+    ],
+    "op": "info"
+  }
+}

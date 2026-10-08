@@ -1,0 +1,29 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "rotate takes a multiple of 90 degrees, such as 90, 180 or -90",
+        "input": {
+          "bytes": 168,
+          "format": "png",
+          "height": 4,
+          "width": 6
+        },
+        "outputs": [],
+        "source": "upright.png",
+        "step": 1,
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "degrees": 45,
+    "files": [
+      "upright.png"
+    ],
+    "op": "rotate"
+  }
+}

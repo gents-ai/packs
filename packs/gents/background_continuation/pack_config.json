@@ -30,6 +30,7 @@
   ],
   "event_sources": [
     {
+      "correlation_field": "job_id",
       "display_name": "background-parent",
       "event_kind": "created",
       "event_source_id": "background-parent",
@@ -66,7 +67,10 @@
     },
     {
       "display_name": "No tools",
-      "tools_id": "background-worker-tools"
+      "tools_id": "background-worker-tools",
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
     }
   ],
   "triggers": [

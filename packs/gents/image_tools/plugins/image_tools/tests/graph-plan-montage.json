@@ -1,0 +1,7 @@
+{
+  "bind": "fixtures/montage",
+  "input": {
+    "ops": "montage",
+    "run_id": "r1"
+  }
+}

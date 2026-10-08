@@ -1,0 +1,109 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAKCAIAAAAGpYjXAAAAWklEQVR4nIWOuQ2AMBAEN3Dii0ggJUEioQ5SCoF2qMLtOHcr9vmT/MmrDVYaae7EuR/YJNZU3uSGWCBRlMKI4NcGPu93FwApWTAB1AV8TV1P+KpV1R0B6gKWW3KPCPyePK9kAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 147,
+              "format": "png",
+              "height": 10,
+              "part": 0,
+              "pixels_sha256": "c0fe0a0a6ec0598cbda353ccfe66b9455ecc53be05f7daf623a3c43452bdc0ad",
+              "role": "result",
+              "sha256": "fcb86e053a9aaec0240302b8267ea1e646bdb1405a47c60bc62f7c9c5d6eec40",
+              "width": 8
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "box": [
+                4,
+                2,
+                20,
+                16
+              ],
+              "from": [
+                32,
+                24
+              ],
+              "op": "crop"
+            },
+            {
+              "degrees": 90,
+              "op": "rotate",
+              "to": [
+                16,
+                20
+              ]
+            },
+            {
+              "axis": "horizontal",
+              "op": "flip"
+            },
+            {
+              "changed": true,
+              "filter": "nearest",
+              "from": [
+                16,
+                20
+              ],
+              "mode": "exact",
+              "op": "resize",
+              "to": [
+                8,
+                10
+              ]
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "ops": [
+      {
+        "height": 16,
+        "op": "crop",
+        "width": 20,
+        "x": 4,
+        "y": 2
+      },
+      {
+        "degrees": 90,
+        "op": "rotate"
+      },
+      {
+        "axis": "horizontal",
+        "op": "flip"
+      },
+      {
+        "filter": "nearest",
+        "height": 10,
+        "mode": "exact",
+        "op": "resize",
+        "width": 8
+      }
+    ]
+  }
+}

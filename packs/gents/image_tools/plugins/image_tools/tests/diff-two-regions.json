@@ -1,0 +1,80 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAB9ElEQVR4nNWavU7DMBSFj60sTIhKjMzMvEJfuXtHxFYeghUkoEIMSCUxSeXUvv6Jc/H1lRo5cXzzOT5xnKN2u90OgIZSgBq2Q0GPhfEgUTsesWrdk/tdJKRya8+79oU8qbq+CPMzW7vgPRg4rTyDmyqeoYNumN50QDVMfx6BVulhnoGG6f9GoGF6WBLynLfdbpEWh/1TFXpMEqIawCoE4jTX4f/Rg55GkYY+hUYVelgvssAgJISqQw/fNIps+j50HXrTgZB8U+P++4Oqerm65aPHfBpF0SBQcZl/TXoMz4AOtyzvACN9QEIr0Q/5GOkpCdkNimPMz0IPn4Qu6E8o7QAjvSuhWYP94dEcmn0ZPbx+IisUIz2IxVw0aU5oRnpYayEe+qEdIz2cN3Fi0pzQjPSYPwMpSfM7oBjpYWYhMNIDwbVWKT0WuBLPdxvLn3FtIo/Vw0ePlVyJhddeJUO5K1GTHsWuRGV6lLkS9ekRdiXk0yPmSkinR8yVkE6PhE9K0fRIk5BceiRISDQ9iDdxM/RIcCVE0yPmSkinR8yVkE6PoCtRjX5zfQMnvt6PSJCQqHtvx4ma7sOLuVr0vtCUhJTwez+FAiEhLY2e6ICmJKRaoB8qKQkx+/dLMzieLLHo7Lj9+/wM6u3n6P17SlRCIugzC+oX8JwgaCkaMk8AAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 3937,
+            "format": "png",
+            "height": 48,
+            "width": 64
+          },
+          "outputs": [
+            {
+              "bytes": 557,
+              "format": "png",
+              "height": 48,
+              "part": 0,
+              "pixels_sha256": "00b6f4b2b24ebb607a7a6f51d8be77d2853fbb4d165d90184ad9ff7e236b9f56",
+              "role": "diff",
+              "sha256": "923ae3d8ebc8fe4179c39b17c781d0eb2700192d01d980729d8813951d862723",
+              "width": 64
+            }
+          ],
+          "source": "diff_a.png",
+          "steps": [
+            {
+              "against": "diff_b.png",
+              "changed": 133,
+              "changed_ratio": 0.043294,
+              "compared": 3072,
+              "height": 48,
+              "highlight": 0,
+              "identical": false,
+              "op": "diff",
+              "regions": [
+                {
+                  "changed": 108,
+                  "height": 9,
+                  "width": 12,
+                  "x": 10,
+                  "y": 8
+                },
+                {
+                  "changed": 25,
+                  "height": 5,
+                  "width": 5,
+                  "x": 50,
+                  "y": 40
+                }
+              ],
+              "regions_total": 2,
+              "same_size": true,
+              "ssim": 0.8727,
+              "tolerance": 0,
+              "width": 64
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "against": "diff_b.png",
+    "files": [
+      "diff_a.png"
+    ],
+    "merge_gap": 0,
+    "op": "diff"
+  }
+}

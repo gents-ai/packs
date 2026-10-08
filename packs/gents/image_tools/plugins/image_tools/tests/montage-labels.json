@@ -1,0 +1,95 @@
+{
+  "bind": "fixtures/montage",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAJgAAACwCAIAAAB8XzAtAAAFD0lEQVR4nO3dzW3kNhiH8XcDN2ABqWCBFOFzzikihaWInHN2EQG2ggXGLawXXGu1+qBI6hVF/fk8B2MwHs+Q+kkjzZfn6fF4GN2/34wkAlIkIEUCUiQgRQJSpCfrqf+H4f3nH/d8xBUffF+Qofcl8vuXL3arvn7+HL9AX3et4+q8u1yaahxtZP3rbh85Lou7WKYoWp8HOzeyTFS0bo9ab2GZrmg9P/xo3DJL0Tp/HNmsZa6i8YRAg5YFigakNWZZpmhAhhqxLFY0IMcutzyiaEBOu9DyoKIBOesSy+OKBuSyypYuigbkatUsvRQNyK0qWDoqGpCRTrX0VTQg451k6a5oQO7mbnmGogGZkqPlSYoGZGIulucpGpDpHbQ8VdGAzKrY8mxFAzK3AssKigZkQVmWdRTf++T1Qdc//z737dv//TOYR29vb+ZRitAZis/Pz6vns0UWtrtdVtsWQ0CWF7GsrGhAHmzVsr6iAXm8meUligakS8vtsrKiAenVVK6+ogHp1eo+smZAOrS8R61vCeTRZopXWQJ5qNWjm0ssgSwvcoxa3xLIwnYfaVS2BLKkxMeLNS0/9fZvPo+/+pH7qN/3WQJe/fCpQKXOdglkRsXbVgVLIFM7eA95tiWQSbns5061BHI/x6OV8yyB3Mn9lamTLIGMddLri2dYArnZqa8Su1sCuV6F1/p9LYFcqdo7NhwtgZxX+X03XpZA/tIl755ysQTyZxe+B+64JZA/ulBxdrtllkB+73LF2a0XWALZiuJsDLmWvUM2pRgqs+waskHFUIFlv5DNKoZyLTuFbFwxlGXZI+QtFEPplt1B3kgxlGjZF2T45j67j2IoxbLr78a6Ubtj7u4NyqrxzI5Im9/oOnzsTpabbORX7ec1+NYWwuYWGRnfre+NvQbf2kJw+47lsIaG6U1P22TltYT5j387W+WnVzK7nuklZzddMP7lppYy/uX045d3b38fOXxkRY0zXPVYNl5s9U+WZ06vP0txNq/lKhhOp4x/dSVOnK9X+1vkOKCwcK2oavNJb2teuXNcXXvqz7fS19en3COt/sr2lmzYEN0XXDrnOICUtWFrvrnnL9u8a53uM7b2ecudwXRKszuc3MX9+MjxkrY9r9VJzcZv0R3nwfkerLknBIbMI4Vh+yCoq3hmRySe2REJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkfz/q8fL61/m1+vLv9ZYj5cXK214fbVzYosUCUiRgBQJSJGAFAlIkYAUCUiRgBQJSJGAFAlIkYAUiX+8KxJbpEhAigSkSECKBKRIQIoEpEhAigSkSECKBKRIQIoEpEhAigSkSECKBKRIQIoEpEhAigSkSECKBKRIQIoEpEhAiuT/D5NUG4YhnGjzQxZskak1/iGZ2BY5XQfD6eUJm8xwPMd+nfbq+dMzreJiKhi/y/VH5ru6nC2zzU9jTa9xdu1x4MjfppyuUNb4LX+dW72qs5dD+T5y9fZmc949/8ISx79c0G22CRlWot2hzxbH1tqUu5ZtrZu55++WOP6tIrebeHCUuJx3e4rfxmxM09PvJ6ZDnA1o/NXW+Vd1ZPzj6ZRZpM906z48q5195PLGKF7uEZPXcuaj5yLxOFIkIEUCUiQgRQJSJCBFAlIkIEUCUqRvt+lV9xASF1EAAAAASUVORK5CYII=",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "outputs": [
+            {
+              "bytes": 1352,
+              "format": "png",
+              "height": 176,
+              "part": 0,
+              "pixels_sha256": "ddad629ec7ea7646e56d061dc600766c37978fcff74d9de353f82159dc4da1c9",
+              "role": "montage",
+              "sha256": "b7b5624a157ff9d8bdc23c5f53837dc74a8b1b134e03f236f9049be8efb5f035",
+              "width": 152
+            }
+          ],
+          "source": "montage",
+          "steps": [
+            {
+              "cell": 64,
+              "cells": [
+                {
+                  "col": 0,
+                  "height": 14,
+                  "n": 1,
+                  "row": 0,
+                  "source": "blue.png",
+                  "width": 32,
+                  "x": 24,
+                  "y": 33
+                },
+                {
+                  "col": 1,
+                  "error": "the png image is corrupt or truncated; use an intact file",
+                  "height": 64,
+                  "n": 2,
+                  "row": 0,
+                  "source": "broken.png",
+                  "width": 64,
+                  "x": 80,
+                  "y": 8
+                },
+                {
+                  "col": 0,
+                  "height": 14,
+                  "n": 3,
+                  "row": 1,
+                  "source": "green.png",
+                  "width": 26,
+                  "x": 27,
+                  "y": 117
+                },
+                {
+                  "col": 1,
+                  "height": 14,
+                  "n": 4,
+                  "row": 1,
+                  "source": "red.png",
+                  "width": 20,
+                  "x": 102,
+                  "y": 117
+                }
+              ],
+              "cols": 2,
+              "gap": 8,
+              "height": 176,
+              "images": 4,
+              "op": "montage",
+              "output": 0,
+              "rows": 2,
+              "width": 152
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "background": "#eeeeee",
+    "cell": 64,
+    "cols": 2,
+    "op": "montage"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 349,
+            "format": "png",
+            "height": 15,
+            "pixels_sha256": "6105cbf84395ecdb01ee4eb010f17861691fcc252e73324ea5c2982d58f69403",
+            "role": "result",
+            "sha256": "fc7509eb75e2e07c91e4c2e549ce992805fe5fa03f948c3453de343d710e1ea4",
+            "width": 20
+          }
+        ],
+        "source": "scene.png",
+        "steps": [
+          {
+            "changed": true,
+            "filter": "lanczos3",
+            "from": [
+              32,
+              24
+            ],
+            "mode": "fit",
+            "op": "resize",
+            "to": [
+              20,
+              15
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "filter": "lanczos3",
+    "op": "resize",
+    "output": {
+      "part": false
+    },
+    "width": 20
+  }
+}

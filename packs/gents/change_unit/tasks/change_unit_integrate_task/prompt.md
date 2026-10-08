@@ -1,0 +1,1 @@
+Closure {{ doc.closure_id }} accepted work unit {{ doc.work_unit_id }}: workspace {{ doc.workspace_id }}, writer receipt {{ doc.writer_receipt_id }}, seal {{ doc.writer_seal_hash }}. Reply with a one-line acknowledgement and finish.

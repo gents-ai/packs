@@ -1,0 +1,62 @@
+{
+  "bind": "fixtures/codes",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 7123,
+          "format": "png",
+          "height": 212,
+          "width": 212
+        },
+        "outputs": [],
+        "source": "qr_rot30.png",
+        "steps": [
+          {
+            "attempt": "plain",
+            "codes": [
+              {
+                "bbox": [
+                  28,
+                  28,
+                  158,
+                  158
+                ],
+                "format": "qr_code",
+                "points": [
+                  [
+                    86,
+                    28
+                  ],
+                  [
+                    186,
+                    86
+                  ],
+                  [
+                    128,
+                    186
+                  ],
+                  [
+                    28,
+                    128
+                  ]
+                ],
+                "text": "https://example.org/pack?id=42"
+              }
+            ],
+            "found": 1,
+            "op": "decode_codes"
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "qr_rot30.png"
+    ],
+    "op": "decode_codes"
+  }
+}

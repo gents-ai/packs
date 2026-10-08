@@ -1,0 +1,48 @@
+{
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 234,
+          "format": "png",
+          "height": 6,
+          "width": 8
+        },
+        "outputs": [],
+        "source": "tiny.png",
+        "steps": [
+          {
+            "bit_depth": 8,
+            "bytes": 234,
+            "color": "rgba8",
+            "exif": {
+              "gps": false,
+              "orientation": null,
+              "present": false
+            },
+            "format": "png",
+            "frames": 1,
+            "has_alpha": true,
+            "height": 6,
+            "icc": {
+              "bytes": 0,
+              "present": false
+            },
+            "op": "info",
+            "oriented_height": 6,
+            "oriented_width": 8,
+            "width": 8,
+            "xmp": false
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "data_base64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAYAAAD+Bd/7AAAAsUlEQVR4Ae3AA6AkWZbG8f937o3I\nzKdyS2Oubdu2bdu2bdu2bWmMnpZKr54yMyLu+Xa3anqmhztr1a8CfhAneTAneTAneTAneTCneDAn\neTAnqTz2JHCS7zgYgHv4vq1HACeBk8BJKi92EjgJf3IPl73YSeAkcBI4SeWxJ4GTvN9jH8GDOcmD\nOQmcBE4Cp6i82EngFHASOAmcBE4Cp4CTVB57CjgJnAROAieBU8BJ4CT/CIR6DMjfA6GlAAAAAElF\nTkSuQmCC",
+    "name": "tiny.png",
+    "op": "info"
+  }
+}

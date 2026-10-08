@@ -1,0 +1,53 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "/9j/4AAQSkZJRgABAgAAAQABAAD/wAARCAAYACADAREAAhEBAxEB/9sAQwADAgIDAgIDAwMDBAMDBAUIBQUEBAUKBwcGCAwKDAwLCgsLDQ4SEA0OEQ4LCxAWEBETFBUVFQwPFxgWFBgSFBUU/9sAQwEDBAQFBAUJBQUJFA0LDRQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD4C0XwF9393+lRTrHHl+bbanoul/DWa2x5kSr/AMCB/rUQzzBLep+D/wAj+hsHw9xBS+PD2/7eh/8AJHcaJ4B+7+7/AEr6unWPVy/NttTvtE8Bfd/d/pXp06x+m5fm22pyui+Avu/u/wBK/KqdY/yxy/NttTsLL4a3V5j/AEjZn/pnn+teTHKFL/l5+H/BP7Rw/jdTxH/MBb/uL/8Acz0vRPAP3f3f6V97TrHxGX5ttqd/ongL7v7v9K9SnWP07L8221OU0XwF9393+lflNOsf5YZfm22p3+ieAfu/u/0r1KdY/TcuzbbU77RPAX3f3f6V6lOsfp2X5ttqd9ongL7v7v8ASvTp1j9Ny/NttT//2Q==",
+        "mimeType": "image/jpeg",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 895,
+              "format": "jpeg",
+              "height": 24,
+              "part": 0,
+              "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+              "role": "result",
+              "sha256": "9b3ccef7418d1e36f5aaa54d5b616f6cddfe769b391101a5508e3f8d15cf60e7",
+              "width": 32
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "format": "jpeg",
+              "op": "convert",
+              "quality": null
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "jpeg",
+    "op": "convert"
+  }
+}

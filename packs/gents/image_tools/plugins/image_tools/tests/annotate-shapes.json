@@ -1,0 +1,108 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAYCAIAAAAUMWhjAAABrUlEQVR4nK1WMUvDUBC+By+kTQpCQTqIaFeFLg4ODtLBv+B/EDcHcRCKYFG6CYI/SRykm0sXHUSiUigUJVCI1z4N997lJS+xN6S5y+t99913uVYCgA+yBl7Nev3XIwmBjL9mMcxqQRNAAnj61csKlngkIfT8sI5Q0cd4Y3VtudlBMcCPyfMYe/UiXiGBfOttHpYCFrDVRA3ip3ctTRGMzYbb14YY2KIFFGYUJLWoihGaDLBFygGTgSBgNA4kyN1AMg0UA9CPphig00pRE+JSMJPBHEBnYOSi5WeyNKiEpuDyj1SuZUoiGBW0wBwnxcDTTqcF0oit6QZGyF80hZnoeY1WcCqJ5UzgFYmcb4tir3qXthXEx1TAYM8vucUuTs8R625w4/ItAbf7fvkdeXZ8ghiPYi7FTpKk98poRPLJddszeUbBJJ9cty1mNVU+YRBUW85aLqN8Gpd8ct1WPxga2EzyyXWTxNW4yI6SFGuAN0jREPn3+tDu59d1QLYgnRnuZv+y7Eb9Cv8kuq3OMBopt91axzzf0UTC9Ii/aBWa1m107qej1H2bfmKeemPlB4jrdkNNwgCoAAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "results": [
+        {
+          "input": {
+            "bytes": 1237,
+            "format": "png",
+            "height": 24,
+            "width": 32
+          },
+          "outputs": [
+            {
+              "bytes": 486,
+              "format": "png",
+              "height": 24,
+              "part": 0,
+              "pixels_sha256": "87ccdafbbea070b83efeba018c35ad59404af50f933348cdcf22d5ecb874ffa5",
+              "role": "result",
+              "sha256": "d7e672f600d2df3afc0c50970fedc7214df4b79af4aacfe3a5458741798e3746",
+              "width": 32
+            }
+          ],
+          "source": "scene.png",
+          "steps": [
+            {
+              "op": "annotate",
+              "outside": [
+                4
+              ],
+              "shapes": 4
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "op": "annotate",
+    "shapes": [
+      {
+        "color": "#00ff00",
+        "height": 10,
+        "label": "box",
+        "thickness": 1,
+        "type": "box",
+        "width": 14,
+        "x": 2,
+        "y": 3
+      },
+      {
+        "color": "blue",
+        "from": [
+          0,
+          22
+        ],
+        "thickness": 1,
+        "to": [
+          28,
+          20
+        ],
+        "type": "arrow"
+      },
+      {
+        "color": "black",
+        "from": [
+          0,
+          0
+        ],
+        "thickness": 1,
+        "to": [
+          31,
+          23
+        ],
+        "type": "line"
+      },
+      {
+        "background": "#cc0000",
+        "color": "white",
+        "scale": 1,
+        "text": "Hi",
+        "type": "label",
+        "x": 18,
+        "y": 14
+      },
+      {
+        "height": 3,
+        "type": "box",
+        "width": 3,
+        "x": 500,
+        "y": 500
+      }
+    ]
+  }
+}

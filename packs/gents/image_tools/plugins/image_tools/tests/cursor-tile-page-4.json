@@ -1,0 +1,81 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "parts": [
+      {
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAABdElEQVR4nNWY2w3CMAxFndBR2IBxGIZRGIYZ2AfEB+LZOsm9107lD0Ra6VjHTe0sdtwXK/UR3z/e/6yrq8Wzer5cDXottitmnqi+2zYDfC1WlfSMBLYNAOkDEsDSq0sITi81wKDXGSDRiwzw6BUGqPR0A2x6rgEBPdGAhp5lQEaPT6DY6dDaUUpWq/NZfzeqjIaKcHajSektn4HmtzGVgZ69JI+Bzp0wiYH+fTyDgaGvULiB0W9orAFABxCYAKZ/iSohWPcVYgDZO+oNgDtfsQF83640QJk6ZAZYM5PGAHHiExjgzqtsA/Rpm2pAcVbAS0B00kEqId05DcOA8pQJb0BKDzegpjeogQB6oIEYepSBMHqIgUj68QSC6W2shOLpRwykoO82kIW+z0Aiems3kIu+1UA6+iYDGenvVE4DSemdBvLSm+MdSE2/mUB2elstoQnoVwzMQf/PwDT0Pw3MRP9tYDL6DwPz0b8amJL+aWBW+nvcAPWNFH3YXUy/AAAAAElFTkSuQmCC",
+        "mimeType": "image/png",
+        "type": "image"
+      }
+    ],
+    "response": {
+      "next": {
+        "cursor": "imgt1.eyJyZXEiOiJiNjNmYzNlYjY5OWRjZDU3NjZjZWM2NWI5ZmVjNTljYjAwMWQ4OTQ4YzM3YzE0ODk3NjQ2MGE5MjgzZDIzYjhlIiwiaXRlbSI6MCwidGlsZSI6NCwibGVuIjoxNjE2MCwic2hhIjoiYzliNzA2NWY4ZTYzNjdiN2YzZjRiODZkNzA4YTIwNTI1ZmM5YWEzZjI2MWRjM2VlYjEwOGYxOTFiMTUwM2M0NCJ9",
+        "source": "tile_src.png"
+      },
+      "results": [
+        {
+          "input": {
+            "bytes": 16160,
+            "format": "png",
+            "height": 100,
+            "width": 150
+          },
+          "outputs": [
+            {
+              "bytes": 429,
+              "format": "png",
+              "height": 64,
+              "part": 0,
+              "pixels_sha256": "d9a7d92cd6c845ee48aaeb9026a90bb20a97d737c3facfcb8530e48c78df9dfd",
+              "role": "tile",
+              "sha256": "3f9221805fee41b57f0096c07d7d94245cefbf42c647323c518ea9641222ed34",
+              "tile": 4,
+              "width": 64
+            }
+          ],
+          "source": "tile_src.png",
+          "steps": [
+            {
+              "cols": 3,
+              "from": [
+                150,
+                100
+              ],
+              "next_tile": 5,
+              "op": "tile",
+              "overlap": 8,
+              "rows": 2,
+              "size": 64,
+              "tiles": [
+                {
+                  "col": 0,
+                  "height": 64,
+                  "n": 4,
+                  "output": 0,
+                  "row": 1,
+                  "width": 64,
+                  "x": 0,
+                  "y": 36
+                }
+              ],
+              "tiles_total": 6
+            }
+          ],
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "input": {
+    "cursor": "imgt1.eyJyZXEiOiJiNjNmYzNlYjY5OWRjZDU3NjZjZWM2NWI5ZmVjNTljYjAwMWQ4OTQ4YzM3YzE0ODk3NjQ2MGE5MjgzZDIzYjhlIiwiaXRlbSI6MCwidGlsZSI6MywibGVuIjoxNjE2MCwic2hhIjoiYzliNzA2NWY4ZTYzNjdiN2YzZjRiODZkNzA4YTIwNTI1ZmM5YWEzZjI2MWRjM2VlYjEwOGYxOTFiMTUwM2M0NCJ9",
+    "files": [
+      "tile_src.png"
+    ],
+    "op": "tile",
+    "overlap": 8,
+    "page_bytes": 20000,
+    "size": 64
+  }
+}

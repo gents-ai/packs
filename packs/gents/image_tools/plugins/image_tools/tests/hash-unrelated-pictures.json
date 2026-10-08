@@ -1,0 +1,46 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 3937,
+          "format": "png",
+          "height": 48,
+          "width": 64
+        },
+        "outputs": [],
+        "source": "diff_a.png",
+        "steps": [
+          {
+            "against": {
+              "dhash_distance": 30,
+              "identical_bytes": false,
+              "identical_pixels": false,
+              "phash_distance": 32,
+              "similar": false,
+              "source": "dup_noise.png",
+              "threshold": 10
+            },
+            "dhash": "0000002000000000",
+            "height": 48,
+            "op": "hash",
+            "phash": "a263cc5c3933c74e",
+            "pixels_sha256": "78c59fb116881292e990bf7d29bfdc4fc343e23d3fb5745cc39c936ebf7f4c4e",
+            "sha256": "064eb9e689952c163ea4668f6a3186a0bd82581cb04c4c8e07be51f1719ac663",
+            "width": 64
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "against": "dup_noise.png",
+    "files": [
+      "diff_a.png"
+    ],
+    "op": "hash"
+  }
+}

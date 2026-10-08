@@ -1,0 +1,32 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "error": "the crop box 30,0 5x5 is outside the 32x24 image; choose a box inside it",
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [],
+        "source": "scene.png",
+        "step": 1,
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "height": 5,
+    "op": "crop",
+    "width": 5,
+    "x": 30,
+    "y": 0
+  }
+}

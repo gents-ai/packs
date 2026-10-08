@@ -4,7 +4,7 @@ The runtime-owned execution boundary is repository `{{ doc.repository_path }}`, 
 
 Verifier summary: {{ doc.summary }}
 
-Call `defra_query` for `MaintenanceVerdict` in this run and confirm the counts. Promote every exactly `confirmed` row with `write_maintenance_finding`, preserving all fields. Never promote a refuted row.
+Call `query` for `MaintenanceVerdict` in this run and confirm the counts. Promote every exactly `confirmed` row with `write_maintenance_finding`, preserving all fields. Never promote a refuted row.
 
 Then form a small ordered commit slate for one maintenance branch:
 
