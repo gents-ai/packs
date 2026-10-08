@@ -15,6 +15,25 @@ spec.loader.exec_module(shelf)
 
 
 class BatchSubmission(unittest.TestCase):
+    def test_search_catalog_retries_truncated_pages_without_losing_editions(self):
+        rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01",
+                     access="open", language="en") for i in range(205)]
+        offsets = []
+        def call(*args):
+            if args[:2] == ("query", "find"):
+                limit = int(args[args.index("--limit") + 1])
+                offset = int(args[args.index("--offset") + 1])
+                offsets.append((offset, limit))
+                return {"truncated": limit > 50, "results": rows[offset:offset + min(limit, 50)]}
+            filters = json.loads(args[args.index("--filter") + 1])
+            self.assertEqual(set(filters["edition_id"]["_in"]), {r["edition_id"] for r in rows})
+            return {"results": []}
+        args = SimpleNamespace(home="unused", text="grain", limit=5, book_id=None,
+                               edition_id=None, language=None, access="open")
+        with patch.object(shelf, "call", call):
+            shelf.search_library(args)
+        self.assertEqual(offsets, [(0, 100), (0, 50), (50, 50), (100, 50), (150, 50), (200, 50)])
+
     def test_resume_after_partial_submission_and_refuse_conflicting_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

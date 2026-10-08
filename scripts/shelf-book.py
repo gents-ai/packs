@@ -88,19 +88,23 @@ def search_library(args):
         conditions["access"] = {"_eq": args.access}
     editions = []
     offset = 0
+    page_size = 100
     catalog_filter = {"status": {"_in": ["reviewed", "source_text"]}}
     if args.book_id:
         catalog_filter["book_id"] = {"_eq": args.book_id}
     while True:
         result = call("query", "find", "--home", args.home, "--collection", "ShelfLibraryEdition",
                       "--filter", json.dumps(catalog_filter), "--field", "book_id", "--field", "edition_id",
-                      "--field", "modified", "--field", "language", "--field", "access", "--limit", 1000, "--offset", offset)
+                      "--field", "modified", "--field", "language", "--field", "access", "--limit", page_size, "--offset", offset)
         if result.get("truncated"):
-            raise RuntimeError("edition catalog was truncated; narrow the book or language filter")
+            if page_size == 1:
+                raise RuntimeError("one edition exceeds the catalog output limit; narrow the book filter")
+            page_size = max(1, page_size // 2)
+            continue  # reread this offset, so a truncated tail is never lost
         editions.extend(result["results"])
-        if len(result["results"]) < 1000:
+        if len(result["results"]) < page_size:
             break
-        offset += 1000
+        offset += page_size
     if args.edition_id:
         candidates = [e for e in editions if e["edition_id"] == args.edition_id]
     else:
