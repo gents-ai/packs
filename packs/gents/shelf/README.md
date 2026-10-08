@@ -101,6 +101,61 @@ reviewed passage text. No embedding service or model call is needed for indexing
 Select the `shelf-research` behavior to search and open cited passages using
 read-only datastore tools in the same Gents instance.
 
+### Direct source-text intake
+
+For a corpus that already has extracted text, `scripts/shelf-intake.py` stages
+format-normalized units and loads them into the **same** ShelfLibraryEdition and
+ShelfLibraryPassage collections. This lane uses no OCR, embedding model or polish
+agents. Its editions and passages have `status: source_text`; that label means
+their locators and hashes were checked, **not** that the words passed Shelf's
+review. Search and the research behavior include both source-text and reviewed
+editions and show the status on every hit. A later reviewed edition supersedes
+the source-text edition in default search while old citations remain open.
+
+The catalog is JSONL with one work per row: `work_id`, `source_sha256`, `title`,
+`authors`, `language`, `access`, `license`, `source_format`, and `source_path`.
+Units are JSONL grouped by `work_id`, each with `unit_id`, the matching
+`source_sha256`, `locator_kind`, a format-specific `locator`, `char_start`,
+`char_end`, `text`, and `text_sha256`. A PDF unit locator carries a physical
+`page`; EPUB uses `spine_index`, `href`, and character offsets; HTML/TEI and
+unpaginated text use their real element, marker, or character spans; form feeds
+in standalone text are recorded as form-feed pages, not PDF pages; ancient
+sections use `citation`. No format is assigned an invented PDF page. Upstream
+extractors may provide these units from raw files, and the staging command
+rejects mismatched hashes, unknown works, or noncontiguous work groups.
+`scripts/shelf-normalize.py` is a local producer for a catalog of raw source
+paths: it sniffs PDF/EPUB/HTML/XML/TXT/directory content, verifies or fills
+source hashes, follows EPUB OPF spine order, preserves HTML IDs and TEI `n`
+labels, and retains PDF physical pages from a text layer or supplied page-aligned
+text. A separate unpaginated text dump is kept unpaginated. The parser records
+empty PDF pages for coverage; missing/poor text still needs selective OCR or
+human review before making a reliable cited edition. Directory inputs can use
+`sections_path` for a JSONL file of `{cit,text}` source sections.
+
+```sh
+python3 scripts/shelf-normalize.py --catalog raw-catalog.jsonl --root /path/to/sources --output-catalog catalog.jsonl --output-units units.jsonl
+python3 scripts/shelf-intake.py stage --catalog catalog.jsonl --units units.jsonl --output staged-library
+python3 scripts/shelf-intake.py load --home /path/to/home --staged staged-library --dry-run
+python3 scripts/shelf-intake.py load --home /path/to/home --staged staged-library
+```
+
+The load and search commands require a Gents CLI with `document create` and
+`query search`; set `GENTS=/path/to/new/gents` when another version is on PATH.
+
+The loader resumes missing passages by stable record ID and writes an edition
+receipt only after all passages exist. Re-running an identical staged corpus is
+safe; a conflicting stored record hash or incomplete edition receipt stops the
+load. Run one loader at a time per home. `source_hash_scope: original_source` refers to the catalog's hash of the
+original source file or source directory; the stage does not independently
+re-read the original. Preserve the catalog and unit files with a backup. The
+original access category is kept in `source_metadata_json`; open-access,
+author-copy and public-domain categories map to searchable `open`, whereas
+unrecognized access stays `local_only`. Original license text is retained.
+This operator path reads the raw formats above without creating a `ShelfJob`;
+automatic selective OCR and polished edition assembly still use the separate
+page-based Shelf workflow. Review a normalized unit's text and locator before
+using it as a source of numerical or verbatim evidence.
+
 ```sh
 python3 scripts/shelf-book.py search --home /path/to/home --text "grain ships" --access all
 python3 scripts/shelf-book.py open-passage --home /path/to/home --book-id BOOK --edition-id EDITION --passage-id PASSAGE
@@ -125,8 +180,9 @@ with a read-only MCP grant for ShelfLibraryPassage; the opener verifies the text
 
 The initial index explicitly uses the English analyzer. Native tests cover exact
 English, French, Latin and Greek terms; multilingual morphology, accent folding
-and stop-word quality are not established. Original-file hashes, language-specific
-analyzers, direct non-PDF intake and verified backup/restore remain unfinished.
+and stop-word quality are not established. Original-file hashes on the OCR
+review lane, language-specific analyzers, automatic selective OCR and verified
+backup/restore remain unfinished.
 
 The launcher enables the local read-only query MCP surface for long-field export.
 To export an existing run, start its server with `--enable-mcp` and

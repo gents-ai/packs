@@ -26,14 +26,15 @@ class NativeLibrary(unittest.TestCase):
                      "la": "Naves frumentum ad portum portant.",
                      "el": "πλοῖα σῖτον εἰς τὸν λιμένα φέρουσιν."}
 
-            def publish(book, edition, text, language="en", access="open", modified="2026-10-08T00:00:00Z"):
+            def publish(book, edition, text, language="en", access="open", modified="2026-10-08T00:00:00Z", status="reviewed"):
                 common = dict(run_id=edition, book_id=book, edition_id=edition, title=book, author="Fixture",
-                              language=language, access=access, license="CC0-1.0", status="reviewed",
+                              language=language, access=access, license="CC0-1.0", status=status,
                               revision=edition, source_hash="fixture-source", source_hash_scope="structured_source")
                 shelf.call("document", "create", "ShelfLibraryEdition", "--home", home,
                            "--json", json.dumps(dict(common, modified=modified, passage_count=1)))
                 row = dict(common, record_id=edition + "-p", passage_id="p", chapter_title="Chapter",
                            text=text, text_hash=hashlib.sha256(text.encode()).hexdigest(),
+                           preview=text, locator_summary="fixture PDF page 1",
                            source_spans_json='[{"source":"fixture.pdf","page":1,"start_byte":0,"end_byte":10}]',
                            epub_href="OEBPS/s.xhtml#p")
                 shelf.call("document", "create", "ShelfLibraryPassage", "--home", home, "--json", json.dumps(row))
@@ -44,6 +45,11 @@ class NativeLibrary(unittest.TestCase):
             publish("private", "private-edition", "grain grain grain privateunique", access="local_only")
             publish("changed", "formerly-open", "formeropenunique", modified="2025-01-01T00:00:00Z")
             publish("changed", "now-private", "formeropenunique", access="local_only")
+            publish("direct", "source-direct", "Puteoli shipping evidence.", status="source_text",
+                    modified="1970-01-01T00:00:00Z")
+            publish("hybrid", "source-hybrid", "provisionalunique", status="source_text",
+                    modified="1970-01-01T00:00:00Z")
+            publish("hybrid", "reviewed-hybrid", "correctedunique")
             args = SimpleNamespace(home=home, text="grain", limit=10, book_id=None, edition_id=None,
                                    language=None, access="open")
             for language, term in [("en", "grain"), ("fr", "navires"), ("la", "frumentum"), ("el", "σῖτον")]:
@@ -53,6 +59,15 @@ class NativeLibrary(unittest.TestCase):
                 self.assertGreater(result["results"][0]["_score"], 0)
             args.text = "absentuniqueterm"
             self.assertEqual(shelf.search_library(args)["results"], [])
+            args.text = "Puteoli"
+            direct = shelf.search_library(args)["results"]
+            self.assertEqual([r["book_id"] for r in direct], ["direct"])
+            self.assertEqual(direct[0]["status"], "source_text")
+            self.assertEqual(direct[0]["preview"], "Puteoli shipping evidence.")
+            args.text = "provisionalunique"
+            self.assertEqual(shelf.search_library(args)["results"], [])
+            args.text = "correctedunique"
+            self.assertEqual([r["book_id"] for r in shelf.search_library(args)["results"]], ["hybrid"])
             args.text = "formeropenunique"
             self.assertEqual(shelf.search_library(args)["results"], [])
             args.text = "Obsoleteunique"

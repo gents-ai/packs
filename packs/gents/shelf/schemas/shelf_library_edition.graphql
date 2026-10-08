@@ -13,4 +13,5 @@ type ShelfLibraryEdition {
   modified: String
   passage_count: Int
   status: String
+  source_metadata_json: String
 }
