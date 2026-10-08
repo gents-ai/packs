@@ -56,6 +56,8 @@ def windows(value, maximum=4500):
 
 def chapter(unit):
     kind, locator = unit["locator_kind"], unit["locator"]
+    if kind == "chapter_range":
+        return "chapter:" + locator["chapter_id"], locator["title"]
     if kind == "epub_spine":
         key = f"spine:{locator['spine_index']}:{locator['href']}"
         return key, Path(locator["href"]).stem.replace("_", " ")
@@ -90,6 +92,9 @@ def locator_summary(spans):
         prefix = first["locator"].get("file", "")
         label = f"form-feed page {first['locator']['page']}"
         return f"{prefix}, {label}" if prefix else label
+    if kind == "chapter_range":
+        loc = first["locator"]
+        return f"{loc['title']}, scan pages {loc['start_page']}–{loc['end_page']} (chapter range)"
     if kind == "ancient_citation":
         a, b = first["locator"].get("citation", ""), last["locator"].get("citation", "")
         return f"⟦{a}⟧" if a == b else f"⟦{a}–{b}⟧"
@@ -136,7 +141,7 @@ def stage_work(work, units):
             "author": work.get("authors") or "Unknown", "language": language,
             "access": access, "license": license_name,
             "source_type": work["source_format"], "source_hash": source_hash,
-            "source_hash_scope": "original_source", "text_hash": digest(body),
+            "source_hash_scope": work.get("source_hash_scope", "original_source"), "text_hash": digest(body),
             "revision": "", "status": "source_text", "analyzer": "english",
             "text": body, "preview": " ".join(body.split())[:320],
             "locator_summary": locator_summary(pending_spans),
@@ -180,6 +185,8 @@ def stage_work(work, units):
                                           "source_format", "access", "license", "source_url")}
     metadata.update(source_sha256=source_hash, source_units=len(units), blank_units=blank,
                     importer=VERSION, extraction_status="source_text_unreviewed")
+    if "provenance" in work:
+        metadata["provenance"] = work["provenance"]
     content_hashes = [digest(canonical({k: v for k, v in passage.items() if k != "revision"}))
                       for passage in passages]
     revision = digest(canonical([VERSION, source_hash, metadata,
@@ -191,7 +198,7 @@ def stage_work(work, units):
         "run_id": edition_id, "book_id": work_id, "edition_id": edition_id,
         "title": work["title"], "author": work.get("authors") or "Unknown",
         "language": language, "access": access, "license": license_name,
-        "source_hash": source_hash, "source_hash_scope": "original_source",
+        "source_hash": source_hash, "source_hash_scope": work.get("source_hash_scope", "original_source"),
         "revision": revision, "modified": SOURCE_MODIFIED,
         "passage_count": len(passages), "status": "source_text",
         "source_metadata_json": canonical(metadata),

@@ -17,7 +17,7 @@
         "edition_id": "search-fixture",
         "path": "${REPOSITORY}",
         "structured_file": "book.json",
-        "manuscript": "manuscript.json",
+        "manuscript": "manuscript-${ATTEMPT}.json",
         "passage_count": 1,
         "edit_count": 0
       }

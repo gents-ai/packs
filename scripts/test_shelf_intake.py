@@ -26,6 +26,20 @@ def unit(ordinal, text, kind="pdf_page", locator=None):
 
 
 class SourceIntake(unittest.TestCase):
+    def test_migrated_chapter_keeps_coarse_range_and_export_hash_scope(self):
+        source = unit(1, "word " * 2000, "chapter_range", {
+            "chapter_id": "old-chapter", "title": "Trade", "start_page": 12, "end_page": 28})
+        result = intake.stage_work(work(source_hash_scope="legacy_export",
+            provenance={"legacy_status": "complete"}), [source])
+        self.assertGreater(len(result["passages"]), 1)
+        for passage in result["passages"]:
+            self.assertEqual(passage["locator_summary"], "Trade, scan pages 12–28 (chapter range)")
+            self.assertEqual(passage["source_hash_scope"], "legacy_export")
+            self.assertEqual(passage["status"], "source_text")
+            self.assertNotIn("page", json.loads(passage["source_spans_json"])[0]["locator"])
+        self.assertEqual(json.loads(result["edition"]["source_metadata_json"])["provenance"],
+                         {"legacy_status": "complete"})
+
     def test_pdf_keeps_physical_page_numbers_and_blank_page_coverage(self):
         staged = intake.stage_work(work(), [unit(1, "Ships arrived."), unit(2, "\n"),
                                             unit(3, "The grain fleet sailed.")])
