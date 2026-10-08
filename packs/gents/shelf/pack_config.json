@@ -1,0 +1,863 @@
+{
+  "agent_principal": {},
+  "agent_behaviors": [
+    {
+      "behavior_id": "shelf",
+      "context_id": "shelf-context",
+      "display_name": "Shelf",
+      "description": "Digitize, review, organize and export books.",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-analyze",
+      "context_id": "shelf-analyze-context",
+      "display_name": "Shelf analyze",
+      "inference_profile_id": "gents:inference-slot:reader"
+    },
+    {
+      "behavior_id": "shelf-outline",
+      "context_id": "shelf-outline-context",
+      "display_name": "Shelf outline",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-verify",
+      "context_id": "shelf-verify-context",
+      "display_name": "Shelf verify",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "shelf-context",
+      "display_name": "Shelf",
+      "system_prompt": "./agent_behaviors/shelf/system_prompt.md",
+      "tools_id": "shelf-tools"
+    },
+    {
+      "context_id": "shelf-analyze-context",
+      "system_prompt": "./agent_behaviors/shelf_analyze/system_prompt.md",
+      "tools_id": "shelf-analyze-tools"
+    },
+    {
+      "context_id": "shelf-outline-context",
+      "system_prompt": "./agent_behaviors/shelf_outline/system_prompt.md",
+      "tools_id": "shelf-outline-tools"
+    },
+    {
+      "context_id": "shelf-verify-context",
+      "system_prompt": "./agent_behaviors/shelf_verify/system_prompt.md",
+      "tools_id": "shelf-verify-tools"
+    }
+  ],
+  "tools": [
+    {
+      "tools_id": "shelf-tools",
+      "display_name": "Shelf library tools",
+      "host": {
+        "files": {
+          "mode": "ReadWrite"
+        },
+        "bash": {
+          "mode": "Off"
+        }
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/ocr"
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": true,
+        "defra_query_collections": [
+          "ShelfJob",
+          "ShelfChunk",
+          "ShelfExtract",
+          "ShelfPage",
+          "ShelfFigure",
+          "ShelfChunkAnalysis",
+          "ShelfOutline",
+          "ShelfStructureProposal",
+          "ShelfStructureReport",
+          "ShelfBook",
+          "ShelfChapter",
+          "ShelfEdition",
+          "ShelfExportJob"
+        ],
+        "datastore_tool_surface_ids": [
+          "shelf-requests"
+        ]
+      }
+    },
+    {
+      "tools_id": "shelf-analyze-tools",
+      "display_name": "Shelf analyze tools",
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-analyze-writes"
+        ]
+      }
+    },
+    {
+      "tools_id": "shelf-outline-tools",
+      "display_name": "Shelf outline tools",
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-outline-writes"
+        ]
+      }
+    },
+    {
+      "tools_id": "shelf-verify-tools",
+      "display_name": "Shelf verify tools",
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-verify-writes"
+        ]
+      }
+    }
+  ],
+  "callbacks": [
+    {
+      "callback_id": "shelf-plan",
+      "display_name": "Shelf plan",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "sha256:cc6215a8c74aac6009fad787525d57a98d76b041f936fb5381f8720f93b59a0e",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "many",
+            "collection": "ShelfChunk",
+            "correlation_field": "run_id",
+            "name": "chunks",
+            "required": false,
+            "schema": "ShelfChunk/v1"
+          }
+        ],
+        "plugin": "gents/ocr"
+      }
+    },
+    {
+      "callback_id": "shelf-extract",
+      "display_name": "Shelf extract",
+      "handler": {
+        "correlation_field": "run_id",
+        "digest": "sha256:cc6215a8c74aac6009fad787525d57a98d76b041f936fb5381f8720f93b59a0e",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "ShelfExtract",
+            "correlation_field": "run_id",
+            "name": "document",
+            "required": true,
+            "schema": "ShelfExtract/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "ShelfPage",
+            "correlation_field": "run_id",
+            "name": "pages",
+            "required": false,
+            "schema": "ShelfPage/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "ShelfFigure",
+            "correlation_field": "run_id",
+            "name": "figures",
+            "required": false,
+            "schema": "ShelfFigure/v1"
+          }
+        ],
+        "plugin": "gents/ocr"
+      }
+    },
+    {
+      "callback_id": "shelf-assemble",
+      "display_name": "Assemble structured book",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_structure",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "book",
+            "collection": "ShelfBook",
+            "schema": "ShelfBook/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          },
+          {
+            "name": "chapters",
+            "collection": "ShelfChapter",
+            "schema": "ShelfChapter/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": true
+          },
+          {
+            "name": "report",
+            "collection": "ShelfStructureReport",
+            "schema": "ShelfStructureReport/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "callback_id": "shelf-export",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_export",
+        "digest": "",
+        "correlation_field": "edition_id",
+        "outputs": [
+          {
+            "name": "edition",
+            "collection": "ShelfEdition",
+            "schema": "ShelfEdition/v1",
+            "correlation_field": "edition_id",
+            "cardinality": "one",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "callback_bindings": [
+    {
+      "binding_id": "shelf-plan",
+      "callback_id": "shelf-plan",
+      "event_source_id": "shelf-plan",
+      "input_fields": [
+        "run_id",
+        "path",
+        "files",
+        "ocr",
+        "remote_ocr",
+        "figure_images",
+        "max_image_px",
+        "min_figure_px"
+      ]
+    },
+    {
+      "binding_id": "shelf-extract",
+      "callback_id": "shelf-extract",
+      "event_source_id": "shelf-extract",
+      "input_fields": [
+        "run_id",
+        "chunk",
+        "path",
+        "files",
+        "source",
+        "format",
+        "pages",
+        "ocr",
+        "remote_ocr",
+        "figure_images",
+        "max_image_px",
+        "min_figure_px"
+      ]
+    },
+    {
+      "binding_id": "shelf-assemble",
+      "callback_id": "shelf-assemble",
+      "event_source_id": "shelf-assemble",
+      "input_fields": [
+        "run_id",
+        "title",
+        "author",
+        "language",
+        "sources_json",
+        "entries_json",
+        "review_notes"
+      ]
+    },
+    {
+      "binding_id": "shelf-export",
+      "callback_id": "shelf-export",
+      "event_source_id": "shelf-export",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "edition_id",
+        "path",
+        "manuscript",
+        "output"
+      ]
+    }
+  ],
+  "event_sources": [
+    {
+      "event_source_id": "shelf-plan",
+      "display_name": "Shelf plan",
+      "source_collection": "ShelfJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-extract",
+      "display_name": "Shelf extract",
+      "source_collection": "ShelfChunk",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-analyze",
+      "display_name": "Shelf analyze",
+      "source_collection": "ShelfExtract",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-outline",
+      "display_name": "Shelf outline",
+      "source_collection": "ShelfChunkAnalysis",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-verify",
+      "display_name": "Shelf verify",
+      "source_collection": "ShelfOutline",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-assemble",
+      "source_collection": "ShelfStructureProposal",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-export",
+      "source_collection": "ShelfExportJob",
+      "event_kind": "created",
+      "correlation_field": "edition_id"
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "shelf-analyze",
+      "behavior_id": "shelf-analyze",
+      "display_name": "Shelf analyze",
+      "prompt_template": "./tasks/shelf_analyze/prompt.md"
+    },
+    {
+      "task_id": "shelf-outline",
+      "behavior_id": "shelf-outline",
+      "display_name": "Shelf outline",
+      "prompt_template": "./tasks/shelf_outline/prompt.md"
+    },
+    {
+      "task_id": "shelf-verify",
+      "behavior_id": "shelf-verify",
+      "display_name": "Shelf verify",
+      "prompt_template": "./tasks/shelf_verify/prompt.md"
+    }
+  ],
+  "triggers": [
+    {
+      "trigger_id": "shelf-analyze",
+      "display_name": "Shelf analyze",
+      "task_id": "shelf-analyze",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-analyze"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-outline",
+      "display_name": "Shelf outline",
+      "task_id": "shelf-outline",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-outline"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-verify",
+      "display_name": "Shelf verify",
+      "task_id": "shelf-verify",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-verify"
+      },
+      "concurrency": "parallel"
+    }
+  ],
+  "datastore_tool_surfaces": [
+    {
+      "surface_id": "shelf-analyze-writes",
+      "display_name": "Shelf analyze output",
+      "entries": [
+        {
+          "tool_name": "write_shelf_analyze",
+          "collection": "ShelfChunkAnalysis",
+          "description": "Persist the analyze result for this book run.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "chunk",
+              "required": true
+            },
+            {
+              "name": "expected_total",
+              "required": true
+            },
+            {
+              "name": "source",
+              "fill": {
+                "source_field": "source"
+              }
+            },
+            {
+              "name": "complete",
+              "required": true
+            },
+            {
+              "name": "page_count",
+              "required": true
+            },
+            {
+              "name": "analysis",
+              "required": true
+            },
+            {
+              "name": "error",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_chunks",
+          "collection": "ShelfChunk",
+          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "fields": [
+            "chunk",
+            "source",
+            "pages"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-outline-writes",
+      "display_name": "Shelf outline output",
+      "entries": [
+        {
+          "tool_name": "write_shelf_outline",
+          "collection": "ShelfOutline",
+          "description": "Persist the outline result for this book run. entries_json is a JSON array of {title,source,page,level,matter_type,content_type,review_notes}. page is a physical 1-based integer; level is 1-6; matter_type must be exactly front_matter, body, or back_matter; content_type is a nonempty section classification.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "title",
+              "required": true
+            },
+            {
+              "name": "author",
+              "required": true
+            },
+            {
+              "name": "language",
+              "required": true
+            },
+            {
+              "name": "sources_json",
+              "required": true
+            },
+            {
+              "name": "entries_json",
+              "required": true
+            },
+            {
+              "name": "review_notes",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_chunks",
+          "collection": "ShelfChunk",
+          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "fields": [
+            "chunk",
+            "source",
+            "pages"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_analyses",
+          "collection": "ShelfChunkAnalysis",
+          "description": "Read all chunk analyses for this run.",
+          "fields": [
+            "chunk",
+            "source",
+            "complete",
+            "analysis",
+            "error"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_extractions",
+          "collection": "ShelfExtract",
+          "description": "Check extraction completeness for this run without loading raw text.",
+          "fields": [
+            "chunk",
+            "source",
+            "complete",
+            "error",
+            "cursor",
+            "warnings",
+            "page_count"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_job",
+          "collection": "ShelfJob",
+          "description": "Read the input file or explicit ordered source list for this run.",
+          "fields": [
+            "path",
+            "files"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_page_index",
+          "collection": "ShelfPage",
+          "description": "List source page numbers and document IDs for this book run, without text. Optional source selects one PDF. If the result reaches the limit, do not assume the index is complete. For a single source select fields [_docID,page]. If line truncation hides tail rows, repeat selecting only [_docID], then read the previously unseen IDs with read_shelf_page. A count of 1000 requires smaller source scope; never certify an incomplete index.",
+          "fields": [
+            "_docID",
+            "source",
+            "page"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "source"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_page",
+          "collection": "ShelfPage",
+          "description": "Read one page of this book run by its _docID from read_shelf_page_index. Use field_page when the result supplies a truncated text field. Example: {\"_docID\":\"bae-...\",\"fields\":[\"page\",\"markdown\"]}. The leading underscore in _docID is required; docID is invalid.",
+          "fields": [
+            "_docID",
+            "source",
+            "page",
+            "markdown"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "_docID",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-verify-writes",
+      "display_name": "Shelf verify output",
+      "entries": [
+        {
+          "tool_name": "write_shelf_verify",
+          "collection": "ShelfStructureProposal",
+          "description": "Persist the verify result for this book run. entries_json is a JSON array of {title,source,page,level,matter_type,content_type,review_notes}. page is a physical 1-based integer; level is 1-6; matter_type must be exactly front_matter, body, or back_matter; content_type is a nonempty section classification.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "title",
+              "required": true
+            },
+            {
+              "name": "author",
+              "required": true
+            },
+            {
+              "name": "language",
+              "required": true
+            },
+            {
+              "name": "sources_json",
+              "fill": {
+                "source_field": "sources_json"
+              }
+            },
+            {
+              "name": "entries_json",
+              "required": true
+            },
+            {
+              "name": "review_notes",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_chunks",
+          "collection": "ShelfChunk",
+          "description": "Read the entire planned chunk set for this run. Its count is expected_total. Select only needed fields.",
+          "fields": [
+            "chunk",
+            "source",
+            "pages"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_analyses",
+          "collection": "ShelfChunkAnalysis",
+          "description": "Read all chunk analyses for this run.",
+          "fields": [
+            "chunk",
+            "source",
+            "complete",
+            "analysis",
+            "error"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_extractions",
+          "collection": "ShelfExtract",
+          "description": "Check extraction completeness for this run without loading raw text.",
+          "fields": [
+            "chunk",
+            "source",
+            "complete",
+            "error",
+            "cursor",
+            "warnings",
+            "page_count"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_job",
+          "collection": "ShelfJob",
+          "description": "Read the input file or explicit ordered source list for this run.",
+          "fields": [
+            "path",
+            "files"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_page_index",
+          "collection": "ShelfPage",
+          "description": "List source page numbers and document IDs for this book run, without text. Optional source selects one PDF. If the result reaches the limit, do not assume the index is complete. For a single source select fields [_docID,page]. If line truncation hides tail rows, repeat selecting only [_docID], then read the previously unseen IDs with read_shelf_page. A count of 1000 requires smaller source scope; never certify an incomplete index.",
+          "fields": [
+            "_docID",
+            "source",
+            "page"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "source"
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "read_shelf_page",
+          "collection": "ShelfPage",
+          "description": "Read one page of this book run by its _docID from read_shelf_page_index. Use field_page when the result supplies a truncated text field. Example: {\"_docID\":\"bae-...\",\"fields\":[\"page\",\"markdown\"]}. The leading underscore in _docID is required; docID is invalid.",
+          "fields": [
+            "_docID",
+            "source",
+            "page",
+            "markdown"
+          ],
+          "filter_fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "_docID",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-requests",
+      "display_name": "Shelf ingestion and edition requests",
+      "entries": [
+        {
+          "tool_name": "request_shelf_book",
+          "collection": "ShelfJob",
+          "description": "Start a structured-book run from one file or an explicitly ordered list in a folder. Use a fresh run_id.",
+          "fields": [
+            {
+              "name": "run_id",
+              "required": true
+            },
+            {
+              "name": "path",
+              "required": true
+            },
+            {
+              "name": "files",
+              "required": false
+            },
+            {
+              "name": "ocr",
+              "required": false
+            },
+            {
+              "name": "remote_ocr",
+              "required": false
+            }
+          ]
+        },
+        {
+          "tool_name": "request_shelf_edition",
+          "collection": "ShelfExportJob",
+          "description": "Export a reviewed UTF-8 manuscript file through the EPUB node. Manuscript JSON: {identifier,title,author,language,modified,chapters:[{title,paragraphs:[text]}]}. modified is a UTC timestamp YYYY-MM-DDTHH:MM:SSZ; paragraphs are literal text, not HTML. path is its folder, manuscript its simple file name, output a new .epub file name. The node records ShelfEdition after writing the artifact. Text editions only.",
+          "fields": [
+            {
+              "name": "run_id",
+              "required": true
+            },
+            {
+              "name": "book_id",
+              "required": true
+            },
+            {
+              "name": "edition_id",
+              "required": true
+            },
+            {
+              "name": "path",
+              "required": true
+            },
+            {
+              "name": "manuscript",
+              "required": true
+            },
+            {
+              "name": "output",
+              "required": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

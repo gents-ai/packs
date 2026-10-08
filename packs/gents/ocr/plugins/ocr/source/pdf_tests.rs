@@ -336,7 +336,7 @@ fn an_image_declared_far_too_large_is_skipped_not_decoded() {
     assert!(doc.figures.is_empty());
     assert_eq!(
         doc.warnings,
-        vec!["page 1: an image of 40000x40000 pixels is over the 50000000 pixel limit and was skipped".to_string()]
+        vec!["page 1: an image of 40000x40000 pixels is over the 64000000 pixel limit and was skipped".to_string()]
     );
     // A scanned page of that size cannot be rendered for OCR: said, not attempted.
     let scan = PageSpec {

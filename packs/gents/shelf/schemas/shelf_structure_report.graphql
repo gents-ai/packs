@@ -1,0 +1,8 @@
+type ShelfStructureReport {
+  run_id: String @index
+  book_id: String
+  page_count: Int
+  chapter_count: Int
+  covered_pages: Int
+  review_notes: String
+}

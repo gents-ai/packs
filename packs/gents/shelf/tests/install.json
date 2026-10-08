@@ -1,0 +1,52 @@
+{
+  "install": {
+    "documents": [
+      "AgentBehavior/shelf",
+      "AgentBehavior/shelf-analyze",
+      "AgentBehavior/shelf-outline",
+      "AgentBehavior/shelf-verify",
+      "AgentContext/shelf-analyze-context",
+      "AgentContext/shelf-context",
+      "AgentContext/shelf-outline-context",
+      "AgentContext/shelf-verify-context",
+      "Callback/shelf-assemble",
+      "Callback/shelf-extract",
+      "Callback/shelf-plan",
+      "CallbackBinding/shelf-assemble",
+      "CallbackBinding/shelf-extract",
+      "CallbackBinding/shelf-plan",
+      "DatastoreToolSurface/shelf-analyze-writes",
+      "DatastoreToolSurface/shelf-outline-writes",
+      "DatastoreToolSurface/shelf-verify-writes",
+      "EventSource/shelf-analyze",
+      "EventSource/shelf-assemble",
+      "EventSource/shelf-extract",
+      "EventSource/shelf-outline",
+      "EventSource/shelf-plan",
+      "EventSource/shelf-verify",
+      "Task/shelf-analyze",
+      "Task/shelf-outline",
+      "Task/shelf-verify",
+      "Tools/shelf-analyze-tools",
+      "Tools/shelf-outline-tools",
+      "Tools/shelf-tools",
+      "Tools/shelf-verify-tools",
+      "Trigger/shelf-analyze",
+      "Trigger/shelf-outline",
+      "Trigger/shelf-verify",
+      "Callback/shelf-export",
+      "EventSource/shelf-export",
+      "CallbackBinding/shelf-export",
+      "DatastoreToolSurface/shelf-requests"
+    ],
+    "plugins": [
+      "shelf_export",
+      "shelf_structure"
+    ],
+    "slots": [
+      "librarian",
+      "reader"
+    ],
+    "dependencies": []
+  }
+}

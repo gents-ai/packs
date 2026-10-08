@@ -1,0 +1,24 @@
+{
+  "jq": [
+    {
+      "name": "OCR callbacks reuse the external plugin",
+      "expr": "[.config.callbacks[] | select(.callback_id == \"shelf-plan\" or .callback_id == \"shelf-extract\") | .handler.plugin] == [\"gents/ocr\",\"gents/ocr\"]"
+    },
+    {
+      "name": "outline waits for every chunk analysis",
+      "expr": ".config.event_sources[] | select(.event_source_id == \"shelf-outline\") | .group.expected_count.source_field == \"expected_total\""
+    },
+    {
+      "name": "pipeline agents have only scoped reads",
+      "expr": "[.config.tools[] | select(.tools_id == \"shelf-analyze-tools\" or .tools_id == \"shelf-outline-tools\" or .tools_id == \"shelf-verify-tools\") | .datastore.enable_defra_query] == [false,false,false]"
+    },
+    {
+      "name": "pipeline read filters are runtime-bound to the book",
+      "expr": "[.config.datastore_tool_surfaces[] | (.entries.entries // .entries)[] | select(.kind == \"query\") | .filter_fields | any(.name == \"run_id\" and .fill == \"correlation\")] | all"
+    },
+    {
+      "name": "native assembly and EPUB output run as callbacks",
+      "expr": "[.config.callbacks[] | select(.callback_id == \"shelf-assemble\" or .callback_id == \"shelf-export\") | .handler.kind] == [\"plugin\",\"plugin\"]"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+type ShelfExportJob {
+  run_id: String @index
+  book_id: String
+  edition_id: String
+  path: String
+  manuscript: String
+  output: String
+}

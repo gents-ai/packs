@@ -1,0 +1,10 @@
+type ShelfChunkAnalysis {
+  run_id: String @index
+  chunk: Int
+  expected_total: Int
+  source: String
+  complete: Boolean
+  page_count: Int
+  analysis: String
+  error: String
+}

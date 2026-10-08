@@ -1,0 +1,188 @@
+{
+  "manifest_version": 1,
+  "namespace": "gents",
+  "name": "shelf",
+  "version": "0.1.0",
+  "kind": "documents",
+  "description": "A book digitization library with durable transcriptions, chapter review and text EPUB export.",
+  "authors": [
+    "gents contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [],
+  "inference_slots": [
+    {
+      "name": "librarian",
+      "behaviors": [
+        "shelf",
+        "shelf-outline",
+        "shelf-verify"
+      ],
+      "description": "Reviews OCR, organizes chapters and prepares digital editions."
+    },
+    {
+      "name": "reader",
+      "behaviors": [
+        "shelf-analyze"
+      ],
+      "description": "Analyzes independent OCR chunks for contents and heading evidence."
+    }
+  ],
+  "schemas": [
+    "schemas/shelf_book.graphql",
+    "schemas/shelf_chapter.graphql",
+    "schemas/shelf_chunk.graphql",
+    "schemas/shelf_chunk_analysis.graphql",
+    "schemas/shelf_edition.graphql",
+    "schemas/shelf_extract.graphql",
+    "schemas/shelf_figure.graphql",
+    "schemas/shelf_job.graphql",
+    "schemas/shelf_outline.graphql",
+    "schemas/shelf_page.graphql",
+    "schemas/shelf_structure_proposal.graphql",
+    "schemas/shelf_structure_report.graphql",
+    "schemas/shelf_export_job.graphql"
+  ],
+  "plugins": [
+    {
+      "name": "shelf_export",
+      "language": "rust",
+      "source": "plugins/shelf_export",
+      "artifact": "plugins/shelf_export.afb",
+      "description": "Export a reviewed text manuscript as an EPUB 3 book.",
+      "instructions": "plugins/shelf_export/TOOL.md",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Folder holding the manuscript and receiving the EPUB edition",
+        "access": "read_write"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host."
+          },
+          "manuscript": {
+            "type": "string",
+            "default": "manuscript.json"
+          },
+          "output": {
+            "type": "string",
+            "description": "New EPUB file name in the folder."
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "edition_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "output"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "shelf_structure",
+      "language": "rust",
+      "source": "plugins/shelf_structure",
+      "artifact": "plugins/shelf_structure.afb",
+      "description": "Validate chapter boundaries and assemble a page-complete structured book.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "sources_json": {
+            "type": "string"
+          },
+          "entries_json": {
+            "type": "string"
+          },
+          "review_notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "title",
+          "author",
+          "language",
+          "sources_json",
+          "entries_json",
+          "review_notes"
+        ],
+        "additionalProperties": false
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 4
+      }
+    }
+  ],
+  "tags": [
+    "books",
+    "ocr",
+    "epub",
+    "library"
+  ],
+  "assets": [
+    "README.md",
+    "agent_behaviors/shelf_analyze/system_prompt.md",
+    "agent_behaviors/shelf_outline/system_prompt.md",
+    "agent_behaviors/shelf_verify/system_prompt.md",
+    "agent_behaviors/shelf/system_prompt.md",
+    "notice.md",
+    "pack_config.json",
+    "plugins/shelf_export.afb",
+    "plugins/shelf_export/TOOL.md",
+    "plugins/shelf_structure.afb",
+    "schemas/shelf_book.graphql",
+    "schemas/shelf_chapter.graphql",
+    "schemas/shelf_chunk.graphql",
+    "schemas/shelf_chunk_analysis.graphql",
+    "schemas/shelf_edition.graphql",
+    "schemas/shelf_extract.graphql",
+    "schemas/shelf_figure.graphql",
+    "schemas/shelf_job.graphql",
+    "schemas/shelf_outline.graphql",
+    "schemas/shelf_page.graphql",
+    "schemas/shelf_structure_proposal.graphql",
+    "schemas/shelf_structure_report.graphql",
+    "tasks/shelf_analyze/prompt.md",
+    "tasks/shelf_outline/prompt.md",
+    "tasks/shelf_verify/prompt.md",
+    "tests/content.json",
+    "tests/install.json",
+    "tests/assembly.json",
+    "schemas/shelf_export_job.graphql",
+    "tests/export.json",
+    "plugins/shelf_export/tests/fixtures/manuscript.json"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "repository": {
+      "access": "read_write",
+      "copy": {
+        "manuscript.json": "plugins/shelf_export/tests/fixtures/manuscript.json"
+      }
+    },
+    "seed": {
+      "collection": "ShelfExportJob",
+      "fields": {
+        "run_id": "export-${ATTEMPT}",
+        "book_id": "fixture-book",
+        "edition_id": "fixture-edition",
+        "path": "${REPOSITORY}",
+        "manuscript": "manuscript.json",
+        "output": "edition.epub"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfEdition",
+        "fields": {
+          "book_id": "fixture-book",
+          "edition_id": "fixture-edition",
+          "chapter_count": 2
+        }
+      }
+    ]
+  }
+}

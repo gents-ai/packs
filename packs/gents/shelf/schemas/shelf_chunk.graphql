@@ -1,0 +1,14 @@
+type ShelfChunk {
+  run_id: String @index
+  chunk: Int
+  path: String
+  files: [String]
+  source: String
+  format: String
+  pages: String
+  ocr: String
+  remote_ocr: String
+  figure_images: Boolean
+  max_image_px: Int
+  min_figure_px: Int
+}

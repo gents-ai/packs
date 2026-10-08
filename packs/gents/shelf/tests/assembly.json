@@ -1,0 +1,45 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ShelfStructureProposal",
+      "fields": {
+        "run_id": "fixture-${ATTEMPT}",
+        "title": "Fixture Book",
+        "author": "A Reader",
+        "language": "en",
+        "sources_json": "[{\"source\": \"one.pdf\", \"page_count\": 4}, {\"source\": \"two.pdf\", \"page_count\": 6}]",
+        "entries_json": "[{\"title\": \"First Chapter\", \"source\": \"one.pdf\", \"page\": 3, \"level\": 1, \"matter_type\": \"body\", \"content_type\": \"chapter\"}, {\"title\": \"Second Chapter\", \"source\": \"two.pdf\", \"page\": 3, \"level\": 1, \"matter_type\": \"body\", \"content_type\": \"chapter\"}]",
+        "review_notes": "Fixture"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfStructureReport",
+        "fields": {
+          "covered_pages": 10,
+          "page_count": 10,
+          "chapter_count": 3
+        }
+      },
+      {
+        "collection": "ShelfChapter",
+        "fields": {
+          "title": "First Chapter",
+          "start_page": 3,
+          "end_page": 6
+        }
+      },
+      {
+        "collection": "ShelfBook",
+        "fields": {
+          "title": "Fixture Book",
+          "page_count": 10,
+          "chapter_count": 3
+        }
+      }
+    ],
+    "prerequisites": [
+      "ocr"
+    ]
+  }
+}

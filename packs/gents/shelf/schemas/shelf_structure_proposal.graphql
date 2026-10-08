@@ -1,0 +1,9 @@
+type ShelfStructureProposal {
+  run_id: String @index
+  title: String
+  author: String
+  language: String
+  sources_json: String
+  entries_json: String
+  review_notes: String
+}

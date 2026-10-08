@@ -47,6 +47,8 @@
 #                            keeps the same set, and a remove releases them;
 #                            next to "documents" it also checks the plugins
 #                            a documents or graph pack ships
+#        runtime "prerequisites" may list sibling packs installed explicitly before
+#        the subject pack, for integrations not supported by automatic dependencies.
 #        runtime "repository" may also hold "copy": {"<repo path>": "<file
 #                            path inside the pack>"} for binary files, which
 #                            are copied into the repository before its commit
@@ -376,9 +378,20 @@ runtime_case() {
   # The workspace callback may only create workspaces inside the operator
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
-  "$gents" plugin dirs add "$repo" --home "$home" >"$work/$name-allowed.json"
+  "$gents" plugin dirs add "$repo" --home "$home" --access "$(jq -r '.runtime.repository.access // "read"' "$case")" >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
+  local prerequisite prerequisite_dir profile slot prerequisite_args=()
+  profile="$(jq -r '.inference_profile_id' "$home.json")"
+  while read -r prerequisite; do
+    [[ "$prerequisite" =~ ^[a-z][a-z0-9_]*$ ]] || { fail "$name: invalid prerequisite pack name"; return; }
+    prerequisite_dir="$(dirname "$dir")/$prerequisite"
+    "$gents" pack build "$prerequisite_dir" --out "$work/prerequisite-$prerequisite.pack" >"$work/$prerequisite-build.json"
+    prerequisite_args=()
+    while read -r slot; do prerequisite_args+=(--inference-slot "$slot=$profile"); done < <(
+      jq -r '.inference_slots // [] | .[] | select(.optional != true) | .name' "$prerequisite_dir/manifest.json")
+    "$gents" pack install "$prerequisite_dir" --home "$home" --grant-authority ${prerequisite_args[@]+"${prerequisite_args[@]}"} >"$work/$prerequisite-install.json"
+  done < <(jq -r '.runtime.prerequisites // [] | .[]' "$case")
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"

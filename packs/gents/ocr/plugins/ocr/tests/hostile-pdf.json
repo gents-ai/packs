@@ -9,7 +9,7 @@
         "pages": 1,
         "source": "hostile.pdf",
         "warnings": [
-          "page 1: an image of 40000x40000 pixels is over the 50000000 pixel limit and was skipped"
+          "page 1: an image of 40000x40000 pixels is over the 64000000 pixel limit and was skipped"
         ]
       },
       {
