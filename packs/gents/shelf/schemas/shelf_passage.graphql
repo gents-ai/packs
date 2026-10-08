@@ -1,0 +1,11 @@
+type ShelfPassage {
+  run_id: String @index
+  book_id: String @index
+  edition_id: String @index
+  passage_id: String @index
+  chapter_id: String
+  chapter_title: String
+  markdown: String
+  source_spans_json: String
+  epub_href: String
+}

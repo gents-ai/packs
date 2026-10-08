@@ -25,6 +25,18 @@
       "context_id": "shelf-verify-context",
       "display_name": "Shelf verify",
       "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-polish",
+      "context_id": "shelf-polish-context",
+      "display_name": "Shelf text polish",
+      "inference_profile_id": "gents:inference-slot:reader"
+    },
+    {
+      "behavior_id": "shelf-polish-secondary",
+      "context_id": "shelf-polish-context",
+      "display_name": "Shelf text polish (second endpoint)",
+      "inference_profile_id": "gents:inference-slot:librarian"
     }
   ],
   "contexts": [
@@ -48,6 +60,11 @@
       "context_id": "shelf-verify-context",
       "system_prompt": "./agent_behaviors/shelf_verify/system_prompt.md",
       "tools_id": "shelf-verify-tools"
+    },
+    {
+      "context_id": "shelf-polish-context",
+      "system_prompt": "./agent_behaviors/shelf_polish/system_prompt.md",
+      "tools_id": "shelf-polish-tools"
     }
   ],
   "tools": [
@@ -84,7 +101,14 @@
           "ShelfBook",
           "ShelfChapter",
           "ShelfEdition",
-          "ShelfExportJob"
+          "ShelfExportJob",
+          "ShelfPrepareJob",
+          "ShelfEditionPlan",
+          "ShelfPolishAttempt",
+          "ShelfPolishProposal",
+          "ShelfPolishedChunk",
+          "ShelfPreparedBook",
+          "ShelfPassage"
         ],
         "datastore_tool_surface_ids": [
           "shelf-requests"
@@ -118,6 +142,15 @@
         "enable_defra_query": false,
         "datastore_tool_surface_ids": [
           "shelf-verify-writes"
+        ]
+      }
+    },
+    {
+      "tools_id": "shelf-polish-tools",
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-polish-writes"
         ]
       }
     }
@@ -233,6 +266,103 @@
           }
         ]
       }
+    },
+    {
+      "callback_id": "shelf-prepare",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_prepare",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "plan",
+            "collection": "ShelfEditionPlan",
+            "schema": "ShelfEditionPlan/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          },
+          {
+            "name": "chunks",
+            "collection": "ShelfPolishAttempt",
+            "schema": "ShelfPolishAttempt/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "callback_id": "shelf-apply-polish",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_prepare",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "chunk",
+            "collection": "ShelfPolishedChunk",
+            "schema": "ShelfPolishedChunk/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "retry",
+            "collection": "ShelfPolishAttempt",
+            "schema": "ShelfPolishAttempt/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "failure",
+            "collection": "ShelfEditionFailure",
+            "schema": "ShelfEditionFailure/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "callback_id": "shelf-finish-edition",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_prepare",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "prepared",
+            "collection": "ShelfPreparedBook",
+            "schema": "ShelfPreparedBook/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          },
+          {
+            "name": "passages",
+            "collection": "ShelfPassage",
+            "schema": "ShelfPassage/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": true
+          },
+          {
+            "name": "export",
+            "collection": "ShelfExportJob",
+            "schema": "ShelfExportJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          }
+        ]
+      }
     }
   ],
   "callback_bindings": [
@@ -296,6 +426,45 @@
         "manuscript",
         "output"
       ]
+    },
+    {
+      "binding_id": "shelf-prepare",
+      "callback_id": "shelf-prepare",
+      "event_source_id": "shelf-prepare",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "structured",
+        "modified",
+        "output"
+      ]
+    },
+    {
+      "binding_id": "shelf-apply-polish",
+      "callback_id": "shelf-apply-polish",
+      "event_source_id": "shelf-apply-polish",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "plan",
+        "chunk_ref",
+        "edits_json",
+        "attempt"
+      ]
+    },
+    {
+      "binding_id": "shelf-finish-edition",
+      "callback_id": "shelf-finish-edition",
+      "event_source_id": "shelf-finish-edition",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "plan",
+        "chunk_ref"
+      ]
     }
   ],
   "event_sources": [
@@ -350,6 +519,43 @@
       "source_collection": "ShelfExportJob",
       "event_kind": "created",
       "correlation_field": "edition_id"
+    },
+    {
+      "event_source_id": "shelf-polish",
+      "source_collection": "ShelfPolishAttempt",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "filter": "{ lane: { _eq: \"reader\" } }"
+    },
+    {
+      "event_source_id": "shelf-prepare",
+      "source_collection": "ShelfPrepareJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-apply-polish",
+      "source_collection": "ShelfPolishProposal",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-finish-edition",
+      "source_collection": "ShelfPolishedChunk",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-polish-secondary",
+      "source_collection": "ShelfPolishAttempt",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "filter": "{ lane: { _eq: \"librarian\" } }"
     }
   ],
   "tasks": [
@@ -370,6 +576,16 @@
       "behavior_id": "shelf-verify",
       "display_name": "Shelf verify",
       "prompt_template": "./tasks/shelf_verify/prompt.md"
+    },
+    {
+      "task_id": "shelf-polish",
+      "behavior_id": "shelf-polish",
+      "prompt_template": "./tasks/shelf_polish/prompt.md"
+    },
+    {
+      "task_id": "shelf-polish-secondary",
+      "behavior_id": "shelf-polish-secondary",
+      "prompt_template": "./tasks/shelf_polish/prompt.md"
     }
   ],
   "triggers": [
@@ -400,6 +616,24 @@
       "source": {
         "kind": "event",
         "event_source_id": "shelf-verify"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-polish",
+      "task_id": "shelf-polish",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-polish"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-polish-secondary",
+      "task_id": "shelf-polish-secondary",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-polish-secondary"
       },
       "concurrency": "parallel"
     }
@@ -856,6 +1090,91 @@
               "required": true
             }
           ]
+        },
+        {
+          "tool_name": "request_shelf_readable_edition",
+          "collection": "ShelfPrepareJob",
+          "description": "Build a polished EPUB and matching citable passages from a validated structured-book.json snapshot. run_id is a new edition ID. path is its writable edition folder; structured is a simple JSON filename. modified is UTC YYYY-MM-DDTHH:MM:SSZ; output is a new EPUB filename. This invokes native cleanup, bounded agent polish, strict edit application, and complete-edition assembly.",
+          "fields": [
+            {
+              "name": "run_id",
+              "required": true
+            },
+            {
+              "name": "book_id",
+              "required": true
+            },
+            {
+              "name": "path",
+              "required": true
+            },
+            {
+              "name": "structured",
+              "required": true
+            },
+            {
+              "name": "modified",
+              "required": true
+            },
+            {
+              "name": "output",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-polish-writes",
+      "entries": [
+        {
+          "tool_name": "write_shelf_polish",
+          "collection": "ShelfPolishProposal",
+          "description": "Submit exact local edits as edits_json, a JSON array of {block_id,old_text,new_text,reason}. Each old_text must occur exactly once in that block. Limit each old_text to 1200 bytes and new_text to 2400 bytes. Never delete a whole block. Use [] when no correction is supported. Scope and chunk identity are filled by the host.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "plan",
+              "fill": {
+                "source_field": "plan"
+              }
+            },
+            {
+              "name": "chunk_ref",
+              "fill": {
+                "source_field": "chunk_ref"
+              }
+            },
+            {
+              "name": "edits_json",
+              "required": true
+            },
+            {
+              "name": "attempt",
+              "fill": {
+                "source_field": "attempt"
+              }
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
         }
       ]
     }

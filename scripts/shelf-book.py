@@ -21,6 +21,53 @@ def call(*args, json_output=True):
     return json.loads(result.stdout) if json_output else result.stdout
 
 
+def source_fields(sources, base=Path.cwd()):
+    inputs = [(base / Path(p).expanduser()).resolve(strict=True) for p in sources]
+    if not inputs or any(not p.is_file() for p in inputs) or len(set(inputs)) != len(inputs):
+        raise RuntimeError("sources must be distinct existing files")
+    if len({p.parent for p in inputs}) != 1:
+        raise RuntimeError("multi-part sources must be in the same folder; list them in reading order")
+    fields = {"path": str(inputs[0] if len(inputs) == 1 else inputs[0].parent),
+              "ocr": "auto", "remote_ocr": "off", "figure_images": False}
+    if len(inputs) > 1:
+        fields["files"] = [p.name for p in inputs]
+    return fields
+
+
+def submit_batch(args):
+    """Submit independent jobs to one existing runtime; triggers own all scheduling."""
+    manifest = args.manifest.expanduser().resolve(strict=True)
+    items = json.loads(manifest.read_text())
+    if not isinstance(items, list) or not items:
+        raise RuntimeError("batch manifest must be a nonempty array of {run_id, sources} objects")
+    jobs = {}
+    for item in items:
+        if (not isinstance(item, dict) or set(item) != {"run_id", "sources"}
+                or not isinstance(item["run_id"], str) or not item["run_id"].strip()
+                or not isinstance(item["sources"], list)
+                or not all(isinstance(p, str) and p for p in item["sources"])):
+            raise RuntimeError("each batch item must contain only a nonempty run_id and a sources array")
+        run_id = item["run_id"]
+        if run_id in jobs:
+            raise RuntimeError(f"duplicate batch run_id: {run_id}")
+        jobs[run_id] = dict(run_id=run_id, **source_fields(item["sources"], manifest.parent))
+    pending = []
+    # Inspect the whole batch before submitting, so a conflicting ID cannot partially enqueue it.
+    for run_id, fields in jobs.items():
+        existing = query(args.home, "ShelfJob", run_id, ["path", "files", "ocr", "remote_ocr", "figure_images"])
+        expected = {k: v for k, v in fields.items() if k != "run_id"}
+        if existing:
+            actual = {k: v for k, v in existing[0].items() if not (k == "files" and not v)}
+            if len(existing) != 1 or actual != expected:
+                raise RuntimeError(f"run_id {run_id} already belongs to a different job; use a new ID")
+        else:
+            pending.append(fields)
+    for fields in pending:
+        call("document", "create", "ShelfJob", "--home", args.home, "--json", json.dumps(fields))
+        print(json.dumps({"run_id": fields["run_id"], "status": "submitted"}), flush=True)
+    print(json.dumps({"submitted": len(pending), "already_submitted": len(jobs) - len(pending)}), flush=True)
+
+
 class FieldReader:
     """Recover long strings through Gents' canonical query MCP surface."""
 
@@ -165,7 +212,7 @@ def run(args):
     home = directory / "home"
     first_model = model(args.endpoint)
     initialized = call("init", "--home", home, "--agent-name", "shelf", "--backend-preset", "vllm", "--inference-url", args.endpoint,
-                       "--model-name", first_model, "--max-concurrent", "3", "--tool-root", directory)
+                       "--model-name", first_model, "--max-concurrent", args.max_concurrent, "--tool-root", directory)
     reader = initialized["inference_profile_id"]
     librarian = reader
     if args.structure_endpoint:
@@ -237,17 +284,25 @@ def main():
     export_parser.add_argument("--run-id", required=True)
     export_parser.add_argument("--output", type=Path, required=True)
     export_parser.add_argument("--mcp-endpoint", help="Local Gents /mcp endpoint for complete long-field reads")
+    batch_parser = sub.add_parser("submit-batch", help="Enqueue independent books on one running, configured Gents home")
+    batch_parser.add_argument("--home", type=Path, required=True)
+    batch_parser.add_argument("--manifest", type=Path, required=True, help="JSON array of {run_id, sources}; paths relative to this file")
     run_parser = sub.add_parser("run")
     run_parser.add_argument("sources", type=Path, nargs="+")
     run_parser.add_argument("--endpoint", required=True, help="OpenAI-compatible /v1 endpoint exposing one model")
     run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for outline and verification")
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")
     run_parser.add_argument("--timeout", type=int, default=7200)
+    run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")
     args = parser.parse_args()
     try:
         if args.command == "export":
             export(args.home, args.run_id, args.output, args.mcp_endpoint)
+        elif args.command == "submit-batch":
+            submit_batch(args)
         else:
+            if args.max_concurrent < 1:
+                raise RuntimeError("--max-concurrent must be positive")
             run(args)
     except (RuntimeError, OSError, ValueError, subprocess.CalledProcessError) as error:
         parser.exit(1, f"shelf: {error}\n")

@@ -16,14 +16,16 @@
       "behaviors": [
         "shelf",
         "shelf-outline",
-        "shelf-verify"
+        "shelf-verify",
+        "shelf-polish-secondary"
       ],
       "description": "Reviews OCR, organizes chapters and prepares digital editions."
     },
     {
       "name": "reader",
       "behaviors": [
-        "shelf-analyze"
+        "shelf-analyze",
+        "shelf-polish"
       ],
       "description": "Analyzes independent OCR chunks for contents and heading evidence."
     }
@@ -41,7 +43,15 @@
     "schemas/shelf_page.graphql",
     "schemas/shelf_structure_proposal.graphql",
     "schemas/shelf_structure_report.graphql",
-    "schemas/shelf_export_job.graphql"
+    "schemas/shelf_export_job.graphql",
+    "schemas/shelf_prepare_job.graphql",
+    "schemas/shelf_edition_plan.graphql",
+    "schemas/shelf_polish_attempt.graphql",
+    "schemas/shelf_polish_proposal.graphql",
+    "schemas/shelf_polished_chunk.graphql",
+    "schemas/shelf_prepared_book.graphql",
+    "schemas/shelf_passage.graphql",
+    "schemas/shelf_edition_failure.graphql"
   ],
   "plugins": [
     {
@@ -144,6 +154,64 @@
         "wall_clock_secs": 30,
         "max_output_mib": 4
       }
+    },
+    {
+      "name": "shelf_prepare",
+      "language": "rust",
+      "source": "plugins/shelf_prepare",
+      "artifact": "plugins/shelf_prepare.afb",
+      "description": "Prepare source-mapped passages, apply exact polish edits, and assemble a reviewed edition. Invoked by document callbacks.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Edition folder containing source snapshot and immutable review artifacts",
+        "access": "read_write"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "structured": {
+            "type": "string"
+          },
+          "modified": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "chunk_ref": {
+            "type": "string"
+          },
+          "edits_json": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "run_id",
+          "book_id"
+        ]
+      },
+      "limits": {
+        "memory_mib": 256,
+        "wall_clock_secs": 60,
+        "max_output_mib": 4
+      }
     }
   ],
   "tags": [
@@ -183,6 +251,17 @@
     "tests/assembly.json",
     "schemas/shelf_export_job.graphql",
     "tests/export.json",
-    "plugins/shelf_export/tests/fixtures/manuscript.json"
+    "plugins/shelf_export/tests/fixtures/manuscript.json",
+    "schemas/shelf_prepare_job.graphql",
+    "schemas/shelf_edition_plan.graphql",
+    "schemas/shelf_polish_attempt.graphql",
+    "schemas/shelf_polish_proposal.graphql",
+    "schemas/shelf_polished_chunk.graphql",
+    "schemas/shelf_prepared_book.graphql",
+    "schemas/shelf_passage.graphql",
+    "plugins/shelf_prepare.afb",
+    "agent_behaviors/shelf_polish/system_prompt.md",
+    "tasks/shelf_polish/prompt.md",
+    "schemas/shelf_edition_failure.graphql"
   ]
 }

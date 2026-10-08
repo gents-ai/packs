@@ -1,0 +1,12 @@
+type ShelfPolishAttempt {
+  run_id: String @index
+  book_id: String
+  path: String
+  plan: String
+  chunk_ref: String
+  attempt: String
+  feedback: String
+  lane: String
+  title: String
+  blocks_json: String
+}

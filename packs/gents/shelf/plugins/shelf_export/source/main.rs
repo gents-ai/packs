@@ -52,7 +52,9 @@ struct Chapter {
     #[serde(default)]
     blocks: Vec<Block>,
 }
-fn one() -> u64 { 1 }
+fn one() -> u64 {
+    1
+}
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Block {
@@ -272,54 +274,136 @@ fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
         "META-INF/container.xml",
         r#"<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>"#,
     )?;
-    let names: Vec<String> = book.chapters.iter().enumerate().map(|(i,c)| {
-        if c.id.is_empty() { format!("chapter-{}.xhtml",i+1) } else { format!("{}.xhtml",c.id) }
-    }).collect();
+    let names: Vec<String> = book
+        .chapters
+        .iter()
+        .enumerate()
+        .map(|(i, c)| {
+            if c.id.is_empty() {
+                format!("chapter-{}.xhtml", i + 1)
+            } else {
+                format!("{}.xhtml", c.id)
+            }
+        })
+        .collect();
     let mut ids = std::collections::BTreeSet::new();
-    for (chapter,name) in book.chapters.iter().zip(&names) {
+    for (chapter, name) in book.chapters.iter().zip(&names) {
         filename(name)?;
-        if !ids.insert(name.clone()) || (!chapter.id.is_empty() && !render::valid_id(&chapter.id)) {return Err("section IDs must be unique XML IDs".into());}
+        if !ids.insert(name.clone()) || (!chapter.id.is_empty() && !render::valid_id(&chapter.id)) {
+            return Err("section IDs must be unique XML IDs".into());
+        }
         for b in &chapter.blocks {
-            if !render::valid_id(&b.id) || !ids.insert(b.id.clone()) {return Err("passage IDs must be unique XML IDs".into());}
-            for source in &b.sources {if source.source.is_empty() || source.page==0 || source.end_byte<source.start_byte {return Err("invalid source span".into());}}
+            if !render::valid_id(&b.id) || !ids.insert(b.id.clone()) {
+                return Err("passage IDs must be unique XML IDs".into());
+            }
+            for source in &b.sources {
+                if source.source.is_empty()
+                    || source.page == 0
+                    || source.end_byte < source.start_byte
+                {
+                    return Err("invalid source span".into());
+                }
+            }
         }
     }
-    let navigation=render::navigation(book,&names)?;
-    let mut manifest=String::new();
-    let mut spine=String::from(r#"<itemref idref="nav"/>"#);
-    let mut pages=std::collections::BTreeSet::new();
-    let mut page_list=String::new();
-    let mut citations=Vec::new();
-    add("OEBPS/style.css",render::CSS)?;
-    for (i,chapter) in book.chapters.iter().enumerate() {
-        if chapter.title.trim().is_empty() || (chapter.paragraphs.is_empty() && chapter.blocks.is_empty()) || !(1..=6).contains(&chapter.level) {
-            return Err(format!("chapter {} needs a title, level 1-6, and content",i+1));
+    let navigation = render::navigation(book, &names)?;
+    let mut manifest = String::new();
+    let mut spine = String::from(r#"<itemref idref="nav"/>"#);
+    let mut pages = std::collections::BTreeSet::new();
+    let mut page_list = String::new();
+    let mut citations = Vec::new();
+    add("OEBPS/style.css", render::CSS)?;
+    for (i, chapter) in book.chapters.iter().enumerate() {
+        if chapter.title.trim().is_empty()
+            || (chapter.paragraphs.is_empty() && chapter.blocks.is_empty())
+            || !(1..=6).contains(&chapter.level)
+        {
+            return Err(format!(
+                "chapter {} needs a title, level 1-6, and content",
+                i + 1
+            ));
         }
-        let mut content=String::new();
-        let is_contents=chapter.title.trim().eq_ignore_ascii_case("contents") || chapter.title.trim().eq_ignore_ascii_case("table of contents");
+        let mut content = String::new();
+        let is_contents = chapter.title.trim().eq_ignore_ascii_case("contents")
+            || chapter
+                .title
+                .trim()
+                .eq_ignore_ascii_case("table of contents");
         for block in &chapter.blocks {
-            let mut markers=String::new();
+            let mut markers = String::new();
             for source in &block.sources {
-                if pages.insert((source.source.clone(),source.page)) {
-                    let anchor=render::page_id(&source.source,source.page);
+                if pages.insert((source.source.clone(), source.page)) {
+                    let anchor = render::page_id(&source.source, source.page);
                     markers.push_str(&format!(r#"<span epub:type="pagebreak" role="doc-pagebreak" id="{anchor}" aria-label="Scan page {}"/>"#,source.page));
-                    page_list.push_str(&format!(r#"<li><a href="{}#{anchor}">{} — scan {}</a></li>"#,names[i],xml(&source.source)?,source.page));
+                    page_list.push_str(&format!(
+                        r#"<li><a href="{}#{anchor}">{} — scan {}</a></li>"#,
+                        names[i],
+                        xml(&source.source)?,
+                        source.page
+                    ));
                 }
             }
             citations.push(json!({"passage_id":block.id,"chapter_id":chapter.id,"chapter_title":chapter.title,"epub_href":format!("OEBPS/{}#{}",names[i],block.id),"markdown":block.markdown,"source_spans":block.sources}));
-            let text=render::markdown(&block.markdown)?;
-            content.push_str(&format!(r#"<div id="{}" class="passage{}">{markers}{text}</div>"#,block.id,if is_contents {" source-contents"}else{""}));
+            let text = render::markdown(&block.markdown)?;
+            content.push_str(&format!(
+                r#"<div id="{}" class="passage{}">{markers}{text}</div>"#,
+                block.id,
+                if is_contents { " source-contents" } else { "" }
+            ));
         }
-        if is_contents {content=format!(r#"<nav aria-label="Contents">{navigation}</nav><details><summary>Original contents and printed page numbers</summary>{content}</details>"#);}
-        for p in &chapter.paragraphs {if p.trim().is_empty(){return Err("empty paragraph".into());}content.push_str(&format!("<p>{}</p>",xml(p)?));}
-        add(&format!("OEBPS/{}",names[i]),&format!(r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>{}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body class="{}"><section epub:type="chapter" id="section"><h1>{}</h1>{content}</section></body></html>"#,xml(&chapter.title)?,xml(&chapter.matter_type)?,xml(&chapter.title)?))?;
-        manifest.push_str(&format!(r#"<item id="c{i}" href="{}" media-type="application/xhtml+xml"/>"#,names[i]));
+        if is_contents {
+            content = format!(
+                r#"<nav aria-label="Contents">{navigation}</nav><details><summary>Original contents and printed page numbers</summary>{content}</details>"#
+            );
+        }
+        for p in &chapter.paragraphs {
+            if p.trim().is_empty() {
+                return Err("empty paragraph".into());
+            }
+            content.push_str(&format!("<p>{}</p>", xml(p)?));
+        }
+        add(
+            &format!("OEBPS/{}", names[i]),
+            &format!(
+                r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>{}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body class="{}"><section epub:type="chapter" id="section"><h1>{}</h1>{content}</section></body></html>"#,
+                xml(&chapter.title)?,
+                xml(&chapter.matter_type)?,
+                xml(&chapter.title)?
+            ),
+        )?;
+        manifest.push_str(&format!(
+            r#"<item id="c{i}" href="{}" media-type="application/xhtml+xml"/>"#,
+            names[i]
+        ));
         spine.push_str(&format!(r#"<itemref idref="c{i}"/>"#));
     }
-    add("OEBPS/citations.json",&serde_json::to_string(&json!({"edition_id":book.identifier,"passages":citations})).map_err(|e|e.to_string())?)?;
-    let page_nav=if page_list.is_empty(){String::new()}else{format!(r#"<nav epub:type="page-list" hidden="hidden"><h2>Source scan pages</h2><ol>{page_list}</ol></nav>"#)};
-    add("OEBPS/nav.xhtml",&format!(r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>Contents</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body><nav epub:type="toc" id="toc"><h1>Contents</h1>{navigation}</nav>{page_nav}</body></html>"#))?;
-    add("OEBPS/package.opf",&format!(r#"<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id" xml:lang="{language}"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">{}</dc:identifier><dc:title>{title}</dc:title><dc:creator>{}</dc:creator><dc:language>{language}</dc:language><meta property="dcterms:modified">{}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="css" href="style.css" media-type="text/css"/><item id="citations" href="citations.json" media-type="application/json"/>{manifest}</manifest><spine>{spine}</spine></package>"#,xml(&book.identifier)?,xml(&book.author)?,book.modified))?;
+    add(
+        "OEBPS/citations.json",
+        &serde_json::to_string(&json!({"edition_id":book.identifier,"passages":citations}))
+            .map_err(|e| e.to_string())?,
+    )?;
+    let page_nav = if page_list.is_empty() {
+        String::new()
+    } else {
+        format!(
+            r#"<nav epub:type="page-list" hidden="hidden"><h2>Source scan pages</h2><ol>{page_list}</ol></nav>"#
+        )
+    };
+    add(
+        "OEBPS/nav.xhtml",
+        &format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>Contents</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body><nav epub:type="toc" id="toc"><h1>Contents</h1>{navigation}</nav>{page_nav}</body></html>"#
+        ),
+    )?;
+    add(
+        "OEBPS/package.opf",
+        &format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id" xml:lang="{language}"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">{}</dc:identifier><dc:title>{title}</dc:title><dc:creator>{}</dc:creator><dc:language>{language}</dc:language><meta property="dcterms:modified">{}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="css" href="style.css" media-type="text/css"/><item id="citations" href="citations.json" media-type="application/json"/>{manifest}</manifest><spine>{spine}</spine></package>"#,
+            xml(&book.identifier)?,
+            xml(&book.author)?,
+            book.modified
+        ),
+    )?;
     archive
         .finish()
         .map(|c| c.into_inner())

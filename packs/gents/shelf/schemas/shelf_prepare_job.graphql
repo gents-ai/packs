@@ -1,0 +1,8 @@
+type ShelfPrepareJob {
+  run_id: String @index
+  book_id: String
+  path: String
+  structured: String
+  modified: String
+  output: String
+}
