@@ -191,13 +191,15 @@ jobs:
           fi
           "$shell_bin" scripts/test-pack.sh packs/gents/${{ matrix.pack }}
 
-      - name: Shelf native search and operator regressions
+      - name: Shelf native search, source intake, and operator regressions
         if: matrix.pack == 'shelf'
         env:
           GENTS: ${{ github.workspace }}/gents-bin/gents
         run: |
           python3 scripts/test_shelf_book.py
           python3 scripts/test_shelf_library.py
+          python3 scripts/test_shelf_normalize.py
+          python3 scripts/test_shelf_intake.py
 
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
