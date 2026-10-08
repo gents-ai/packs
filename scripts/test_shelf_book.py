@@ -25,7 +25,7 @@ class BatchSubmission(unittest.TestCase):
                 {"run_id": name, "sources": [name + ".pdf"]}
                 for name in ["one", "two", "three"]
             ]))
-            args = SimpleNamespace(home=root / "home", manifest=manifest)
+            args = SimpleNamespace(home=root / "home", manifest=manifest, remote_ocr="auto")
             stored, writes = {}, []
 
             def query(home, collection, run_id, fields):
@@ -46,6 +46,7 @@ class BatchSubmission(unittest.TestCase):
                     shelf.submit_batch(args)
                 shelf.submit_batch(args)
                 self.assertEqual(set(stored), {"one", "two", "three"})
+                self.assertTrue(all(rows[0]["remote_ocr"] == "auto" for rows in stored.values()))
                 self.assertEqual(writes.count("one"), 1)
                 before = list(writes)
                 shelf.submit_batch(args)

@@ -51,6 +51,7 @@ def submit_batch(args):
         if run_id in jobs:
             raise RuntimeError(f"duplicate batch run_id: {run_id}")
         jobs[run_id] = dict(run_id=run_id, **source_fields(item["sources"], manifest.parent))
+        jobs[run_id]["remote_ocr"] = getattr(args, "remote_ocr", "off")
     pending = []
     # Inspect the whole batch before submitting, so a conflicting ID cannot partially enqueue it.
     for run_id, fields in jobs.items():
@@ -305,7 +306,10 @@ def run(args):
             path.write_text(json.dumps(doc))
             call("config", command, "set", "--home", home, "--file", path)
         librarian = profile["profile_id"]
-    for pack, slots in [("ocr", ["document_reader=" + reader]), ("shelf", ["reader=" + reader, "librarian=" + librarian])]:
+    ocr_slots = ["document_reader=" + reader]
+    if args.remote_ocr != "off":
+        ocr_slots.append("remote_ocr=" + reader)
+    for pack, slots in [("ocr", ocr_slots), ("shelf", ["reader=" + reader, "librarian=" + librarian])]:
         source = ROOT / "packs/gents" / pack
         call("pack", "build", source, "--out", directory / (pack + ".pack"))
         install = ["pack", "install", source, "--home", home, "--grant-authority"]
@@ -331,9 +335,8 @@ def run(args):
                 if time.monotonic() > ready:
                     raise RuntimeError("runtime did not become ready; inspect server.log")
                 time.sleep(1)
-            fields = {"run_id": run_id, "path": str(inputs[0] if len(inputs) == 1 else inputs[0].parent), "ocr": "auto", "remote_ocr": "off", "figure_images": False}
-            if len(inputs) > 1:
-                fields["files"] = [p.name for p in inputs]
+            fields = dict(run_id=run_id, **source_fields(inputs))
+            fields["remote_ocr"] = args.remote_ocr
             call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(fields))
             print(f"Shelf run {run_id}; persisted state: {home}", flush=True)
             while time.monotonic() < deadline:
@@ -364,6 +367,8 @@ def main():
     batch_parser = sub.add_parser("submit-batch", help="Enqueue independent books on one running, configured Gents home")
     batch_parser.add_argument("--home", type=Path, required=True)
     batch_parser.add_argument("--manifest", type=Path, required=True, help="JSON array of {run_id, sources}; paths relative to this file")
+    batch_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
+                              help="Vision fallback; auto/force require the installed OCR pack's remote_ocr slot")
     search_parser = sub.add_parser("search", help="BM25 over the latest reviewed edition of each book")
     search_parser.add_argument("--home", type=Path, required=True)
     search_parser.add_argument("--text", required=True)
@@ -384,6 +389,8 @@ def main():
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")
     run_parser.add_argument("--timeout", type=int, default=7200)
     run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")
+    run_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
+                            help="Bind the reader endpoint for vision OCR: auto tries bundled OCR first; force checks every scanned page")
     args = parser.parse_args()
     try:
         if args.command == "export":

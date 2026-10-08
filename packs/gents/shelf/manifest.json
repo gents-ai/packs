@@ -54,7 +54,8 @@
     "schemas/shelf_passage.graphql",
     "schemas/shelf_edition_failure.graphql",
     "schemas/shelf_library_passage.graphql",
-    "schemas/shelf_library_edition.graphql"
+    "schemas/shelf_library_edition.graphql",
+    "schemas/shelf_finalize_job.graphql"
   ],
   "plugins": [
     {
@@ -273,6 +274,10 @@
     "schemas/shelf_library_edition.graphql",
     "agent_behaviors/shelf_research/system_prompt.md",
     "tests/index.json",
-    "plugins/shelf_prepare/tests/fixtures/reviewed_book.json"
+    "plugins/shelf_prepare/tests/fixtures/reviewed_book.json",
+    "schemas/shelf_finalize_job.graphql",
+    "tests/finalize.json",
+    "plugins/shelf_prepare/tests/fixtures/finalize/plan.json",
+    "plugins/shelf_prepare/tests/fixtures/finalize/plan_c0000.json"
   ]
 }

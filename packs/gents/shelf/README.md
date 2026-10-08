@@ -43,6 +43,15 @@ Use `--structure-endpoint` for a second model server. For a multi-part book, pas
 its files in reading order. The script retains its isolated home and checks that
 every extracted page occurs exactly once in the exported chapter ranges.
 Use `--max-concurrent N` to set each backend's simultaneous request limit.
+For a vision-capable reader endpoint, add `--remote-ocr auto`. The launcher binds
+that same endpoint to OCR's optional vision slot. Embedded PDF text is used first;
+scanned pages go through bundled ocrs/RTen recognition, with image requests for
+reads that fail the OCR pack's quality heuristic. `--remote-ocr force` sends every
+scanned page through the vision model; `off` (the default) uses bundled OCR only.
+The option is named remote_ocr by the OCR pack even when the model runs on a local
+workstation. It does not select a cloud service. Automatic fallback detects
+garbled output, not every fluent misreading, and downstream text agents do not
+automatically receive every page image.
 
 For multiple independent books, install Shelf once in a running Gents home and
 grant read access to the source directories. Submit a JSON manifest to that home:
@@ -57,6 +66,9 @@ grant read access to the source directories. Submit a JSON manifest to that home
 ```sh
 python3 scripts/shelf-book.py submit-batch --home /path/to/home --manifest books.json
 ```
+
+Batch submission also accepts `--remote-ocr auto`; first bind the installed OCR
+pack's `remote_ocr` slot to the desired vision profile in that home.
 
 Paths are relative to the manifest. The command enqueues every book without
 waiting for another to finish. Runtime backend limits govern execution; trigger

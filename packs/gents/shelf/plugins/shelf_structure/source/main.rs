@@ -45,7 +45,13 @@ fn main() {
         if raw.len() > 4_000_000 {
             return Err("proposal exceeds 4 MB; reduce outline notes".into());
         }
-        assemble(serde_json::from_str(&raw).map_err(|e| format!("invalid proposal: {e}"))?)
+        let input: Value =
+            serde_json::from_str(&raw).map_err(|e| format!("invalid proposal: {e}"))?;
+        if input.is_array() {
+            finish_signal(input)
+        } else {
+            assemble(serde_json::from_value(input).map_err(|e| format!("invalid proposal: {e}"))?)
+        }
     })();
     match result {
         Ok(value) => {
@@ -59,6 +65,36 @@ fn main() {
             std::process::exit(1);
         }
     }
+}
+
+fn finish_signal(input: Value) -> Result<Value, String> {
+    let rows = input.as_array().ok_or("expected review receipts")?;
+    let first = rows.first().ok_or("empty review group")?;
+    let expected = first["expected_total"]
+        .as_u64()
+        .ok_or("missing expected_total")?;
+    if expected == 0 || rows.len() as u64 != expected {
+        return Err("review group is incomplete".into());
+    }
+    let mut result = serde_json::Map::new();
+    for field in ["run_id", "book_id", "path", "plan"] {
+        let value = first[field]
+            .as_str()
+            .filter(|v| !v.is_empty())
+            .ok_or(format!("missing {field}"))?;
+        if rows.iter().any(|row| row[field] != value) {
+            return Err(format!("review group mixes {field}"));
+        }
+        result.insert(field.into(), json!(value));
+    }
+    let mut members = std::collections::BTreeSet::new();
+    for row in rows {
+        let key = row["chunk_ref"].as_str().ok_or("missing chunk_ref")?;
+        if row["expected_total"].as_u64() != Some(expected) || !members.insert(key) {
+            return Err("review group has conflicting totals or duplicate members".into());
+        }
+    }
+    Ok(Value::Object(result))
 }
 
 /// Sources retain operator order. A leaf owns the half-open interval up to the
@@ -170,6 +206,22 @@ fn assemble(p: Proposal) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn grouped_reviews_require_distinct_members_and_one_book_path() {
+        let first = json!({"run_id":"edition","book_id":"book","path":"/exports/book",
+            "plan":"plan.json","chunk_ref":"c0000","expected_total":2});
+        let mut second = first.clone();
+        second["chunk_ref"] = json!("c0001");
+        let ready = finish_signal(json!([first, second])).unwrap();
+        assert_eq!(
+            ready,
+            json!({"run_id":"edition","book_id":"book","path":"/exports/book","plan":"plan.json"})
+        );
+        assert!(finish_signal(json!([first])).is_err());
+        assert!(finish_signal(json!([first, first])).is_err());
+        second["book_id"] = json!("another-book");
+        assert!(finish_signal(json!([first, second])).is_err());
+    }
     fn proposal() -> Proposal {
         Proposal {run_id:"book".into(),title:"Title".into(),author:"Author".into(),language:"en".into(),
         sources_json:r#"[{"source":"part-1.pdf","page_count":4},{"source":"part-2.pdf","page_count":6}]"#.into(),

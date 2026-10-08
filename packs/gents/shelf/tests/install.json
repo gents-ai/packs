@@ -64,7 +64,10 @@
       "AgentBehavior/shelf-research",
       "AgentContext/shelf-research-context",
       "Tools/shelf-research-tools",
-      "DatastoreToolSurface/shelf-research-reads"
+      "DatastoreToolSurface/shelf-research-reads",
+      "Callback/shelf-ready-edition",
+      "CallbackBinding/shelf-ready-edition",
+      "EventSource/shelf-ready-edition"
     ],
     "plugins": [
       "shelf_export",

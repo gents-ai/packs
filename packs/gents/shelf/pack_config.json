@@ -418,6 +418,25 @@
           }
         ]
       }
+    },
+    {
+      "callback_id": "shelf-ready-edition",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_structure",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "job",
+            "collection": "ShelfFinalizeJob",
+            "schema": "ShelfFinalizeJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          }
+        ]
+      }
     }
   ],
   "callback_bindings": [
@@ -517,8 +536,7 @@
         "run_id",
         "book_id",
         "path",
-        "plan",
-        "chunk_ref"
+        "plan"
       ]
     },
     {
@@ -531,6 +549,19 @@
         "edition_id",
         "path",
         "structured_file"
+      ]
+    },
+    {
+      "binding_id": "shelf-ready-edition",
+      "callback_id": "shelf-ready-edition",
+      "event_source_id": "shelf-ready-edition",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "plan",
+        "chunk_ref",
+        "expected_total"
       ]
     }
   ],
@@ -608,14 +639,9 @@
     },
     {
       "event_source_id": "shelf-finish-edition",
-      "source_collection": "ShelfPolishedChunk",
+      "source_collection": "ShelfFinalizeJob",
       "event_kind": "created",
-      "correlation_field": "run_id",
-      "group": {
-        "expected_count": {
-          "source_field": "expected_total"
-        }
-      }
+      "correlation_field": "run_id"
     },
     {
       "event_source_id": "shelf-polish-secondary",
@@ -629,6 +655,17 @@
       "source_collection": "ShelfPreparedBook",
       "event_kind": "created",
       "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-ready-edition",
+      "source_collection": "ShelfPolishedChunk",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
     }
   ],
   "tasks": [

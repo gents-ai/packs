@@ -1,0 +1,76 @@
+{
+  "author": "A Reader",
+  "book_id": "finish-book",
+  "chapters": [
+    {
+      "blocks": [
+        {
+          "id": "p-d0df0a89e102ee4f95681c98",
+          "markdown": "Grain ships arrive at Ostia.",
+          "sources": [
+            {
+              "end_byte": 28,
+              "page": 1,
+              "source": "fixture.pdf",
+              "start_byte": 0
+            }
+          ]
+        }
+      ],
+      "id": "s-944d1a08dad5ce2082e7",
+      "level": 1,
+      "matter_type": "body",
+      "title": "Harbours"
+    }
+  ],
+  "chunks": [
+    {
+      "blocks": [
+        {
+          "id": "p-d0df0a89e102ee4f95681c98",
+          "markdown": "Grain ships arrive at Ostia.",
+          "sources": [
+            {
+              "end_byte": 28,
+              "page": 1,
+              "source": "fixture.pdf",
+              "start_byte": 0
+            }
+          ]
+        }
+      ],
+      "key": "c0000",
+      "title": "Harbours"
+    }
+  ],
+  "dispatch_window": 16,
+  "edition_id": "finish-fixture",
+  "language": "en",
+  "mechanical_edits": [],
+  "modified": "2026-10-08T00:00:00Z",
+  "output": "book.epub",
+  "source": {
+    "access": "open",
+    "author": "A Reader",
+    "book_id": "finish-book",
+    "chapters": [
+      {
+        "level": 1,
+        "matter_type": "body",
+        "pages": [
+          {
+            "markdown": "Grain ships arrive at Ostia.",
+            "page": 1,
+            "source": "fixture.pdf"
+          }
+        ],
+        "title": "Harbours"
+      }
+    ],
+    "language": "en",
+    "license": "CC0-1.0",
+    "page_count": 1,
+    "title": "Fixture Book"
+  },
+  "title": "Fixture Book"
+}
