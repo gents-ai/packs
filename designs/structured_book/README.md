@@ -14,4 +14,4 @@ This is a design snapshot for comparison and review. No pack code yet.
 
 Paths written as `$SRC/github.com/...` refer to a local checkout root.
 
-Status: the design has been through two revision rounds. Round 2 cleared every earlier blocking item; the critics raised a few new ones (mainly in the work-list), which a third round is addressing.
+Status: three revision rounds. Blocking review items went 24 → 14 → 7 → 6; the remaining six are small (see the round 3 sections in `reviews/`). Operator decisions are listed at the end of `DESIGN.md`.
