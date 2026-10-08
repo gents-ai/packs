@@ -198,6 +198,8 @@ jobs:
         run: |
           python3 scripts/test_shelf_book.py
           python3 scripts/test_shelf_library.py
+          python3 scripts/test_shelf_intake.py
+          python3 scripts/test_shelf_normalize.py
 
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
