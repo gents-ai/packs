@@ -14,7 +14,7 @@ pub const MAX_STEPS: usize = 16;
 pub const MAX_SHAPES: usize = 1000;
 
 /// Keys that belong to the request, not to a step.
-const COMMON: [&str; 14] = [
+const COMMON: [&str; 15] = [
     "path",
     "path_original",
     "file",
@@ -25,6 +25,7 @@ const COMMON: [&str; 14] = [
     "frame",
     "orient",
     "output",
+    "save",
     "ops",
     "op",
     "run_id",
@@ -43,15 +44,38 @@ pub struct Input {
     pub frame: Option<u32>,
     pub orient: Option<bool>,
     pub page_bytes: Option<usize>,
-    pub output: Option<Output>,
+    pub output: Option<OutputIn>,
+    pub save: Option<Save>,
     pub ops: Option<Vec<Value>>,
     #[serde(flatten)]
     pub rest: Map<String, Value>,
 }
 
-/// Where and how results are written.
-#[derive(Deserialize, Serialize, Debug, Default, Clone)]
+/// How the produced image is encoded and whether it is attached.
+#[derive(Deserialize, Debug, Default, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct OutputIn {
+    pub format: Option<String>,
+    pub quality: Option<u8>,
+    pub part: Option<bool>,
+    #[serde(default)]
+    pub keep_icc: bool,
+}
+
+/// Where the produced image is written. A separate request field from
+/// `output` because the host grants write access per call by the presence of
+/// this field alone (the manifest's `bind_dir.write_fields`).
+#[derive(Deserialize, Debug, Default, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Save {
+    pub file: Option<String>,
+    pub suffix: Option<String>,
+    #[serde(default)]
+    pub overwrite: bool,
+}
+
+/// Where and how results are written: `output` and `save` together.
+#[derive(Serialize, Debug, Default, Clone)]
 pub struct Output {
     /// Output format; PNG when absent.
     pub format: Option<String>,
@@ -62,12 +86,10 @@ pub struct Output {
     /// A suffix added to each source's name to write one file per image.
     pub suffix: Option<String>,
     /// Replace an existing file of that name.
-    #[serde(default)]
     pub overwrite: bool,
     /// Attach the image to the result; the default is to attach unless a file is written.
     pub part: Option<bool>,
     /// Keep the ICC colour profile in the result where the format can carry it.
-    #[serde(default)]
     pub keep_icc: bool,
 }
 
@@ -379,7 +401,26 @@ impl Input {
             .enumerate()
             .map(|(i, v)| parse_op(v, &format!("step {}", i + 1)))
             .collect::<Result<Vec<_>, _>>()?;
-        let output = self.output.clone().unwrap_or_default();
+        if self
+            .save
+            .as_ref()
+            .is_some_and(|s| s.file.is_none() && s.suffix.is_none())
+        {
+            return Err("save needs file or suffix; leave save out to only read".into());
+        }
+        let (o, w) = (
+            self.output.clone().unwrap_or_default(),
+            self.save.clone().unwrap_or_default(),
+        );
+        let output = Output {
+            format: o.format,
+            quality: o.quality,
+            file: w.file,
+            suffix: w.suffix,
+            overwrite: w.overwrite,
+            part: o.part,
+            keep_icc: o.keep_icc,
+        };
         let plan = Plan {
             ops,
             raw_ops,
@@ -421,7 +462,7 @@ impl Plan {
             return Err("quality must be between 1 and 100".into());
         }
         if o.file.is_some() && o.suffix.is_some() {
-            return Err("give output.file or output.suffix, not both".into());
+            return Err("give save.file or save.suffix, not both".into());
         }
         if (o.file.is_some() || o.suffix.is_some())
             && !self.ops.iter().any(|op| op.transforms() || op.terminal())
@@ -431,7 +472,7 @@ impl Plan {
         if let Some(s) = &o.suffix
             && (s.is_empty() || s.contains(['/', '\\', '\0']))
         {
-            return Err("output.suffix must be a short text without slashes".into());
+            return Err("save.suffix must be a short text without slashes".into());
         }
         Ok(())
     }
@@ -446,6 +487,15 @@ impl Plan {
         match self.ops.as_slice() {
             [Op::View(v)] | [Op::AutoOrient(_), Op::View(v)] => Some(v),
             _ => None,
+        }
+    }
+
+    /// Images one item attaches before it can stop part way: a tile step's
+    /// index picture and its first tile, otherwise the one result.
+    pub fn first_parts(&self) -> usize {
+        match self.ops.last() {
+            Some(Op::Tile(t)) if t.index.unwrap_or(true) => 2,
+            _ => 1,
         }
     }
 
@@ -808,19 +858,21 @@ mod tests {
         );
         assert!(bad(json!({"op": "resize", "output": {"quality": 101}})).contains("quality"));
         assert!(
-            bad(json!({"op": "resize", "output": {"file": "a.png", "suffix": "_x"}}))
+            bad(json!({"op": "resize", "save": {"file": "a.png", "suffix": "_x"}}))
                 .contains("not both")
         );
-        assert!(bad(json!({"op": "resize", "output": {"suffix": "a/b"}})).contains("slashes"));
+        assert!(bad(json!({"op": "resize", "save": {"suffix": "a/b"}})).contains("slashes"));
         assert!(
-            bad(json!({"op": "info", "output": {"file": "a.png"}})).contains("nothing is produced")
+            bad(json!({"op": "info", "save": {"file": "a.png"}})).contains("nothing is produced")
         );
         assert!(bad(json!({"op": "resize", "output": {"colour": 1}})).contains("colour"));
+        assert!(bad(json!({"op": "resize", "output": {"file": "a.png"}})).contains("file"));
         assert!(
-            plan(
-                json!({"op": "resize", "width": 4, "output": {"file": "a.png", "overwrite": true}})
-            )
-            .is_ok()
+            bad(json!({"op": "resize", "save": {"overwrite": true}})).contains("file or suffix")
+        );
+        assert!(
+            plan(json!({"op": "resize", "width": 4, "save": {"file": "a.png", "overwrite": true}}))
+                .is_ok()
         );
     }
 

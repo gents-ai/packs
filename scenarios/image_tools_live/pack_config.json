@@ -1,0 +1,32 @@
+{
+  "agent_principal": {},
+  "event_sources": [
+    {
+      "display_name": "image-tools-live",
+      "event_kind": "created",
+      "event_source_id": "image-tools-live",
+      "source_collection": "ImageToolsLiveJob",
+      "correlation_field": "job_id"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "image-helper",
+      "display_name": "image-tools-live-task",
+      "prompt_template": "./tasks/live_task/prompt.md",
+      "task_id": "image-tools-live-task"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "image-tools-live",
+      "source": {
+        "event_source_id": "image-tools-live",
+        "kind": "event"
+      },
+      "task_id": "image-tools-live-task",
+      "trigger_id": "image-tools-live"
+    }
+  ]
+}

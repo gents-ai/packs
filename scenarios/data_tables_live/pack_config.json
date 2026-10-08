@@ -1,0 +1,32 @@
+{
+  "agent_principal": {},
+  "event_sources": [
+    {
+      "display_name": "data-tables-live",
+      "event_kind": "created",
+      "event_source_id": "data-tables-live",
+      "source_collection": "DataTablesLiveJob",
+      "correlation_field": "job_id"
+    }
+  ],
+  "tasks": [
+    {
+      "behavior_id": "data-analyst",
+      "display_name": "data-tables-live-task",
+      "prompt_template": "./tasks/live_task/prompt.md",
+      "task_id": "data-tables-live-task"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "data-tables-live",
+      "source": {
+        "event_source_id": "data-tables-live",
+        "kind": "event"
+      },
+      "task_id": "data-tables-live-task",
+      "trigger_id": "data-tables-live"
+    }
+  ]
+}

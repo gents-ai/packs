@@ -6,8 +6,6 @@
     "pack_config.json",
     "plugins/image_tools.afb",
     "plugins/image_tools/TOOL.md",
-    "plugins/image_tools_write.afb",
-    "plugins/image_tools_write/TOOL.md",
     "schemas/image_chunk.graphql",
     "schemas/image_job.graphql",
     "schemas/image_output.graphql",
@@ -40,12 +38,15 @@
     {
       "artifact": "plugins/image_tools.afb",
       "bind_dir": {
-        "access": "read",
-        "description": "The folder holding the images to work on, or the one image to work on",
+        "access": "read_write",
+        "description": "The folder holding the images to work on, or the one image to work on; a call that sets save also writes into the folder",
         "input_field": "path",
-        "original_field": "path_original"
+        "original_field": "path_original",
+        "write_fields": [
+          "save"
+        ]
       },
-      "description": "Reads images only. Works on PNG, JPEG, GIF, BMP, TIFF and WebP images: info (format, size, orientation, metadata), view (a model-ready picture, upright and fitted to a size and byte limit), resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile (overlapping tiles with an index picture), montage, annotate (boxes, arrows, labels), diff (changed pixels, similarity, changed regions), palette, decode_codes (QR codes and barcodes) and hash (perceptual and exact). Steps can be chained in one call.",
+      "description": "Works on PNG, JPEG, GIF, BMP, TIFF and WebP images: info (format, size, orientation, metadata), view (a model-ready picture, upright and fitted to a size and byte limit), resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile (overlapping tiles with an index picture), montage, annotate (boxes, arrows, labels), diff (changed pixels, similarity, changed regions), palette, decode_codes (QR codes and barcodes) and hash (perceptual and exact). Steps can be chained in one call. Reads only, unless save asks it to write the result into the folder.",
       "input_schema": {
         "additionalProperties": false,
         "properties": {
@@ -196,8 +197,8 @@
           },
           "max_side": {
             "default": 1568,
-            "description": "view: longest side in pixels, 16 to 8192.",
-            "maximum": 8192,
+            "description": "view: longest side in pixels, 16 to 8000.",
+            "maximum": 8000,
             "minimum": 16,
             "type": "integer"
           },
@@ -259,7 +260,7 @@
             "type": "boolean"
           },
           "output": {
-            "description": "Where the produced image goes: format (png, jpeg, webp, gif, bmp, tiff), quality (1 to 100), file, suffix, overwrite, part, keep_icc.",
+            "description": "How the produced image is encoded: format (png, jpeg, webp, gif, bmp, tiff), quality (1 to 100), part (attach it), keep_icc.",
             "type": "object"
           },
           "overlap": {
@@ -288,6 +289,10 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          },
+          "save": {
+            "description": "Write the produced image into the folder (needs read-write access): file (one name) or suffix (one file per image), overwrite.",
+            "type": "object"
           },
           "shapes": {
             "description": "annotate: boxes, arrows, lines and labels, each an object with a type and pixel coordinates.",
@@ -351,321 +356,6 @@
       },
       "name": "image_tools",
       "source": "plugins/image_tools"
-    },
-    {
-      "artifact": "plugins/image_tools_write.afb",
-      "bind_dir": {
-        "access": "read_write",
-        "description": "The folder holding the images to work on, where results are written",
-        "input_field": "path",
-        "original_field": "path_original"
-      },
-      "description": "Same steps as image_tools, and writes the result into the folder with output.file or output.suffix; needs read-write access to the folder. Works on PNG, JPEG, GIF, BMP, TIFF and WebP images: info (format, size, orientation, metadata), view (a model-ready picture, upright and fitted to a size and byte limit), resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile (overlapping tiles with an index picture), montage, annotate (boxes, arrows, labels), diff (changed pixels, similarity, changed regions), palette, decode_codes (QR codes and barcodes) and hash (perceptual and exact). Steps can be chained in one call.",
-      "input_schema": {
-        "additionalProperties": false,
-        "properties": {
-          "against": {
-            "description": "diff and hash: another image inside the folder to compare with.",
-            "type": "string"
-          },
-          "against_base64": {
-            "description": "diff and hash: another image sent inline to compare with.",
-            "type": "string"
-          },
-          "axis": {
-            "description": "flip: horizontal or vertical.",
-            "enum": [
-              "horizontal",
-              "vertical"
-            ],
-            "type": "string"
-          },
-          "background": {
-            "description": "montage: sheet colour, a name or #rrggbb.",
-            "type": "string"
-          },
-          "cell": {
-            "default": 256,
-            "description": "montage: side of each cell in pixels, 16 to 1024.",
-            "maximum": 1024,
-            "minimum": 16,
-            "type": "integer"
-          },
-          "colors": {
-            "default": 5,
-            "description": "palette: how many dominant colours, 1 to 16.",
-            "maximum": 16,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "cols": {
-            "description": "montage: columns.",
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "cursor": {
-            "description": "The next.cursor value of the previous call, to continue where it stopped. Repeat every other field unchanged.",
-            "type": "string"
-          },
-          "data_base64": {
-            "description": "One image sent inline, base64 encoded, instead of path; up to 64 MiB of base64.",
-            "type": "string"
-          },
-          "degrees": {
-            "description": "rotate: a multiple of 90, clockwise.",
-            "type": "integer"
-          },
-          "file": {
-            "description": "One image inside the folder path, by its path relative to the folder.",
-            "type": "string"
-          },
-          "files": {
-            "description": "Images inside the folder path, by relative path, in this order; without file or files every image in the folder is used.",
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 10000,
-            "minItems": 1,
-            "type": "array"
-          },
-          "filter": {
-            "default": "lanczos3",
-            "description": "resize: nearest, box, bilinear, catmull_rom or lanczos3.",
-            "enum": [
-              "nearest",
-              "box",
-              "bilinear",
-              "catmull_rom",
-              "lanczos3"
-            ],
-            "type": "string"
-          },
-          "format": {
-            "description": "convert: the output format; view: auto, png or jpeg.",
-            "type": "string"
-          },
-          "formats": {
-            "description": "decode_codes: only these code formats.",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "frame": {
-            "default": 0,
-            "description": "Frame of an animated GIF or WebP, 0-based.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "gap": {
-            "default": 8,
-            "description": "montage: space between cells in pixels.",
-            "maximum": 256,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "gps": {
-            "default": false,
-            "description": "info: also return the GPS coordinates when the file has them.",
-            "type": "boolean"
-          },
-          "height": {
-            "description": "resize and crop: height in pixels.",
-            "minimum": 1,
-            "type": "integer"
-          },
-          "highlight": {
-            "default": true,
-            "description": "diff: return the highlighted picture.",
-            "type": "boolean"
-          },
-          "ignore": {
-            "description": "diff: regions left out of the comparison, each {x, y, width, height}.",
-            "items": {
-              "type": "object"
-            },
-            "maxItems": 1000,
-            "type": "array"
-          },
-          "index": {
-            "default": true,
-            "description": "tile: also return the index picture.",
-            "type": "boolean"
-          },
-          "keep_icc": {
-            "default": false,
-            "description": "strip_metadata: keep the colour profile.",
-            "type": "boolean"
-          },
-          "labels": {
-            "default": true,
-            "description": "montage: label each cell with its image name.",
-            "type": "boolean"
-          },
-          "max_bytes": {
-            "description": "view and tile: the most bytes of one image.",
-            "maximum": 2500000,
-            "minimum": 10000,
-            "type": "integer"
-          },
-          "max_side": {
-            "default": 1568,
-            "description": "view: longest side in pixels, 16 to 8192.",
-            "maximum": 8192,
-            "minimum": 16,
-            "type": "integer"
-          },
-          "merge_gap": {
-            "default": 8,
-            "description": "diff: changed areas closer than this many pixels join into one region.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "mode": {
-            "default": "fit",
-            "description": "resize: fit, fill or exact.",
-            "enum": [
-              "fit",
-              "fill",
-              "exact"
-            ],
-            "type": "string"
-          },
-          "name": {
-            "description": "Name of the inline image, such as photo.jpg; the content decides the format.",
-            "type": "string"
-          },
-          "op": {
-            "description": "The step to run when you give one: info, view, resize, crop, rotate, flip, auto_orient, convert, strip_metadata, tile, montage (or contact_sheet), annotate, diff, palette, decode_codes or hash. Its options sit beside it.",
-            "enum": [
-              "info",
-              "view",
-              "resize",
-              "crop",
-              "rotate",
-              "flip",
-              "auto_orient",
-              "convert",
-              "strip_metadata",
-              "tile",
-              "montage",
-              "contact_sheet",
-              "annotate",
-              "diff",
-              "palette",
-              "decode_codes",
-              "hash"
-            ],
-            "type": "string"
-          },
-          "ops": {
-            "description": "A chain of steps run in order on the pixels in memory, each an object with op and its options; use it instead of op.",
-            "items": {
-              "type": "object"
-            },
-            "maxItems": 16,
-            "minItems": 1,
-            "type": "array"
-          },
-          "orient": {
-            "default": true,
-            "description": "Turn the picture upright by its Exif orientation before the first step that needs pixels.",
-            "type": "boolean"
-          },
-          "output": {
-            "description": "Where the produced image goes: format (png, jpeg, webp, gif, bmp, tiff), quality (1 to 100), file, suffix, overwrite, part, keep_icc.",
-            "type": "object"
-          },
-          "overlap": {
-            "default": 64,
-            "description": "tile: overlap between neighbours in pixels, below size.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "page_bytes": {
-            "default": 3800000,
-            "description": "The most bytes of JSON and base64 images one call returns before it stops and returns a cursor.",
-            "maximum": 3800000,
-            "minimum": 20000,
-            "type": "integer"
-          },
-          "path": {
-            "description": "Path of the image file or the folder of images to work on; a relative path starts at the working folder. Give either path or data_base64.",
-            "type": "string"
-          },
-          "path_original": {
-            "description": "Set by the host to the real path of the file or folder named in path; leave it out.",
-            "type": "string"
-          },
-          "quality": {
-            "description": "convert: 1 to 100.",
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "shapes": {
-            "description": "annotate: boxes, arrows, lines and labels, each an object with a type and pixel coordinates.",
-            "items": {
-              "type": "object"
-            },
-            "maxItems": 1000,
-            "minItems": 1,
-            "type": "array"
-          },
-          "size": {
-            "default": 1024,
-            "description": "tile: tile side in pixels, 64 to 4096.",
-            "maximum": 4096,
-            "minimum": 64,
-            "type": "integer"
-          },
-          "threshold": {
-            "default": 10,
-            "description": "hash: the largest phash distance, 0 to 64, still called similar.",
-            "maximum": 64,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "tolerance": {
-            "default": 0,
-            "description": "diff: a channel must differ by more than this, 0 to 255, to count as changed.",
-            "maximum": 255,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "upscale": {
-            "default": false,
-            "description": "resize fit: also enlarge a picture that is already inside the box.",
-            "type": "boolean"
-          },
-          "width": {
-            "description": "resize and crop: width in pixels.",
-            "minimum": 1,
-            "type": "integer"
-          },
-          "x": {
-            "description": "crop: left edge in pixels.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "y": {
-            "description": "crop: top edge in pixels.",
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "instructions": "plugins/image_tools_write/TOOL.md",
-      "language": "rust",
-      "limits": {
-        "max_output_mib": 4,
-        "memory_mib": 2048,
-        "wall_clock_secs": 900
-      },
-      "name": "image_tools_write",
-      "source": "plugins/image_tools_write"
     }
   ],
   "schemas": [

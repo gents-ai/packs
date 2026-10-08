@@ -2,6 +2,7 @@
 
 use serde_json::json;
 
+use crate::spec::MAX_LINE_POINTS;
 use crate::testkit::*;
 
 const BLUE: &str = "#0072b2";
@@ -493,6 +494,113 @@ fn a_stacked_series_with_no_value_counts_as_zero_and_says_so() {
         r.warnings
             .iter()
             .any(|w| w.contains("\"b\" has no value at 1 of 3 positions") && w.contains("zero")),
+        "{:?}",
+        r.warnings
+    );
+}
+
+#[test]
+fn a_long_stack_is_drawn_at_reduced_positions_that_keep_its_extremes() {
+    let rows: Vec<serde_json::Value> = (0..20_000)
+        .map(|i| {
+            let peak = if i == 12_345 { 1000 } else { i % 7 };
+            let dip = if i == 777 { -500 } else { 1 };
+            json!([i, peak, dip])
+        })
+        .collect();
+    let r = ok(&with_rows("stacked_area", "", &["t", "a", "b"], &rows));
+    let drawn = r.series[0].drawn;
+    assert!(drawn > 2 && drawn <= MAX_LINE_POINTS + 4, "{drawn}");
+    assert_eq!(r.series[0].points, 20_000);
+    assert!(
+        r.warnings
+            .iter()
+            .any(|w| w.contains("20000 x positions") && w.contains(&format!("{drawn} are drawn"))),
+        "{:?}",
+        r.warnings
+    );
+    let doc = parse(&r.svg);
+    let fy = y_fit(&doc, &r.plot);
+    let tops: Vec<f64> = all(&doc, "path")
+        .into_iter()
+        .filter(|p| p.attribute("fill-opacity") == Some("0.85"))
+        .flat_map(|p| path_points(p.attribute("d").unwrap()))
+        .map(|p| p.1)
+        .collect();
+    let highest = tops.iter().copied().fold(f64::INFINITY, f64::min);
+    let lowest = tops.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    assert!(
+        (highest - fy.px(1001.0)).abs() < 0.02,
+        "the peak total is drawn"
+    );
+    assert!((lowest - fy.px(-500.0)).abs() < 0.02, "the dip is drawn");
+}
+
+#[test]
+fn a_spike_offset_by_another_layer_survives_the_reduction() {
+    // a spikes up at one x while b falls by the same amount: the total stays flat.
+    let rows: Vec<serde_json::Value> = (0..20_000)
+        .map(|i| {
+            let (a, b) = if i == 9_999 { (500, 0) } else { (10, 490) };
+            json!([i, a, b])
+        })
+        .collect();
+    let r = ok(&with_rows("stacked_area", "", &["t", "a", "b"], &rows));
+    let doc = parse(&r.svg);
+    let fy = y_fit(&doc, &r.plot);
+    let layers: Vec<Vec<(f64, f64)>> = all(&doc, "path")
+        .into_iter()
+        .filter(|p| p.attribute("fill-opacity") == Some("0.85"))
+        .map(|p| path_points(p.attribute("d").unwrap()))
+        .collect();
+    let spike = layers[0].iter().map(|p| p.1).fold(f64::INFINITY, f64::min);
+    assert!(
+        (spike - fy.px(500.0)).abs() < 0.02,
+        "the spike of a is drawn"
+    );
+}
+
+#[test]
+fn values_cut_off_a_long_stack_are_counted_on_the_full_data() {
+    let rows: Vec<serde_json::Value> = (0..20_000).map(|i| json!([i, 10])).collect();
+    let r = ok(&with_rows(
+        "stacked_area",
+        r#""y_max":5"#,
+        &["t", "a"],
+        &rows,
+    ));
+    assert!(
+        r.warnings
+            .iter()
+            .any(|w| w == "series \"a\": 20000 values are above y_max and are cut off"),
+        "{:?}",
+        r.warnings
+    );
+}
+
+#[test]
+fn rows_sharing_a_numeric_x_are_combined_by_agg() {
+    let rows = [json!([1, 10]), json!([1, 5]), json!([2, 12]), json!([2, 6])];
+    let r = ok(&with_rows(
+        "line",
+        r#""x":"t","y":["v"],"agg":"mean""#,
+        &["t", "v"],
+        &rows,
+    ));
+    assert_eq!(r.series[0].points, 2);
+    assert_eq!((r.series[0].min, r.series[0].max), (Some(7.5), Some(9.0)));
+    assert!(r.warnings.is_empty(), "{:?}", r.warnings);
+    let r = ok(&with_rows(
+        "line",
+        r#""x":"t","y":["v"]"#,
+        &["t", "v"],
+        &rows,
+    ));
+    assert_eq!((r.series[0].min, r.series[0].max), (Some(15.0), Some(18.0)));
+    assert!(
+        r.warnings
+            .iter()
+            .any(|w| w.contains("2 rows share an x") && w.contains("set agg")),
         "{:?}",
         r.warnings
     );

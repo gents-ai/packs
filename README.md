@@ -351,9 +351,9 @@ builds.
 | Pack | Purpose |
 | --- | --- |
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
-| [charts](packs/gents/charts/README.md) | A Chart maker agent and charts plugins that draw line, area, bar, scatter, bubble, histogram, box, pie, donut, heatmap and combo charts from rows or CSV and JSON files as SVG and PNG |
+| [charts](packs/gents/charts/README.md) | A Chart maker agent and a charts plugin that draws line, area, bar, scatter, bubble, histogram, box, pie, donut, heatmap and combo charts from rows or CSV and JSON files as SVG and PNG |
 | [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
-| [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and data_tables plugins that run SQL over CSV, JSON, Parquet, XLSX and ODS files with bounded memory and exact types |
+| [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and the data_tables plugin, which runs SQL over CSV, JSON, Parquet, XLSX and ODS files with exact types and saves results as CSV or Parquet |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
 | [graph_pipeline](packs/gents/graph_pipeline/README.md) | Compiler evaluation fixtures |

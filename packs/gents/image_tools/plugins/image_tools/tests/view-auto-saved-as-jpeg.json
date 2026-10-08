@@ -1,0 +1,59 @@
+{
+  "bind": "fixtures",
+  "expect": {
+    "results": [
+      {
+        "input": {
+          "bytes": 1237,
+          "format": "png",
+          "height": 24,
+          "width": 32
+        },
+        "outputs": [
+          {
+            "bytes": 895,
+            "file": "out/view.jpg",
+            "format": "jpeg",
+            "height": 24,
+            "pixels_sha256": "95eb4ad88925fd7c851f3f36b111ec9d10ccd12269852a35e5553e6975d8fe59",
+            "role": "view",
+            "sha256": "9b3ccef7418d1e36f5aaa54d5b616f6cddfe769b391101a5508e3f8d15cf60e7",
+            "width": 32
+          }
+        ],
+        "source": "scene.png",
+        "steps": [
+          {
+            "format": "jpeg",
+            "from": [
+              32,
+              24
+            ],
+            "max_bytes": 1000000,
+            "max_side": 1568,
+            "op": "view",
+            "output": 0,
+            "quality": 90,
+            "to": [
+              32,
+              24
+            ]
+          }
+        ],
+        "warnings": []
+      }
+    ],
+    "warnings": []
+  },
+  "input": {
+    "files": [
+      "scene.png"
+    ],
+    "format": "auto",
+    "op": "view",
+    "save": {
+      "file": "out/view.jpg",
+      "overwrite": true
+    }
+  }
+}

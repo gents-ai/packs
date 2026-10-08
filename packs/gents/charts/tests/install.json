@@ -12,8 +12,7 @@
       "Tools/chart-maker-tools"
     ],
     "plugins": [
-      "charts",
-      "charts_save"
+      "charts"
     ],
     "slots": [
       "chart_maker"

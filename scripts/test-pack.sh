@@ -50,7 +50,9 @@
 #                            a documents or graph pack ships
 #        runtime "repository" may also hold "copy": {"<repo path>": "<file
 #                            path inside the pack>"} for binary files, which
-#                            are copied into the repository before its commit
+#                            are copied into the repository before its commit,
+#                            and "access": "read_write" to let plugins write
+#                            to it (an allowed folder is read-only otherwise)
 # Every documents or graph pack also gets the built-in checks: it declares
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
@@ -407,7 +409,9 @@ runtime_case() {
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
   export_required "$repo"
-  "$gents" plugin dirs add "$repo" --home "$home" >"$work/$name-allowed.json"
+  local access
+  access="$(jq -r '.runtime.repository.access // empty' "$case")"
+  "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"

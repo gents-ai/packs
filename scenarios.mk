@@ -254,3 +254,46 @@ defend-page:
 	@echo "page     http://127.0.0.1:$(DEFENDING_PAGE_PORT)/?pack=defending"
 	@echo "runtime  http://127.0.0.1:$(DEFENDING_PORT)"
 	@DEMO_RUNTIME_PORT="$(DEFENDING_PORT)" DEMO_PAGE_PORT="$(DEFENDING_PAGE_PORT)" VITE_DEMO_MODE=defending $(NPM) --prefix "$(GENTS_ROOT)/apps/review-demo" run dev
+
+# Live model runs of plugin packs. scenarios/<pack>_live/ is a scenario pack
+# that depends on <pack> and adds the one trigger handing a seeded prompt to
+# that pack's agent; its fixtures are copied into a fresh tool root per run.
+# The pack under test is built from LIVE_PACK_DIR and pre-stored with
+# --with-pack, as grok-port does; experiment.json's expect gates the run
+# (completed stage, completed tool calls naming the written files).
+#   make live LIVE_PACK=charts LIVE_ENDPOINT=http://workstation-1:8000/v1
+LIVE_PACK ?=
+LIVE_ENDPOINT ?= http://workstation-1:8000/v1
+LIVE_MODEL ?= GLM-5.3-Flash-NVFP4
+LIVE_PACK_DIR ?= $(CURDIR)/packs/gents/$(LIVE_PACK)
+LIVE_PORT ?= 19198
+LIVE_JOB_ID ?=
+LIVE_KEEP_HOME ?=
+LIVE_AWAIT_TIMEOUT_SECS ?=
+LIVE_SCENARIO = $(CURDIR)/scenarios/$(LIVE_PACK)_live
+
+.PHONY: live
+live:
+	@test -n "$(LIVE_PACK)" || { echo "set LIVE_PACK to one of: $(patsubst %_live,%,$(notdir $(wildcard scenarios/*_live)))" >&2; exit 2; }
+	@test -f "$(LIVE_SCENARIO)/experiment.json" || { echo "no live scenario for $(LIVE_PACK) (scenarios/$(LIVE_PACK)_live)" >&2; exit 2; }
+	@test -f "$(LIVE_PACK_DIR)/manifest.json" || { echo "LIVE_PACK_DIR has no manifest.json: $(LIVE_PACK_DIR)" >&2; exit 2; }
+	@curl --fail --silent --show-error --max-time 10 "$(LIVE_ENDPOINT)/models" | python3 -c 'import json,sys; sys.exit(0 if sys.argv[1] in [row.get("id") for row in json.load(sys.stdin).get("data", [])] else 1)' "$(LIVE_MODEL)" || { echo "GLM preflight: $(LIVE_ENDPOINT)/models is unreachable or does not advertise $(LIVE_MODEL)" >&2; exit 2; }
+	@live_job_id="$(LIVE_JOB_ID)"; \
+	if test -z "$$live_job_id"; then live_job_id="$(LIVE_PACK)-live-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
+	live_run="$(LIVE_SCENARIO)/runs/$$live_job_id"; \
+	test ! -e "$$live_run" || { echo "run directory already exists; choose a new LIVE_JOB_ID: $$live_run" >&2; exit 2; }; \
+	live_root="$$live_run/work"; \
+	mkdir -p "$(LIVE_SCENARIO)/runs" && mkdir "$$live_run" "$$live_root" && cp -R "$(LIVE_SCENARIO)/fixtures/." "$$live_root/" || exit 2; \
+	live_dep="$$(mktemp -d)" || exit 2; \
+	trap 'rm -rf "$$live_dep"' EXIT; \
+	"$(GENTS)" pack build "$(LIVE_PACK_DIR)" --out "$$live_dep/$(LIVE_PACK).pack" >/dev/null || exit 2; \
+	GENTS_LIVE_ROOT="$$(cd "$$live_root" && pwd -P)" \
+	GENTS_LIVE_ENDPOINT="$(LIVE_ENDPOINT)" \
+	GENTS_LIVE_MODEL="$(LIVE_MODEL)" \
+	$(if $(LIVE_AWAIT_TIMEOUT_SECS),GENTS_LIVE_AWAIT_TIMEOUT_SECS="$(LIVE_AWAIT_TIMEOUT_SECS)",) \
+	"$(GENTS)" pack scenario run "$(LIVE_SCENARIO)" \
+		--with-pack "$$live_dep/$(LIVE_PACK).pack" \
+		--grant-authority \
+		--http-port "$(LIVE_PORT)" \
+		--job-id "$$live_job_id" \
+		$(if $(LIVE_KEEP_HOME),--keep-home,)

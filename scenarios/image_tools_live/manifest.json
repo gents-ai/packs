@@ -1,0 +1,32 @@
+{
+  "assets": [
+    "README.md",
+    "experiment.json",
+    "fixtures/photos/harbor.jpg",
+    "fixtures/photos/meadow.png",
+    "fixtures/photos/sunset.png",
+    "pack_config.json",
+    "schemas/image_tools_live_job.graphql",
+    "tasks/live_task/prompt.md"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [
+    "image_tools"
+  ],
+  "description": "Live model run of the image_tools pack's Image helper on three small photos.",
+  "inference_slots": [],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "image_tools_live",
+  "namespace": "gents",
+  "schemas": [
+    "schemas/image_tools_live_job.graphql"
+  ],
+  "tags": [
+    "scenario"
+  ],
+  "version": "0.1.0"
+}

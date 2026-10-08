@@ -2,12 +2,8 @@
   "defs": "def ops: [\"info\",\"view\",\"resize\",\"crop\",\"rotate\",\"flip\",\"auto_orient\",\"convert\",\"strip_metadata\",\"tile\",\"montage\",\"annotate\",\"diff\",\"palette\",\"decode_codes\",\"hash\"]; def plugin($n): .manifest.plugins[] | select(.name == $n);",
   "jq": [
     {
-      "name": "the model tool reads only and the write tool is the one with read-write access",
-      "expr": "(plugin(\"image_tools\") | .bind_dir.access) == \"read\" and (plugin(\"image_tools_write\") | .bind_dir.access) == \"read_write\""
-    },
-    {
-      "name": "both tools take one input schema and are bound by path, with the real path handed back",
-      "expr": "(plugin(\"image_tools\") | .input_schema) == (plugin(\"image_tools_write\") | .input_schema) and ([.manifest.plugins[] | .source] | sort) == [\"plugins/image_tools\", \"plugins/image_tools_write\"] and (.manifest.plugins | all(.bind_dir.input_field == \"path\" and .bind_dir.original_field == \"path_original\"))"
+      "name": "one tool reads, and asks for read-write access only for a call that sets save",
+      "expr": "(.manifest.plugins | length) == 1 and (plugin(\"image_tools\") | .bind_dir | .access == \"read_write\" and .write_fields == [\"save\"] and .input_field == \"path\" and .original_field == \"path_original\") and (plugin(\"image_tools\") | .input_schema.properties | has(\"save\") and has(\"output\"))"
     },
     {
       "name": "the input schema is closed and offers every operation",
@@ -22,16 +18,16 @@
       "expr": ".manifest.plugins | all(.limits.max_output_mib <= 4 and .limits.memory_mib <= 4096 and .limits.wall_clock_secs <= 900 and .limits.memory_mib >= 1024)"
     },
     {
-      "name": "the helper agent is granted exactly the two plugins and nothing else",
-      "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\", \"gents/image_tools_write\"] and (.config.agent_behaviors | map(.behavior_id)) == [\"image-helper\"]"
+      "name": "the helper agent is granted exactly the plugin and nothing else",
+      "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\"] and (.config.agent_behaviors | map(.behavior_id)) == [\"image-helper\"]"
     },
     {
-      "name": "the graph nodes run the read-only plugin and every output collection has a schema",
+      "name": "the graph nodes run the plugin and every output collection has a schema",
       "expr": "(.config.callbacks | all(.handler.plugin == \"gents/image_tools\")) and ([.config.callbacks[].handler.outputs[].collection] | sort) == [\"ImageChunk\", \"ImageOutput\", \"ImageResult\"] and (.manifest.schemas | length) == 4"
     },
     {
-      "name": "the agent prompt names both tools and the file-writing rule",
-      "expr": ".assets[\"agent_behaviors/image_helper/system_prompt.md\"] | contains(\"image_tools_write\") and contains(\"output.overwrite\") and contains(\"`view`\")"
+      "name": "the agent prompt holds concepts and leaves syntax to the tool",
+      "expr": ".assets[\"agent_behaviors/image_helper/system_prompt.md\"] | contains(\"`view`\") and contains(\"`info`\") and (contains(\"cursor\") | not) and (contains(\"overwrite\") | not)"
     },
     {
       "name": "no em dash or en dash anywhere in the pack's text",

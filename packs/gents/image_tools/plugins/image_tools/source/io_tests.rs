@@ -40,7 +40,7 @@ fn err(r: &Value) -> &str {
 fn a_written_file_is_the_result_and_the_source_is_untouched() {
     let d = scratch("write1", &["scene.png"]);
     let before = std::fs::read(d.join("scene.png")).unwrap();
-    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 16, "output": {"file": "out/small.png"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 16, "save": {"file": "out/small.png"}})).unwrap();
     assert!(
         r.get("parts").is_none(),
         "writing a file does not attach it"
@@ -65,13 +65,13 @@ fn a_written_file_is_the_result_and_the_source_is_untouched() {
 #[test]
 fn an_existing_file_is_never_replaced_unless_overwrite_is_true() {
     let d = scratch("write2", &["scene.png"]);
-    let req = |ow: bool| json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 16, "output": {"file": "s.png", "overwrite": ow}});
+    let req = |ow: bool| json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 16, "save": {"file": "s.png", "overwrite": ow}});
     call(&req(false)).unwrap();
     let first = std::fs::read(d.join("s.png")).unwrap();
     let again = call(&req(false)).unwrap();
     assert!(err(&again).contains("already exists"), "{}", err(&again));
     assert_eq!(std::fs::read(d.join("s.png")).unwrap(), first);
-    let ok = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "s.png", "overwrite": true}})).unwrap();
+    let ok = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": "s.png", "overwrite": true}})).unwrap();
     assert!(record(&ok, 0).get("error").is_none());
     assert_eq!(image::open(d.join("s.png")).unwrap().width(), 8);
 }
@@ -79,17 +79,17 @@ fn an_existing_file_is_never_replaced_unless_overwrite_is_true() {
 #[test]
 fn the_source_is_replaced_only_when_named_with_overwrite() {
     let d = scratch("write3", &["scene.png"]);
-    let refuse = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "scene.png"}})).unwrap();
+    let refuse = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": "scene.png"}})).unwrap();
     assert!(err(&refuse).contains("already exists"));
     assert_eq!(image::open(d.join("scene.png")).unwrap().width(), 32);
-    call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "scene.png", "overwrite": true}})).unwrap();
+    call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": "scene.png", "overwrite": true}})).unwrap();
     assert_eq!(image::open(d.join("scene.png")).unwrap().width(), 8);
 }
 
 #[test]
 fn a_suffix_writes_one_file_per_image_beside_its_source() {
     let d = scratch("suffix", &["batch/a.png", "batch/b.jpg", "batch/sub/c.png"]);
-    let r = call(&json!({"path": dir_str(&d.join("batch")), "op": "resize", "width": 8, "output": {"suffix": "_s"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d.join("batch")), "op": "resize", "width": 8, "save": {"suffix": "_s"}})).unwrap();
     let files: Vec<_> = response(&r)["results"]
         .as_array()
         .unwrap()
@@ -109,15 +109,15 @@ fn a_suffix_writes_one_file_per_image_beside_its_source() {
             "{f}"
         );
     }
-    let jpeg = call(&json!({"path": dir_str(&d.join("batch")), "files": ["a.png"], "ops": [{"op": "resize", "width": 8}, {"op": "convert", "format": "jpeg"}], "output": {"suffix": "_j"}})).unwrap();
+    let jpeg = call(&json!({"path": dir_str(&d.join("batch")), "files": ["a.png"], "ops": [{"op": "resize", "width": 8}, {"op": "convert", "format": "jpeg"}], "save": {"suffix": "_j"}})).unwrap();
     assert_eq!(record(&jpeg, 0)["outputs"][0]["file"], "a_j.jpg");
 }
 
 #[test]
 fn a_file_name_and_many_images_do_not_mix() {
     let d = scratch("file_many", &["batch/a.png", "batch/b.jpg"]);
-    let e = call(&json!({"path": dir_str(&d.join("batch")), "op": "resize", "width": 8, "output": {"file": "x.png"}})).unwrap_err();
-    assert!(e.contains("output.suffix"), "{e}");
+    let e = call(&json!({"path": dir_str(&d.join("batch")), "op": "resize", "width": 8, "save": {"file": "x.png"}})).unwrap_err();
+    assert!(e.contains("save.suffix"), "{e}");
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn output_names_cannot_leave_the_folder_or_pass_a_link() {
         format!("/tmp/escape_abs_{id}.png"),
     );
     for bad in [up.as_str(), up2.as_str(), abs.as_str(), "a\\b.png"] {
-        let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": bad}})).unwrap();
+        let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": bad}})).unwrap();
         assert!(err(&r).contains("bound folder"), "{bad}: {}", err(&r));
     }
     let parent = d.parent().unwrap();
@@ -146,7 +146,7 @@ fn output_names_cannot_leave_the_folder_or_pass_a_link() {
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(&outside, d.join("link")).unwrap();
-        let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "link/x.png"}})).unwrap();
+        let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": "link/x.png"}})).unwrap();
         assert!(err(&r).contains("symbolic link"), "{}", err(&r));
         assert!(
             listing(&outside).is_empty(),
@@ -158,7 +158,7 @@ fn output_names_cannot_leave_the_folder_or_pass_a_link() {
 #[test]
 fn a_bound_single_file_cannot_have_files_written_beside_it() {
     let d = scratch("single_out", &["scene.png"]);
-    let r = call(&json!({"path": dir_str(&d.join("scene.png")), "op": "resize", "width": 8, "output": {"file": "x.png"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d.join("scene.png")), "op": "resize", "width": 8, "save": {"file": "x.png"}})).unwrap();
     assert!(err(&r).contains("bound folder"), "{}", err(&r));
 }
 
@@ -168,7 +168,7 @@ fn a_read_only_folder_is_one_sentence_not_a_crash() {
     use std::os::unix::fs::PermissionsExt;
     let d = scratch("ro", &["scene.png"]);
     std::fs::set_permissions(&d, std::fs::Permissions::from_mode(0o555)).unwrap();
-    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "x.png"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": "x.png"}})).unwrap();
     std::fs::set_permissions(&d, std::fs::Permissions::from_mode(0o755)).unwrap();
     if record(&r, 0).get("error").is_some() {
         assert!(err(&r).contains("read-write access"), "{}", err(&r));
@@ -183,7 +183,7 @@ fn a_read_only_folder_is_one_sentence_not_a_crash() {
 #[test]
 fn tiles_can_be_written_as_files_and_reassemble() {
     let d = scratch("tilefiles", &["tile_src.png"]);
-    let r = call(&json!({"path": dir_str(&d), "files": ["tile_src.png"], "op": "tile", "size": 64, "overlap": 8, "output": {"file": "tiles/t.png"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d), "files": ["tile_src.png"], "op": "tile", "size": 64, "overlap": 8, "save": {"file": "tiles/t.png"}})).unwrap();
     assert!(r.get("parts").is_none());
     let outs = record(&r, 0)["outputs"].as_array().unwrap().clone();
     assert_eq!(outs.len(), 7, "the index and six tiles");
@@ -499,12 +499,12 @@ fn an_image_too_big_to_attach_says_so_and_a_file_still_works() {
         "{e}"
     );
     assert!(r.get("parts").is_none());
-    let with_file = call(&json!({"path": dir_str(&d), "files": ["n.png"], "op": "convert", "format": "bmp", "output": {"file": "n.bmp", "part": true}})).unwrap();
+    let with_file = call(&json!({"path": dir_str(&d), "files": ["n.png"], "op": "convert", "format": "bmp", "output": {"part": true}, "save": {"file": "n.bmp"}})).unwrap();
     assert!(
         record(&with_file, 0).get("error").is_some(),
         "a BMP cannot be a part"
     );
-    let png_out = call(&json!({"path": dir_str(&d), "files": ["n.png"], "op": "convert", "format": "png", "output": {"file": "n2.png", "part": true}})).unwrap();
+    let png_out = call(&json!({"path": dir_str(&d), "files": ["n.png"], "op": "convert", "format": "png", "output": {"part": true}, "save": {"file": "n2.png"}})).unwrap();
     assert!(record(&png_out, 0).get("error").is_none(), "{png_out}");
     assert!(
         record(&png_out, 0)["warnings"]
@@ -658,7 +658,7 @@ fn an_image_that_fails_part_way_leaves_no_orphan_parts_in_the_result() {
     // The second tile's file is already there, so tile 2 fails after the index and tile 1 were attached.
     std::fs::write(d.join("t_r1c2.png"), b"in the way").unwrap();
     let r = call(&json!({"path": dir_str(&d), "files": ["tile_src.png"], "op": "tile", "size": 64, "overlap": 8,
-        "output": {"file": "t.png", "part": true}}))
+        "output": {"part": true}, "save": {"file": "t.png"}}))
     .unwrap();
     assert!(err(&r).contains("t_r1c2.png already exists"), "{}", err(&r));
     assert!(
@@ -722,13 +722,13 @@ fn an_output_name_that_is_not_an_image_file_is_refused_before_anything_is_writte
         ("report.pdf", "image extension"),
         ("sub/", "names a folder"),
     ] {
-        let e = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": name}}))
+        let e = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "save": {"file": name}}))
             .unwrap_err();
         assert!(e.contains(why) && !e.contains('\n'), "{name}: {e}");
     }
     assert_eq!(listing(&d), ["scene.png"], "nothing was written");
     // With a suffix the source's own extension does not matter, and the format decides the name.
-    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "convert", "format": "jpeg", "output": {"suffix": "_c"}})).unwrap();
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "convert", "format": "jpeg", "save": {"suffix": "_c"}})).unwrap();
     assert_eq!(record(&r, 0)["outputs"][0]["file"], "scene_c.jpg");
 }
 
@@ -751,4 +751,129 @@ fn a_mistyped_request_option_is_a_sentence_without_a_type_name() {
     ] {
         assert_eq!(crate::run_text(req).unwrap_err(), want, "{req}");
     }
+}
+
+#[test]
+fn a_call_attaches_at_most_20_images_and_pages_the_rest() {
+    let d = scratch("manyparts", &[]);
+    let one = std::fs::read(format!("{}/scene.png", fixtures())).unwrap();
+    for i in 0..25 {
+        std::fs::write(d.join(format!("p{i:02}.png")), &one).unwrap();
+    }
+    let first = call(&json!({"path": dir_str(&d), "op": "view"})).unwrap();
+    assert_eq!(first["parts"].as_array().unwrap().len(), 20);
+    let cursor = response(&first)["next"]["cursor"].as_str().unwrap();
+    assert_eq!(response(&first)["next"]["source"], "p20.png");
+    let rest = call(&json!({"path": dir_str(&d), "op": "view", "cursor": cursor})).unwrap();
+    assert_eq!(rest["parts"].as_array().unwrap().len(), 5);
+    assert!(response(&rest).get("next").is_none());
+}
+
+#[test]
+fn an_image_over_8000_pixels_a_side_is_not_attached_and_a_view_of_it_is() {
+    let d = scratch("wide", &[]);
+    RgbaImage::from_pixel(9000, 20, image::Rgba([200, 30, 30, 255]))
+        .save(d.join("strip.png"))
+        .unwrap();
+    let flipped = call(
+        &json!({"path": dir_str(&d), "files": ["strip.png"], "op": "flip", "axis": "vertical"}),
+    )
+    .unwrap();
+    assert!(flipped.get("parts").is_none(), "{flipped}");
+    let out = &record(&flipped, 0)["outputs"][0];
+    assert!(
+        out["not_attached"].as_str().unwrap().contains("view step"),
+        "{out}"
+    );
+    let viewed = call(&json!({"path": dir_str(&d), "files": ["strip.png"],
+        "ops": [{"op": "flip", "axis": "vertical"}, {"op": "view", "max_side": 8000}]}))
+    .unwrap();
+    assert_eq!(part_image(&viewed, 0).width(), 8000);
+    let e =
+        call(&json!({"path": dir_str(&d), "files": ["strip.png"], "op": "view", "max_side": 8001}))
+            .unwrap_err();
+    assert!(e.contains("between 16 and 8000"), "{e}");
+}
+
+#[test]
+fn a_view_is_written_in_the_format_the_request_names() {
+    let d = scratch("viewfmt", &["scene.png"]);
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "view", "save": {"file": "small.jpg"}}))
+        .unwrap();
+    assert_eq!(record(&r, 0)["outputs"][0]["format"], "jpeg", "{r}");
+    assert_eq!(
+        &std::fs::read(d.join("small.jpg")).unwrap()[..2],
+        &[0xFF, 0xD8]
+    );
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "view", "output": {"format": "jpeg"}}))
+        .unwrap();
+    assert_eq!(r["parts"][0]["mimeType"], "image/jpeg");
+    let r = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "view", "output": {"format": "webp"}}))
+        .unwrap();
+    assert!(err(&r).contains("png or jpeg"), "{r}");
+}
+
+#[test]
+fn saved_and_attached_images_stop_at_the_part_cap_and_resume_by_cursor() {
+    let d = scratch("saveparts", &[]);
+    let one = std::fs::read(format!("{}/scene.png", fixtures())).unwrap();
+    let names: Vec<String> = (0..21).map(|i| format!("p{i:02}.png")).collect();
+    for n in &names {
+        std::fs::write(d.join(n), &one).unwrap();
+    }
+    let req = json!({"path": dir_str(&d), "files": names, "op": "resize", "width": 8,
+        "output": {"part": true}, "save": {"suffix": "_s"}});
+    let first = call(&req).unwrap();
+    assert_eq!(first["parts"].as_array().unwrap().len(), 20);
+    assert_eq!(response(&first)["results"].as_array().unwrap().len(), 20);
+    assert_eq!(response(&first)["next"]["source"], "p20.png");
+    assert!(d.join("p19_s.png").exists() && !d.join("p20_s.png").exists());
+    let mut again = req.clone();
+    again["cursor"] = response(&first)["next"]["cursor"].clone();
+    let rest = call(&again).unwrap();
+    assert_eq!(rest["parts"].as_array().unwrap().len(), 1);
+    assert_eq!(record(&rest, 0)["outputs"][0]["file"], "p20_s.png");
+    assert!(response(&rest).get("next").is_none());
+}
+
+#[test]
+fn write_options_name_save_and_a_wide_diff_names_its_own_next_step() {
+    let d = scratch("savehint", &["scene.png"]);
+    let e = call(&json!({"path": dir_str(&d), "files": ["scene.png"], "op": "resize", "width": 8, "output": {"file": "x.png"}}))
+        .unwrap_err();
+    assert!(e.contains("save"), "{e}");
+    for (n, c) in [("a.png", 10u8), ("b.png", 200)] {
+        RgbaImage::from_pixel(9000, 20, image::Rgba([c, c, c, 255]))
+            .save(d.join(n))
+            .unwrap();
+    }
+    let r =
+        call(&json!({"path": dir_str(&d), "files": ["a.png"], "op": "diff", "against": "b.png"}))
+            .unwrap();
+    let note = record(&r, 0)["outputs"][0]["not_attached"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        note.contains("highlight") && !note.contains("view step"),
+        "{note}"
+    );
+}
+
+#[test]
+fn a_suffix_write_over_a_scanned_folder_pages_without_reading_its_own_outputs() {
+    let d = scratch("scansave", &[]);
+    let one = std::fs::read(format!("{}/scene.png", fixtures())).unwrap();
+    for i in 0..21 {
+        std::fs::write(d.join(format!("p{i:02}.png")), &one).unwrap();
+    }
+    let req = json!({"path": dir_str(&d), "op": "resize", "width": 8,
+        "output": {"part": true}, "save": {"suffix": "_s"}});
+    let first = call(&req).unwrap();
+    assert_eq!(response(&first)["results"].as_array().unwrap().len(), 20);
+    let mut again = req.clone();
+    again["cursor"] = response(&first)["next"]["cursor"].clone();
+    let rest = call(&again).unwrap();
+    assert_eq!(record(&rest, 0)["source"], "p20.png", "{rest}");
+    assert!(response(&rest).get("next").is_none());
 }

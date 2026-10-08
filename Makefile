@@ -18,6 +18,7 @@ help:
 	@echo "make defend DEFENDING_ROOT=<repo>       defending_code"
 	@echo "make grok-port GROK_PORT_GENTS_ROOT=<gents> GROK_PORT_CEILING=<dir>  grok_tui_port"
 	@echo "make scan SCAN_ROOT=<repo>              security_scan"
+	@echo "make live LIVE_PACK=<pack> [LIVE_ENDPOINT=<url>]  live model run of scenarios/<pack>_live"
 	@echo "make defend-page GENTS_ROOT=<gents>     live campaign visualizer for make defend (needs a gents checkout)"
 
 list:

@@ -147,7 +147,7 @@
             "schema": "ChartResult/v1"
           }
         ],
-        "plugin": "charts_save"
+        "plugin": "charts"
       }
     }
   ],
@@ -173,7 +173,7 @@
       "display_name": "chart-save",
       "event_kind": "created",
       "event_source_id": "chart-save",
-      "filter": "{ _and: [ { save: { _neq: null } }, { save: { _ne: \"\" } } ] }",
+      "filter": "{ _and: [ { save: { _neq: null } }, { save: { _neq: \"\" } } ] }",
       "source_collection": "ChartRequest"
     }
   ],
@@ -184,9 +184,6 @@
         "plugins": [
           {
             "plugin": "gents/charts"
-          },
-          {
-            "plugin": "gents/charts_save"
           }
         ]
       },
