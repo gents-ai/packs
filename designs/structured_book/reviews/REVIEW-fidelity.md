@@ -734,3 +734,199 @@ The revision log's round-2 rows match the body, except for N2-7.
 
 **Verdict:** one blocking item (R2-B1). Every earlier blocking item (F1-F8,
 R1-B1, R1-B2) is fixed in substance.
+
+---
+
+## Round 3 re-review
+
+Reviewed: `DESIGN.md` revision 3, against Shelf (`S = shelf/internal`), gents
+`origin/main` (fetched again today: still `d4df8a02b`) and packs
+`origin/master`. Packs master has moved from `cd00bb8` to `3605ae8`
+(`470c291`, "Declare correlation_field on every scenario trigger's event
+source"). That commit touches only `background_continuation`, `lsp_rust` and
+`pipeline`, and `gents/ocr` is unchanged, so F-42 and F-45 still hold. X-01
+should record the new base SHA. The lens is the same as before. Only items
+that would make the build or the runtime fail, or would silently break a
+Shelf guarantee, are blocking.
+
+### Status of earlier blocking items
+
+| Id | Status | Evidence checked |
+| --- | --- | --- |
+| F1 | Fixed in substance | No change since round 2. The toc_extract release through the C1 fan-out helper (FID-R2-N1) closes the last single-item edge. R17 is still the runtime spike, and the D14 fallback is written down |
+| F2 | Fixed | `require` is the default. `gap_closed` owns the zero-entry branch alone (SB-S7b). `structure` never branches on the policy |
+| F3 | Fixed | `fail` is the default. D22 now names both causes of `complete:false` (byte cap and time budget, packs `ctx.rs:16`, `graph.rs:120-140`). The diagram text still shows only the 1.5 MB wording (N3-6) |
+| F4 | Fixed | Metadata out of retries fails the book. `degraded` means quarantined pages only |
+| F5 | Fixed in substance | Null-list → `[]`, null non-list fields left out, CTX and port-only fields stripped, 2 repairs per attempt (`maxStructuredRepairAttempts = 2`, `providers/structured_output.go:14`, re-read). One rebuild rule is still unstated: flat-to-nested renames (N3-2) |
+| F6 | Fixed | C7 |
+| F7 | Fixed | The latest canonical is always used, and `read_passage_at_version` never reports `version_match` |
+| F8 | Fixed | `members(format, variant)`, EPUB ignores the variant, and there is one `finish_signal` builder |
+| R1-B1 | Fixed | `StageTask.handoff_id`, and `sb-fire` is keyed on `source_handoff_id` |
+| R1-B2 | Fixed | The unique `status_ref`. Progress refs now carry `/<n>` (decision 4.4, §1.1). The §2.4 SDL comment still says `<run_id>/progress/<writer_ref>` (N3-6) |
+| R2-B1 | **Fixed in substance** | `ocrcount` copies `gents/ocr`'s own counter and `ranges` (`plan.rs:16-18, 58-75`, re-read). `OcrJob.files` fixes the order: `main.rs` reads `files` in the order given and walks the folder only when `files` is absent (re-read). `page_assemble` maps `source` through `RunFile.files`. The `stage:ocr_plan` check turns any remaining mismatch into a failure within 30 min. That works because `evaluate_group` builds the members from a live query on the correlation (`event_delivery.rs:330-420`), and every OcrChunk of a plan is written in one transaction. Three gaps remain, all non-blocking (N3-3, N3-4, N3-5) |
+
+### Blocking
+
+#### R3-B1. Four bindings project `workspace_original`, which is not a field of their source collection, so ingest, page assembly and every bound stage stall
+
+- **Design:** the §2.6 `input_fields` table lists `workspace_original` for
+  four bindings, and none of their source collections has that field in its
+  §2.4 SDL:
+  - `sb-ingest` (BookJob);
+  - `sb-page-assemble` (BookChunk);
+  - `sb-stage` (StageStart);
+  - `sb-work` (WorkItem).
+
+  §2.6 itself states the rule that breaks this: "a name the source
+  collection lacks stalls that binding's arrival cursor for good". §2.10 adds
+  a `defs.json` assertion that "every name exists in the source collection's
+  SDL", and SB-W1's acceptance requires "`input_fields` equal the §2.6
+  table". The two cannot both pass.
+- **gents (main):**
+  - The per-document path is `materialize_for_binding` → `fetch_source_doc`
+    (`callback/scan.rs:529, 846-862`). It refuses any projected field that the
+    collection's introspected fields lack: `ensure!(available.contains(field)
+    || field == "_docID", "callback input field {field} is not a safe scalar
+    source field")`.
+  - That error goes up through `?` in the arrival loop (`scan.rs:389-390`)
+    before `checkpoint`. The cursor never moves on, and the same document
+    fails again on every tick.
+  - Config publication does not catch this. `validate_callback_binding`
+    (`callback/documents.rs:205-231`) checks only the name syntax, duplicates
+    and secret names.
+  - The host does not need the field in the source. `PluginRunner` inserts
+    `original_field` into the arguments itself, after the projection, on
+    every bound call (`plugin.rs:510-536`: `object.insert(field,
+    bound.original())`).
+- **Effect:**
+  - Install passes.
+  - At runtime, the first `BookJob` stalls `sb-ingest` for good. No book ever
+    starts, and no terminal `BookStatus` is written, because ingest never
+    writes the finish opener.
+  - If ingest is fixed alone, `sb-page-assemble`, `sb-stage` and `sb-work`
+    stall the same way. That is every bound deterministic stage.
+  - In the build, SB-T1's `runtime_pages.json` (BookChunk →
+    `sb-page-assemble`) never produces `BookPage`s, and the `defs.json`
+    assertion contradicts SB-W1. So the build fails too, whichever of the two
+    the integrator follows.
+- **Fix:**
+  1. Remove `workspace_original` from all four rows of the §2.6 table. The
+     host fills it on every bound call because `book_pipeline` declares it as
+     `original_field`.
+  2. Say this in §2.6, next to the projection rule: "a bind_dir
+     `original_field` is host-filled and is never listed in `input_fields`".
+  3. Add it to `defs.json`: no `input_fields` entry equals a plugin's
+     `bind_dir.original_field`, and every entry exists in the source SDL.
+  4. Add an SB-T1 runtime case that seeds a `BookJob` and expects a `BookRun`
+     (or the lone refusal row). It would have caught this.
+
+### Non-blocking
+
+1. **A missing `gents/ocr` plan still ends in the 72 h watchdog.**
+   - `stage:ocr_plan` runs only when at least one `OcrChunk` exists. A group
+     with no members never times out (F-18, `evaluate_group` returns `Empty`).
+   - If `ocr-plan` errors, for example "the job holds more files than one
+     plan lists" (`graph.rs:66-70`) or a source it cannot open, it writes no
+     OcrChunk. Its callbacks have no `max_attempts` (F-45), so it does not
+     try again.
+   - The front, ocr and link gates then get no members. The book fails only
+     at 72 h with "pipeline did not finish: missing …". Shelf fails at once
+     when rasterising fails.
+   - **Fix:** record it in D25, and have the README name it. Better: ingest
+     writes an opener `Signal{gate:"ocr", member:"opener"}`, with the ocr
+     `expected` raised by 1. The `ocr` gate then times out with only the
+     opener and fails with "gents/ocr planned no chunks".
+2. **SB-C9 needs a per-stage field map, not only null rules.** Shelf's
+   schemas are nested where the port's surfaces are flat, or renamed:
+   - toc_finder's `toc_page_range: {start_page, end_page}`
+     (`toc_finder/tools/write_toc_result.go:24-31`; required inside the
+     object) arrives as flat `start_page`/`end_page`;
+   - gap's `entry_doc_id` arrives as `entry_ref` (C6).
+
+   If the rebuild copies flat fields as they are, a valid `toc_found=true`
+   answer has no `toc_page_range`, and that range is never checked against
+   the schema. **Fix:** give each stage in `contract.rs` an explicit
+   flat→logical map: `start_page`+`end_page` → `toc_page_range` (left out
+   when both are null), `entry_ref` → `entry_doc_id`. Add an SB-C9 case for
+   each.
+3. **The image types ingest counts must equal the image kinds `gents/ocr`
+   reads as one page.**
+   - D26 says that "only files ingest recognises as images are copied". If
+     ingest accepts a file that `detect::detect` refuses (an unsupported
+     format), the plan still emits one chunk for it, so the counts agree,
+     but its extract fails. Under `fail`, the book then fails.
+   - A multi-page TIFF is a bigger problem. Ingest counts it as 1 page, and
+     ocr's `split_pages` treats any non-`PAGED` format as one page
+     (`graph.rs:31`), so the extra pages are lost silently.
+   - **Fix:** ingest accepts exactly ocr's single-image kinds (copy the list
+     from `detect.rs` into `ocrcount`, under the drift test), and refuses a
+     multi-frame TIFF with a message.
+4. **The plan check compares `source`, but `RunFile` stores no PDF source
+   name.**
+   - For a single file, `OcrChunk.source` is the file name of the bound link.
+     `for_file` keeps the name (`plugin/bound.rs:128-140`), so it is
+     `source.<ext>`. `RunFile.files[]` covers image folders only.
+   - **Fix:** store `RunFile.source_name` (or `files = ["source.pdf"]` for a
+     PDF), and say which field `stage:ocr_plan` compares.
+5. **`canonical/book.json` can be written before metadata exists.**
+   - Structure does not wait for metadata. Shelf's does not either, and
+     Shelf's `get_book` reads the live book row (`researchmcp/client.go:50-62`).
+   - Here `commit_closed` freezes the `BookMetadataFile` at promote time. A
+     book whose metadata finishes after structure keeps a canonical file with
+     no title or author for good, while the run ends `complete`.
+   - The digest has no metadata in it, so citations are unaffected.
+   - **Fix:** either `get_book` reads `runs/<run_id>/` metadata for the
+     canonical file's `run_id` (the bind is on the book folder, so it can),
+     or `stage:finish` re-promotes the canonical file with the metadata.
+     Record whichever is chosen.
+6. **Wording drift.**
+   - The §2.4 `BookStatus.status_ref` comment lacks `/<n>`.
+   - The §2.8 diagram still says "ocr chunk c truncated at 1.5 MB". D22's
+     format is `"ocr chunk <c> incomplete (<cause>): pages <x>-<b> missing"`.
+   - The diagram lists "page count fails" among the refusals made before a
+     run folder exists, but places the count after the copy into
+     `runs/<run_id>/`. Count the original first, or say that the copied
+     folder is left behind.
+7. **`writer_ref`'s "source ref" is not defined for StageStart-sourced
+   handlers.**
+   - StageStart has no unique ref. Per-document ports leave `cause_ref`
+     unset, and `sb-stage` does not project `_docID`.
+   - Any deterministic choice works, because a mismatch only defers the row
+     to the `stage:finish` repair. But SB-C1 needs one.
+   - **Fix:** add `_docID` to the bound bindings' `input_fields` (allowed,
+     `scan.rs:855-858`) and use it as the source ref.
+8. **No port should set `required: true`.** `output_documents` fails a call
+   whose `required` port is empty (`callback/plugin.rs:119-124`), and the
+   default is `false` (`graph_pipeline/types.rs:27-29`).
+   - The design calls only some ports "(optional)".
+   - Suppose an implementer sets `required` on, for example, `sb-ingest`'s
+     `BookRun one`. The pre-folder refusal (a lone `BookStatus`) then fails
+     3 times, and the book gets no row at all.
+   - **Fix:** state "no port is `required`" in §2.6, and assert it in
+     `defs.json`.
+
+### Checked and still intact
+
+These match Shelf, re-read in source for this round:
+- The stage order and the variant flags.
+- The front exact-prefix rule (`state.go:55-61`).
+- The link gate {toc, ocr}.
+- Budgets of 3 per stage, with pattern exhausted → 0 entries, and discover
+  and gap exhausted → counted complete.
+- Link fails closed.
+- Classify exact coverage. Polish runs only for audio chapters and fails
+  closed. `ApplyEdits` runs on the whole chapter text with first-occurrence
+  `strings.Replace` (`common/structure_text.go:163-173`).
+- `validate_quote`'s version check runs before the search.
+- The `shelf-research-v1` digest (`researchmcp/client.go:72-100`). It hashes
+  book id, source sha, chapters and passages only, so metadata timing
+  (N3-5) cannot change it.
+- `requireResearchReady` (`client.go:125-133`).
+
+The round-3 revision-log rows for FID-R2-B1 and FID-R2-N1..N12 match the body
+of the design.
+
+**Verdict:** one blocking item (R3-B1). It is a one-line fix per binding, but
+as written it stops every book at ingest, and the build's `defs.json` and
+SB-W1 acceptance contradict each other. Every earlier blocking item (F1-F8,
+R1-B1, R1-B2, R2-B1) is fixed in substance.

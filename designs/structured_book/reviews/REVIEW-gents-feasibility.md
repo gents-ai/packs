@@ -883,3 +883,214 @@ trigger in either pack uses `serial`.
 - `OcrJob.run_id` is `@index(unique: true) @immutable` (packs `cd00bb8`
   `ocr/schemas/ocr_job.graphql`), so the design's one OcrJob per run is
   enforced by the database.
+
+---
+
+## Round 3 re-review
+
+Reviewed `DESIGN.md` revision 3 against gents source. Read only; nothing in
+shelf, gents or packs was changed. The only git actions were `git fetch` and
+`git archive` into a scratch folder.
+
+Baselines:
+- gents `origin/main` is still **`d4df8a02b`**: `git fetch` on 2026-10-08
+  finds no new commits. `c9d26b8d1` and `967339dfd` are both ancestors
+  (`git merge-base --is-ancestor`).
+- Tag `v0.20.0` `a5d02f106`, for the fallback claims.
+- packs `origin/master` is now `3605ae8` (#18). That commit touches only the
+  `pipeline`, `lsp_rust` and `background_continuation` packs, so `gents/ocr`
+  is the same as at `cd00bb8`.
+- Paths are relative to `crates/gents/src/` at `d4df8a02b` unless stated.
+
+### Verdict
+
+All earlier blocking items are fixed: B1 to B8, RB-1 to RB-5 and R2-1 to
+R2-3. The code confirms each fix (tables below). Revision 3 still has **two
+new blocking problems**. Both are one-line wiring mistakes, and neither needs
+a gents change:
+- **R3-1** stops every structured_book book at ingest.
+- **R3-2** stops browser_download from passing `pack check` or installing, on
+  both main and the tag.
+
+### Round-0 blocking items: status on `d4df8a02b`
+
+| Id | Status | Evidence |
+| --- | --- | --- |
+| B1 | **Fixed** | A case-insensitive grep of DESIGN.md for `key\|token\|secret\|password` finds only prose, `fire_key` (excluded from `sb-fire`), `goal_token_budget` (not used) and `dispatch_key` (a Rust function). No schema field, `input_fields` entry or filter uses one. Enforced at `callback/documents.rs:205` (`validate_callback_binding`) and `:233` (`reject_secret_bearing_callback_fields`, run again at scan, `callback/scan.rs:492-496`); `:297` strips anything that slips through. |
+| B2 | **Fixed** | Surfaces fill only `String` CTX fields (`defra_write/mod.rs:181` always writes `Value::String`). `StageTask` sets the five fill sources and `handoff_id` non-empty (§2.4). browser_download fills only `library_path` and `plan_json`. |
+| B3 | **Fixed** | `book_pipeline` declares `workspace` and `workspace_original`; `download_fetch` declares `library_path` and `library_root`; the two read-only tools have no `original_field`. `pack.rs:465-488` passes. |
+| B4 | **Fixed** | `--grant-authority` is on all three installs (§0 decision 1, §2.1, §4 steps 5-7). The limits are within the ceilings, and `plugin/store.rs:197` is the refusal that the flag avoids. |
+| B5 | **Fixed (modified)** | Callbacks are still serial (`publish_invocation` awaits `run_owned_invocation`, `callback/scan.rs:589-600`). Decision 4.3 replaces the round-0 fix: a gate fires partial at its 72 h timeout, then the bound `stage:<gate>` checks the member set and fails the book. The group settings are valid (`document_config/event_trigger.rs:280-366`). |
+| B6 | **Fixed** | Batch and stage openers, plus the finish opener written at ingest. A plan that never appears is caught by the finish watchdog. |
+| B7 | **Fixed** | Unique refs on every grouped member collection (§2.3). A losing callback fails its whole transaction (`callback/plugin.rs::commit_success`). |
+| B8 | **Fixed** | The floor `d4df8a02b` contains `c9d26b8d1`. The e2e seeds with `gents document create` and retries. |
+
+### Round-1 and round-2 blocking items: status
+
+| Id | Status | Evidence |
+| --- | --- | --- |
+| RB-1 | **Fixed** | No trigger sets `session_id_template` (§2.5). `target_existing` is false without a template or a graph session (`trigger_engine/mod.rs:650-655`). |
+| RB-2 | **Fixed** | `StageTask.handoff_id: String`. Fire admission refuses an empty one (`trigger_engine/mod.rs:636-643`). The FireOutcome SDL is the same on main and the tag (`gents-schemas/.../fire_outcome.graphql`): it has `source_handoff_id` and `attempt`. |
+| RB-3 | **Fixed** | The `BookJob` port correlates on `fetch_run_ref`. `output_documents` refuses a plugin value only in the port's own correlation field (`callback/plugin.rs:132-147`). |
+| RB-4 | **Fixed** | Every collection that a grouped port writes declares `cause_ref`. |
+| RB-5 | **Fixed** | The floor is `d4df8a02b`, and `link_mode` defaults to `copy`. |
+| R2-1 | **Fixed** | `workspace` is now the book folder `books/<sha>` (§1, F-37), so the promote is a rename inside the one preopen (`plugin.rs:536-543` preopens exactly `bound.path()`). `book_search` binds `<workspace>/runs/<run_id>` from the footer. |
+| R2-2 | **Fixed** | The single-port wire shape is in §2.7, and `CALLBACK_PORTS` is asserted against `pack_config.json`. This matches `output_documents` `[only] => (only, Some(output))` and `(_, None\|Some(Null)) => no rows` (`callback/plugin.rs:80-112`). The shape is the same at the tag (`callback/plugin.rs:86` there). |
+| R2-3 | **Fixed** | Both triggers use `queued_serial`, which exists on main and the tag (`document_config/trigger.rs:89`) and needs only a document event source (`trigger_engine/mod.rs:966-980`). |
+
+### New blocking items
+
+#### R3-1. `workspace_original` is listed in four `input_fields`, but no source collection declares it. Every arrival on those bindings fails, and the cursor never moves past it.
+
+The §2.6 `input_fields` table lists `workspace_original` for `sb-ingest`
+(BookJob), `sb-page-assemble` (BookChunk), `sb-stage` (StageStart) and
+`sb-work` (WorkItem). None of those §2.4 types has that field.
+
+What the code does with it:
+- `fetch_source_doc` (`callback/scan.rs:846-860`) runs
+  `ensure!(available.contains(field) || field == "_docID", "callback input field {field} is not a safe scalar source field")`
+  against the collection's introspected fields
+  (`trigger_engine/event_source.rs:354-410`).
+- The error propagates through `materialize_for_binding` into
+  `deliver_binding_arrivals`. That function returns on `?` before
+  `checkpoint` (`callback/scan.rs:386-391`), so the binding retries the same
+  first document on every scan and never delivers anything after it.
+- The tag has the same check (`callback/scan.rs:645` at `v0.20.0`).
+
+Consequences:
+- No `BookJob` is ever ingested, so no book starts.
+- If the ingest binding were fixed alone, every `StageStart`, `WorkItem` and
+  `BookChunk` binding would stall the same way.
+- The design's own `defs.json` rule ("every name exists in the source
+  collection's SDL", §2.6) would fail `make test-structured_book` first, so
+  this is caught at test time. As written, though, the design cannot pass
+  both its tests and its table.
+
+The field is not needed in the projection. The host writes `original_field`
+into the plugin input itself after binding, overwriting any value
+(`plugin.rs:520-535`: `object.insert(field, bound.original())`). `gents/ocr`
+does exactly this: its `ocr-plan` and `ocr-extract` bindings list `path` but
+not `path_original` (packs `ocr/pack_config.json` `callback_bindings`).
+
+**Fix:**
+- Delete `workspace_original` from the four rows of the `input_fields`
+  table.
+- Add the rule to §2.6: "`original_field` is never an `input_fields` entry;
+  the host injects it."
+- Add a `defs.json` assertion that no binding lists a plugin's
+  `bind_dir.original_field`.
+- Apply the same rule to browser_download. Its bindings are not listed at
+  all (see R3-N3), and none of `DownloadPlan`, `FetchProgress` or
+  `AgentFetchResult` has `library_root`.
+
+#### R3-2. `root` is placed inside `host.bash`, and `BashTools` refuses unknown fields. browser_download's config then fails to parse, on main and on the tag.
+
+§3.6 gives the `dl-fetch-agent` tools as `host.bash {mode, execution_mode,
+network_mode, root: "${GENTS_DOWNLOAD_LIBRARY:-.}", allowed_argv_prefixes}`.
+- `document_config/tools.rs:128-213`: `BashTools` is
+  `#[serde(deny_unknown_fields)]` and has no `root`.
+- `root` is a field of `HostTools` (`tools.rs:65-77`, also
+  `deny_unknown_fields`).
+- The tag is the same (`tools.rs:125-130` and `HostTools.root` at
+  `v0.20.0`).
+- `gents/change_unit` shows the right shape:
+  `"host": {"bash": {...}, "files": {...}, "root": "${GENTS_CHANGE_UNIT_ROOT:-}"}`.
+
+The `dl-fetch-agent` behavior and its tools document ship in
+browser_download in both fetch modes, so the whole pack fails `pack check`
+and `pack install`. It is not only the fallback path that breaks.
+
+**Fix:** move `root` up one level, to
+`host: {root: "${GENTS_DOWNLOAD_LIBRARY:-.}", bash: {mode: "Unrestricted",
+execution_mode: "workspace_write", network_mode: "enabled",
+allowed_argv_prefixes: [...]}}`. The enum spellings in the design are
+accepted (`gents-loop/src/tool_policy.rs:18-31, 148-162`). Also make BD-B2
+run `gents pack check` on the merged fragment, which the structured_book
+fragments already do (`check-fragment.sh`).
+
+### New non-blocking findings
+
+- **R3-N1. §3.6 understates the exfiltration path.** `host.root` is only the
+  default working folder: "cwd itself is not a sandbox" (`tools.rs:70-74`).
+  The `workspace_write` seatbelt profile allows `file-read*` everywhere and
+  limits only writes, to `WRITABLE_ROOT` (`toolset/shared/command.rs:1062-1085`).
+  - So `curl ... -o x -T <file>` can upload **any file the operator's user
+    can read**, including the gents home and `~/.ssh`, not only files
+    "readable under `root`". Pointing `GENTS_DOWNLOAD_LIBRARY` at a bare
+    folder does not contain that.
+  - Correct the §3.6 bullet and the README. The only real limit is the
+    `allowed_argv_prefixes` head. A `forbidden_argv_prefixes` entry cannot
+    help, because it also matches only a head (F-35).
+  - `workspace_write` also needs macOS `sandbox-exec`, and fails closed
+    elsewhere (`command.rs:869-895`). State in the runtime table that the
+    agent fallback is macOS-only.
+- **R3-N2. The e2e step 2 command does not exist.** `gents config backend
+  set` takes only `--file`, `--home` and `--graphql` (`gents-cli/src/cli/args.rs:3219-3226`).
+  - `gents init --max-queue-depth` exists (`args.rs:1680`).
+  - Set the first backend's depth with `init`, and the second backend's
+    with `max_queue_depth` inside the `--file` JSON for step 3.
+- **R3-N3. browser_download has no `input_fields` table.** §2.6 got one
+  (R2-N1), but §3.4 did not. A wrong name stalls that binding for good, as
+  in R3-1. Add one row per binding:
+  - `dl-resolve` (DownloadJob)
+  - `dl-resolve-search` (SourceSearchResult)
+  - `dl-fetch` (DownloadPlan: `library_path`, never `library_root`)
+  - `dl-fetch-continue` (FetchProgress)
+  - `dl-terminal`
+  - `dl-finalize` (AgentFetchResult)
+
+  Extend the `defs.json` name check to browser_download's own SDL.
+- **R3-N4. Port JSON shape.** `PortSpec` is `deny_unknown_fields`, and
+  `schema` is a required string (`graph_pipeline/types.rs:14-30`;
+  `gents/ocr` uses `"schema": "OcrChunk/v1"`). "Optional" in §2.6 means
+  leaving out `required`, which defaults to `false`; there is no `optional`
+  key. A port marked `required: true` that returns no rows fails the call
+  (`callback/plugin.rs:113-118`). Every port in §2.6 except those that always
+  write should therefore leave `required` out. Say this once in SB-W1's
+  acceptance.
+- **R3-N5. `sb-plan-check` (F-43) is valid as configured.**
+  - A grouped source with no `expected_count` and a timeout passes
+    `validate_group` (`document_config/event_trigger.rs:347-358`).
+  - It fires only at the timeout with every member it holds
+    (`trigger_engine/event_delivery.rs:477-495`, `None => timed_out && minimum <= actual`).
+  - The membership query reads up to 257 rows (`:337-345`). A foreign image
+    job of more than 256 files quiesces only its own group.
+  - The group key includes the binding id (`event_delivery.rs:172-186`), so
+    `sb-plan-check` and `sb-chunk-slot` on the same `OcrChunk` rows do not
+    interfere.
+  - The design's premise holds: `gents/ocr` `plan` returns all chunks from
+    one call (`ocr/plugins/ocr/source/graph.rs:55-100`), so they land in one
+    transaction.
+- **R3-N6. R17 is still unproven at runtime.** No code refuses a callback
+  binding on `FireOutcome`. The only FireOutcome rules apply to Triggers
+  (`document_config/references.rs:528-537`,
+  `config_client/event_source_cursor.rs:198-212`), and the arrival query
+  takes any collection name. `source_handoff_id` has no index, which only
+  slows the per-document correlation lookup. Keep R17 first in X-00a.
+
+### Checked and confirmed in revision 3
+
+- `bind_input` binds exactly the named path and preopens only it
+  (`plugin/executor.rs:203-266`, `plugin.rs:536-543`). Binding the book
+  folder `read_write` from an allowed `$LIB` works headless.
+- `gents/ocr`'s schemas have every field that the four foreign bindings list:
+  `OcrChunk.{run_id, chunk, path, source, pages, format}`,
+  `OcrDocument.{run_id, chunk, source, markdown, page_count, complete, error, warnings}`,
+  and `OcrJob.files: [String]`. The `ocr-plan` binding passes `files` on,
+  and `main.rs:401-410` reads them in the order given. A folder chunk's
+  `path` is the job's original path (`graph.rs:56-61, 78`), so the
+  "three levels up" rule holds for both `source.<ext>` and `source/`.
+- The `remote_ocr` slot of `gents/ocr` is `optional: true`, so step 5's
+  single slot binding is enough.
+- List fields (`source_paths`, `warnings`, `authors`, `figure_refs`) are
+  valid `input_fields`. The introspection keeps every non-system field
+  (`event_source.rs:390-410`).
+- The `FetchedSource` fields that `sb-from-fetch` reads all exist in
+  prior-art §6 plus §3.2's additions.
+- `remote.services[].{mcp_service_id, required, tool_names}` match
+  `RemoteServiceTools` (`tools.rs:279-318`).
+- The tag accepts a plugin that declares `OutboundHttp` (consent text in
+  `plugin/authority.rs:40-43`). Installing browser_download on the tag
+  therefore depends only on R3-2 and X-00b.
+- `gents init --max-concurrent`, `gents config export|apply --root`,
+  `gents document create` and `gents version` exist on main.

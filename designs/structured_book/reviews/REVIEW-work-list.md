@@ -827,3 +827,216 @@ is safe under the engine's `UndefinedBehavior::Strict` (`template/mod.rs:54`).
   - X-01 creates the base branch;
   - each mirror path is an exception to "do not edit";
   - `contract.rs` changes go through `SB-K<n>` tasks (W2-4, W2-8, W2-9).
+
+---
+
+## Round 3 re-review
+
+Reviewed `DESIGN.md` revision 3 against gents `origin/main` at **`d4df8a02b`**
+(fetched again 2026-10-08; unchanged), packs `origin/master` at **`3605ae8`**
+(fetched; two commits past `cd00bb8`, both scenario-only:
+`470c291` adds `correlation_field` to three scenario packs), and Shelf. The
+lens is the same as before: are tasks atomic, isolated, ordered and
+checkable, are the hand-off formats defined, and can the golden plan be built?
+"Verified" means I read the code at those commits. Nothing in gents, packs or
+shelf was modified.
+
+**Verdict: one small revision from dispatchable.** Every earlier blocking
+item is fixed in the design: B1 to B5b from round 0, N1 to N7 from round 1,
+and R2-B1 to R2-B3 from round 2. The task graph is now acyclic, file-disjoint
+and ordered. Every hand-off file has a type in `contract.rs`. The golden plan
+can be built.
+
+Three new blocking problems remain. Each one breaks the build, or a merge the
+integrator makes, exactly as the design is written. Each has a one-paragraph
+fix. Two of them are not visible in the design text. They come from the
+packs repository's `.gitignore` and from how gents projects `input_fields`.
+
+### Status of earlier blocking items
+
+| Id | Status | Notes |
+| --- | --- | --- |
+| B1 (round 0) / N1 | **Fixed** | Day-one green pack: placeholders for the 9 behaviors and contexts, a stub for every module, merge by id. One new defect in the same scaffold is R3-B3 |
+| B2 (round 0) / R2-B1 / R2-B2 | **Fixed in the rules; R3-B2 breaks them in git** | Worktree per task, cut after the deps merge, the integrator in `$W/integrate`, mirrors committed with their originals, stateful tests over temp copies. But fixture trees that contain a `runs/` folder are silently never committed (R3-B2), so a merge that passed in its author's worktree goes red in the integrator's |
+| B3 (round 0) | **Fixed; buildable** | G0 depends on SB-01b and shapes its inputs as `contract.rs` types. Its README classifies every target as pure, httptest or hand-derived (`ValidateCandidatePage` is listed as pure). `book.epub` exists in `ocr/plugins/ocr/tests/fixtures/` for S10. One target overlap is in W3-3 |
+| B4 (round 0) | **Fixed** | Ten `TaskFile` variants are enumerated from Shelf's structs. `SB-K<n>`/`BD-K<n>` tasks are the amendment path. `PatternFile`, `GapsFile`, `BookMetadataFile` and `CALLBACK_PORTS` are typed. S10 is listed as a writer |
+| B5a | **Fixed** | Front gate, image `expected`. `OcrJob.files` fixes the image order, and plan agreement is checked through `sb-ocr-plan` |
+| B5b | **Fixed** | Openers. toc_extract goes through the C1 helper with openers. Skipped polish items resolve at release, and only the final commit part writes the `ItemOutcome` |
+| R2-B3 | **Fixed** | X-02 has the harness change and the jq-only fallback. E2E step 5b registers the service |
+
+Three other checks also hold:
+
+- **Shared `book_tools` source is safe.** The `op` enums of `book_search` and
+  `book_research` differ, but sharing one source is still fine. `input_schema`
+  is never validated: `plugin.rs:89` says "Output is validated, `input_schema`
+  is not", and `GC/pack/test.rs::run_case` passes `case.input` straight
+  through. So a research case runs under the `book_search` entry, as decision
+  9 assumes.
+- **List-typed input fields are accepted.** `warnings`, `source_paths` and
+  `authors` are lists, and the projection check accepts them:
+  `SourceSchemaCache::fields_for` returns every own field that does not start
+  with `_` (`trigger_engine/event_source.rs:354-410`).
+- **The drift tests can read neighbouring paths.** `cargo test` in
+  `test-pack.sh` runs **natively**: packs `.cargo/config.toml` sets only
+  `rustflags` for `wasm32-wasip1`, not a build target. So the drift tests
+  that read `../book/source/core` and `../../../ocr/plugins/ocr/source/` can
+  reach them.
+
+### New blocking problems
+
+#### R3-B1. `workspace_original` in four bindings' `input_fields` stalls their arrival cursors, so no book ever starts
+
+- **Verified.** `callback/scan.rs::fetch_source_doc` (`:846-862` at
+  `d4df8a02b`) runs, for every per-document binding:
+
+  ```rust
+  for field in &projected {
+      anyhow::ensure!(available.contains(field) || field == "_docID",
+          "callback input field {field} is not a safe scalar source field");
+  }
+  ```
+
+  `available` is the source collection's introspected fields. The grouped
+  path has the same check (`:644-653`). The error propagates out of
+  `materialize_for_binding(...)?` (`:389`) before `checkpoint`, so the
+  binding retries the same arrival on every tick, for good. §2.6 states this
+  rule itself.
+- The §2.6 `input_fields` table lists `workspace_original` for `sb-ingest`
+  (on `BookJob`), `sb-page-assemble` (`BookChunk`), `sb-stage` (`StageStart`)
+  and `sb-work` (`WorkItem`). None of those four §2.4 SDLs declares the
+  field.
+- The field does not need to be listed. `plugin.rs::call_bound` (`:525-535`)
+  **inserts** `bind_dir.original_field` into the arguments itself, after the
+  projection.
+- **Consequence.** The first `BookJob` stalls `sb-ingest`, and nothing
+  downstream ever runs.
+  - `SB-W1`'s acceptance ("`input_fields` equal the §2.6 table") enforces the
+    bad list.
+  - The `defs.json` rule ("every name exists in the source collection's SDL")
+    then contradicts the table, so `SB-T1` or `SB-W2b` is red, and its fixer
+    has to guess which side is wrong.
+  - `runtime_pages.json` would time out on `BookPage`.
+- **Fix.**
+  - Drop `workspace_original` from those four rows. A bound callback still
+    receives it.
+  - State in §2.6: "`input_fields` never lists a `bind_dir.original_field`;
+    the host adds it after projection (`plugin.rs:525`)".
+  - The same rule applies to browser_download. No `DownloadPlan`,
+    `FetchProgress` or `AgentFetchResult` field is `library_root`, so BD-W1
+    must not list it for `dl-fetch`, `dl-fetch-continue` or `dl-finalize`.
+    `FetchedSource.library_root` is a real field that the plugin writes, so
+    it stays in `sb-from-fetch`.
+  - Add both rules to `check-fragment.sh` (SB-01c) and the BD-W1 acceptance.
+    Then the defect fails on day one, with the binding's name in the error.
+
+#### R3-B2. The packs `.gitignore` ignores every `runs/` folder, so the run-folder fixtures are never committed
+
+- **Verified.**
+  - Packs `.gitignore` line 2 is `runs/`, unanchored. It matches at any depth:
+    `git check-ignore -v --no-index` reports `.gitignore:2:runs/` for both
+    `packs/gents/structured_book/tests/fixtures/books/abc/runs/sb-fixture/run.json`
+    and `.../plugins/book/source/stages/testdata/gates/books/x/runs/sb-t/run.json`.
+  - `pack check`'s `walk` also skips any directory named `runs`
+    (`GC/pack/check.rs:186-200`).
+- The design puts `runs/<run_id>/` inside these fixtures:
+  - `runtime_pages.json` and `runtime_commit.json`: "fixture book folder (with
+    `runs/sb-fixture/run.json`)", §2.10;
+  - every native stage test, which copies `stages/testdata/<module>/**` and
+    calls `run()` against the §1 layout `<workspace>/runs/<run_id>`, for S1
+    to S10 and BD-F1b's library fixtures.
+- **Consequences.**
+  1. `git add <dir>` **silently skips** ignored files. The author's worktree
+     still has them on disk, so their `make test` passes. Their
+     `git status`-clean check passes too, because ignored files never show
+     as modified.
+  2. The integrator's worktree has no such files. Native tests fail on
+     missing fixtures, and `pack check` fails with "declares
+     `tests/fixtures/.../runs/.../run.json`, which is missing" for every
+     fixture that SB-T1 lists in `assets`. The merge is red and is reverted,
+     and the task is re-opened with a defect its author cannot reproduce.
+     This is the merge loop R2-B2 fixed, broken again one level down, in
+     git.
+- **Fix: never put a directory named `runs` under the pack tree.**
+  - Fixtures store the run folder as `run/` (for example
+    `testdata/<module>/book/run/run.json`).
+  - The native-test helper copies `book/` to `$tmp/books/<sha>/` and `run/`
+    to `$tmp/books/<sha>/runs/<run_id>/`.
+  - Runtime cases do the same through `"copy"`, whose keys are destination
+    paths, so the target `books/<sha>/runs/sb-fixture/run.json` can come from
+    the source `tests/fixtures/commit/run/run.json` (`test-pack.sh:398-402`).
+  - The `copy_fixture(module, run_id)` helper belongs to SB-C1 (`core/` is
+    already C1's), with one case.
+  - A rule in §6 "Tests": "no path under `P/` or `Q/` contains a `runs` or
+    `target` component (`.gitignore`, `check.rs` walk)".
+  - Add to the acceptance of every task:
+    `git -C $W/<id> ls-files --others --ignored --exclude-standard -- packs/gents/<pack>`
+    lists nothing but build output. That catches the next ignore rule too.
+  - A pack-level `.gitignore` with `!runs/` would also work, but it changes
+    a shared ignore rule. The `run/` rename does not.
+
+#### R3-B3. The day-one scaffold fails its own `pack check`: `P/rust-toolchain.toml` is an undeclared file
+
+- SB-01a and BD-01 target `P/rust-toolchain.toml` and `Q/rust-toolchain.toml`.
+  SB-01a's sources cite `K/packs/gents/ocr/rust-toolchain.toml`, **which does
+  not exist**. The ocr pack has none. The repo-root `rust-toolchain.toml`
+  pins every pack, because cargo searches parent directories, and
+  `test-pack.sh` says the tests run "under the repo's pinned rust-toolchain".
+- **Verified:** `check.rs:175-183` reports "`<path>` is present but not
+  declared in assets" for any file outside a plugin `source` that is not
+  listed in `assets`. The pack root is outside every source. The §2.1 and
+  §3.1 `assets` do not list `rust-toolchain.toml`.
+- So SB-01a's and BD-01's acceptance (`make test-<pack>`) fails as written.
+  Every other task waits on them.
+- **Fix.** Delete `rust-toolchain.toml` from both target lists and from
+  SB-01a's sources. The repo root's file applies.
+
+### Non-blocking (fix before dispatch; each is cheap)
+
+| # | Problem | Fix |
+| --- | --- | --- |
+| W3-1 | **`defs.json` cannot see another pack's SDL.** `run_jq_case` runs against `show_document`, which holds only this pack's manifest, config and declared assets (`test-pack.sh:166-184, 493-505`). So "every foreign `input_fields` entry exists in the producing pack's SDL" (§2.6, §2.10) cannot be written in jq. This matters because a wrong foreign name is exactly the R3-B1 stall, on `OcrChunk`, `OcrDocument` or `FetchedSource` | Move that assertion to the native `cargo test` in `plugins/book` that already reads `../../pack_config.json`. It also reads `../../../ocr/schemas/*.graphql` and `../../../browser_download/schemas/fetched_source.graphql`. Add **BD-02** to SB-T1's (and SB-W1's) `depends_on`, because the FetchedSource SDL is BD-02's output |
+| W3-2 | **`check-fragment.sh` has two unstated needs.** (a) Its temporary-copy `pack check` refuses a documents pack whose `.afb` files are not built (F-28), and `.afb` files are gitignored, so the script must build first or copy `plugins/*.afb` from a prior `make`. (b) Its checks (5 CTX fills, `output_obligation`, slot, `emit_outcome`) describe a behavior fragment, but SB-W1's `pipeline.json` has no behavior, so W1's "`check-fragment.sh` exits 0" fails or skips the checks | SB-01c: the script runs `gents pack build` on the temporary copy before `pack check`. It also gets a `--pipeline` mode that checks `CALLBACK_PORTS` and `input_fields` against the SDL (R3-B1) instead of the behavior rules. SB-W1 uses `--pipeline` |
+| W3-3 | **SB-G0 and SB-C2 overlap on `core/fixtures/**`.** G0 targets `core/fixtures/**` and C2 targets `core/fixtures/furniture/`. They run in parallel (C2 does not depend on G0). "`run.sh` regenerates byte-identical fixtures" invites a wipe-and-rewrite that deletes C2's files | G0 targets exactly the §2.10 list, `core/fixtures/{prompts/front,prompts/finalize,prompts/structure,canonical,evidence,finalize,epub,schemas}/**` (+mirror). `run.sh` writes only those folders |
+| W3-4 | **The `core/` mirror compiles in a crate without `stages`, `tools`' siblings or `ocrcount`.** Nothing says `core/` may not use `crate::stages::*` or `crate::ocrcount::*`, or that both crates' `Cargo.toml` carry every crate that `core/` uses (`sha2`, `regex`, `jsonschema`). The first C task that crosses either line breaks `book_tools`. It notices in its own worktree, but it may not fix it: `Cargo.toml` is off limits, so that becomes an SB-K round trip | Add a rule: "`core/` references only `crate::core::*`, `std` and the crates in both `Cargo.toml`s". SB-01a's acceptance: both crates declare the same `core` dependency set, and a `cargo build` of `book_tools` with every `core` stub passes |
+| W3-5 | **The ocrcount copy list is short by two items.** `Backend::open` also needs `WHOLE_LIMIT` and `load_error` from `pdf.rs` (`pdf.rs:470-478`), not only `input::Options` and `resume::Fnv`. `pdflazy.rs:871-884` calls `Options::next_selected`, so the shim must reproduce its semantics, not just the type. The copies use `crate::input`, `crate::pdfobj`, `crate::pdfdecode`, `crate::src`, `crate::resume` and `crate::pdflazy`, so those must be **crate-root** module names in `plugins/book` | SB-C10's acceptance lists the copied items (`page_count`, `Backend::{open,total}`, `WHOLE_LIMIT`, `load_error`, `ranges`, `MAX_CHUNKS`, `UNITS_PER_CHUNK`) and the shim items (`Options` with `next_selected`, `Fnv`). The drift test compares each one. SB-01a's `main.rs` declares the six crate-root module names |
+| W3-6 | **browser_download's modules and registry are not enumerated.** BD-01 ships "a stub per module", the resolver registry and `common/policy.rs`, but no list. BD-C1..C3 add 14 resolver files (they may not edit `main.rs` or `resolver.rs`), so a resolver BD-01 did not foresee is never compiled or registered. BD-C1's title includes "URL policy, User-Agent", which live in `common/policy.rs`, a BD-01 file | BD-01 enumerates the modules, as §2.7 does: `route`, `rank`, the 14 resolvers and `policy`. It registers every resolver by name against its stub. Either BD-01 implements `policy.rs` in full, or BD-C1 owns `common/policy.rs` (+mirror) |
+| W3-7 | **Runtime seeds repeat.** `runtime_case` creates the seed again until `taken` appears (`test-pack.sh:435-460`), so the same `BookChunk` or `StageStart` can be processed twice. The second run hits the unique `signal_ref` and fails its whole transaction after 3 attempts (F-19). The expectations still pass, because `await_rows` only checks that a matching row exists. But a seed with `${ATTEMPT}` in `run_id` points at a run folder that does not exist, and so does nothing | SB-T1's acceptance: seeds use the fixed `run_id: "sb-fixture"` and never `${ATTEMPT}`, and a duplicate-processing failure in the server log is expected |
+| W3-8 | **"Your new cases and `cargo test`s are listed as passed" is not observable from `make`.** `test-pack.sh` prints only `plugin X: N cases` and `cargo test --quiet` pass or fail. Names are printed only on failure | The acceptance reads "`$GENTS_BIN pack test P` JSON lists your case files under `plugins[].passed`, and `cargo test -- --list` names your tests" |
+| W3-9 | **The generic `_next` release has no deterministic case.** S3's `stage:<any>_next` builds `StageTask`s from `TaskFile.user_prompt`. A book with more than 128 chapters needs `commit_next` to release `WorkItem`s, but no S3 case covers it | Add the S3 case "129 commit items → second batch released as `WorkItem`s". The C1 helper's deterministic path is the shared code |
+| W3-10 | **The base SHA is stale.** The design says "`cd00bb8` at revision 3", but packs `origin/master` is `3605ae8` (scenario-only changes) | Nothing breaks: X-01 records the real SHA. Change the prose to "the `origin/master` head at X-01" |
+| W3-11 | **The SB-S10 golden may differ on whitespace.** Shelf parses EPUB XHTML with `golang.org/x/net/html` (`epubimport/parser.go`), while the port uses the ocr crate's XML reader. Text from `nodeText` can differ in whitespace and entity handling, so "same chapter list" may fail on text alone | G0's EPUB golden compares titles, levels, sources and matter types exactly. It compares text after Unicode whitespace normalization, and the README says so |
+
+### Task-list delta for round 4
+
+- **§2.6:**
+  - drop `workspace_original` from `sb-ingest`, `sb-page-assemble`,
+    `sb-stage` and `sb-work`;
+  - add the rule "never list an `original_field`" (R3-B1).
+- **§6 rules:**
+  - no `runs` or `target` path component under `P/` or `Q/`;
+  - every acceptance adds the ignored-files `ls-files` check (R3-B2);
+  - `core/` references only `crate::core`, `std` and the shared crates
+    (W3-4).
+- **SB-01a, BD-01:**
+  - remove `rust-toolchain.toml` (R3-B3);
+  - SB-01a: both crates carry the same `core` dependencies, and the six
+    crate-root ocrcount module names are declared (W3-4, W3-5);
+  - BD-01: enumerate the modules and registry, and name the owner of
+    `policy.rs` (W3-6).
+- **SB-01c:**
+  - `check-fragment.sh` builds before `pack check`;
+  - it gains a `--pipeline` mode;
+  - it refuses `original_field` names and names missing from the SDL
+    (R3-B1, W3-2).
+- **SB-C1:** `copy_fixture(module, run_id)` maps `run/` to `runs/<run_id>/`
+  (R3-B2).
+- **SB-G0:** narrow its targets to the §2.10 fixture folders (W3-3), and
+  normalize whitespace in the EPUB text golden (W3-11).
+- **SB-C10:** the full copy and shim item list (W3-5).
+- **SB-S3:** add the deterministic `_next` case (W3-9).
+- **SB-W1, SB-T1:**
+  - deps add BD-02;
+  - the foreign-SDL assertion moves to the `plugins/book` `cargo test`
+    (W3-1);
+  - SB-T1 seeds use a fixed `run_id` (W3-7).
+- **BD-W1:** never lists `library_root` in `input_fields` (R3-B1).
