@@ -549,6 +549,14 @@ mod tests {
         assert_eq!(indexed["edition"]["passage_count"], 2);
         assert_eq!(indexed["passages"][0]["text"], "A mistake in a paragraph.");
         assert_eq!(
+            indexed["passages"][0]["preview"],
+            "A mistake in a paragraph."
+        );
+        assert_eq!(
+            indexed["passages"][0]["locator_summary"],
+            "one.pdf, PDF page 1"
+        );
+        assert_eq!(
             indexed["passages"][0]["text_hash"],
             hash(b"A mistake in a paragraph.")
         );

@@ -15,10 +15,13 @@ type ShelfLibraryPassage {
   source_hash: String
   source_hash_scope: String
   text_hash: String
+  record_hash: String
   revision: String @index
   status: String @index
   analyzer: String
   text: String @fulltext(language: "english")
+  preview: String
+  locator_summary: String
   source_spans_json: String
   epub_href: String
 }

@@ -69,14 +69,17 @@ def submit_batch(args):
 
 
 PASSAGE_FIELDS = ["record_id", "book_id", "edition_id", "passage_id", "chapter_title",
-                  "title", "author", "language", "access", "license", "revision",
-                  "source_hash", "source_hash_scope", "text_hash", "text", "source_spans_json", "epub_href"]
+                  "title", "author", "language", "access", "license", "status", "source_type", "revision",
+                  "source_hash", "source_hash_scope", "text_hash", "text", "preview",
+                  "locator_summary", "source_spans_json", "epub_href"]
+SEARCH_FIELDS = ["book_id", "edition_id", "passage_id", "title", "author", "chapter_title",
+                 "language", "access", "status", "source_type", "preview", "locator_summary"]
 
 
 def search_library(args):
     if not args.text.strip() or not 1 <= args.limit <= 100:
         raise RuntimeError("search needs nonempty terms and a limit from 1 to 100")
-    conditions = {"status": {"_eq": "reviewed"}}
+    conditions = {"status": {"_in": ["reviewed", "source_text"]}}
     for key in ["book_id", "language"]:
         if getattr(args, key):
             conditions[key] = {"_eq": getattr(args, key)}
@@ -84,7 +87,7 @@ def search_library(args):
         conditions["access"] = {"_eq": args.access}
     editions = []
     offset = 0
-    catalog_filter = {"status": {"_eq": "reviewed"}}
+    catalog_filter = {"status": {"_in": ["reviewed", "source_text"]}}
     if args.book_id:
         catalog_filter["book_id"] = {"_eq": args.book_id}
     while True:
@@ -114,11 +117,11 @@ def search_library(args):
     conditions.update(edition_id={"_in": selected}, _alias={"_score": {"_gt": 0}})
     command = ["query", "search", "--home", args.home, "--collection", "ShelfLibraryPassage",
                "--text", args.text, "--search-field", "text", "--filter", json.dumps(conditions), "--limit", args.limit]
-    for name in PASSAGE_FIELDS:
+    for name in SEARCH_FIELDS:
         command += ["--field", name]
     result = call(*command)
     if result.get("truncated"):
-        result["next"] = "Use open-passage with book_id, edition_id, passage_id and --mcp-endpoint to recover complete text."
+        result["next"] = "Narrow the query; open-passage retrieves exact full text after selecting a citation."
     return result
 
 

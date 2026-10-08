@@ -1,5 +1,34 @@
 use super::*;
 
+fn preview(text: &str) -> String {
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .chars()
+        .take(320)
+        .collect()
+}
+
+fn locator_summary(spans: &Value) -> String {
+    let pages: Vec<_> = spans
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|span| Some((span["source"].as_str()?.to_string(), span["page"].as_u64()?)))
+        .collect();
+    match (pages.first(), pages.last()) {
+        (Some((first_source, first_page)), Some((last_source, last_page)))
+            if first_source == last_source && first_page == last_page =>
+        {
+            format!("{first_source}, PDF page {first_page}")
+        }
+        (Some((first_source, first_page)), Some((last_source, last_page))) => {
+            format!("{first_source}, PDF page {first_page} – {last_source}, PDF page {last_page}")
+        }
+        _ => "source locator in full passage".into(),
+    }
+}
+
 pub(super) fn index(v: &Value, root: &Path) -> Result<Value> {
     let raw = read(root, field(v, "structured_file")?)?;
     let book: Value = serde_json::from_slice(&raw).map_err(|e| e.to_string())?;
@@ -68,7 +97,8 @@ pub(super) fn index(v: &Value, root: &Path) -> Result<Value> {
             "access":access,"license":license,"source_type":"scan_pages",
             "source_hash":source_hash,"source_hash_scope":"structured_source",
             "text_hash":hash(text.as_bytes()),"revision":revision,"status":"reviewed",
-            "analyzer":"english","text":text,"source_spans_json":passage["source_spans_json"],
+            "analyzer":"english","text":text,"preview":preview(text),
+            "locator_summary":locator_summary(&spans),"source_spans_json":passage["source_spans_json"],
             "epub_href":href
         }));
     }
