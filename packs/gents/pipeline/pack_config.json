@@ -37,8 +37,8 @@
           "description": "Record a finding document for the next pipeline stage.",
           "fields": [
             {
-              "name": "job_id",
-              "required": true
+              "fill": "correlation",
+              "name": "job_id"
             },
             {
               "name": "finding_id",
@@ -61,12 +61,14 @@
   ],
   "event_sources": [
     {
+      "correlation_field": "job_id",
       "display_name": "exp-stage1",
       "event_kind": "created",
       "event_source_id": "exp-stage1",
       "source_collection": "ExperimentJob"
     },
     {
+      "correlation_field": "job_id",
       "display_name": "exp-stage2",
       "event_kind": "created",
       "event_source_id": "exp-stage2",

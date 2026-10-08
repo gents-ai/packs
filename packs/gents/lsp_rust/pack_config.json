@@ -18,6 +18,7 @@
   ],
   "event_sources": [
     {
+      "correlation_field": "job_id",
       "display_name": "lsp-hover",
       "event_kind": "created",
       "event_source_id": "lsp-hover",

@@ -30,6 +30,7 @@
   ],
   "event_sources": [
     {
+      "correlation_field": "job_id",
       "display_name": "background-parent",
       "event_kind": "created",
       "event_source_id": "background-parent",

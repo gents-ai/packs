@@ -111,7 +111,8 @@ mutation {
 ```
 
 Output: stage-1's `write_experiment_finding` surface tool creates one
-`ExperimentFinding` document; stage-2 reads it via `{{ doc.* }}` in its task
+`ExperimentFinding` document, its `job_id` filled from the request's
+correlation; stage-2 reads it via `{{ doc.* }}` in its task
 prompt and completes with no further write.
 
 ## Completion and failure
