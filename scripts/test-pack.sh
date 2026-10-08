@@ -9,8 +9,9 @@
 #                            into a fresh home creates exactly these
 #                            documents, binds these inference slots and
 #                            installs these dependency packs;
-#                            a reinstall creates nothing new, and a remove
-#                            deletes exactly what the install created
+#                            a reinstall creates nothing new, `config apply`
+#                            accepts the installed configuration, and a
+#                            remove deletes exactly what the install created
 #        {"install": {"assets": [...]}}
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
@@ -56,6 +57,10 @@
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
 # and is pre-stored in the install's home.
+# Every variable the pack's config requires (`${VAR}`, or `${VAR:-}` so pack
+# check accepts it; not the GENTS_PACK_* values gents supplies) names an
+# operator path: the suite sets it to a scratch directory, and a runtime case
+# to its repository.
 # Scenarios (experiment.json) need a model endpoint and are not run here.
 #
 # Usage: scripts/test-pack.sh <pack-dir>    GENTS overrides the gents binary.
@@ -81,6 +86,16 @@ name="$(jq -r '.name' "$dir/manifest.json")"
 kind="$(jq -r '.kind' "$dir/manifest.json")"
 pack="$namespace/$name"
 failures=0
+
+required_vars=()
+while read -r var; do required_vars+=("$var"); done < <(
+  jq -r '.. | strings' "$dir/$(jq -r '.config // "pack_config.json"' "$dir/manifest.json")" 2>/dev/null \
+    | grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*(:-)?\}' | sed -E 's/^..//; s/(:-)?}$//' | grep -v '^GENTS_PACK_' | sort -u || true)
+export_required() {
+  local var
+  for var in ${required_vars[@]+"${required_vars[@]}"}; do export "$var=$1"; done
+}
+export_required "$work"
 
 pass() { printf 'ok    %s: %s\n' "$pack" "$1"; }
 fail() {
@@ -253,9 +268,24 @@ install_documents() {
   else
     fail "$(basename "$case"): reinstall created or removed documents"
   fi
+  config_apply_accepts "$(basename "$case")" "$home"
 
   "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
   expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed' "$work/remove.json")"
+}
+
+# `pack install` does not run `config apply`'s live checks (event-source
+# filters and the `doc.*` fields their task templates read, against the
+# installed schema), which scenarios and operators hit; re-apply the
+# installed configuration through them.
+config_apply_accepts() {
+  local label="$1" home="$2" root="$work/apply-$1"
+  if "$gents" config export --home "$home" --root "$root" --force >/dev/null 2>"$work/apply-$label.err" \
+    && NO_COLOR=1 "$gents" config apply --home "$home" --root "$root" >"$work/apply-$label.json" 2>>"$work/apply-$label.err"; then
+    pass "$label: config apply accepts the installed configuration"
+  else
+    fail "$label: config apply refused the installed configuration: $(grep -E 'ERROR|Error' "$work/apply-$label.err" | tail -3 | tr '\n' ' ')"
+  fi
 }
 
 # External service declarations use the canonical configuration owner; the
@@ -378,6 +408,7 @@ runtime_case() {
   # The workspace callback may only create workspaces inside the operator
   # ceiling, so the home is initialized from the repository.
   home="$(fresh_home "$name" "$repo")"
+  export_required "$repo"
   local access
   access="$(jq -r '.runtime.repository.access // empty' "$case")"
   "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
@@ -388,7 +419,7 @@ runtime_case() {
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
   url="http://127.0.0.1:$port/api/v0/graphql"
   log="$work/$name-server.log"
-  # The repository placement's host path "." is the server's working directory.
+  # A repository placement's host path "." is the server's working directory.
   (cd "$repo" && NO_COLOR=1 exec "$gents" server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) >"$log" 2>&1 &
   pid=$!
   servers+=("$pid")
@@ -437,6 +468,7 @@ runtime_case() {
     fi
   done < <(jq -c '.runtime.expect[]' "$case")
   kill "$pid" 2>/dev/null || true
+  export_required "$work"
 }
 
 install_plugins() {

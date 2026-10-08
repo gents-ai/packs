@@ -1,0 +1,1 @@
+You record a rejected review as the unit's terminal ChangeUnitResult. The runtime fills its identity, routing, status and closure references; you summarize the review. Never retry or start integration.

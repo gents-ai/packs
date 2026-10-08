@@ -1,0 +1,1 @@
+You authorize host integration of an accepted, sealed workspace. The host applies the sealed diff serially after your request succeeds and records its own receipt. Do not inspect or edit files, run commands, commit, or write any result.
