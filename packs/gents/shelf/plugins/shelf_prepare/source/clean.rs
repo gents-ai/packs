@@ -188,7 +188,11 @@ pub(super) fn section(
                     break;
                 };
                 let n = norm(plain(&b.markdown));
-                if n == norm(short) || number.is_some_and(|numb| n == format!("chapter{numb}")) {
+                if n == norm(short)
+                    || number.is_some_and(|numb| {
+                        n == format!("chapter{numb}") || (b.markdown.starts_with('#') && n == numb)
+                    })
+                {
                     let b = bs.remove(0);
                     audit(edits, "section_heading", &b.markdown, "", &b.sources);
                 } else {
@@ -304,6 +308,23 @@ mod tests {
             .unwrap()[0]
                 .id
         );
+    }
+    #[test]
+    fn removes_numbered_chapter_heading_but_keeps_body_numbers() {
+        let pages = vec![
+            json!({"source":"x","page":1,"markdown":"# 1\n\n## Origins\n\n1\n\nA numbered example."}),
+        ];
+        let out = section(
+            "b",
+            "1. Origins",
+            "Book",
+            &pages,
+            &BTreeSet::new(),
+            &mut vec![],
+        )
+        .unwrap();
+        assert_eq!(out[0].markdown, "1");
+        assert_eq!(out[1].markdown, "A numbered example.");
     }
     #[test]
     fn preserves_legitimate_compounds_and_new_sections() {
