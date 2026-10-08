@@ -69,6 +69,10 @@ access to a separate export directory containing that JSON, then create a
 `ShelfPrepareJob` with `run_id` (a new edition ID), `book_id`, `path`, `structured`
 (the JSON filename), `modified` (UTC timestamp), and `output` (EPUB filename).
 Preparation records mechanical corrections and fans out focused agent reviews.
+New editions release at most 16 outstanding review chunks per book. Each accepted
+review releases one successor through the same callback/document mechanism, so
+one book cannot enqueue all its reviews ahead of later books. This bounds per-book
+queue pressure; it does not promise round-robin scheduling or dynamic backend balancing.
 Accepted exact edits retain passage IDs and original source byte spans; invalid
 proposals get two repair attempts. After every planned review succeeds, callbacks
 publish ShelfPassage records, an audited JSON edition and the EPUB. The EPUB has

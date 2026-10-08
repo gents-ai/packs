@@ -50,6 +50,8 @@ struct Plan {
     chapters: Vec<Section>,
     chunks: Vec<Chunk>,
     mechanical_edits: Vec<Value>,
+    #[serde(default)]
+    dispatch_window: usize,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -149,6 +151,7 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
         modified: field(v, "modified")?.into(),
         output: output.into(),
         source: source.clone(),
+        dispatch_window: 16,
         chapters: vec![],
         chunks: vec![],
         mechanical_edits: vec![],
@@ -240,10 +243,21 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     let file = format!("plan-{}.json", &hash(edition.as_bytes())[..20]);
     save(root, &file, &json!(plan))?;
     let path = v["path_original"].as_str().unwrap_or(field(v, "path")?);
-    let chunks:Vec<Value>=plan.chunks.iter().map(|c|json!({"run_id":edition,"book_id":book,"path":path,"plan":file,"chunk_ref":c.key,"title":c.title,"attempt":"0","feedback":"","blocks_json":serde_json::to_string(&c.blocks).unwrap(),"lane":if c.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}})).collect();
+    let chunks: Vec<Value> = plan
+        .chunks
+        .iter()
+        .take(plan.dispatch_window)
+        .map(|c| review_attempt(&plan, c, path, &file))
+        .collect();
     Ok(
-        json!({"plan":{"run_id":edition,"book_id":book,"path":path,"plan":file,"expected_total":chunks.len()},"chunks":chunks}),
+        json!({"plan":{"run_id":edition,"book_id":book,"path":path,"plan":file,"expected_total":plan.chunks.len()},"chunks":chunks}),
     )
+}
+fn review_attempt(plan: &Plan, chunk: &Chunk, path: &str, file: &str) -> Value {
+    json!({"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
+        "chunk_ref":chunk.key,"title":chunk.title,"attempt":"0","feedback":"",
+        "blocks_json":serde_json::to_string(&chunk.blocks).unwrap(),
+        "lane":if chunk.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}})
 }
 fn apply(v: &Value, root: &Path) -> Result<Value> {
     let (plan, digest) = load_plan(v, root)?;
@@ -299,7 +313,29 @@ fn apply(v: &Value, root: &Path) -> Result<Value> {
 }
 fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
     match apply(v, root) {
-        Ok(chunk) => Ok(json!({"chunk":chunk,"retry":null,"failure":null})),
+        Ok(chunk) => {
+            let (plan, _) = load_plan(v, root)?;
+            let next = if plan.dispatch_window == 0 {
+                None
+            } else {
+                let index = plan
+                    .chunks
+                    .iter()
+                    .position(|c| c.key == v["chunk_ref"])
+                    .ok_or("unknown review chunk")?;
+                plan.chunks.get(index + plan.dispatch_window).map(|next| {
+                    review_attempt(
+                        &plan,
+                        next,
+                        v["path_original"]
+                            .as_str()
+                            .unwrap_or(v["path"].as_str().unwrap()),
+                        v["plan"].as_str().unwrap(),
+                    )
+                })
+            };
+            Ok(json!({"chunk":chunk,"retry":next,"failure":null}))
+        }
         Err(error) => {
             let (plan, _) = load_plan(v, root)?;
             let key = field(v, "chunk_ref")?;
@@ -421,6 +457,46 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bounded_dispatch_releases_one_successor_only_after_an_accepted_review() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let chapters: Vec<Value> = (1..=17)
+            .map(|page| {
+                json!({
+                    "title":format!("Chapter {page}"),"level":1,"matter_type":"body",
+                    "pages":[{"source":"fixture.pdf","page":page,"markdown":"A paragraph."}]
+                })
+            })
+            .collect();
+        save(
+            root,
+            "source.json",
+            &json!({"book_id":"b","title":"Book","author":"Author",
+            "language":"en","page_count":17,"chapters":chapters}),
+        )
+        .unwrap();
+        let prepared = run(json!({"run_id":"edition","book_id":"b","path":root,
+            "structured":"source.json","modified":"2026-10-08T00:00:00Z","output":"book.epub"}))
+        .unwrap();
+        assert_eq!(prepared["chunks"].as_array().unwrap().len(), 16);
+        assert_eq!(prepared["plan"]["expected_total"], 17);
+        let mut first = prepared["chunks"][0].clone();
+        first["edits_json"] = json!("[]");
+        let accepted = run(first.clone()).unwrap();
+        assert_eq!(accepted["chunk"]["expected_total"], 17);
+        assert_eq!(accepted["retry"]["chunk_ref"], "c0016");
+        assert_eq!(run(first).unwrap(), accepted);
+        let mut rejected = prepared["chunks"][1].clone();
+        rejected["edits_json"] = json!("invalid");
+        let repair = run(rejected).unwrap();
+        assert!(repair["chunk"].is_null());
+        assert_eq!(repair["retry"]["chunk_ref"], "c0001");
+        assert_eq!(repair["retry"]["attempt"], "1");
+        let mut last = accepted["retry"].clone();
+        last["edits_json"] = json!("[]");
+        assert!(run(last).unwrap()["retry"].is_null());
+    }
     #[test]
     fn edition_requires_every_review_and_keeps_source_offsets() {
         let dir = tempfile::tempdir().unwrap();
