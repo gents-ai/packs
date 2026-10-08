@@ -68,6 +68,83 @@ def submit_batch(args):
     print(json.dumps({"submitted": len(pending), "already_submitted": len(jobs) - len(pending)}), flush=True)
 
 
+PASSAGE_FIELDS = ["record_id", "book_id", "edition_id", "passage_id", "chapter_title",
+                  "title", "author", "language", "access", "license", "revision",
+                  "source_hash", "source_hash_scope", "text_hash", "text", "source_spans_json", "epub_href"]
+
+
+def search_library(args):
+    if not args.text.strip() or not 1 <= args.limit <= 100:
+        raise RuntimeError("search needs nonempty terms and a limit from 1 to 100")
+    conditions = {"status": {"_eq": "reviewed"}}
+    for key in ["book_id", "language"]:
+        if getattr(args, key):
+            conditions[key] = {"_eq": getattr(args, key)}
+    if args.access != "all":
+        conditions["access"] = {"_eq": args.access}
+    editions = []
+    offset = 0
+    catalog_filter = {"status": {"_eq": "reviewed"}}
+    if args.book_id:
+        catalog_filter["book_id"] = {"_eq": args.book_id}
+    while True:
+        result = call("query", "find", "--home", args.home, "--collection", "ShelfLibraryEdition",
+                      "--filter", json.dumps(catalog_filter), "--field", "book_id", "--field", "edition_id",
+                      "--field", "modified", "--field", "language", "--field", "access", "--limit", 1000, "--offset", offset)
+        if result.get("truncated"):
+            raise RuntimeError("edition catalog was truncated; narrow the book or language filter")
+        editions.extend(result["results"])
+        if len(result["results"]) < 1000:
+            break
+        offset += 1000
+    if args.edition_id:
+        candidates = [e for e in editions if e["edition_id"] == args.edition_id]
+    else:
+        latest = {}
+        for edition in editions:
+            previous = latest.get(edition["book_id"])
+            if previous is None or (edition["modified"], edition["edition_id"]) > (previous["modified"], previous["edition_id"]):
+                latest[edition["book_id"]] = edition
+        candidates = list(latest.values())
+    selected = [e["edition_id"] for e in candidates
+                if (args.access == "all" or e["access"] == args.access)
+                and (not args.language or e["language"] == args.language)]
+    if not selected:
+        return {"ranking": "bm25", "results": [], "returned_count": 0}
+    conditions.update(edition_id={"_in": selected}, _alias={"_score": {"_gt": 0}})
+    command = ["query", "search", "--home", args.home, "--collection", "ShelfLibraryPassage",
+               "--text", args.text, "--search-field", "text", "--filter", json.dumps(conditions), "--limit", args.limit]
+    for name in PASSAGE_FIELDS:
+        command += ["--field", name]
+    result = call(*command)
+    if result.get("truncated"):
+        result["next"] = "Use open-passage with book_id, edition_id, passage_id and --mcp-endpoint to recover complete text."
+    return result
+
+
+def open_passage(args):
+    filters = {name: {"_eq": getattr(args, name)} for name in ["book_id", "edition_id", "passage_id"]}
+    command = ["query", "find", "--home", args.home, "--collection", "ShelfLibraryPassage",
+               "--filter", json.dumps(filters), "--limit", 2, "--field", "_docID"]
+    for name in PASSAGE_FIELDS:
+        command += ["--field", name]
+    result = call(*command)
+    if len(result["results"]) != 1:
+        raise RuntimeError("citation does not identify exactly one stored passage")
+    passage = result["results"][0]
+    if result.get("truncated"):
+        if not args.mcp_endpoint or not result.get("field_recovery"):
+            raise RuntimeError("passage is truncated; supply --mcp-endpoint to read complete text")
+        reader = FieldReader(args.mcp_endpoint)
+        for recovery in result["field_recovery"]:
+            passage[recovery["field"]] = reader.read("ShelfLibraryPassage", args.edition_id, recovery)
+    import hashlib
+    if hashlib.sha256(passage["text"].encode()).hexdigest() != passage["text_hash"]:
+        raise RuntimeError("stored passage text no longer matches its citation hash")
+    passage.pop("_docID", None)
+    return passage
+
+
 class FieldReader:
     """Recover long strings through Gents' canonical query MCP surface."""
 
@@ -287,6 +364,19 @@ def main():
     batch_parser = sub.add_parser("submit-batch", help="Enqueue independent books on one running, configured Gents home")
     batch_parser.add_argument("--home", type=Path, required=True)
     batch_parser.add_argument("--manifest", type=Path, required=True, help="JSON array of {run_id, sources}; paths relative to this file")
+    search_parser = sub.add_parser("search", help="BM25 over the latest reviewed edition of each book")
+    search_parser.add_argument("--home", type=Path, required=True)
+    search_parser.add_argument("--text", required=True)
+    search_parser.add_argument("--book-id")
+    search_parser.add_argument("--edition-id", help="Select an explicit historical edition")
+    search_parser.add_argument("--language")
+    search_parser.add_argument("--access", choices=["open", "local_only", "restricted", "all"], default="open")
+    search_parser.add_argument("--limit", type=int, default=10)
+    open_parser = sub.add_parser("open-passage", help="Open an exact citation and verify its text hash")
+    for name in ["book-id", "edition-id", "passage-id"]:
+        open_parser.add_argument("--" + name, required=True)
+    open_parser.add_argument("--home", type=Path, required=True)
+    open_parser.add_argument("--mcp-endpoint")
     run_parser = sub.add_parser("run")
     run_parser.add_argument("sources", type=Path, nargs="+")
     run_parser.add_argument("--endpoint", required=True, help="OpenAI-compatible /v1 endpoint exposing one model")
@@ -300,6 +390,10 @@ def main():
             export(args.home, args.run_id, args.output, args.mcp_endpoint)
         elif args.command == "submit-batch":
             submit_batch(args)
+        elif args.command == "search":
+            print(json.dumps(search_library(args), ensure_ascii=False, indent=2))
+        elif args.command == "open-passage":
+            print(json.dumps(open_passage(args), ensure_ascii=False, indent=2))
         else:
             if args.max_concurrent < 1:
                 raise RuntimeError("--max-concurrent must be positive")

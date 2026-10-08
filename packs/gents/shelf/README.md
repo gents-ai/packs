@@ -79,6 +79,39 @@ leave a review outstanding; no incomplete edition is published. Editions above
 limit. This path currently handles page-based structured input, not direct EPUB,
 HTML or TEI intake.
 
+Each prepared edition triggers native indexing into ShelfLibraryEdition and
+ShelfLibraryPassage. DefraDB maintains a BM25 full-text index over the final
+reviewed passage text. No embedding service or model call is needed for indexing.
+Select the `shelf-research` behavior to search and open cited passages using
+read-only datastore tools in the same Gents instance.
+
+```sh
+python3 scripts/shelf-book.py search --home /path/to/home --text "grain ships" --access all
+python3 scripts/shelf-book.py open-passage --home /path/to/home --book-id BOOK --edition-id EDITION --passage-id PASSAGE
+```
+
+Search defaults to open-access material, excludes zero scores, and selects the
+newest indexed edition per book by its UTC `modified` timestamp (edition ID breaks
+ties). Use `--edition-id` for historical research. License/access come from the
+structured source's `license` and `access`; absent values remain `unknown` and
+`local_only`. These labels are catalog filters, not database authorization rules.
+Use DefraDB authorization for readers who must not access restricted documents.
+
+Indexed editions are immutable. Changed text needs a new edition ID and later
+modified timestamp; default search excludes the earlier edition while old
+citations still open. Stable record identities prevent duplicate indexed passages.
+The callback publishes the edition receipt and all its passages transactionally.
+Current `source_hash_scope` is `structured_source`: the hash identifies the source
+JSON snapshot, not original PDF bytes. `text_hash` identifies exact reviewed text;
+`revision` identifies the audited edition artifact. Source locations and EPUB
+anchors accompany every hit. Long text requires `--mcp-endpoint` when opening,
+with a read-only MCP grant for ShelfLibraryPassage; the opener verifies the text hash.
+
+The initial index explicitly uses the English analyzer. Native tests cover exact
+English, French, Latin and Greek terms; multilingual morphology, accent folding
+and stop-word quality are not established. Original-file hashes, language-specific
+analyzers, direct non-PDF intake and verified backup/restore remain unfinished.
+
 The launcher enables the local read-only query MCP surface for long-field export.
 To export an existing run, start its server with `--enable-mcp` and
 `--mcp-query-collection` grants for ShelfBook, ShelfChapter, ShelfPage and ShelfExtract,

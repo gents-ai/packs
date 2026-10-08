@@ -14,7 +14,7 @@
     },
     {
       "name": "pipeline read filters are runtime-bound to the book",
-      "expr": "[.config.datastore_tool_surfaces[] | (.entries.entries // .entries)[] | select(.kind == \"query\") | .filter_fields | any(.name == \"run_id\" and .fill == \"correlation\")] | all"
+      "expr": "[.config.datastore_tool_surfaces[] | select(.surface_id != \"shelf-research-reads\") | (.entries.entries // .entries)[] | select(.kind == \"query\") | .filter_fields | any(.name == \"run_id\" and .fill == \"correlation\")] | all"
     },
     {
       "name": "native assembly and EPUB output run as callbacks",

@@ -1,4 +1,5 @@
 mod clean;
+mod library;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -384,7 +385,9 @@ fn run(v: Value) -> Result<Value> {
     if !root.is_dir() {
         return Err("bound folder unavailable".into());
     }
-    if v.get("structured").is_some() {
+    if v.get("structured_file").is_some() {
+        library::index(&v, root)
+    } else if v.get("structured").is_some() {
         prepare(&v, root)
     } else if v.get("edits_json").is_some() {
         apply_with_repair(&v, root)
@@ -463,6 +466,25 @@ mod tests {
         )
         .unwrap();
         assert_eq!(snapshot["original"], book);
+        let mut index_request = completed["prepared"].clone();
+        index_request["path"] = json!(root);
+        let indexed = run(index_request.clone()).unwrap();
+        assert_eq!(indexed["edition"]["access"], "local_only");
+        assert_eq!(indexed["edition"]["passage_count"], 2);
+        assert_eq!(indexed["passages"][0]["text"], "A mistake in a paragraph.");
+        assert_eq!(
+            indexed["passages"][0]["text_hash"],
+            hash(b"A mistake in a paragraph.")
+        );
+        assert_eq!(run(index_request.clone()).unwrap(), indexed);
+        let mut tampered = snapshot.clone();
+        tampered["passages"][0]["markdown"] = json!("Text absent from the reviewed edition.");
+        save(root, "tampered.json", &tampered).unwrap();
+        let mut bad_index = index_request.clone();
+        bad_index["structured_file"] = json!("tampered.json");
+        assert!(run(bad_index).is_err());
+        index_request["book_id"] = json!("another-book");
+        assert!(run(index_request).is_err());
         let mut bad = chunks[0].clone();
         bad["edits_json"] = json!(
             "[{\"block_id\":\"unknown\",\"old_text\":\"a\",\"new_text\":\"b\",\"reason\":\"bad\"}]"

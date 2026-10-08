@@ -57,7 +57,14 @@
       "AgentBehavior/shelf-polish-secondary",
       "Task/shelf-polish-secondary",
       "Trigger/shelf-polish-secondary",
-      "EventSource/shelf-polish-secondary"
+      "EventSource/shelf-polish-secondary",
+      "Callback/shelf-index",
+      "CallbackBinding/shelf-index",
+      "EventSource/shelf-index",
+      "AgentBehavior/shelf-research",
+      "AgentContext/shelf-research-context",
+      "Tools/shelf-research-tools",
+      "DatastoreToolSurface/shelf-research-reads"
     ],
     "plugins": [
       "shelf_export",

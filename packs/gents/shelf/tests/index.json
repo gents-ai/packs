@@ -1,0 +1,45 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "repository": {
+      "access": "read_write",
+      "copy": {
+        "book.json": "plugins/shelf_prepare/tests/fixtures/reviewed_book.json"
+      }
+    },
+    "seed": {
+      "collection": "ShelfPreparedBook",
+      "fields": {
+        "run_id": "search-fixture",
+        "book_id": "search-book",
+        "edition_id": "search-fixture",
+        "path": "${REPOSITORY}",
+        "structured_file": "book.json",
+        "manuscript": "manuscript.json",
+        "passage_count": 1,
+        "edit_count": 0
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfLibraryEdition",
+        "fields": {
+          "book_id": "search-book",
+          "passage_count": 1,
+          "access": "open"
+        }
+      },
+      {
+        "collection": "ShelfLibraryPassage",
+        "fields": {
+          "book_id": "search-book",
+          "text": "Grain ships arrive at Ostia.",
+          "status": "reviewed",
+          "epub_href": "OEBPS/s-one.xhtml#p-example"
+        }
+      }
+    ]
+  }
+}

@@ -37,6 +37,13 @@
       "context_id": "shelf-polish-context",
       "display_name": "Shelf text polish (second endpoint)",
       "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-research",
+      "context_id": "shelf-research-context",
+      "display_name": "Shelf research",
+      "description": "Search reviewed editions and cite exact source passages.",
+      "inference_profile_id": "gents:inference-slot:librarian"
     }
   ],
   "contexts": [
@@ -65,6 +72,11 @@
       "context_id": "shelf-polish-context",
       "system_prompt": "./agent_behaviors/shelf_polish/system_prompt.md",
       "tools_id": "shelf-polish-tools"
+    },
+    {
+      "context_id": "shelf-research-context",
+      "system_prompt": "./agent_behaviors/shelf_research/system_prompt.md",
+      "tools_id": "shelf-research-tools"
     }
   ],
   "tools": [
@@ -108,7 +120,10 @@
           "ShelfPolishProposal",
           "ShelfPolishedChunk",
           "ShelfPreparedBook",
-          "ShelfPassage"
+          "ShelfPassage",
+          "ShelfLibraryEdition",
+          "ShelfLibraryPassage",
+          "ShelfEditionFailure"
         ],
         "datastore_tool_surface_ids": [
           "shelf-requests"
@@ -151,6 +166,19 @@
         "enable_defra_query": false,
         "datastore_tool_surface_ids": [
           "shelf-polish-writes"
+        ]
+      }
+    },
+    {
+      "tools_id": "shelf-research-tools",
+      "datastore": {
+        "enable_defra_query": true,
+        "defra_query_collections": [
+          "ShelfLibraryEdition",
+          "ShelfLibraryPassage"
+        ],
+        "datastore_tool_surface_ids": [
+          "shelf-research-reads"
         ]
       }
     }
@@ -363,6 +391,33 @@
           }
         ]
       }
+    },
+    {
+      "callback_id": "shelf-index",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_prepare",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "edition",
+            "collection": "ShelfLibraryEdition",
+            "schema": "ShelfLibraryEdition/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": true
+          },
+          {
+            "name": "passages",
+            "collection": "ShelfLibraryPassage",
+            "schema": "ShelfLibraryPassage/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": true
+          }
+        ]
+      }
     }
   ],
   "callback_bindings": [
@@ -465,6 +520,18 @@
         "plan",
         "chunk_ref"
       ]
+    },
+    {
+      "binding_id": "shelf-index",
+      "callback_id": "shelf-index",
+      "event_source_id": "shelf-index",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "edition_id",
+        "path",
+        "structured_file"
+      ]
     }
   ],
   "event_sources": [
@@ -556,6 +623,12 @@
       "event_kind": "created",
       "correlation_field": "run_id",
       "filter": "{ lane: { _eq: \"librarian\" } }"
+    },
+    {
+      "event_source_id": "shelf-index",
+      "source_collection": "ShelfPreparedBook",
+      "event_kind": "created",
+      "correlation_field": "run_id"
     }
   ],
   "tasks": [
@@ -1175,6 +1248,50 @@
             "scope": "trigger",
             "minimum_writes": 1
           }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-research-reads",
+      "entries": [
+        {
+          "kind": "query",
+          "tool_name": "open_shelf_passage",
+          "collection": "ShelfLibraryPassage",
+          "description": "Open an exact citation using book_id, edition_id and passage_id from a search hit. To find citations first, call query with {\"argv\":[\"search\"],\"collection\":\"ShelfLibraryPassage\",\"options\":{\"fields\":[\"book_id\",\"edition_id\",\"passage_id\",\"text\",\"epub_href\"],\"search_fields\":[\"text\"],\"text\":\"search terms\",\"filter\":{\"access\":{\"_eq\":\"open\"},\"edition_id\":{\"_in\":[\"selected edition ID\"]},\"_alias\":{\"_score\":{\"_gt\":0}}},\"limit\":5}}. Select edition IDs from ShelfLibraryEdition first. _score is returned automatically: never include _score or _alias in fields. Use query field recovery when opened text is truncated.",
+          "fields": [
+            "record_id",
+            "book_id",
+            "edition_id",
+            "passage_id",
+            "chapter_title",
+            "title",
+            "author",
+            "language",
+            "license",
+            "access",
+            "revision",
+            "text_hash",
+            "source_hash",
+            "source_hash_scope",
+            "text",
+            "source_spans_json",
+            "epub_href"
+          ],
+          "filter_fields": [
+            {
+              "name": "book_id",
+              "required": true
+            },
+            {
+              "name": "edition_id",
+              "required": true
+            },
+            {
+              "name": "passage_id",
+              "required": true
+            }
+          ]
         }
       ]
     }

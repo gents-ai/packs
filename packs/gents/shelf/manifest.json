@@ -17,7 +17,8 @@
         "shelf",
         "shelf-outline",
         "shelf-verify",
-        "shelf-polish-secondary"
+        "shelf-polish-secondary",
+        "shelf-research"
       ],
       "description": "Reviews OCR, organizes chapters and prepares digital editions."
     },
@@ -51,7 +52,9 @@
     "schemas/shelf_polished_chunk.graphql",
     "schemas/shelf_prepared_book.graphql",
     "schemas/shelf_passage.graphql",
-    "schemas/shelf_edition_failure.graphql"
+    "schemas/shelf_edition_failure.graphql",
+    "schemas/shelf_library_passage.graphql",
+    "schemas/shelf_library_edition.graphql"
   ],
   "plugins": [
     {
@@ -199,6 +202,9 @@
           },
           "edits_json": {
             "type": "string"
+          },
+          "structured_file": {
+            "type": "string"
           }
         },
         "required": [
@@ -262,6 +268,11 @@
     "plugins/shelf_prepare.afb",
     "agent_behaviors/shelf_polish/system_prompt.md",
     "tasks/shelf_polish/prompt.md",
-    "schemas/shelf_edition_failure.graphql"
+    "schemas/shelf_edition_failure.graphql",
+    "schemas/shelf_library_passage.graphql",
+    "schemas/shelf_library_edition.graphql",
+    "agent_behaviors/shelf_research/system_prompt.md",
+    "tests/index.json",
+    "plugins/shelf_prepare/tests/fixtures/reviewed_book.json"
   ]
 }
