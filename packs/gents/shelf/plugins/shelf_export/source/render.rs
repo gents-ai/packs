@@ -34,53 +34,65 @@ pub(super) fn markdown(md: &str) -> Result<String, String> {
         md,
         Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_FOOTNOTES,
     );
-    let events = parser.filter_map(|event| match event {
-        Event::Html(text) | Event::InlineHtml(text) => {
-            if matches!(
-                text.trim().to_ascii_lowercase().as_str(),
-                "<br>" | "<br/>" | "<br />"
-            ) {
-                Some(Event::HardBreak)
-            } else {
-                Some(Event::Text(text))
+    let events: Vec<_> = parser
+        .filter_map(|event| match event {
+            Event::Html(text) | Event::InlineHtml(text) => {
+                if matches!(
+                    text.trim().to_ascii_lowercase().as_str(),
+                    "<br>" | "<br/>" | "<br />"
+                ) {
+                    Some(Event::HardBreak)
+                } else {
+                    Some(Event::Text(text))
+                }
             }
-        }
-        Event::Start(Tag::Image { .. }) | Event::End(TagEnd::Image) => None,
-        Event::Start(Tag::Link {
-            link_type,
-            dest_url,
-            title,
-            id,
-        }) => {
-            let safe = dest_url.starts_with('#')
-                || dest_url.starts_with("https://")
-                || dest_url.starts_with("http://")
-                || dest_url.starts_with("mailto:");
-            Some(Event::Start(Tag::Link {
+            Event::Start(Tag::Image { .. }) | Event::End(TagEnd::Image) => None,
+            Event::Start(Tag::Link {
                 link_type,
-                dest_url: if safe { dest_url } else { "#".into() },
+                dest_url,
                 title,
                 id,
-            }))
+            }) => {
+                let safe = dest_url.starts_with('#')
+                    || dest_url.starts_with("https://")
+                    || dest_url.starts_with("http://")
+                    || dest_url.starts_with("mailto:");
+                Some(Event::Start(Tag::Link {
+                    link_type,
+                    dest_url: if safe { dest_url } else { "#".into() },
+                    title,
+                    id,
+                }))
+            }
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H1,
+                id,
+                classes,
+                attrs,
+            }) => Some(Event::Start(Tag::Heading {
+                level: HeadingLevel::H2,
+                id,
+                classes,
+                attrs,
+            })),
+            Event::End(TagEnd::Heading(HeadingLevel::H1)) => {
+                Some(Event::End(TagEnd::Heading(HeadingLevel::H2)))
+            }
+            x => Some(x),
+        })
+        .collect();
+    let visible = events.iter().any(|event| match event {
+        Event::Text(text) | Event::Code(text) | Event::FootnoteReference(text) => {
+            !text.trim().is_empty()
         }
-        Event::Start(Tag::Heading {
-            level: HeadingLevel::H1,
-            id,
-            classes,
-            attrs,
-        }) => Some(Event::Start(Tag::Heading {
-            level: HeadingLevel::H2,
-            id,
-            classes,
-            attrs,
-        })),
-        Event::End(TagEnd::Heading(HeadingLevel::H1)) => {
-            Some(Event::End(TagEnd::Heading(HeadingLevel::H2)))
-        }
-        x => Some(x),
+        Event::Rule | Event::HardBreak | Event::Start(Tag::Table(_)) => true,
+        _ => false,
     });
+    if !md.trim().is_empty() && !visible {
+        return Ok(format!("<p>{}</p>\n", xml(md)?));
+    }
     let mut out = String::new();
-    html::push_html(&mut out, events);
+    html::push_html(&mut out, events.into_iter());
     Ok(out)
 }
 pub(super) fn navigation(book: &Manuscript, names: &[String]) -> Result<String, String> {
@@ -116,6 +128,17 @@ pub(super) fn navigation(book: &Manuscript, names: &[String]) -> Result<String, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn source_markers_without_list_or_heading_text_remain_visible() {
+        for source in ["37.", "8)", "-", "+", "*", "#", "##"] {
+            assert_eq!(markdown(source).unwrap(), format!("<p>{source}</p>\n"));
+        }
+        let list = markdown("37. A reference.").unwrap();
+        assert!(list.contains("<ol start=\"37\">"));
+        assert!(list.contains("A reference."));
+        assert!(markdown("---").unwrap().contains("<hr />"));
+    }
+
     #[test]
     fn keeps_tables_emphasis_and_quotes_as_xhtml() {
         let text=markdown("| Heading | Value |\n| --- | --- |\n| **Bold** | *Italic* |\n\n> A quotation.\n\n<script>bad</script>").unwrap();
