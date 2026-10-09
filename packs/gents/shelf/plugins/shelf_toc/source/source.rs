@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeSet,
     fs,
+    io::Read,
     path::{Component, Path},
 };
 
@@ -29,6 +30,8 @@ pub fn filename(s: &str) -> Result<()> {
     }
     Ok(())
 }
+/// Wasmtime limits bytes transferred by each WASI host call independently of
+/// guest memory. Whole-file reads can exceed that limit for ordinary scan PDFs.
 pub fn read(root: &Path, name: &str, limit: u64) -> Result<Vec<u8>> {
     filename(name)?;
     let path = root.join(name);
@@ -36,7 +39,45 @@ pub fn read(root: &Path, name: &str, limit: u64) -> Result<Vec<u8>> {
     if !meta.file_type().is_file() || meta.len() > limit {
         return Err("book input must be a regular file within its size limit".into());
     }
-    fs::read(path).map_err(|e| e.to_string())
+    let mut file = fs::File::open(path).map_err(|e| format!("cannot open {name}: {e}"))?;
+    let mut bytes = Vec::with_capacity(meta.len() as usize);
+    let mut buffer = [0; 64 * 1024];
+    loop {
+        let count = file
+            .read(&mut buffer)
+            .map_err(|e| format!("cannot read {name}: {e}"))?;
+        if count == 0 {
+            return Ok(bytes);
+        }
+        if bytes.len() as u64 + count as u64 > limit {
+            return Err(format!("book input {name} grew beyond its size limit"));
+        }
+        bytes.extend_from_slice(&buffer[..count]);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bounded_reads_preserve_full_bytes_and_reject_oversized_or_linked_inputs() {
+        let root = std::env::temp_dir().join(format!("shelf-source-read-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let body: Vec<_> = (0..200_003).map(|n| (n % 251) as u8).collect();
+        fs::write(root.join("source.pdf"), &body).unwrap();
+        let actual = read(&root, "source.pdf", body.len() as u64).unwrap();
+        assert_eq!(actual, body);
+        assert_eq!(hash(&actual), hash(&body));
+        assert!(read(&root, "source.pdf", body.len() as u64 - 1).is_err());
+        assert!(read(&root, "../source.pdf", u64::MAX).is_err());
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(root.join("source.pdf"), root.join("linked.pdf")).unwrap();
+            assert!(read(&root, "linked.pdf", u64::MAX).is_err());
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

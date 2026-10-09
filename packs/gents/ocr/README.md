@@ -251,7 +251,7 @@ another machine cannot answer; the call then fails at once with that command.
 The allowed list and the questions are files in the gents home that the agent's
 file tools refuse to write; a shell run as your own user can still edit them, as
 it can any of your files. The plugin has no network, environment or write
-access. Its `limits` are 1536 MiB of memory, a 900 s wall clock and 4 MiB of
+access. Its `limits` are 2048 MiB of memory, a 900 s wall clock and 4 MiB of
 output, which is the host's own ceiling for plugin output.
 
 ## Inputs and outputs

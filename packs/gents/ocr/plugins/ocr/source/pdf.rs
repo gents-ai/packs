@@ -27,7 +27,7 @@ use crate::pix::Pix;
 
 /// 600-dpi book scans can exceed 50 megapixels. A 64-megapixel RGBA decode
 /// remains below the 256 MiB per-page image budget; rendering still scales to
-/// max_image_px, and the plugin retains its 1536 MiB execution memory ceiling.
+/// max_image_px, and the plugin retains its 2048 MiB execution memory ceiling.
 const MAX_DECODE_PIXELS: u64 = 64_000_000;
 use crate::remote::{self, Read};
 use crate::resume::Resume;

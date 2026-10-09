@@ -637,7 +637,7 @@
         ]
       },
       "limits": {
-        "memory_mib": 1536,
+        "memory_mib": 2048,
         "wall_clock_secs": 180,
         "max_output_mib": 4
       },
