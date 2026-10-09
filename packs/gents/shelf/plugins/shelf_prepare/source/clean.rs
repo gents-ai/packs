@@ -13,6 +13,20 @@ fn plain(s: &str) -> &str {
         .trim_matches('*')
         .trim()
 }
+fn edge_label(s: &str) -> String {
+    let mut text = plain(s);
+    if let Some((first, rest)) = text.split_once(char::is_whitespace) {
+        if first.chars().all(|c| c.is_ascii_digit()) {
+            text = rest.trim_start();
+        }
+    }
+    if let Some((rest, last)) = text.rsplit_once(char::is_whitespace) {
+        if last.chars().all(|c| c.is_ascii_digit()) {
+            text = rest.trim_end();
+        }
+    }
+    norm(text)
+}
 fn prose(s: &str) -> bool {
     let s = s.trim();
     !s.starts_with(['#', '|', '>', '!', '-', '*'])
@@ -102,13 +116,40 @@ pub(super) fn section(
     words: &BTreeSet<String>,
     edits: &mut Vec<Value>,
 ) -> Result<Vec<Block>> {
-    let short = title.trim_start_matches(|c: char| c.is_numeric() || c == '.' || c.is_whitespace());
+    let numbered = Regex::new(r"(?i)^(?:chapter\s+)?([0-9]+)[.:\s-]+\s*(.+)$").unwrap();
+    let captures = numbered.captures(title);
+    let number = captures.as_ref().and_then(|c| c.get(1)).map(|m| m.as_str());
+    let short = captures
+        .as_ref()
+        .and_then(|c| c.get(2))
+        .map_or(title, |m| m.as_str());
     let short = short.split(" (").next().unwrap_or(short);
+    let (main_title, subtitle) = short.split_once(':').unwrap_or((short, ""));
     let headers = [
         norm(short),
+        norm(main_title),
         norm(book_title),
         norm(book_title.split(':').next().unwrap_or(book_title)),
     ];
+    let mut header_pages: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
+    for (pi, page) in pages.iter().enumerate() {
+        let raw = page["markdown"].as_str().ok_or("page text required")?;
+        let candidates: Vec<_> = parts(raw, "", 0)
+            .into_iter()
+            .filter(|b| !b.markdown.starts_with("<!-- page "))
+            .collect();
+        let leading = if pi == 0 { 3 } else { 1 };
+        for block in candidates
+            .iter()
+            .take(leading)
+            .chain(candidates.iter().rev().take(2))
+        {
+            let label = edge_label(&block.markdown);
+            if !label.is_empty() && headers.contains(&label) {
+                header_pages.entry(label).or_default().insert(pi);
+            }
+        }
+    }
     let mut out: Vec<Block> = vec![];
     for (pi, p) in pages.iter().enumerate() {
         let source = field(p, "source")?;
@@ -130,7 +171,11 @@ pub(super) fn section(
             for top in [true, false] {
                 let idx = if top { 0 } else { bs.len().saturating_sub(1) };
                 if let Some(b) = bs.get(idx) {
-                    if headers.contains(&norm(plain(&b.markdown))) && !norm(&b.markdown).is_empty()
+                    let candidate = edge_label(&b.markdown);
+                    if candidate.chars().any(char::is_alphabetic)
+                        && header_pages
+                            .get(&candidate)
+                            .is_some_and(|pages| pages.len() >= 2)
                     {
                         let b = bs.remove(idx);
                         audit(edits, "running_header", &b.markdown, "", &b.sources);
@@ -179,16 +224,12 @@ pub(super) fn section(
             }
         }
         if pi == 0 {
-            let number = title
-                .split('.')
-                .next()
-                .filter(|s| s.chars().all(|c| c.is_ascii_digit()));
             for _ in 0..3 {
                 let Some(b) = bs.first() else {
                     break;
                 };
                 let n = norm(plain(&b.markdown));
-                if n == norm(short)
+                if (!n.is_empty() && [norm(short), norm(main_title), norm(subtitle)].contains(&n))
                     || number.is_some_and(|numb| {
                         n == format!("chapter{numb}") || (b.markdown.starts_with('#') && n == numb)
                     })
@@ -308,6 +349,58 @@ mod tests {
             .unwrap()[0]
                 .id
         );
+    }
+    #[test]
+    fn preserves_unique_edge_headings_and_numbers_attached_to_words() {
+        let pages = vec![
+            json!({"source":"x","page":1,"markdown":"Opening paragraph.\n\nRoute\n\nMore text."}),
+            json!({"source":"x","page":2,"markdown":"Route66\n\nA road name is substantive text.\n\nRésumé"}),
+        ];
+        let mut edits = vec![];
+        let out = section("b", "Route", "Résumé", &pages, &BTreeSet::new(), &mut edits).unwrap();
+        assert!(out.iter().any(|b| b.markdown.contains("Route66")));
+        assert!(out.iter().any(|b| b.markdown == "Résumé"));
+        assert!(!edits.iter().any(|e| e["rule"] == "running_header"));
+    }
+    #[test]
+    fn recognizes_chapter_prefixes_split_subtitles_and_edge_folios() {
+        let pages = vec![
+            json!({"source":"book.pdf","page":1,"markdown":"CHAPTER 1\n\n## Hot War, Cold War\n\nChina's Conflicts\n\nOpening text."}),
+            json!({"source":"book.pdf","page":2,"markdown":"**28 CHINA'S GOOD WAR**\n\nBody text.\n\n## Hot War, Cold War\n\nMore body text.\n\nHot War, Cold War 29"}),
+            json!({"source":"book.pdf","page":3,"markdown":"**30 CHINA'S GOOD WAR**\n\nNext page."}),
+        ];
+        let mut edits = vec![];
+        let out = section(
+            "b",
+            "Chapter 1: Hot War, Cold War: China's Conflicts",
+            "China's Good War",
+            &pages,
+            &BTreeSet::new(),
+            &mut edits,
+        )
+        .unwrap();
+        assert_eq!(out[0].markdown, "Opening text.");
+        assert_eq!(
+            out.iter()
+                .filter(|b| b.markdown == "## Hot War, Cold War")
+                .count(),
+            1
+        );
+        assert_eq!(
+            edits
+                .iter()
+                .filter(|e| e["rule"] == "running_header")
+                .count(),
+            3
+        );
+        assert_eq!(
+            edits
+                .iter()
+                .filter(|e| e["rule"] == "section_heading")
+                .count(),
+            3
+        );
+        assert!(out.iter().any(|b| b.markdown == "More body text."));
     }
     #[test]
     fn removes_numbered_chapter_heading_but_keeps_body_numbers() {

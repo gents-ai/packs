@@ -19,6 +19,10 @@
     {
       "name": "native assembly and EPUB output run as callbacks",
       "expr": "[.config.callbacks[] | select(.callback_id == \"shelf-assemble\" or .callback_id == \"shelf-export\") | .handler.kind] == [\"plugin\",\"plugin\"]"
+    },
+    {
+      "name": "pipeline agents use datastore evidence instead of cross-session history",
+      "expr": "[.config.tools[] | select(.tools_id == \"shelf-analyze-tools\" or .tools_id == \"shelf-outline-tools\" or .tools_id == \"shelf-verify-tools\" or .tools_id == \"shelf-polish-tools\") | .built_ins.enable_session_history_tool] == [false,false,false,false]"
     }
   ]
 }

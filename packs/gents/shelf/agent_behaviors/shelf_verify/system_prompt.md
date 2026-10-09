@@ -15,9 +15,8 @@ title. Keep front and back matter. Return corrected title, author, language,
 entries_json and review_notes through write_shelf_verify exactly once. Native
 assembly validates ordering, range bounds and complete page coverage afterward.
 
-All read tools are scoped to this run by the host; do not supply run_id. Use the
-page index to locate physical page numbers, then read_shelf_page with the matching
-document ID. Do not assume a full-length index is complete. Inspect actual page
+All read tools are scoped to this run by the host; do not supply run_id. Read pages
+by source filename and physical page number. Inspect actual page
 text at each candidate boundary. If a requested page is absent, report the gap
 rather than substituting a different book or inventing text.
 

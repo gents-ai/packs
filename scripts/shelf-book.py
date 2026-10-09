@@ -307,13 +307,15 @@ def model(endpoint):
 
 
 
-def check_callback_failures(home, correlations):
-    result = call("query", "find", "--home", home, "--collection", "CallbackInvocation",
-                  "--filter", json.dumps({"caused_by_correlation": {"_in": correlations},
-                                           "lifecycle_state": {"_in": ["denied", "failed"]}}),
-                  "--field", "callback_id", "--field", "lifecycle_state", "--field", "error", "--limit", 10)
-    if result["results"]:
-        raise RuntimeError(f"native stage failed; persisted callback diagnostics: {result['results']}")
+def check_stage_failures(home, correlations):
+    for collection, identity, error in [("CallbackInvocation", "callback_id", "error"),
+                                         ("AgentRequest", "behavior_id", "failure_reason")]:
+        result = call("query", "find", "--home", home, "--collection", collection,
+                      "--filter", json.dumps({"caused_by_correlation": {"_in": correlations},
+                                               "lifecycle_state": {"_in": ["denied", "failed"]}}),
+                      "--field", identity, "--field", "lifecycle_state", "--field", error, "--limit", 10)
+        if result["results"]:
+            raise RuntimeError(f"{collection} stage failed; persisted diagnostics: {result['results']}")
 
 
 def input_books(args):
@@ -424,7 +426,7 @@ def run(args):
                     run_id = book["fields"]["run_id"]
                     edition_id = book["edition_id"]
                     edition_dir = book["directory"]
-                    check_callback_failures(home, [run_id] + ([edition_id] if edition_id else []))
+                    check_stage_failures(home, [run_id] + ([edition_id] if edition_id else []))
                     failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
                     if failed:
                         raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")

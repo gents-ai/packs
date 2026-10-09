@@ -83,7 +83,7 @@ class BatchSubmission(unittest.TestCase):
                                  "error": "export folder is read-only"}]}
         with patch.object(shelf, "call", call):
             with self.assertRaisesRegex(RuntimeError, "export folder is read-only"):
-                shelf.check_callback_failures("home", ["book", "edition"])
+                shelf.check_stage_failures("home", ["book", "edition"])
 
     def test_search_catalog_retries_truncated_pages_without_losing_editions(self):
         rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01T00:00:00Z", status="source_text",

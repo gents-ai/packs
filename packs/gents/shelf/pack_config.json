@@ -138,6 +138,9 @@
         "datastore_tool_surface_ids": [
           "shelf-analyze-writes"
         ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
       }
     },
     {
@@ -148,6 +151,9 @@
         "datastore_tool_surface_ids": [
           "shelf-outline-writes"
         ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
       }
     },
     {
@@ -158,6 +164,9 @@
         "datastore_tool_surface_ids": [
           "shelf-verify-writes"
         ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
       }
     },
     {
@@ -167,6 +176,9 @@
         "datastore_tool_surface_ids": [
           "shelf-polish-writes"
         ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
       }
     },
     {
@@ -1152,7 +1164,7 @@
           "kind": "query",
           "tool_name": "read_shelf_page_index",
           "collection": "ShelfPage",
-          "description": "List source page numbers and document IDs for this book run, without text. Optional source selects one PDF. If the result reaches the limit, do not assume the index is complete. For a single source select fields [_docID,page]. If line truncation hides tail rows, repeat selecting only [_docID], then read the previously unseen IDs with read_shelf_page. A count of 1000 requires smaller source scope; never certify an incomplete index.",
+          "description": "List physical page numbers for this book without text. Optional source selects one PDF. Use read_shelf_page with source and page to inspect a candidate boundary; the native manifest provides complete source page counts.",
           "fields": [
             "_docID",
             "source",
@@ -1172,7 +1184,7 @@
           "kind": "query",
           "tool_name": "read_shelf_page",
           "collection": "ShelfPage",
-          "description": "Read one page of this book run by its _docID from read_shelf_page_index. Use field_page when the result supplies a truncated text field. Example: {\"_docID\":\"bae-...\",\"fields\":[\"page\",\"markdown\"]}. The leading underscore in _docID is required; docID is invalid.",
+          "description": "Read physical pages in this book. To inspect one page, pass source filename and integer page: {\"source\":\"book.pdf\",\"page\":32,\"fields\":[\"page\",\"markdown\"]}. Recover truncated text with the returned field_page and fields:[\"markdown\"]; source/page are optional during recovery. The host always supplies the book filter.",
           "fields": [
             "_docID",
             "source",
@@ -1185,8 +1197,10 @@
               "fill": "correlation"
             },
             {
-              "name": "_docID",
-              "required": true
+              "name": "source"
+            },
+            {
+              "name": "page"
             }
           ]
         }
@@ -1344,7 +1358,7 @@
           "kind": "query",
           "tool_name": "read_shelf_page_index",
           "collection": "ShelfPage",
-          "description": "List source page numbers and document IDs for this book run, without text. Optional source selects one PDF. If the result reaches the limit, do not assume the index is complete. For a single source select fields [_docID,page]. If line truncation hides tail rows, repeat selecting only [_docID], then read the previously unseen IDs with read_shelf_page. A count of 1000 requires smaller source scope; never certify an incomplete index.",
+          "description": "List physical page numbers for this book without text. Optional source selects one PDF. Use read_shelf_page with source and page to inspect a candidate boundary; the native manifest provides complete source page counts.",
           "fields": [
             "_docID",
             "source",
@@ -1364,7 +1378,7 @@
           "kind": "query",
           "tool_name": "read_shelf_page",
           "collection": "ShelfPage",
-          "description": "Read one page of this book run by its _docID from read_shelf_page_index. Use field_page when the result supplies a truncated text field. Example: {\"_docID\":\"bae-...\",\"fields\":[\"page\",\"markdown\"]}. The leading underscore in _docID is required; docID is invalid.",
+          "description": "Read physical pages in this book. To inspect one page, pass source filename and integer page: {\"source\":\"book.pdf\",\"page\":32,\"fields\":[\"page\",\"markdown\"]}. Recover truncated text with the returned field_page and fields:[\"markdown\"]; source/page are optional during recovery. The host always supplies the book filter.",
           "fields": [
             "_docID",
             "source",
@@ -1377,8 +1391,10 @@
               "fill": "correlation"
             },
             {
-              "name": "_docID",
-              "required": true
+              "name": "source"
+            },
+            {
+              "name": "page"
             }
           ]
         }
