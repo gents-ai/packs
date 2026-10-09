@@ -15,6 +15,7 @@ Rules:
 - Keep edits minimal and precise
 - NEVER change the meaning or content
 - NEVER rewrite sentences for style
+- Do not correct grammar, proper names, or quotations from general knowledge; preserve the author’s wording when an OCR error is uncertain
 - Preserve all substantive text
 - If text looks fine, return empty edits list
 
@@ -24,5 +25,6 @@ emphasis and block quotes. Do not invent missing text, remove uncertain passages
 or relabel physical scan pages as printed page numbers. Keep paragraph boundaries.
 
 Submit edits through write_shelf_polish exactly once. Include the block_id with
-each edit. Quote old_text exactly as it occurs in that block, including punctuation
-and whitespace. No full-text rewrite. When a block is ambiguous, leave it intact.
+each edit. Quote old_text exactly as it occurs in that block, including Unicode
+apostrophes, quotation marks, punctuation and whitespace. A rejected attempt
+commits no edits; the next attempt must quote the original blocks again. No full-text rewrite. When a block is ambiguous, leave it intact.

@@ -263,6 +263,33 @@ fn review_attempt(plan: &Plan, chunk: &Chunk, path: &str, file: &str) -> Value {
         "blocks_json":serde_json::to_string(&chunk.blocks).unwrap(),
         "lane":if chunk.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}})
 }
+fn quote_variant_source(source: &str, quoted: &str) -> Option<String> {
+    fn fold(c: char) -> char {
+        match c {
+            '\u{2018}' | '\u{2019}' => '\'',
+            '\u{201c}' | '\u{201d}' => '"',
+            c => c,
+        }
+    }
+    let mut normalized = String::new();
+    let mut offsets = BTreeMap::new();
+    for (offset, c) in source.char_indices() {
+        offsets.insert(normalized.len(), offset);
+        normalized.push(fold(c));
+    }
+    offsets.insert(normalized.len(), source.len());
+    let needle: String = quoted.chars().map(fold).collect();
+    if needle.is_empty() {
+        return None;
+    }
+    let mut matches = normalized.match_indices(&needle);
+    let (start, _) = matches.next()?;
+    if matches.next().is_some() {
+        return None;
+    }
+    Some(source[*offsets.get(&start)?..*offsets.get(&(start + needle.len()))?].into())
+}
+
 fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Result<Reviewed> {
     let edits: Vec<Edit> = serde_json::from_str(raw).map_err(|e| format!("edits_json: {e}"))?;
     if edits.len() > 50 {
@@ -274,7 +301,7 @@ fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Resul
         blocks: chunk.blocks.clone(),
         edits: vec![],
     };
-    for edit in edits {
+    for (index, edit) in edits.into_iter().enumerate() {
         if edit.old_text.is_empty()
             || edit.old_text.len() > 1200
             || edit.new_text.len() > 2400
@@ -288,10 +315,26 @@ fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Resul
             .iter_mut()
             .find(|b| b.id == edit.block_id)
             .ok_or("edit names a block outside this chunk")?;
-        if b.markdown.matches(&edit.old_text).count() != 1 {
+        let matches = b.markdown.matches(&edit.old_text).count();
+        if matches != 1 {
+            let recovery = if matches == 0 {
+                match quote_variant_source(&b.markdown, &edit.old_text) {
+                    Some(source) => format!(
+                        "The uniquely located quote variant in the source is {}. Copy its punctuation exactly in old_text, or omit this edit.",
+                        json!(source)
+                    ),
+                    None => {
+                        "Quote old_text exactly from the original block, or omit this edit.".into()
+                    }
+                }
+            } else {
+                "Include surrounding source text in old_text to locate one occurrence, or omit this edit.".into()
+            };
             return Err(format!(
-                "edit for {} must match exactly once; no edits committed",
-                edit.block_id
+                "Edit {} for {}: old_text {} matches {matches} times; it must match exactly once. {recovery} No edits committed.",
+                index + 1,
+                edit.block_id,
+                json!(edit.old_text)
             ));
         }
         let next = b.markdown.replacen(&edit.old_text, &edit.new_text, 1);
@@ -506,6 +549,58 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn quote_variant_feedback_never_applies_an_inexact_edit() {
+        let source = "Élodie’s bi- ography includes “road-map”.";
+        let block = Block {
+            id: "passage".into(),
+            markdown: source.into(),
+            sources: vec![Span {
+                source: "fixture.pdf".into(),
+                page: 2,
+                start_byte: 0,
+                end_byte: source.len(),
+            }],
+        };
+        let chunk = Chunk {
+            key: "c0000".into(),
+            title: "One".into(),
+            blocks: vec![block.clone()],
+        };
+        let mut edit = json!({"block_id":"passage", "old_text":"Élodie's bi- ography", "new_text":"Élodie’s biography", "reason":"Join a split word"});
+        let error = validate_review(
+            &chunk,
+            &chunk.key,
+            "hash".into(),
+            &json!([edit]).to_string(),
+        )
+        .err()
+        .unwrap();
+        assert!(error.contains("Edit 1"));
+        assert!(error.contains("matches 0 times"));
+        assert!(error.contains("Élodie’s bi- ography"));
+        assert_eq!(chunk.blocks[0].markdown, source);
+        edit["old_text"] = json!("Élodie’s bi- ography");
+        let reviewed = validate_review(
+            &chunk,
+            &chunk.key,
+            "hash".into(),
+            &json!([edit]).to_string(),
+        )
+        .unwrap();
+        assert_eq!(
+            reviewed.blocks[0].markdown,
+            "Élodie’s biography includes “road-map”."
+        );
+        assert_eq!(reviewed.blocks[0].sources, block.sources);
+        assert_eq!(
+            quote_variant_source(source, "\"road-map\""),
+            Some("“road-map”".into())
+        );
+        assert_eq!(quote_variant_source("child’s and child's", "child's"), None);
+        assert_eq!(quote_variant_source(source, "invented text"), None);
+    }
+
     #[test]
     fn bounded_dispatch_releases_one_successor_only_after_an_accepted_review() {
         let dir = tempfile::tempdir().unwrap();
