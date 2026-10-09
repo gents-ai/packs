@@ -15,6 +15,22 @@ spec.loader.exec_module(shelf)
 
 
 class BatchSubmission(unittest.TestCase):
+    def test_live_reads_and_writes_use_explicit_http_without_changing_other_calls(self):
+        endpoint = "http://127.0.0.1:50327/api/v0/graphql"
+        connection = shelf.LIVE_GRAPHQL.set(endpoint)
+        try:
+            with patch.object(shelf.subprocess, "run", return_value=SimpleNamespace(stdout="{}")) as run:
+                for command in [("query", "find"), ("document", "create")]:
+                    shelf.call(*command, "--home", "home")
+                    self.assertEqual(run.call_args.args[0][-2:], ["--graphql", endpoint])
+                shelf.call("pack", "build", "pack")
+                self.assertNotIn("--graphql", run.call_args.args[0])
+                shelf.call("query", "find", "--graphql", "http://explicit")
+                self.assertEqual(run.call_args.args[0].count("--graphql"), 1)
+        finally:
+            shelf.LIVE_GRAPHQL.reset(connection)
+        self.assertIsNone(shelf.LIVE_GRAPHQL.get())
+
     def test_shared_runtime_submits_all_books_and_waits_for_every_epub(self):
         self._run_books()
 

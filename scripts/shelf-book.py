@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run Shelf through Gents' document owners or export a persisted structured book."""
 import argparse
+from contextvars import ContextVar
 import datetime
 import functools
 import hashlib
@@ -16,9 +17,13 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 GENTS = os.environ.get("GENTS", "gents")
+LIVE_GRAPHQL = ContextVar("shelf_live_graphql", default=None)
 
 
 def call(*args, json_output=True):
+    endpoint = LIVE_GRAPHQL.get()
+    if endpoint and args[0] in ["query", "document"] and "--graphql" not in args:
+        args = (*args, "--graphql", endpoint)
     result = subprocess.run([GENTS, *map(str, args)], check=True, text=True, stdout=subprocess.PIPE)
     return json.loads(result.stdout) if json_output else result.stdout
 
@@ -502,6 +507,7 @@ def run(args):
     with (directory / "server.log").open("a" if resume else "w") as log:
         log_start = log.tell()
         server = None if attach else subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract", "ShelfSourceReady"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
+        connection = LIVE_GRAPHQL.set(f"http://127.0.0.1:{port}/api/v0/graphql")
         try:
             deadline = time.monotonic() + args.timeout
             ready = time.monotonic() + 60
@@ -588,6 +594,7 @@ def run(args):
                 time.sleep(10)
             raise RuntimeError("timed out; persisted state is retained in the run home")
         finally:
+            LIVE_GRAPHQL.reset(connection)
             if server is not None:
                 server.terminate()
                 try:
