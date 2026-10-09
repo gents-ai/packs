@@ -486,40 +486,56 @@ def run(args):
                     run_id = book["fields"]["run_id"]
                     edition_id = book["edition_id"]
                     edition_dir = book["directory"]
-                    structure_failures = query(home, "ShelfStructureFailure", run_id, ["stage", "reason"])
-                    if structure_failures:
-                        raise RuntimeError(f"book structure needs review; preserved findings: {structure_failures}")
-                    if not book.get("discovery_started") and query(home, "ShelfSourceReady", run_id, ["book_id"]):
-                        discovery = source_capsule(home, run_id, book["fields"], edition_dir, f"http://127.0.0.1:{port}/mcp", book["input_hashes"])
-                        call("document", "create", "ShelfDiscoveryJob", "--home", home, "--json", json.dumps(discovery))
-                        book["discovery_started"] = True
-                        print(f"Finding contents and verifying boundaries for {run_id}", flush=True)
-                    check_stage_failures(home, [run_id] + ([edition_id] if edition_id else []))
-                    failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
-                    if failed:
-                        raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
-                    if edition_id is None and book.get("discovery_started") and query(home, "ShelfStructureReport", run_id, ["book_id"]):
-                        structured = edition_dir / "structured-book.json"
-                        export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
-                        if not args.epub:
-                            book["done"] = True
-                            continue
-                        structured_book = json.loads(structured.read_text())
-                        edition_id = run_id + "-readable"
-                        book["edition_id"] = edition_id
-                        call("document", "create", "ShelfPrepareJob", "--home", home, "--json", json.dumps({
-                            "run_id":edition_id,"book_id":structured_book["book_id"],"path":str(edition_dir),
-                            "structured":structured.name,"output":"book.epub",
-                            "modified":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
-                        print(f"Reviewing edition {edition_id}", flush=True)
-                    if edition_id:
-                        failures = query(home, "ShelfEditionFailure", edition_id, ["chunk_ref", "error"])
-                        if failures:
-                            raise RuntimeError(f"edition needs review; persisted failures: {failures}")
-                        if query(home, "ShelfLibraryEdition", edition_id, ["edition_id"]):
-                            print(json.dumps({"edition_id":edition_id,"epub":str(edition_dir/"book.epub")}),flush=True)
-                            book["done"] = True
+                    try:
+                        structure_failures = query(home, "ShelfStructureFailure", run_id, ["stage", "reason"])
+                        if structure_failures:
+                            raise RuntimeError(f"book structure needs review; preserved findings: {structure_failures}")
+                        if not book.get("discovery_started") and query(home, "ShelfSourceReady", run_id, ["book_id"]):
+                            discovery = source_capsule(home, run_id, book["fields"], edition_dir, f"http://127.0.0.1:{port}/mcp", book["input_hashes"])
+                            call("document", "create", "ShelfDiscoveryJob", "--home", home, "--json", json.dumps(discovery))
+                            book["discovery_started"] = True
+                            print(f"Finding contents and verifying boundaries for {run_id}", flush=True)
+                        check_stage_failures(home, [run_id] + ([edition_id] if edition_id else []))
+                        failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
+                        if failed:
+                            raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
+                        if edition_id is None and book.get("discovery_started") and query(home, "ShelfStructureReport", run_id, ["book_id"]):
+                            structured = edition_dir / "structured-book.json"
+                            export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
+                            if not args.epub:
+                                book["done"] = True
+                                continue
+                            structured_book = json.loads(structured.read_text())
+                            edition_id = run_id + "-readable"
+                            book["edition_id"] = edition_id
+                            call("document", "create", "ShelfPrepareJob", "--home", home, "--json", json.dumps({
+                                "run_id":edition_id,"book_id":structured_book["book_id"],"path":str(edition_dir),
+                                "structured":structured.name,"output":"book.epub",
+                                "modified":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
+                            print(f"Reviewing edition {edition_id}", flush=True)
+                        if edition_id:
+                            failures = query(home, "ShelfEditionFailure", edition_id, ["chunk_ref", "error"])
+                            if failures:
+                                raise RuntimeError(f"edition needs review; persisted failures: {failures}")
+                            if query(home, "ShelfLibraryEdition", edition_id, ["edition_id"]):
+                                print(json.dumps({"edition_id":edition_id,"epub":str(edition_dir/"book.epub")}),flush=True)
+                                book["done"] = True
+                    except RuntimeError as error:
+                        book["error"] = str(error)
+                        book["done"] = True
+                        print(json.dumps({"run_id": run_id, "book_id": book["fields"].get("book_id"),
+                                          "status": "failed", "error": str(error)}), flush=True)
+                outcomes = [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
+                             "status": "failed" if b.get("error") else "completed" if b["done"] else "running",
+                             "edition_id": b["edition_id"], "directory": str(b["directory"]),
+                             "error": b.get("error")} for b in books]
+                snapshot = directory / "results.json.tmp"
+                snapshot.write_text(json.dumps(outcomes, indent=2) + "\n")
+                snapshot.replace(directory / "results.json")
                 if all(book["done"] for book in books):
+                    failures = [b for b in books if b.get("error")]
+                    if failures:
+                        raise RuntimeError(f"{len(failures)} of {len(books)} books failed; inspect results.json and persisted diagnostics")
                     return
                 time.sleep(10)
             raise RuntimeError("timed out; persisted state is retained in the run home")

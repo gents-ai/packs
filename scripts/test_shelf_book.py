@@ -16,6 +16,12 @@ spec.loader.exec_module(shelf)
 
 class BatchSubmission(unittest.TestCase):
     def test_shared_runtime_submits_all_books_and_waits_for_every_epub(self):
+        self._run_books()
+
+    def test_failed_book_does_not_stop_the_other_book(self):
+        self._run_books(fail_first=True)
+
+    def _run_books(self, fail_first=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ["one.pdf", "two.pdf"]:
@@ -50,6 +56,8 @@ class BatchSubmission(unittest.TestCase):
                 return {}
 
             def query(home, collection, run_id, fields):
+                if collection == "ShelfStructureFailure" and fail_first and jobs[run_id]["book_id"] == "one":
+                    return [{"stage": "boundaries", "reason": "ambiguous heading"}]
                 if collection == "ShelfSourceReady":
                     return [{"book_id": jobs[run_id]["book_id"]}]
                 if collection == "ShelfStructureReport":
@@ -72,11 +80,19 @@ class BatchSubmission(unittest.TestCase):
                  patch.object(shelf, "export", export), patch.object(shelf, "source_capsule", side_effect=lambda home, run_id, fields, directory, endpoint, expected_hashes: {"run_id":run_id,"book_id":fields["book_id"]}), patch.object(shelf, "model", return_value="model"), \
                  patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep"), \
                  contextlib.redirect_stdout(io.StringIO()):
-                shelf.run(args)
-            self.assertEqual(len(discoveries), 2)
-            self.assertEqual(len(prepares), 2)
-            self.assertEqual(list(polls.values()), [2, 2])
-            self.assertEqual(len({job["path"] for job in prepares.values()}), 2)
+                if fail_first:
+                    with self.assertRaisesRegex(RuntimeError, "1 of 2 books failed"):
+                        shelf.run(args)
+                else:
+                    shelf.run(args)
+            outcomes = json.loads((args.directory / "results.json").read_text())
+            self.assertEqual([r["status"] for r in outcomes], ["failed", "completed"] if fail_first else ["completed", "completed"])
+            if fail_first:
+                self.assertIn("ambiguous heading", outcomes[0]["error"])
+            self.assertEqual(len(discoveries), 1 if fail_first else 2)
+            self.assertEqual(len(prepares), 1 if fail_first else 2)
+            self.assertEqual(list(polls.values()), [2] if fail_first else [2, 2])
+            self.assertEqual(len({job["path"] for job in prepares.values()}), 1 if fail_first else 2)
             for job in prepares.values():
                 grant = next(g for g in grants if str(g[3]) == job["path"])
                 self.assertEqual(grant[grant.index("--access") + 1], "read_write")

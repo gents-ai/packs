@@ -327,8 +327,11 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
         json!({"plan":{"run_id":edition,"book_id":book,"path":path,"plan":file,"expected_total":plan.chunks.len()},"chunks":chunks}),
     )
 }
+fn review_attempt_id(edition: &str, chunk: &str, attempt: usize) -> String {
+    format!("{edition}:{chunk}:{attempt}")
+}
 fn review_attempt(plan: &Plan, chunk: &Chunk, path: &str, file: &str) -> Value {
-    let attempt_id = format!("{}:{}:0", plan.edition_id, chunk.key);
+    let attempt_id = review_attempt_id(&plan.edition_id, &chunk.key, 0);
     let mut out = json!({"attempt_id":attempt_id,"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
         "chunk_ref":chunk.key,"title":chunk.title,"attempt":"0","feedback":"",
         "blocks_json":serde_json::to_string(&chunk.blocks).unwrap(),
@@ -406,10 +409,11 @@ fn inspected_noise_pages(
     if book["run_id"] != scope["run_id"] || book["book_id"] != plan.book_id {
         return Err("non-text evidence belongs to another source book".into());
     }
-    let ledger_name = format!(
-        "inspection-{}.json",
-        &hash(field(v, "attempt_id")?.as_bytes())[..32]
-    );
+    let attempt = field(v, "attempt")?
+        .parse::<usize>()
+        .map_err(|_| "invalid review attempt")?;
+    let attempt_id = review_attempt_id(&plan.edition_id, field(v, "chunk_ref")?, attempt);
+    let ledger_name = format!("inspection-{}.json", &hash(attempt_id.as_bytes())[..32]);
     let ledger: Value = serde_json::from_slice(&read(root, &ledger_name).map_err(|_| {
         "Call load_page_image for the source page in this attempt before removing non-text OCR."
             .to_string()
@@ -423,10 +427,10 @@ fn inspected_noise_pages(
         .ok_or("missing source page coordinates")?;
     let mut inspected = BTreeMap::new();
     for observation in observations {
-        if observation["visual_observations"]
-            .as_str()
-            .is_none_or(|s| s.trim().is_empty())
-        {
+        let Some(visual) = observation.get("visual_observations") else {
+            continue;
+        };
+        if visual.as_str().is_none_or(|text| text.trim().is_empty()) {
             return Err("missing native visual observation text".into());
         }
         let scan = observation["page_num"]
@@ -627,7 +631,7 @@ fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
             }
             let mut retry = review_attempt(&plan, chunk, path, field(v, "plan")?);
             retry["attempt"] = json!((attempt + 1).to_string());
-            retry["attempt_id"] = json!(format!("{}:{key}:{}", plan.edition_id, attempt + 1));
+            retry["attempt_id"] = json!(review_attempt_id(&plan.edition_id, key, attempt + 1));
             if retry.get("stage_job_id").is_some() {
                 retry["stage_job_id"] = retry["attempt_id"].clone();
             }
@@ -854,6 +858,8 @@ mod tests {
         );
         save(root, &ledger, &json!({"observations":[
             {"page_num":1,"visual_observations":"Decorative ornament without printed lettering."},
+            {"page_num":1,"observations":"The editor interprets this as noise."},
+            {"page_num":999,"observations":"Agent notes alone authorize nothing."},
             {"page_num":2,"visual_observations":"A genuine figure caption is visible."}
         ]})).unwrap();
         let inspected = inspected_noise_pages(
@@ -887,6 +893,8 @@ mod tests {
         );
         edit["non_text_ocr_page"] = json!(1);
         proposal["edits_json"] = json!(json!([edit]).to_string());
+        proposal.as_object_mut().unwrap().remove("attempt_id");
+        proposal.as_object_mut().unwrap().remove("stage_job_id");
         apply(&proposal, root).unwrap();
         let checkpoint: Reviewed = serde_json::from_slice(
             &read(
@@ -905,7 +913,7 @@ mod tests {
         assert_eq!(checkpoint.blocks[1].markdown, "A genuine figure caption.");
         assert_eq!(plan.source, source);
         let mut another_attempt = proposal.clone();
-        another_attempt["attempt_id"] = json!("another-attempt");
+        another_attempt["attempt"] = json!("1");
         assert!(
             inspected_noise_pages(
                 &plan,

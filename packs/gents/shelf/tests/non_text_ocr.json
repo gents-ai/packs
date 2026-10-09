@@ -1,0 +1,55 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "repository": {
+      "access": "read_write",
+      "copy": {
+        "source-book.json": "plugins/shelf_prepare/tests/fixtures/noise/source_book.json",
+        "plan.json": "plugins/shelf_prepare/tests/fixtures/noise/plan.json",
+        "inspection-f4285cae2dcb1455e416ecdd0fa1621a.json": "plugins/shelf_prepare/tests/fixtures/noise/inspection.json"
+      }
+    },
+    "seed": {
+      "collection": "ShelfPolishProposal",
+      "fields": {
+        "run_id": "noise-fixture",
+        "book_id": "noise-book",
+        "path": "${REPOSITORY}",
+        "plan": "plan.json",
+        "chunk_ref": "c0000",
+        "attempt": "0",
+        "attempt_id": "noise-fixture:c0000:0:${ATTEMPT}",
+        "edits_json": "[{\"block_id\": \"p-noise\", \"old_text\": \"q7g pattern artifact\", \"new_text\": \"\", \"reason\": \"Source inspection confirms ornament, not printed text.\", \"non_text_ocr_page\": 1}]"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfPolishedChunk",
+        "fields": {
+          "run_id": "noise-fixture",
+          "chunk_ref": "c0000",
+          "edit_count": 1
+        }
+      },
+      {
+        "collection": "ShelfPreparedBook",
+        "fields": {
+          "run_id": "noise-fixture",
+          "passage_count": 2
+        }
+      },
+      {
+        "collection": "ShelfLibraryPassage",
+        "filter": {
+          "passage_id": "p-caption"
+        },
+        "fields": {
+          "text": "A genuine figure caption.",
+          "status": "reviewed"
+        }
+      }
+    ]
+  }
+}

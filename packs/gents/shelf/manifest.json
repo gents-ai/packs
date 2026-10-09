@@ -743,6 +743,10 @@
     "schemas/shelf_to_c.graphql",
     "schemas/shelf_to_c_entry.graphql",
     "schemas/shelf_structure_failure.graphql",
+    "plugins/shelf_prepare/tests/fixtures/noise/source_book.json",
+    "plugins/shelf_prepare/tests/fixtures/noise/plan.json",
+    "plugins/shelf_prepare/tests/fixtures/noise/inspection.json",
+    "tests/non_text_ocr.json",
     "tests/classification.json",
     "tests/classification_repair.json",
     "schemas/shelf_finding_join_job.graphql"
