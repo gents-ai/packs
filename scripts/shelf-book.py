@@ -414,54 +414,79 @@ def input_books(args):
 def run(args):
     books = input_books(args)
     directory = args.directory.expanduser().resolve()
-    directory.mkdir(parents=True, exist_ok=False)
-    home = directory / "home"
-    first_model = model(args.endpoint)
-    initialized = call("init", "--home", home, "--agent-name", "shelf", "--backend-preset", "vllm", "--inference-url", args.endpoint,
-                       "--model-name", first_model, "--max-concurrent", args.max_concurrent, "--tool-root", directory)
-    reader = initialized["inference_profile_id"]
-    librarian = reader
-    if args.structure_endpoint:
-        config_dir = directory / "config"
-        call("config", "export", "--home", home, "--root", config_dir, json_output=False)
-        config = json.loads((config_dir / "pack_config.json").read_text())
-        backend = config["inference_backends"][0].copy()
-        backend.update(backend_id=backend["backend_id"] + "-structure", endpoint=args.structure_endpoint, name="Shelf structure")
-        profile = config["inference_profiles"][0].copy()
-        profile.update(profile_id=profile["profile_id"] + "-structure", backend_id=backend["backend_id"], model_name=model(args.structure_endpoint))
-        for name, doc, command in [("backend", backend, "backend"), ("profile", profile, "profile")]:
-            path = directory / (name + ".json")
-            path.write_text(json.dumps(doc))
-            call("config", command, "set", "--home", home, "--file", path)
-        librarian = profile["profile_id"]
-    ocr_slots = ["document_reader=" + reader]
-    if args.remote_ocr != "off":
-        ocr_slots.append("remote_ocr=" + reader)
-    for pack, slots in [("ocr", ocr_slots), ("shelf", ["reader=" + reader, "librarian=" + librarian, "page_vision=" + reader])]:
-        source = ROOT / "packs/gents" / pack
-        call("pack", "build", source, "--out", directory / (pack + ".pack"))
-        install = ["pack", "install", source, "--home", home, "--grant-authority"]
-        for slot in slots:
-            install += ["--inference-slot", slot]
-        call(*install)
-    source_folders = {Path(book["fields"]["path"]) if "files" in book["fields"]
-                      else Path(book["fields"]["path"]).parent for book in books}
-    for folder in sorted(source_folders):
-        call("plugin", "dirs", "add", folder, "--home", home, json_output=False)
-    run_prefix = "shelf-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%f")
-    for i, book in enumerate(books):
-        book["fields"]["run_id"] = run_prefix if len(books) == 1 else f"{run_prefix}-{i+1:02}"
-        edition_dir = directory / ("edition" if len(books) == 1 else f"edition-{i+1:02}")
-        edition_dir.mkdir()
-        book["directory"] = edition_dir
-        call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
+    resume = getattr(args, "resume", False)
+    if resume:
+        metadata = json.loads((directory / "run.json").read_text())
+        previous = metadata["books"]
+        if len(previous) != len(books) or Path(metadata["home"]).resolve() != directory / "home":
+            raise RuntimeError("resume must use the original batch directory and book manifest")
+        progress = {row["run_id"]: row for row in json.loads((directory / "results.json").read_text())}
+        home = directory / "home"
+        run_prefix = metadata["run_id"]
+        for book, stored in zip(books, previous):
+            if book["fields"].get("book_id") != stored["book_id"] or book["input_hashes"] != stored["input_hashes"]:
+                raise RuntimeError("resume refuses changed book identities or source bytes")
+            edition_dir = Path(stored["directory"]).resolve(strict=True)
+            if edition_dir.parent != directory or not edition_dir.is_dir():
+                raise RuntimeError("resume edition folder is outside the original batch")
+            book["fields"]["run_id"] = stored["run_id"]
+            book["directory"] = edition_dir
+            outcome = progress[stored["run_id"]]
+            book["edition_id"] = outcome["edition_id"]
+            book["done"] = outcome["status"] in ["completed", "failed"]
+            if outcome.get("error"):
+                book["error"] = outcome["error"]
+    else:
+        directory.mkdir(parents=True, exist_ok=False)
+        home = directory / "home"
+        first_model = model(args.endpoint)
+        initialized = call("init", "--home", home, "--agent-name", "shelf", "--backend-preset", "vllm", "--inference-url", args.endpoint,
+                           "--model-name", first_model, "--max-concurrent", args.max_concurrent, "--tool-root", directory)
+        reader = initialized["inference_profile_id"]
+        librarian = reader
+        if args.structure_endpoint:
+            config_dir = directory / "config"
+            call("config", "export", "--home", home, "--root", config_dir, json_output=False)
+            config = json.loads((config_dir / "pack_config.json").read_text())
+            backend = config["inference_backends"][0].copy()
+            backend.update(backend_id=backend["backend_id"] + "-structure", endpoint=args.structure_endpoint, name="Shelf structure")
+            profile = config["inference_profiles"][0].copy()
+            profile.update(profile_id=profile["profile_id"] + "-structure", backend_id=backend["backend_id"], model_name=model(args.structure_endpoint))
+            for name, doc, command in [("backend", backend, "backend"), ("profile", profile, "profile")]:
+                path = directory / (name + ".json")
+                path.write_text(json.dumps(doc))
+                call("config", command, "set", "--home", home, "--file", path)
+            librarian = profile["profile_id"]
+        ocr_slots = ["document_reader=" + reader]
+        if args.remote_ocr != "off":
+            ocr_slots.append("remote_ocr=" + reader)
+        for pack, slots in [("ocr", ocr_slots), ("shelf", ["reader=" + reader, "librarian=" + librarian, "page_vision=" + reader])]:
+            source = ROOT / "packs/gents" / pack
+            call("pack", "build", source, "--out", directory / (pack + ".pack"))
+            install = ["pack", "install", source, "--home", home, "--grant-authority"]
+            for slot in slots:
+                install += ["--inference-slot", slot]
+            call(*install)
+        source_folders = {Path(book["fields"]["path"]) if "files" in book["fields"]
+                          else Path(book["fields"]["path"]).parent for book in books}
+        for folder in sorted(source_folders):
+            call("plugin", "dirs", "add", folder, "--home", home, json_output=False)
+        run_prefix = "shelf-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+        for i, book in enumerate(books):
+            book["fields"]["run_id"] = run_prefix if len(books) == 1 else f"{run_prefix}-{i+1:02}"
+            edition_dir = directory / ("edition" if len(books) == 1 else f"edition-{i+1:02}")
+            edition_dir.mkdir()
+            book["directory"] = edition_dir
+            call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    (directory / "run.json").write_text(json.dumps({"run_id": run_prefix, "home": str(home),
-        "books": [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
-                   "directory": str(b["directory"]), "input_hashes":b["input_hashes"]} for b in books]}))
-    with (directory / "server.log").open("w") as log:
+    if not resume:
+        (directory / "run.json").write_text(json.dumps({"run_id": run_prefix, "home": str(home),
+            "books": [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
+                       "directory": str(b["directory"]), "input_hashes":b["input_hashes"]} for b in books]}))
+    with (directory / "server.log").open("a" if resume else "w") as log:
+        log_start = log.tell()
         server = subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract", "ShelfSourceReady"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
         try:
             deadline = time.monotonic() + args.timeout
@@ -469,13 +494,22 @@ def run(args):
             while True:
                 if server.poll() is not None:
                     raise RuntimeError("runtime exited; inspect server.log")
-                if "gents server is running" in (directory / "server.log").read_text():
+                with (directory / "server.log").open() as status_log:
+                    status_log.seek(log_start)
+                    runtime_started = "gents server is running" in status_log.read()
+                if runtime_started:
                     break
                 if time.monotonic() > ready:
                     raise RuntimeError("runtime did not become ready; inspect server.log")
                 time.sleep(1)
             for book in books:
-                call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(book["fields"]))
+                if resume:
+                    stored = query(home, "ShelfJob", book["fields"]["run_id"], ["book_id"])
+                    if len(stored) != 1 or stored[0]["book_id"] != book["fields"].get("book_id"):
+                        raise RuntimeError("resume cannot find the original book job")
+                    book["discovery_started"] = bool(query(home, "ShelfDiscoveryJob", book["fields"]["run_id"], ["book_id"]))
+                else:
+                    call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(book["fields"]))
                 print(f"Shelf run {book['fields']['run_id']}; persisted state: {home}", flush=True)
             while time.monotonic() < deadline:
                 if server.poll() is not None:
@@ -585,6 +619,7 @@ def main():
     run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for contents discovery, metadata and classification")
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")
     run_parser.add_argument("--timeout", type=int, default=7200)
+    run_parser.add_argument("--resume", action="store_true", help="Resume a stopped batch in --directory with the same source manifest")
     run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")
     run_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
                             help="Bind the reader endpoint for vision OCR: auto tries bundled OCR first; force checks every scanned page")

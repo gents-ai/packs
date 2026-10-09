@@ -21,7 +21,10 @@ class BatchSubmission(unittest.TestCase):
     def test_failed_book_does_not_stop_the_other_book(self):
         self._run_books(fail_first=True)
 
-    def _run_books(self, fail_first=False):
+    def test_resume_reuses_jobs_and_refuses_changed_sources(self):
+        self._run_books(resume=True)
+
+    def _run_books(self, fail_first=False, resume=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ["one.pdf", "two.pdf"]:
@@ -34,9 +37,12 @@ class BatchSubmission(unittest.TestCase):
                                    directory=root / "run", endpoint="http://model/v1", structure_endpoint=None,
                                    max_concurrent=3, epub=True, timeout=60)
             jobs, discoveries, prepares, grants, polls = {}, {}, {}, [], {}
+            job_writes = []
+            initializations = []
 
             def call(*argv, **kwargs):
                 if argv[0] == "init":
+                    initializations.append(argv)
                     return {"inference_profile_id": "reader"}
                 if argv[:3] == ("plugin", "dirs", "add"):
                     grants.append(argv)
@@ -45,6 +51,7 @@ class BatchSubmission(unittest.TestCase):
                 if argv[:2] == ("document", "create"):
                     fields = json.loads(argv[-1])
                     if argv[2] == "ShelfJob":
+                        job_writes.append(fields["run_id"])
                         jobs[fields["run_id"]] = fields
                     elif argv[2] == "ShelfDiscoveryJob":
                         self.assertEqual(len(jobs), 2)
@@ -56,6 +63,10 @@ class BatchSubmission(unittest.TestCase):
                 return {}
 
             def query(home, collection, run_id, fields):
+                if collection == "ShelfJob":
+                    return [jobs[run_id]]
+                if collection == "ShelfDiscoveryJob":
+                    return [discoveries[run_id]] if run_id in discoveries else []
                 if collection == "ShelfStructureFailure" and fail_first and jobs[run_id]["book_id"] == "one":
                     return [{"stage": "boundaries", "reason": "ambiguous heading"}]
                 if collection == "ShelfSourceReady":
@@ -78,13 +89,25 @@ class BatchSubmission(unittest.TestCase):
 
             with patch.object(shelf, "call", call), patch.object(shelf, "query", query), \
                  patch.object(shelf, "export", export), patch.object(shelf, "source_capsule", side_effect=lambda home, run_id, fields, directory, endpoint, expected_hashes: {"run_id":run_id,"book_id":fields["book_id"]}), patch.object(shelf, "model", return_value="model"), \
-                 patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep"), \
+                 patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep", side_effect=RuntimeError("operator pause") if resume else None) as sleeping, \
                  contextlib.redirect_stdout(io.StringIO()):
                 if fail_first:
                     with self.assertRaisesRegex(RuntimeError, "1 of 2 books failed"):
                         shelf.run(args)
                 else:
-                    shelf.run(args)
+                    if resume:
+                        with self.assertRaisesRegex(RuntimeError, "operator pause"):
+                            shelf.run(args)
+                        args.resume = True
+                        sleeping.side_effect = None
+                        shelf.run(args)
+                        self.assertEqual(len(initializations), 1)
+                        self.assertEqual(len(job_writes), 2)
+                        (root / "one.pdf").write_bytes(b"changed source")
+                        with self.assertRaisesRegex(RuntimeError, "changed book identities or source bytes"):
+                            shelf.run(args)
+                    else:
+                        shelf.run(args)
             outcomes = json.loads((args.directory / "results.json").read_text())
             self.assertEqual([r["status"] for r in outcomes], ["failed", "completed"] if fail_first else ["completed", "completed"])
             if fail_first:
