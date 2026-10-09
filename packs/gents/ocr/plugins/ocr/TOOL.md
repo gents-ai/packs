@@ -136,6 +136,8 @@ One JSON object:
 - `warnings` says everything that is missing or uncertain: pages that could
   not be read and why, images skipped as decorative, unmapped glyphs, charts
   that are not read. Read it before trusting a page.
+- `unread_pages` lists failed PDF page reads when present. These are not blank
+  pages; inspect the warnings and retry those pages with usable inputs or resources.
 - `next` is present when the result stops before the end: see Reading in pieces.
 
 With `figure_images: true` and at least one image attached, the whole result

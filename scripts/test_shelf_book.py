@@ -204,6 +204,23 @@ class BatchSubmission(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "export folder is read-only"):
                 shelf.check_stage_failures("home", ["book", "edition"])
 
+    def test_terminal_agent_failures_are_reported_with_canonical_states(self):
+        for state in ["failed", "dead", "interrupted"]:
+            with self.subTest(state=state):
+                def call(*args):
+                    filters = json.loads(args[args.index("--filter") + 1])
+                    self.assertEqual(filters["caused_by_correlation"]["_in"], ["book", "edition"])
+                    collection = args[args.index("--collection") + 1]
+                    if collection == "CallbackInvocation":
+                        self.assertEqual(filters["lifecycle_state"]["_in"], ["denied", "failed"])
+                        return {"results": []}
+                    self.assertEqual(filters["lifecycle_state"]["_in"], ["failed", "dead", "interrupted"])
+                    return {"results": [{"behavior_id": "shelf-toc-find", "lifecycle_state": state,
+                                         "failure_reason": "stopped discovery"}]}
+                with patch.object(shelf, "call", call):
+                    with self.assertRaisesRegex(RuntimeError, "stopped discovery"):
+                        shelf.check_stage_failures("home", ["book", "edition"])
+
     def test_search_catalog_retries_truncated_pages_without_losing_editions(self):
         rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01T00:00:00Z", status="source_text",
                      access="open", language="en") for i in range(205)]

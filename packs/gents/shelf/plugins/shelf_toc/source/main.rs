@@ -172,40 +172,34 @@ fn start(v: &Value) -> Result<Value> {
     let book = BookInput::load(Path::new(field(v, "path")?), v)?;
     let mut finder = job(v, "toc_find")?;
     finder["total_pages"] = json!(book.pages.len());
+    finder["finder_prompt"] = json!(finder_prompt(book.pages.len()));
     let mut meta = job(v, "metadata")?;
     meta["total_pages"] = finder["total_pages"].clone();
     Ok(json!({"toc_find_job":finder,"metadata_job":meta}))
 }
 fn toc_found(v: &Value) -> Result<Value> {
     let book = BookInput::load(Path::new(field(v, "path")?), v)?;
-    let confidence = v["confidence"]
-        .as_f64()
-        .filter(|n| (0.0..=1.0).contains(n))
-        .ok_or("invalid ToC confidence")?;
-    field(v, "reasoning")?;
-    let strategy = field(v, "search_strategy_used")?;
-    if !["grep_report", "grep_with_scan", "not_found"].contains(&strategy) {
-        return Err("unknown ToC search strategy".into());
-    }
     if v["toc_found"] != true {
         return Err("ToC was not found; preserve this finding for review rather than inventing chapter boundaries".into());
     }
-    let range = value(v, "toc_page_range")?;
-    let lo = range["start_page"].as_u64().ok_or("missing ToC start")?;
-    let hi = range["end_page"].as_u64().ok_or("missing ToC end")?;
-    if lo == 0 || lo > hi || hi > book.pages.len() as u64 {
-        return Err("ToC range outside source pages".into());
-    }
+    let (confidence, lo, hi, summary) = match toc_proposal(v, &book) {
+        Ok(proposal) => proposal,
+        Err(error) => return retry_toc(v, book.pages.len(), error),
+    };
     let inspection_name = format!(
         "inspection-{}.json",
         &hash(field(v, "stage_job_id")?.as_bytes())[..32]
     );
-    let inspection: Value = serde_json::from_slice(&read(
-        Path::new(field(v, "path")?),
-        &inspection_name,
-        512 * 1024,
-    )?)
-    .map_err(|e| e.to_string())?;
+    let root = Path::new(field(v, "path")?);
+    if !root
+        .join(&inspection_name)
+        .try_exists()
+        .map_err(|e| e.to_string())?
+    {
+        return retry_toc(v, book.pages.len(), "No visual inspection was recorded; inspect every contents page and the following page with load_page_image before finishing".into());
+    }
+    let inspection: Value = serde_json::from_slice(&read(root, &inspection_name, 512 * 1024)?)
+        .map_err(|e| e.to_string())?;
     let observations = inspection["observations"]
         .as_array()
         .ok_or("missing visual observations")?;
@@ -216,16 +210,14 @@ fn toc_found(v: &Value) -> Result<Value> {
                     .as_str()
                     .is_some_and(|s| !s.trim().is_empty())
         }) {
-            return Err(format!(
-                "ToC page {page} lacks visual evidence; inspect all contents pages and the following page before finishing"
-            ));
+            return retry_toc(
+                v,
+                book.pages.len(),
+                format!(
+                    "ToC page {page} lacks visual evidence; inspect all contents pages and the following page before finishing"
+                ),
+            );
         }
-    }
-    let summary = value(v, "structure_summary")?;
-    if !(1..=3).contains(&summary["total_levels"].as_u64().unwrap_or(0))
-        || !summary["level_patterns"].is_object()
-    {
-        return Err("ToC finding needs its hierarchy observations".into());
     }
     let mut extract = job(v, "toc_extract")?;
     extract["toc_start"] = json!(lo);
@@ -238,6 +230,55 @@ fn toc_found(v: &Value) -> Result<Value> {
     Ok(
         json!({"toc_extract_job":extract,"toc":{"book_id":v["book_id"],"start_page":lo,"end_page":hi,"structure_summary_json":summary.to_string(),"structure_notes_json":inspection.to_string(),"confidence":confidence,"search_strategy_used":v["search_strategy_used"],"reasoning":v["reasoning"]}}),
     )
+}
+fn finder_prompt(total: usize) -> String {
+    format!(
+        "Find the complete table of contents in this {total}-page book. Begin with get_frontmatter_grep_report. Preserve hierarchy and continuation observations. Inspect every contents page and the first following non-contents page with load_page_image before writing the result."
+    )
+}
+fn retry_toc(v: &Value, total: usize, error: String) -> Result<Value> {
+    let attempt = v["retry_count"].as_u64().unwrap_or(0);
+    if attempt >= 2 {
+        return Err(format!(
+            "ToC finding failed after {} attempts: {error}",
+            attempt + 1
+        ));
+    }
+    let mut next = job(v, "toc_find")?;
+    next["total_pages"] = json!(total);
+    next["retry_count"] = json!(attempt + 1);
+    let previous =
+        json!({"toc_page_range":v["toc_page_range"],"structure_summary":v["structure_summary"]});
+    let previous: String = previous.to_string().chars().take(1000).collect();
+    next["finder_prompt"] = json!(format!(
+        "{}\n\nNative validation rejected the previous finding: {error}\nPrevious proposed range and hierarchy (may be truncated):\n{previous}\nThis is a new inspection attempt. Verify the proposed range against the source; inspect every contents page and its following page in this attempt. Correct the finding rather than skipping validation.",
+        finder_prompt(total)
+    ));
+    Ok(json!({"toc_find_job":next}))
+}
+fn toc_proposal(v: &Value, book: &BookInput) -> Result<(f64, u64, u64, Value)> {
+    let confidence = v["confidence"]
+        .as_f64()
+        .filter(|n| (0.0..=1.0).contains(n))
+        .ok_or("invalid ToC confidence")?;
+    field(v, "reasoning")?;
+    let strategy = field(v, "search_strategy_used")?;
+    if !["grep_report", "grep_with_scan", "not_found"].contains(&strategy) {
+        return Err("unknown ToC search strategy".into());
+    }
+    let range = value(v, "toc_page_range")?;
+    let lo = range["start_page"].as_u64().ok_or("missing ToC start")?;
+    let hi = range["end_page"].as_u64().ok_or("missing ToC end")?;
+    if lo == 0 || lo > hi || hi > book.pages.len() as u64 {
+        return Err("ToC range outside source pages".into());
+    }
+    let summary = value(v, "structure_summary")?;
+    if !(1..=3).contains(&summary["total_levels"].as_u64().unwrap_or(0))
+        || !summary["level_patterns"].is_object()
+    {
+        return Err("ToC finding needs its hierarchy observations".into());
+    }
+    Ok((confidence, lo, hi, summary))
 }
 fn validate_entries(entries: &[Entry]) -> Result<()> {
     if entries.is_empty() || entries.len() > 256 {

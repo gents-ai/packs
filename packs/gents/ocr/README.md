@@ -251,7 +251,7 @@ another machine cannot answer; the call then fails at once with that command.
 The allowed list and the questions are files in the gents home that the agent's
 file tools refuse to write; a shell run as your own user can still edit them, as
 it can any of your files. The plugin has no network, environment or write
-access. Its `limits` are 2048 MiB of memory, a 900 s wall clock and 4 MiB of
+access. Its `limits` are 2560 MiB of memory, a 900 s wall clock and 4 MiB of
 output, which is the host's own ceiling for plugin output.
 
 ## Inputs and outputs
@@ -333,7 +333,8 @@ Partial results are never silent. `warnings` names pages that could not be
 read and why, pages whose OCR was skipped because the time budget ran out
 (OCR stops starting new images, image files and PDF pages alike, once the next one might not finish inside the 900 s wall clock), glyphs without a Unicode
 mapping, rotated text, charts that are not read, images skipped as
-decorative, images over 50 megapixels that were skipped without being decoded
+decorative, images over their decode limit (50 megapixels for standalone images,
+96 megapixels for PDF images) that were skipped without being decoded
 (also when a page that holds one is not rendered for OCR), figure images past
 a 256 MiB per-page memory cap, an image already listed earlier in the
 document and skipped, repeated headers and footers that were left out, and
@@ -406,13 +407,18 @@ worse (a page shrunk to a few hundred pixels across garbles letters): give the
 OCR the largest image you have.
 
 There is no file size limit: memory follows the page, row or line being read,
-not the file (see Performance). What is bounded: an image to 50 megapixels
+not the file (see Performance). What is bounded: standalone images to 50
+megapixels and PDF images to 96 megapixels
 (refused before anything is decoded, in a PDF with a warning naming its size);
 ODT, ODS and ODP text to 16 MiB; a PDF with damaged cross-reference data or
 encryption is read whole up to 256 MiB; one stream inside a PDF to 128 MiB
 (left out with a warning). Continuing deep inside one compressed part (a DOCX
 body, an XLSX sheet) reads past the compressed bytes before it, so a later
 piece of such a file takes longer than the first.
+
+PDF results include `unread_pages` when a selected page could not be read;
+successfully read blank pages are excluded. Graph extraction fails the affected
+window instead of publishing unread pages as completed source coverage.
 
 ## Performance
 

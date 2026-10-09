@@ -20,6 +20,8 @@ type ShelfTocFindJob {
   ocr_command: String
   image_command: String
   total_pages: Int
+  retry_count: Int
+  finder_prompt: String
   job_file: String @immutable
   job_hash: String @immutable
 }

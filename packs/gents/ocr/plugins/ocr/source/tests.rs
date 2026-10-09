@@ -475,7 +475,7 @@ fn a_hostile_pdf_in_a_directory_is_reported_and_the_rest_is_read() {
     };
     assert_eq!(
         by("hostile.pdf")["warnings"][0],
-        "page 1: an image of 40000x40000 pixels is over the 64000000 pixel limit and was skipped"
+        "page 1: an image of 40000x40000 pixels is over the 96000000 pixel limit and was skipped"
     );
     assert!(
         by("hostile.pdf")["markdown"]

@@ -637,7 +637,7 @@
         ]
       },
       "limits": {
-        "memory_mib": 2048,
+        "memory_mib": 2560,
         "wall_clock_secs": 180,
         "max_output_mib": 4
       },
@@ -749,6 +749,7 @@
     "tests/non_text_ocr.json",
     "tests/classification.json",
     "tests/classification_repair.json",
-    "schemas/shelf_finding_join_job.graphql"
+    "schemas/shelf_finding_join_job.graphql",
+    "tests/toc_find_repair.json"
   ]
 }

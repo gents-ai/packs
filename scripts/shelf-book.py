@@ -369,11 +369,12 @@ def model(endpoint):
 
 
 def check_stage_failures(home, correlations):
-    for collection, identity, error in [("CallbackInvocation", "callback_id", "error"),
-                                         ("AgentRequest", "behavior_id", "failure_reason")]:
+    for collection, identity, error, failed in [
+            ("CallbackInvocation", "callback_id", "error", ["denied", "failed"]),
+            ("AgentRequest", "behavior_id", "failure_reason", ["failed", "dead", "interrupted"])]:
         result = call("query", "find", "--home", home, "--collection", collection,
                       "--filter", json.dumps({"caused_by_correlation": {"_in": correlations},
-                                               "lifecycle_state": {"_in": ["denied", "failed"]}}),
+                                               "lifecycle_state": {"_in": failed}}),
                       "--field", identity, "--field", "lifecycle_state", "--field", error, "--limit", 10)
         if result["results"]:
             raise RuntimeError(f"{collection} stage failed; persisted diagnostics: {result['results']}")

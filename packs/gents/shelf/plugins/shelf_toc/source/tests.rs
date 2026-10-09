@@ -450,8 +450,9 @@ fn contents_requires_visual_continuation_evidence_and_preserves_host_path() {
     )
     .unwrap();
     assert!(
-        toc_found(&result)
-            .unwrap_err()
+        toc_found(&result).unwrap()["toc_find_job"]["finder_prompt"]
+            .as_str()
+            .unwrap()
             .contains("page 3 lacks visual evidence")
     );
     assert!(
@@ -460,6 +461,94 @@ fn contents_requires_visual_continuation_evidence_and_preserves_host_path() {
             .unwrap()
             .len()
             == 3
+    );
+}
+
+#[test]
+fn contents_correction_is_scoped_bounded_and_requires_new_visual_evidence() {
+    let (dir, base) = fixture(&[8]);
+    let mut original = start(&base).unwrap()["toc_find_job"].clone();
+    handoff::capture(dir.path(), &mut original).unwrap();
+    let proposal = json!({"toc_found":true,"confidence":0.9,"search_strategy_used":"grep_report","toc_page_range":"{\"start_page\":2,\"end_page\":3}","structure_summary":"{\"total_levels\":1,\"level_patterns\":{}}","reasoning":"Contents pages located."});
+    let result = |job: &Value| {
+        let mut result = finding(job);
+        result
+            .as_object_mut()
+            .unwrap()
+            .extend(proposal.as_object().unwrap().clone());
+        result
+    };
+    let mut rejected = result(&original);
+    rejected["retry_count"] = json!(999);
+    let output = dispatch(rejected.clone()).unwrap();
+    assert_eq!(dispatch(rejected).unwrap(), output);
+    assert!(output["toc_extract_job"].is_null());
+    let retry = &output["toc_find_job"];
+    assert_eq!(retry["retry_count"], 1);
+    assert_eq!(retry["book_hash"], original["book_hash"]);
+    assert_ne!(retry["stage_job_id"], original["stage_job_id"]);
+    assert!(
+        retry["finder_prompt"]
+            .as_str()
+            .unwrap()
+            .contains("No visual inspection")
+    );
+    let ledger_name = |job: &Value| {
+        dir.path().join(format!(
+            "inspection-{}.json",
+            &hash(job["stage_job_id"].as_str().unwrap().as_bytes())[..32]
+        ))
+    };
+    fs::write(ledger_name(retry), br#"{"observations":[{"page_num":2,"visual_observations":"Contents start"},{"page_num":3,"visual_observations":"Contents continuation"}]}"#).unwrap();
+    let second = dispatch(result(retry)).unwrap();
+    assert_eq!(second["toc_find_job"]["retry_count"], 2);
+    assert!(
+        second["toc_find_job"]["finder_prompt"]
+            .as_str()
+            .unwrap()
+            .contains("page 4 lacks visual evidence")
+    );
+    let exhausted = dispatch(result(&second["toc_find_job"])).unwrap();
+    assert!(exhausted["toc_find_job"].is_null());
+    assert!(
+        exhausted["failure"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("after 3 attempts")
+    );
+    fs::write(ledger_name(retry), br#"{"observations":[{"page_num":2,"visual_observations":"Contents start"},{"page_num":3,"visual_observations":"Contents continuation"},{"page_num":4,"visual_observations":"Preface begins; not contents"}]}"#).unwrap();
+    let accepted = dispatch(result(retry)).unwrap();
+    assert!(!accepted["toc_extract_job"].is_null());
+    assert_eq!(
+        value(&accepted["toc_extract_job"], "structure_notes_json").unwrap()["observations"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    fs::write(ledger_name(retry), b"corrupt journal").unwrap();
+    let corrupt = dispatch(result(retry)).unwrap();
+    assert!(corrupt["toc_find_job"].is_null());
+    assert!(!corrupt["failure"].is_null());
+    let mut tampered = result(retry);
+    tampered["job_hash"] = json!("changed input");
+    let tampered = dispatch(tampered).unwrap();
+    assert!(tampered["toc_find_job"].is_null());
+    assert!(
+        tampered["failure"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("stage evidence changed")
+    );
+    let mut absent = result(&original);
+    absent["toc_found"] = json!(false);
+    let absent = dispatch(absent).unwrap();
+    assert!(absent["toc_find_job"].is_null());
+    assert!(
+        absent["failure"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("ToC was not found")
     );
 }
 

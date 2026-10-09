@@ -36,6 +36,9 @@ pub struct Document {
     pub markdown: String,
     pub figures: Vec<Figure>,
     pub warnings: Vec<String>,
+    /// Failed page reads are distinct from successfully read blank pages.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub unread_pages: Vec<u32>,
     /// Only on a document that continues an earlier call: how its Markdown
     /// joins the earlier part: `blank` (a blank line), `line` (a line break) or
     /// `none` (the earlier part was cut inside a line, so the two are one line).
@@ -106,6 +109,7 @@ pub struct DocAcc {
     pub md: String,
     pub figures: Vec<Figure>,
     pub warnings: Vec<String>,
+    pub unread_pages: Vec<u32>,
     pub next_fig: u32,
     pub small_skipped: u32,
     pub repeated_skipped: u32,

@@ -155,7 +155,7 @@
       "language": "rust",
       "limits": {
         "max_output_mib": 4,
-        "memory_mib": 2048,
+        "memory_mib": 2560,
         "wall_clock_secs": 900
       },
       "model_slot": "remote_ocr",

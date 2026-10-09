@@ -198,7 +198,20 @@ fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Resul
             document["markdown"] = json!(markdown);
             document["joint"] = doc["joint"].clone();
             document["complete"] = json!(body["next"].is_null());
-            if let Some(cursor) = body["next"]["cursor"].as_str() {
+            if let Some(unread) = doc["unread_pages"]
+                .as_array()
+                .filter(|pages| !pages.is_empty())
+            {
+                document["complete"] = json!(false);
+                document["error"] = json!(format!(
+                    "source pages could not be read: {}. Inspect the extraction warnings; retry with usable source images or sufficient resources.",
+                    serde_json::to_string(unread).unwrap()
+                ));
+            }
+            if let Some(cursor) = body["next"]["cursor"]
+                .as_str()
+                .filter(|_| document["error"] == "")
+            {
                 document["cursor"] = json!(cursor);
             }
             document["warnings"] = doc["warnings"].clone();

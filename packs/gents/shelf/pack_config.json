@@ -1616,7 +1616,7 @@
       "display_name": "Shelf plan",
       "handler": {
         "correlation_field": "run_id",
-        "digest": "sha256:1daa42dc49046444040b8a71485a06c34f7829bb11851089da8006845ea20638",
+        "digest": "sha256:873007a540c687399b5afdfe4e954e3b61a4d9418b535d1135cee1b021010a87",
         "kind": "plugin",
         "outputs": [
           {
@@ -1636,7 +1636,7 @@
       "display_name": "Shelf extract",
       "handler": {
         "correlation_field": "run_id",
-        "digest": "sha256:1daa42dc49046444040b8a71485a06c34f7829bb11851089da8006845ea20638",
+        "digest": "sha256:873007a540c687399b5afdfe4e954e3b61a4d9418b535d1135cee1b021010a87",
         "kind": "plugin",
         "outputs": [
           {

@@ -354,6 +354,7 @@ fn unread(name: &str, why: &str) -> Document {
         markdown: String::new(),
         figures: Vec::new(),
         warnings: vec![why.to_string()],
+        unread_pages: Vec::new(),
         joint: None,
         table_header: None,
         next: None,
