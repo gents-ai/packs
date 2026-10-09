@@ -1028,6 +1028,8 @@ fn validate_classification(es: &[Entry], classifications: &Value) -> Result<()> 
     }
     Ok(())
 }
+/// Matter classifications describe separate book regions; typographic
+/// indentation must not nest one region inside the preceding region.
 fn assemble(v: &Value) -> Result<Value> {
     let book = BookInput::load(Path::new(field(v, "path")?), v)?;
     let es = entries(v)?;
@@ -1039,6 +1041,7 @@ fn assemble(v: &Value) -> Result<Value> {
     let mut stack: Vec<(u32, String)> = Vec::new();
     let mut covered = 0;
     for (i, e) in es.iter().enumerate() {
+        let matter = classifications["classifications"][&e.key].as_str().unwrap();
         let start = e.scan_page.ok_or("unverified chapter start")?;
         let owned_end = es
             .get(i + 1)
@@ -1047,16 +1050,19 @@ fn assemble(v: &Value) -> Result<Value> {
             .unwrap_or(book.pages.len() as u32);
         let end = es[i + 1..]
             .iter()
-            .find(|n| n.level <= e.level)
+            .find(|n| n.level <= e.level || classifications["classifications"][&n.key] != matter)
             .and_then(|n| n.scan_page)
             .map(|p| p - 1)
             .unwrap_or(book.pages.len() as u32);
+        if i > 0 && classifications["classifications"][&es[i - 1].key] != matter {
+            stack.clear();
+        }
         while stack.last().is_some_and(|(level, _)| *level >= e.level) {
             stack.pop();
         }
         let parent = stack.last().map(|(_, key)| key.clone());
+        let level = stack.len() + 1;
         stack.push((e.level, e.key.clone()));
-        let matter = classifications["classifications"][&e.key].as_str().unwrap();
         let content = field(&classifications["content_types"], &e.key)?;
         let audio = classifications["audio_include"][&e.key].as_bool().unwrap();
         let reason = field(&classifications["reasoning"], &e.key)?;
@@ -1077,7 +1083,7 @@ fn assemble(v: &Value) -> Result<Value> {
                 spans.push(json!({"source":p.source,"start_page":p.page,"end_page":p.page}));
             }
         }
-        chapters.push(json!({"book_id":book.book_id,"chapter_key":e.key,"toc_entry_id":if e.origin=="toc"{Some(&e.key)}else{None},"sequence":i+1,"title":display_title(e),"toc_title":e.title,"entry_number":e.entry_number,"level":e.level,"level_name":e.level_name,"parent_key":parent,
+        chapters.push(json!({"book_id":book.book_id,"chapter_key":e.key,"toc_entry_id":if e.origin=="toc"{Some(&e.key)}else{None},"sequence":i+1,"title":display_title(e),"toc_title":e.title,"entry_number":e.entry_number,"level":level,"level_name":e.level_name,"parent_key":parent,
             "matter_type":matter,"content_type":content,"audio_include":audio,"audio_include_reasoning":reason,"start_page":start,"end_page":end.max(start),"owned_end_page":owned_end,"source_ranges_json":serde_json::to_string(&spans).unwrap(),"review_notes":e.reasoning}));
     }
     if covered != book.pages.len() {

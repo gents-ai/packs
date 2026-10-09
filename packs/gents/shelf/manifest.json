@@ -750,6 +750,7 @@
     "tests/classification.json",
     "tests/classification_repair.json",
     "schemas/shelf_finding_join_job.graphql",
-    "tests/toc_find_repair.json"
+    "tests/toc_find_repair.json",
+    "tests/matter_boundaries.json"
   ]
 }

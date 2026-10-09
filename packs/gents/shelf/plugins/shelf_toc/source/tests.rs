@@ -553,6 +553,64 @@ fn contents_correction_is_scoped_bounded_and_requires_new_visual_evidence() {
 }
 
 #[test]
+fn matter_regions_have_independent_trees_without_flattening_real_children() {
+    let (_dir, base) = fixture(&[5, 5]);
+    let mut input = job(&base, "classify").unwrap();
+    let definitions = [
+        ("Front", 1, 1, "front_matter", "other"),
+        ("Part", 1, 2, "body", "body"),
+        ("First chapter", 2, 3, "body", "body"),
+        ("Chapter notes", 3, 4, "body", "notes"),
+        ("Index of ideas", 2, 5, "body", "body"),
+        ("Notes", 2, 6, "back_matter", "notes"),
+        ("Appendices", 2, 7, "back_matter", "appendix"),
+        ("First appendix", 3, 7, "back_matter", "appendix"),
+        ("Bibliography", 2, 9, "back_matter", "bibliography"),
+    ];
+    let mut classification =
+        json!({"classifications":{},"content_types":{},"audio_include":{},"reasoning":{}});
+    let entries: Vec<_> = definitions
+        .iter()
+        .enumerate()
+        .map(|(i, (title, level, page, matter, content))| {
+            let key = format!("section-{i}");
+            classification["classifications"][&key] = json!(matter);
+            classification["content_types"][&key] = json!(content);
+            classification["audio_include"][&key] = json!(*matter == "body" && *content == "body");
+            classification["reasoning"][&key] =
+                json!("Classified from the section's source and surrounding book structure.");
+            json!({"key":key,"title":title,"level":level,"scan_page":page,"origin":"toc"})
+        })
+        .collect();
+    input["entries_json"] = json!(serde_json::to_string(&entries).unwrap());
+    input["classification"] = classification;
+    input["metadata_json"] =
+        json!({"title":"A multipart book","author":"A Writer","language":"en"});
+    let original = input.clone();
+    let output = assemble(&input).unwrap();
+    let chapters = output["chapters"].as_array().unwrap();
+    assert_eq!(
+        chapters
+            .iter()
+            .map(|c| c["level"].as_u64().unwrap())
+            .collect::<Vec<_>>(),
+        vec![1, 1, 2, 3, 2, 1, 1, 2, 1]
+    );
+    assert_eq!(chapters[2]["parent_key"], "section-1");
+    assert_eq!(chapters[3]["parent_key"], "section-2");
+    assert_eq!(chapters[4]["parent_key"], "section-1");
+    assert_eq!(chapters[1]["end_page"], 5);
+    assert_eq!(chapters[4]["end_page"], 5);
+    assert!(chapters[5]["parent_key"].is_null());
+    assert!(chapters[6]["parent_key"].is_null());
+    assert_eq!(chapters[7]["parent_key"], "section-6");
+    assert_eq!(chapters[6]["end_page"], 8);
+    assert_eq!(chapters[6]["source_ranges_json"], "[]");
+    assert_eq!(output["report"]["covered_pages"], 10);
+    assert_eq!(input, original);
+}
+
+#[test]
 fn classification_correction_preserves_every_section_and_is_bounded() {
     let (dir, base) = fixture(&[8]);
     let mut original = job(&base, "classify").unwrap();
