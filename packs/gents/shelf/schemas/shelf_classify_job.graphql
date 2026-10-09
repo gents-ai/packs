@@ -22,4 +22,6 @@ type ShelfClassifyJob {
   entries_json: String
   metadata_json: String
   classification_prompt: String
+  job_file: String @immutable
+  job_hash: String @immutable
 }

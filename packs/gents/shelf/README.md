@@ -30,6 +30,10 @@ its continuation boundary; extraction preserves printed labels and hierarchy.
 Parallel agents locate individual entries, discover missing sequences and
 investigate gaps. Native handoffs validate the findings before chapter text
 review starts. Unresolved findings remain in ShelfStructureFailure.
+Stage inputs remain on their job documents and in immutable hashed files;
+findings carry small runtime-bound references, avoiding oversized trigger
+contexts. Grouped findings trigger a native join job that verifies those files
+and exact member identity before continuing.
 
 ShelfChapter retains parentage, numbering, exact page ownership and narration
 inclusion with its reason. The reviewed structured artifact includes a human

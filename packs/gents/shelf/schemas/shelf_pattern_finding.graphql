@@ -6,16 +6,7 @@ type ShelfPatternFinding {
   book_hash: String
   stage: String
   stage_job_id: String @index(unique: true) @immutable
-  toc_start: String
-  toc_end: String
-  structure_summary_json: String
-  structure_notes_json: String
-  access: String
-  license: String
-  entries_json: String
-  candidates_json: String
-  body_start: String
-  body_end: String
-  total_pages: String
+  job_file: String
+  job_hash: String
   analysis: String
 }

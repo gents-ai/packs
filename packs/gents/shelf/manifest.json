@@ -89,7 +89,8 @@
     "schemas/shelf_classify_prepare_job.graphql",
     "schemas/shelf_to_c.graphql",
     "schemas/shelf_to_c_entry.graphql",
-    "schemas/shelf_structure_failure.graphql"
+    "schemas/shelf_structure_failure.graphql",
+    "schemas/shelf_finding_join_job.graphql"
   ],
   "plugins": [
     {
@@ -288,7 +289,7 @@
         "input_field": "path",
         "original_field": "path_original",
         "description": "Immutable source-book evidence folder",
-        "access": "read"
+        "access": "read_write"
       }
     },
     {
@@ -742,6 +743,7 @@
     "schemas/shelf_to_c.graphql",
     "schemas/shelf_to_c_entry.graphql",
     "schemas/shelf_structure_failure.graphql",
-    "tests/classification.json"
+    "tests/classification.json",
+    "schemas/shelf_finding_join_job.graphql"
   ]
 }

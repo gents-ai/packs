@@ -20,4 +20,6 @@ type ShelfMetadataJob {
   ocr_command: String
   image_command: String
   total_pages: Int
+  job_file: String @immutable
+  job_hash: String @immutable
 }

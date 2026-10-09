@@ -132,7 +132,9 @@
       "EventSource/shelf-pattern-prepare",
       "EventSource/shelf-gap-plan",
       "EventSource/shelf-classification-ready",
-      "EventSource/shelf-classify-prepare"
+      "EventSource/shelf-classify-prepare",
+      "EventSource/shelf-finding-join",
+      "CallbackBinding/shelf-finding-join"
     ],
     "plugins": [
       "shelf_export",

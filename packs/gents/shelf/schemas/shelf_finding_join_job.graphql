@@ -1,4 +1,4 @@
-type ShelfClassifyFinding {
+type ShelfFindingJoinJob {
   run_id: String @index
   book_id: String @index
   path: String
@@ -6,7 +6,5 @@ type ShelfClassifyFinding {
   book_hash: String
   stage: String
   stage_job_id: String @index(unique: true) @immutable
-  job_file: String
-  job_hash: String
-  classification: String
+  findings_json: String
 }

@@ -21,4 +21,6 @@ type ShelfTocExtractJob {
   image_command: String
   total_pages: Int
   toc_pages_json: String
+  job_file: String @immutable
+  job_hash: String @immutable
 }

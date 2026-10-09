@@ -25,4 +25,6 @@ type ShelfEntryFindJob {
   expected_ids_json: String
   plan_id: String
   total_pages: Int
+  job_file: String @immutable
+  job_hash: String @immutable
 }

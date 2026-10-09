@@ -1,1 +1,2 @@
 Read the title and copyright pages of this {{ doc.total_pages }}-page book using get_page_ocr and load_page_image. Write metadata with title, subtitle, authors (array), language, and any supported publication fields. Do not invent unavailable fields.
+Only include a description or an award when the inspected pages support it. An award printed beside an author's name is not evidence that this book won it.

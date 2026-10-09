@@ -32,7 +32,8 @@
 #        {"cli_flags": {"command": [...], "flags": [...]}}
 #                            `gents <command> --help` documents every flag
 #        {"runtime": {"repository": {"files": {...}, "dirs": [...]},
-#                     "seed": {"collection": ..., "fields": {...}},
+#                     "seed": {"collection": ..., "fields": {...},
+#                              "file_hashes": {"field": "repository/path"}},
 #                     "taken": {"collection": ..., "filter": {...}},
 #                     "expect": [{"collection": ..., "filter": {...},
 #                                 "fields": {...}}]}}
@@ -41,7 +42,9 @@
 #                            ${BASE_SHA} in seed fields; ${ATTEMPT} keeps a
 #                            re-created seed unique) reaches every expected
 #                            document state after the seed is created, with
-#                            no model involved
+#                            no model involved. Repository file names with
+#                            ${ATTEMPT} are rendered for each seed; file_hashes
+#                            fills fields with those files' SHA-256 hashes.
 #        {"install": {"plugins": [...]}}
 #                            a plugins pack installed into a fresh home
 #                            registers exactly these plugins, a reinstall
@@ -448,10 +451,23 @@ runtime_case() {
   while ((SECONDS < deadline)); do
     kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
     attempt=$((attempt + 1))
+    while read -r path; do
+      local expanded_path content
+      expanded_path="$(jq -nr --arg text "$path" --arg attempt "$attempt" '$text | gsub("\\$\\{ATTEMPT\\}"; $attempt)')"
+      content="$(jq -jr --arg p "$path" --arg repo "$repo" --arg base "$base" --arg attempt "$attempt" '.runtime.repository.files[$p] | gsub("\\$\\{REPOSITORY\\}"; $repo) | gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt)' "$case")"
+      mkdir -p "$(dirname "$repo/$expanded_path")"
+      printf '%s' "$content" >"$repo/$expanded_path"
+    done < <(jq -r '.runtime.repository.files // {} | to_entries[] | select(.key | contains("${ATTEMPT}")) | .key' "$case")
     fields="$(jq -c --arg base "$base" --arg attempt "$attempt" --arg repo "$repo" '.runtime.seed.fields
       | map_values(if type == "string"
           then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt) | gsub("\\$\\{REPOSITORY\\}"; $repo)
           else . end)' "$case")"
+    while read -r hash_field hash_path; do
+      local hash_value
+      hash_path="$(jq -nr --arg text "$hash_path" --arg attempt "$attempt" '$text | gsub("\\$\\{ATTEMPT\\}"; $attempt)')"
+      hash_value="$(python3 -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$repo/$hash_path")"
+      fields="$(jq -c --arg field "$hash_field" --arg value "$hash_value" '. + {($field): $value}' <<<"$fields")"
+    done < <(jq -r '.runtime.seed.file_hashes // {} | to_entries[] | "\(.key) \(.value)"' "$case")
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
     # the collection; retried below.

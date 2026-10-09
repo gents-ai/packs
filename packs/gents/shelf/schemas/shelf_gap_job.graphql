@@ -26,4 +26,6 @@ type ShelfGapJob {
   expected_total: Int
   expected_ids_json: String
   plan_id: String
+  job_file: String @immutable
+  job_hash: String @immutable
 }

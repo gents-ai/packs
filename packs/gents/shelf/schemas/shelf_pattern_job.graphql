@@ -22,4 +22,6 @@ type ShelfPatternJob {
   body_start: Int
   body_end: Int
   total_pages: Int
+  job_file: String @immutable
+  job_hash: String @immutable
 }

@@ -1,4 +1,5 @@
 mod evidence;
+mod handoff;
 mod source;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -141,8 +142,9 @@ fn normalize_bound_counts(v: &mut Value) -> Result<()> {
 fn dispatch(mut v: Value) -> Result<Value> {
     let result = normalize_bound_counts(&mut v).and_then(|()| {
         if v.is_array() {
-            join(&v)
+            handoff::group(&v)
         } else {
+            let v = handoff::hydrate(v.clone())?;
             match field(&v, "stage")? {
                 "start" => start(&v),
                 "toc_find" => toc_found(&v),
@@ -153,12 +155,16 @@ fn dispatch(mut v: Value) -> Result<Value> {
                 "metadata" => metadata(&v),
                 "classify_prepare" => classify_prepare(&v),
                 "classify" => assemble(&v),
+                "join_ready" => handoff::finish_group(&v),
                 other => Err(format!("unknown structure stage {other}")),
             }
         }
     });
     match result {
-        Ok(out) => Ok(out),
+        Ok(mut out) => match handoff::capture_jobs(&v, &mut out) {
+            Ok(()) => Ok(out),
+            Err(error) => Ok(failure(&v, error)),
+        },
         Err(error) => Ok(failure(if v.is_array() { &v[0] } else { &v }, error)),
     }
 }

@@ -28,4 +28,6 @@ type ShelfChapterFindJob {
   total_pages: Int
   excluded_json: String
   heading_format: String
+  job_file: String @immutable
+  job_hash: String @immutable
 }

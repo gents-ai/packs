@@ -2170,6 +2170,14 @@
             "correlation_field": "run_id",
             "cardinality": "one",
             "required": false
+          },
+          {
+            "name": "join_job",
+            "collection": "ShelfFindingJoinJob",
+            "schema": "ShelfFindingJoinJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
           }
         ]
       }
@@ -2354,21 +2362,14 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "total_pages",
+        "job_file",
+        "job_hash",
         "toc_found",
         "toc_page_range",
         "confidence",
         "search_strategy_used",
         "reasoning",
-        "structure_summary",
-        "body_start",
-        "body_end"
+        "structure_summary"
       ]
     },
     {
@@ -2383,17 +2384,9 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "total_pages",
-        "toc_pages_json",
-        "extraction",
-        "body_start",
-        "body_end"
+        "job_file",
+        "job_hash",
+        "extraction"
       ]
     },
     {
@@ -2408,22 +2401,12 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "entry_id",
-        "entry_json",
+        "job_file",
+        "job_hash",
         "expected_total",
-        "expected_ids_json",
         "plan_id",
-        "total_pages",
         "scan_page",
-        "reasoning",
-        "body_start",
-        "body_end"
+        "reasoning"
       ]
     },
     {
@@ -2438,17 +2421,8 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "entries_json",
-        "candidates_json",
-        "body_start",
-        "body_end",
-        "total_pages",
+        "job_file",
+        "job_hash",
         "analysis"
       ]
     },
@@ -2464,26 +2438,13 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "entry_id",
-        "entry_json",
-        "entries_json",
+        "job_file",
+        "job_hash",
         "expected_total",
-        "expected_ids_json",
         "plan_id",
-        "total_pages",
-        "excluded_json",
-        "heading_format",
         "scan_page",
         "reasoning",
-        "found_title",
-        "body_start",
-        "body_end"
+        "found_title"
       ]
     },
     {
@@ -2498,22 +2459,11 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "gap_id",
-        "gap_context_json",
-        "entries_json",
-        "total_pages",
+        "job_file",
+        "job_hash",
         "expected_total",
-        "expected_ids_json",
         "plan_id",
-        "fix",
-        "body_start",
-        "body_end"
+        "fix"
       ]
     },
     {
@@ -2528,16 +2478,9 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "total_pages",
-        "metadata",
-        "body_start",
-        "body_end"
+        "job_file",
+        "job_hash",
+        "metadata"
       ]
     },
     {
@@ -2552,18 +2495,9 @@
         "book_hash",
         "stage",
         "stage_job_id",
-        "toc_start",
-        "toc_end",
-        "structure_summary_json",
-        "structure_notes_json",
-        "access",
-        "license",
-        "entries_json",
-        "metadata_json",
-        "classification_prompt",
-        "classification",
-        "body_start",
-        "body_end"
+        "job_file",
+        "job_hash",
+        "classification"
       ]
     },
     {
@@ -2693,6 +2627,21 @@
         "metadata_json",
         "body_start",
         "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-finding-join",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-finding-join",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "findings_json"
       ]
     }
   ],
@@ -2927,6 +2876,12 @@
     {
       "event_source_id": "shelf-classify-prepare",
       "source_collection": "ShelfClassifyPrepareJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-finding-join",
+      "source_collection": "ShelfFindingJoinJob",
       "event_kind": "created",
       "correlation_field": "run_id"
     }
@@ -3340,21 +3295,15 @@
               }
             },
             {
-              "name": "access",
+              "name": "job_file",
               "fill": {
-                "source_field": "access"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "license",
+              "name": "job_hash",
               "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
+                "source_field": "job_hash"
               }
             },
             {
@@ -3438,51 +3387,15 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "structure_notes_json",
-              "fill": {
-                "source_field": "structure_notes_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
-              }
-            },
-            {
-              "name": "toc_pages_json",
-              "fill": {
-                "source_field": "toc_pages_json"
+                "source_field": "job_hash"
               }
             },
             {
@@ -3546,45 +3459,15 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "entry_id",
-              "fill": {
-                "source_field": "entry_id"
-              }
-            },
-            {
-              "name": "entry_json",
-              "fill": {
-                "source_field": "entry_json"
+                "source_field": "job_hash"
               }
             },
             {
@@ -3594,21 +3477,9 @@
               }
             },
             {
-              "name": "expected_ids_json",
-              "fill": {
-                "source_field": "expected_ids_json"
-              }
-            },
-            {
               "name": "plan_id",
               "fill": {
                 "source_field": "plan_id"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
               }
             },
             {
@@ -3676,63 +3547,15 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "entries_json",
-              "fill": {
-                "source_field": "entries_json"
-              }
-            },
-            {
-              "name": "candidates_json",
-              "fill": {
-                "source_field": "candidates_json"
-              }
-            },
-            {
-              "name": "body_start",
-              "fill": {
-                "source_field": "body_start"
-              }
-            },
-            {
-              "name": "body_end",
-              "fill": {
-                "source_field": "body_end"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
+                "source_field": "job_hash"
               }
             },
             {
@@ -3796,51 +3619,15 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "entry_id",
-              "fill": {
-                "source_field": "entry_id"
-              }
-            },
-            {
-              "name": "entry_json",
-              "fill": {
-                "source_field": "entry_json"
-              }
-            },
-            {
-              "name": "entries_json",
-              "fill": {
-                "source_field": "entries_json"
+                "source_field": "job_hash"
               }
             },
             {
@@ -3850,33 +3637,9 @@
               }
             },
             {
-              "name": "expected_ids_json",
-              "fill": {
-                "source_field": "expected_ids_json"
-              }
-            },
-            {
               "name": "plan_id",
               "fill": {
                 "source_field": "plan_id"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
-              }
-            },
-            {
-              "name": "excluded_json",
-              "fill": {
-                "source_field": "excluded_json"
-              }
-            },
-            {
-              "name": "heading_format",
-              "fill": {
-                "source_field": "heading_format"
               }
             },
             {
@@ -3890,18 +3653,6 @@
             {
               "name": "found_title",
               "required": false
-            },
-            {
-              "name": "body_start",
-              "fill": {
-                "source_field": "body_start"
-              }
-            },
-            {
-              "name": "body_end",
-              "fill": {
-                "source_field": "body_end"
-              }
             }
           ],
           "output_obligation": {
@@ -3960,69 +3711,21 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "gap_id",
-              "fill": {
-                "source_field": "gap_id"
-              }
-            },
-            {
-              "name": "gap_context_json",
-              "fill": {
-                "source_field": "gap_context_json"
-              }
-            },
-            {
-              "name": "entries_json",
-              "fill": {
-                "source_field": "entries_json"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
+                "source_field": "job_hash"
               }
             },
             {
               "name": "expected_total",
               "fill": {
                 "source_field": "expected_total"
-              }
-            },
-            {
-              "name": "expected_ids_json",
-              "fill": {
-                "source_field": "expected_ids_json"
               }
             },
             {
@@ -4034,18 +3737,6 @@
             {
               "name": "fix",
               "required": true
-            },
-            {
-              "name": "body_start",
-              "fill": {
-                "source_field": "body_start"
-              }
-            },
-            {
-              "name": "body_end",
-              "fill": {
-                "source_field": "body_end"
-              }
             }
           ],
           "output_obligation": {
@@ -4104,21 +3795,15 @@
               }
             },
             {
-              "name": "access",
+              "name": "job_file",
               "fill": {
-                "source_field": "access"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "license",
+              "name": "job_hash",
               "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "total_pages",
-              "fill": {
-                "source_field": "total_pages"
+                "source_field": "job_hash"
               }
             },
             {
@@ -4182,68 +3867,20 @@
               }
             },
             {
-              "name": "toc_start",
+              "name": "job_file",
               "fill": {
-                "source_field": "toc_start"
+                "source_field": "job_file"
               }
             },
             {
-              "name": "toc_end",
+              "name": "job_hash",
               "fill": {
-                "source_field": "toc_end"
-              }
-            },
-            {
-              "name": "structure_summary_json",
-              "fill": {
-                "source_field": "structure_summary_json"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "entries_json",
-              "fill": {
-                "source_field": "entries_json"
-              }
-            },
-            {
-              "name": "metadata_json",
-              "fill": {
-                "source_field": "metadata_json"
-              }
-            },
-            {
-              "name": "classification_prompt",
-              "fill": {
-                "source_field": "classification_prompt"
+                "source_field": "job_hash"
               }
             },
             {
               "name": "classification",
               "required": true
-            },
-            {
-              "name": "body_start",
-              "fill": {
-                "source_field": "body_start"
-              }
-            },
-            {
-              "name": "body_end",
-              "fill": {
-                "source_field": "body_end"
-              }
             }
           ],
           "output_obligation": {

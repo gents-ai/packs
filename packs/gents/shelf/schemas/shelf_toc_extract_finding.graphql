@@ -4,17 +4,9 @@ type ShelfTocExtractFinding {
   path: String
   book_file: String
   book_hash: String
-  body_start: Int
-  body_end: Int
   stage: String
   stage_job_id: String @index(unique: true) @immutable
-  toc_start: String
-  toc_end: String
-  structure_summary_json: String
-  structure_notes_json: String
-  access: String
-  license: String
-  total_pages: String
-  toc_pages_json: String
+  job_file: String
+  job_hash: String
   extraction: String
 }

@@ -4,22 +4,11 @@ type ShelfGapFinding {
   path: String
   book_file: String
   book_hash: String
-  body_start: String
-  body_end: String
   stage: String
   stage_job_id: String @index(unique: true) @immutable
-  toc_start: String
-  toc_end: String
-  structure_summary_json: String
-  structure_notes_json: String
-  access: String
-  license: String
-  gap_id: String
-  gap_context_json: String
-  entries_json: String
-  total_pages: String
+  job_file: String
+  job_hash: String
   expected_total: String
-  expected_ids_json: String
   plan_id: String
   fix: String
 }

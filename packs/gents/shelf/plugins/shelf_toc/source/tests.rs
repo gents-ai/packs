@@ -77,11 +77,10 @@ fn linked(job: &Value, raw: Value, openings: &[u32]) -> Value {
 }
 #[test]
 fn runtime_filled_string_counts_survive_object_and_group_handoffs() {
-    let (_dir, job) = fixture(&[20]);
-    let mut extraction = found(&job);
-    for key in ["toc_start", "toc_end", "total_pages"] {
-        extraction[key] = json!(extraction[key].to_string());
-    }
+    let (dir, job) = fixture(&[20]);
+    let mut extraction_job = found(&job);
+    handoff::capture(dir.path(), &mut extraction_job).unwrap();
+    let mut extraction = finding(&extraction_job);
     extraction["extraction"] = json!(
         json!({"entries":[
             {"title":"First", "level":1}, {"title":"Second", "level":1}
@@ -93,14 +92,14 @@ fn runtime_filled_string_counts_survive_object_and_group_handoffs() {
         .unwrap()
         .clone();
     for (finding, page) in jobs.iter_mut().zip([4, 12]) {
-        for key in ["toc_start", "toc_end", "total_pages", "expected_total"] {
-            finding[key] = json!(finding[key].to_string());
-        }
+        *finding = self::finding(finding);
+        finding["expected_total"] = json!(finding["expected_total"].to_string());
         finding["scan_page"] = json!(page);
         finding["reasoning"] = json!("The heading and adjacent prose confirm the opening.");
     }
     jobs.reverse();
-    let result = dispatch(json!(jobs)).unwrap();
+    let group = dispatch(json!(jobs)).unwrap();
+    let result = dispatch(group["join_job"].clone()).unwrap();
     assert_eq!(result["pattern_prepare_job"]["total_pages"], 20);
     jobs[0]["expected_total"] = json!("-1");
     assert!(
@@ -108,6 +107,64 @@ fn runtime_filled_string_counts_survive_object_and_group_handoffs() {
             .as_str()
             .unwrap()
             .contains("invalid bound expected_total")
+    );
+}
+
+fn finding(job: &Value) -> Value {
+    let mut input = json!({});
+    for key in [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "job_file",
+        "job_hash",
+        "expected_total",
+        "plan_id",
+    ] {
+        if !job[key].is_null() {
+            input[key] = job[key].clone();
+        }
+    }
+    input
+}
+
+#[test]
+fn large_stage_input_is_retained_without_copying_it_into_trigger_context() {
+    let (dir, base) = fixture(&[20]);
+    let mut job = job(&base, "pattern").unwrap();
+    let detailed = "Full boundary observations. ".repeat(1500);
+    job["entries_json"] = json!(detailed);
+    job["candidates_json"] = json!("Candidate headings. ".repeat(1500));
+    handoff::capture(dir.path(), &mut job).unwrap();
+    let original_hash = job["job_hash"].clone();
+    handoff::capture(dir.path(), &mut job).unwrap();
+    assert_eq!(job["job_hash"], original_hash);
+    let mut input = finding(&job);
+    assert!(input.to_string().len() < 2048);
+    input["analysis"] = json!("{\"discovered_patterns\":[]}");
+    input["entries_json"] = json!("model-supplied replacement");
+    let hydrated = handoff::hydrate(input.clone()).unwrap();
+    assert_eq!(hydrated["entries_json"], detailed);
+    assert_eq!(hydrated["analysis"], input["analysis"]);
+    input["stage_job_id"] = json!("another stage");
+    assert!(
+        handoff::hydrate(input)
+            .unwrap_err()
+            .contains("another stage")
+    );
+    fs::write(
+        dir.path().join(job["job_file"].as_str().unwrap()),
+        "changed",
+    )
+    .unwrap();
+    assert!(
+        handoff::hydrate(finding(&job))
+            .unwrap_err()
+            .contains("stage evidence changed")
     );
 }
 
