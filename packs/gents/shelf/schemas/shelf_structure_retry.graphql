@@ -1,5 +1,5 @@
-type ShelfOutline {
-  run_id: String @index(unique: true) @immutable
+type ShelfStructureRetry {
+  run_id: String @index
   title: String
   author: String
   language: String
@@ -10,6 +10,6 @@ type ShelfOutline {
   access: String
   license: String
   attempt: String
-  attempt_id: String
+  attempt_id: String @index(unique: true) @immutable
   feedback: String
 }

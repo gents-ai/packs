@@ -263,7 +263,7 @@
             "schema": "ShelfBook/v1",
             "correlation_field": "run_id",
             "cardinality": "one",
-            "required": true
+            "required": false
           },
           {
             "name": "chapters",
@@ -271,7 +271,7 @@
             "schema": "ShelfChapter/v1",
             "correlation_field": "run_id",
             "cardinality": "many",
-            "required": true
+            "required": false
           },
           {
             "name": "report",
@@ -279,7 +279,15 @@
             "schema": "ShelfStructureReport/v1",
             "correlation_field": "run_id",
             "cardinality": "one",
-            "required": true
+            "required": false
+          },
+          {
+            "name": "retry",
+            "collection": "ShelfStructureRetry",
+            "schema": "ShelfStructureRetry/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
           }
         ]
       }
@@ -532,7 +540,9 @@
         "review_notes",
         "book_id",
         "access",
-        "license"
+        "license",
+        "attempt",
+        "attempt_id"
       ]
     },
     {
@@ -772,6 +782,12 @@
       "source_collection": "ShelfOutlineJob",
       "event_kind": "created",
       "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-verify-retry",
+      "source_collection": "ShelfStructureRetry",
+      "event_kind": "created",
+      "correlation_field": "run_id"
     }
   ],
   "tasks": [
@@ -850,6 +866,15 @@
       "source": {
         "kind": "event",
         "event_source_id": "shelf-polish-secondary"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-verify-retry",
+      "task_id": "shelf-verify",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-verify-retry"
       },
       "concurrency": "parallel"
     }
@@ -1024,6 +1049,24 @@
               "name": "license",
               "fill": {
                 "source_field": "license"
+              }
+            },
+            {
+              "name": "attempt",
+              "fill": {
+                "source_field": "attempt"
+              }
+            },
+            {
+              "name": "attempt_id",
+              "fill": {
+                "source_field": "attempt_id"
+              }
+            },
+            {
+              "name": "feedback",
+              "fill": {
+                "source_field": "feedback"
               }
             }
           ],
@@ -1204,6 +1247,18 @@
               "name": "license",
               "fill": {
                 "source_field": "license"
+              }
+            },
+            {
+              "name": "attempt",
+              "fill": {
+                "source_field": "attempt"
+              }
+            },
+            {
+              "name": "attempt_id",
+              "fill": {
+                "source_field": "attempt_id"
               }
             }
           ],

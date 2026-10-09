@@ -1,0 +1,30 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ShelfStructureProposal",
+      "fields": {
+        "run_id": "repair-${ATTEMPT}",
+        "title": "Fixture Book",
+        "author": "A Reader",
+        "language": "en",
+        "sources_json": "[{\"source\": \"one.pdf\", \"page_count\": 4}, {\"source\": \"two.pdf\", \"page_count\": 6}]",
+        "entries_json": "[{\"title\": \"First Chapter\", \"source\": \"one.pdf\", \"page\": 3, \"level\": 1, \"matter_type\": \"body\", \"content_type\": \"chapter\", \"author\": \"misplaced\"}, {\"title\": \"Second Chapter\", \"source\": \"two.pdf\", \"page\": 3, \"level\": 1, \"matter_type\": \"body\", \"content_type\": \"chapter\"}]",
+        "review_notes": "Fixture",
+        "attempt": "0",
+        "attempt_id": "repair-${ATTEMPT}:verify:0"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfStructureRetry",
+        "fields": {
+          "attempt": "1",
+          "sources_json": "[{\"source\": \"one.pdf\", \"page_count\": 4}, {\"source\": \"two.pdf\", \"page_count\": 6}]"
+        }
+      }
+    ],
+    "prerequisites": [
+      "ocr"
+    ]
+  }
+}

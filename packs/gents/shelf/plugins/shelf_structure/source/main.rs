@@ -5,9 +5,13 @@ use std::{
     io::{self, Read},
 };
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Proposal {
+    #[serde(default)]
+    attempt: String,
+    #[serde(default)]
+    attempt_id: String,
     run_id: String,
     #[serde(default)]
     book_id: String,
@@ -63,7 +67,9 @@ fn main() {
                 analysis_ready(input)
             }
         } else {
-            assemble(serde_json::from_value(input).map_err(|e| format!("invalid proposal: {e}"))?)
+            assemble_or_retry(
+                serde_json::from_value(input).map_err(|e| format!("invalid proposal: {e}"))?,
+            )
         }
     })();
     match result {
@@ -169,8 +175,32 @@ fn analysis_ready(input: Value) -> Result<Value, String> {
         return Err("invalid native source manifest".into());
     }
     Ok(
-        json!({"run_id":first["run_id"],"book_id":first["book_id"],"sources_json":first["sources_json"],"expected_total":expected,"access":first["access"],"license":first["license"]}),
+        json!({"run_id":first["run_id"],"book_id":first["book_id"],"sources_json":first["sources_json"],"expected_total":expected,"access":first["access"],"license":first["license"],"attempt":"0","attempt_id":format!("{}:verify:0",first["run_id"].as_str().unwrap()),"feedback":""}),
     )
+}
+
+fn assemble_or_retry(p: Proposal) -> Result<Value, String> {
+    let attempt = if p.attempt.is_empty() {
+        0
+    } else {
+        p.attempt
+            .parse::<u32>()
+            .map_err(|_| "invalid verification attempt")?
+    };
+    if attempt > 2 {
+        return Err("verification attempt exceeds repair limit".into());
+    }
+    match assemble(p.clone()) {
+        Ok(value) => Ok(value),
+        Err(error) if attempt < 2 => {
+            let mut retry = serde_json::to_value(&p).map_err(|e| e.to_string())?;
+            retry["attempt"] = json!((attempt + 1).to_string());
+            retry["attempt_id"] = json!(format!("{}:verify:{}", p.run_id, attempt + 1));
+            retry["feedback"] = json!(error);
+            Ok(json!({"retry": retry}))
+        }
+        Err(error) => Err(format!("structure invalid after three attempts: {error}")),
+    }
 }
 
 /// Sources retain operator order. A leaf owns the half-open interval up to the
@@ -292,6 +322,36 @@ fn assemble(mut p: Proposal) -> Result<Value, String> {
 mod tests {
     use super::*;
     #[test]
+    fn invalid_entry_metadata_returns_bounded_repair_with_native_identity() {
+        let mut input = proposal();
+        let mut entries: Value = serde_json::from_str(&input.entries_json).unwrap();
+        entries[0]["author"] = json!("misplaced book metadata");
+        input.entries_json = entries.to_string();
+        let retry = assemble_or_retry(input.clone()).unwrap();
+        assert_eq!(retry["retry"]["attempt"], "1");
+        assert_eq!(retry["retry"]["attempt_id"], "book:verify:1");
+        assert_eq!(retry["retry"]["sources_json"], input.sources_json);
+        assert!(
+            retry["retry"]["feedback"]
+                .as_str()
+                .unwrap()
+                .contains("unknown field `author`")
+        );
+        assert!(retry.get("book").is_none());
+        input.attempt = "2".into();
+        assert!(
+            assemble_or_retry(input)
+                .unwrap_err()
+                .contains("after three attempts")
+        );
+        let mut corrected = proposal();
+        corrected.attempt = "1".into();
+        assert_eq!(
+            assemble_or_retry(corrected).unwrap()["report"]["covered_pages"],
+            10
+        );
+    }
+    #[test]
     fn analysis_barrier_rejects_missing_duplicate_failed_and_mixed_source_chunks() {
         let one = json!({"run_id":"r","book_id":"b","sources_json":"[{\"source\":\"scan.pdf\",\"page_count\":40}]","expected_total":2,"chunk":0,"access":"local_only","license":"unknown","extraction_state":"complete","format":"pdf"});
         let mut two = one.clone();
@@ -328,7 +388,7 @@ mod tests {
         assert!(finish_signal(json!([first, second])).is_err());
     }
     fn proposal() -> Proposal {
-        Proposal { access: String::new(), license: String::new(), book_id: String::new(),run_id:"book".into(),title:"Title".into(),author:"Author".into(),language:"en".into(),
+        Proposal { attempt: String::new(), attempt_id: String::new(), access: String::new(), license: String::new(), book_id: String::new(),run_id:"book".into(),title:"Title".into(),author:"Author".into(),language:"en".into(),
         sources_json:r#"[{"source":"part-1.pdf","page_count":4},{"source":"part-2.pdf","page_count":6}]"#.into(),
         entries_json:r#"[{"title":"One","source":"part-1.pdf","page":3,"level":1,"matter_type":"body","content_type":"chapter"},{"title":"Two","source":"part-2.pdf","page":3,"level":1,"matter_type":"body","content_type":"chapter"}]"#.into(),review_notes:String::new()}
     }

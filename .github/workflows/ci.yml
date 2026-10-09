@@ -197,6 +197,7 @@ jobs:
           GENTS: ${{ github.workspace }}/gents-bin/gents
         run: |
           python3 scripts/test_shelf_book.py
+          python3 scripts/test_shelf_validate.py
           python3 scripts/test_shelf_library.py
           python3 scripts/test_shelf_normalize.py
           python3 scripts/test_shelf_intake.py

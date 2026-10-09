@@ -72,7 +72,9 @@
       "CallbackBinding/shelf-continue",
       "EventSource/shelf-analysis-ready",
       "CallbackBinding/shelf-analysis-ready",
-      "Callback/shelf-analysis-ready"
+      "Callback/shelf-analysis-ready",
+      "EventSource/shelf-verify-retry",
+      "Trigger/shelf-verify-retry"
     ],
     "plugins": [
       "shelf_export",

@@ -5,4 +5,7 @@ type ShelfOutlineJob {
   expected_total: Int
   access: String
   license: String
+  attempt: String
+  attempt_id: String
+  feedback: String
 }

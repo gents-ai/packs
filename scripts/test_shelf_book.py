@@ -15,6 +15,76 @@ spec.loader.exec_module(shelf)
 
 
 class BatchSubmission(unittest.TestCase):
+    def test_shared_runtime_submits_all_books_and_waits_for_every_epub(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ["one.pdf", "two.pdf"]:
+                (root / name).write_bytes(b"scan")
+            manifest = root / "books.json"
+            manifest.write_text(json.dumps([{"book_id": name, "sources": [name + ".pdf"]}
+                                            for name in ["one", "two"]]))
+            args = SimpleNamespace(manifest=manifest, sources=[], book_id=None,
+                                   access="local_only", license="unknown", remote_ocr="off",
+                                   directory=root / "run", endpoint="http://model/v1", structure_endpoint=None,
+                                   max_concurrent=3, epub=True, timeout=60)
+            jobs, prepares, grants, polls = {}, {}, [], {}
+
+            def call(*argv, **kwargs):
+                if argv[0] == "init":
+                    return {"inference_profile_id": "reader"}
+                if argv[:3] == ("plugin", "dirs", "add"):
+                    grants.append(argv)
+                if argv[:2] == ("query", "find"):
+                    return {"results": []}
+                if argv[:2] == ("document", "create"):
+                    fields = json.loads(argv[-1])
+                    if argv[2] == "ShelfJob":
+                        jobs[fields["run_id"]] = fields
+                    else:
+                        self.assertEqual(len(jobs), 2)
+                        prepares[fields["run_id"]] = fields
+                return {}
+
+            def query(home, collection, run_id, fields):
+                if collection == "ShelfStructureReport":
+                    return [{"book_id": jobs[run_id]["book_id"]}]
+                if collection == "ShelfLibraryEdition":
+                    polls[run_id] = polls.get(run_id, 0) + 1
+                    return [{"edition_id": run_id}] if polls[run_id] > 1 else []
+                return []
+
+            def export(home, run_id, path, endpoint):
+                path.write_text(json.dumps({"book_id": jobs[run_id]["book_id"]}))
+
+            def process(*argv, **kwargs):
+                kwargs["stdout"].write("gents server is running\n")
+                kwargs["stdout"].flush()
+                from unittest.mock import Mock
+                return Mock(poll=lambda: None)
+
+            with patch.object(shelf, "call", call), patch.object(shelf, "query", query), \
+                 patch.object(shelf, "export", export), patch.object(shelf, "model", return_value="model"), \
+                 patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep"), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                shelf.run(args)
+            self.assertEqual(len(prepares), 2)
+            self.assertEqual(list(polls.values()), [2, 2])
+            self.assertEqual(len({job["path"] for job in prepares.values()}), 2)
+            for job in prepares.values():
+                grant = next(g for g in grants if str(g[3]) == job["path"])
+                self.assertEqual(grant[grant.index("--access") + 1], "read_write")
+
+    def test_denied_native_stage_is_reported_without_waiting_for_timeout(self):
+        def call(*args):
+            filters = json.loads(args[args.index("--filter") + 1])
+            self.assertEqual(filters["caused_by_correlation"]["_in"], ["book", "edition"])
+            self.assertEqual(filters["lifecycle_state"]["_in"], ["denied", "failed"])
+            return {"results": [{"callback_id": "shelf-prepare", "lifecycle_state": "denied",
+                                 "error": "export folder is read-only"}]}
+        with patch.object(shelf, "call", call):
+            with self.assertRaisesRegex(RuntimeError, "export folder is read-only"):
+                shelf.check_callback_failures("home", ["book", "edition"])
+
     def test_search_catalog_retries_truncated_pages_without_losing_editions(self):
         rows = [dict(book_id=str(i), edition_id="e-" + str(i), modified="1970-01-01T00:00:00Z", status="source_text",
                      access="open", language="en") for i in range(205)]

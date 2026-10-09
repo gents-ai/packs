@@ -306,12 +306,50 @@ def model(endpoint):
     return models[0]["id"]
 
 
+
+def check_callback_failures(home, correlations):
+    result = call("query", "find", "--home", home, "--collection", "CallbackInvocation",
+                  "--filter", json.dumps({"caused_by_correlation": {"_in": correlations},
+                                           "lifecycle_state": {"_in": ["denied", "failed"]}}),
+                  "--field", "callback_id", "--field", "lifecycle_state", "--field", "error", "--limit", 10)
+    if result["results"]:
+        raise RuntimeError(f"native stage failed; persisted callback diagnostics: {result['results']}")
+
+
+def input_books(args):
+    if args.manifest:
+        if args.sources or args.book_id:
+            raise RuntimeError("--manifest supplies sources and book IDs; do not also pass them on the command line")
+        manifest = args.manifest.expanduser().resolve(strict=True)
+        items = json.loads(manifest.read_text())
+        base = manifest.parent
+        if not isinstance(items, list) or not items:
+            raise RuntimeError("manifest must be a nonempty array of {book_id, sources}")
+    else:
+        items = [{"book_id": args.book_id, "sources": args.sources}]
+        base = Path.cwd()
+    books, seen = [], set()
+    for item in items:
+        if not isinstance(item, dict) or set(item) - {"book_id", "sources", "access", "license"}:
+            raise RuntimeError("manifest items contain book_id, sources and optional access/license")
+        book_id = item.get("book_id")
+        if args.manifest and (not isinstance(book_id, str) or not book_id.strip() or book_id in seen):
+            raise RuntimeError("manifest book IDs must be nonempty and distinct")
+        seen.add(book_id)
+        sources = item.get("sources")
+        if not isinstance(sources, list) or not sources:
+            raise RuntimeError("each book needs an ordered, nonempty sources list")
+        fields = source_fields(sources, base)
+        fields.update(remote_ocr=args.remote_ocr, access=item.get("access", args.access),
+                      license=item.get("license", args.license))
+        if book_id:
+            fields["book_id"] = book_id
+        books.append({"fields": fields, "edition_id": None, "done": False})
+    return books
+
+
 def run(args):
-    inputs = [p.expanduser().resolve(strict=True) for p in args.sources]
-    if any(not p.is_file() for p in inputs) or len(set(inputs)) != len(inputs):
-        raise RuntimeError("sources must be distinct existing files")
-    if len({p.parent for p in inputs}) != 1:
-        raise RuntimeError("multi-part sources must be in the same folder; list them in reading order")
+    books = input_books(args)
     directory = args.directory.expanduser().resolve()
     directory.mkdir(parents=True, exist_ok=False)
     home = directory / "home"
@@ -343,16 +381,24 @@ def run(args):
         for slot in slots:
             install += ["--inference-slot", slot]
         call(*install)
-    call("plugin", "dirs", "add", inputs[0].parent, "--home", home, json_output=False)
-    edition_dir = directory / "edition" if args.epub else directory
-    if args.epub:
+    source_folders = {Path(book["fields"]["path"]) if "files" in book["fields"]
+                      else Path(book["fields"]["path"]).parent for book in books}
+    for folder in sorted(source_folders):
+        call("plugin", "dirs", "add", folder, "--home", home, json_output=False)
+    run_prefix = "shelf-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+    for i, book in enumerate(books):
+        book["fields"]["run_id"] = run_prefix if len(books) == 1 else f"{run_prefix}-{i+1:02}"
+        edition_dir = directory / ("edition" if len(books) == 1 else f"edition-{i+1:02}")
         edition_dir.mkdir()
-        call("plugin", "dirs", "add", edition_dir, "--home", home, json_output=False)
+        book["directory"] = edition_dir
+        if args.epub:
+            call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    run_id = "shelf-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%f")
-    (directory / "run.json").write_text(json.dumps({"run_id": run_id, "home": str(home)}))
+    (directory / "run.json").write_text(json.dumps({"run_id": run_prefix, "home": str(home),
+        "books": [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
+                   "directory": str(b["directory"])} for b in books]}))
     with (directory / "server.log").open("w") as log:
         server = subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
         try:
@@ -366,40 +412,45 @@ def run(args):
                 if time.monotonic() > ready:
                     raise RuntimeError("runtime did not become ready; inspect server.log")
                 time.sleep(1)
-            fields = dict(run_id=run_id, **source_fields(inputs))
-            fields["remote_ocr"] = args.remote_ocr
-            fields["access"] = args.access
-            fields["license"] = args.license
-            if args.book_id:
-                fields["book_id"] = args.book_id
-            call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(fields))
-            print(f"Shelf run {run_id}; persisted state: {home}", flush=True)
-            edition_id = None
+            for book in books:
+                call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(book["fields"]))
+                print(f"Shelf run {book['fields']['run_id']}; persisted state: {home}", flush=True)
             while time.monotonic() < deadline:
                 if server.poll() is not None:
                     raise RuntimeError("runtime exited; inspect server.log")
-                failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
-                if failed:
-                    raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
-                if edition_id is None and query(home, "ShelfStructureReport", run_id, ["book_id"]):
-                    structured = edition_dir / "structured-book.json"
-                    export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
-                    if not args.epub:
-                        return
-                    book = json.loads(structured.read_text())
-                    edition_id = run_id + "-readable"
-                    call("document", "create", "ShelfPrepareJob", "--home", home, "--json", json.dumps({
-                        "run_id":edition_id,"book_id":book["book_id"],"path":str(edition_dir),
-                        "structured":structured.name,"output":"book.epub",
-                        "modified":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
-                    print(f"Reviewing edition {edition_id}", flush=True)
-                if edition_id:
-                    failures = query(home, "ShelfEditionFailure", edition_id, ["chunk_ref", "error"])
-                    if failures:
-                        raise RuntimeError(f"edition needs review; persisted failures: {failures}")
-                    if query(home, "ShelfLibraryEdition", edition_id, ["edition_id"]):
-                        print(json.dumps({"edition_id":edition_id,"epub":str(edition_dir/"book.epub")}),flush=True)
-                        return
+                for book in books:
+                    if book["done"]:
+                        continue
+                    run_id = book["fields"]["run_id"]
+                    edition_id = book["edition_id"]
+                    edition_dir = book["directory"]
+                    check_callback_failures(home, [run_id] + ([edition_id] if edition_id else []))
+                    failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
+                    if failed:
+                        raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
+                    if edition_id is None and query(home, "ShelfStructureReport", run_id, ["book_id"]):
+                        structured = edition_dir / "structured-book.json"
+                        export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
+                        if not args.epub:
+                            book["done"] = True
+                            continue
+                        structured_book = json.loads(structured.read_text())
+                        edition_id = run_id + "-readable"
+                        book["edition_id"] = edition_id
+                        call("document", "create", "ShelfPrepareJob", "--home", home, "--json", json.dumps({
+                            "run_id":edition_id,"book_id":structured_book["book_id"],"path":str(edition_dir),
+                            "structured":structured.name,"output":"book.epub",
+                            "modified":datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}))
+                        print(f"Reviewing edition {edition_id}", flush=True)
+                    if edition_id:
+                        failures = query(home, "ShelfEditionFailure", edition_id, ["chunk_ref", "error"])
+                        if failures:
+                            raise RuntimeError(f"edition needs review; persisted failures: {failures}")
+                        if query(home, "ShelfLibraryEdition", edition_id, ["edition_id"]):
+                            print(json.dumps({"edition_id":edition_id,"epub":str(edition_dir/"book.epub")}),flush=True)
+                            book["done"] = True
+                if all(book["done"] for book in books):
+                    return
                 time.sleep(10)
             raise RuntimeError("timed out; persisted state is retained in the run home")
         finally:
@@ -442,7 +493,8 @@ def main():
     run_parser.add_argument("--license", default="unknown")
     run_parser.add_argument("--epub", action="store_true", help="Continue through text review, EPUB export and native indexing")
     run_parser.add_argument("--book-id", help="Stable work ID shared with source-text intake; defaults to the run ID")
-    run_parser.add_argument("sources", type=Path, nargs="+")
+    run_parser.add_argument("sources", type=Path, nargs="*")
+    run_parser.add_argument("--manifest", type=Path, help="JSON array of {book_id, sources}; run all books in one shared runtime")
     run_parser.add_argument("--endpoint", required=True, help="OpenAI-compatible /v1 endpoint exposing one model")
     run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for outline and verification")
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")

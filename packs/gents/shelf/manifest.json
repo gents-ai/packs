@@ -58,7 +58,8 @@
     "schemas/shelf_finalize_job.graphql",
     "schemas/shelf_read_request.graphql",
     "schemas/shelf_outline_job.graphql",
-    "schemas/shelf_index_job.graphql"
+    "schemas/shelf_index_job.graphql",
+    "schemas/shelf_structure_retry.graphql"
   ],
   "plugins": [
     {
@@ -288,6 +289,8 @@
     "schemas/shelf_read_request.graphql",
     "schemas/shelf_outline_job.graphql",
     "schemas/shelf_index_job.graphql",
-    "tests/analysis_ready.json"
+    "tests/analysis_ready.json",
+    "schemas/shelf_structure_retry.graphql",
+    "tests/structure_retry.json"
   ]
 }

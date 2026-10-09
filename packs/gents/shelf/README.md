@@ -49,6 +49,18 @@ Use `--structure-endpoint` for a second model server. For a multi-part book, pas
 its files in reading order. The script retains its isolated home and checks that
 every extracted page occurs exactly once in the exported chapter ranges.
 Use `--max-concurrent N` to set each backend's simultaneous request limit.
+For multiple complete books in one runtime, pass `run --manifest books.json --epub`
+instead of positional sources. The manifest is an array of
+`{"book_id":"stable-id","sources":["part-1.pdf","part-2.pdf"]}` objects;
+paths are relative to the manifest. Each book gets a separate export folder,
+while model requests share the backend limits. The launcher waits for every
+book's export and index receipt and surfaces failed native callbacks.
+
+Check a completed artifact with `python3 scripts/shelf-validate.py --structured
+/path/to/plan-…-book.json --epub /path/to/book.epub` (requires `epubcheck`). This
+checks source coverage, chapter order, navigation, and passage links; reading
+quality still requires comparison with the source.
+
 For a vision-capable reader endpoint, add `--remote-ocr auto`. The launcher binds
 that same endpoint to OCR's optional vision slot. Embedded PDF text is used first;
 scanned pages go through bundled ocrs/RTen recognition, with image requests for
