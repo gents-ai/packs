@@ -12,4 +12,4 @@ Use get_page_ocr or load_page_image when an OCR fragment needs source evidence. 
 Return only supported local corrections using write_shelf_polish.
 
 {% if doc.feedback %}Previous edits were rejected: {{ doc.feedback }}
-Correct the exact-match problem using the original blocks above. If a correction cannot be located precisely, omit it rather than guessing.{% endif %}
+Address the rejection using the original blocks above. If a correction cannot be located precisely, omit it rather than guessing.{% endif %}

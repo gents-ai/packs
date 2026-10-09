@@ -3144,7 +3144,7 @@
         {
           "tool_name": "write_shelf_polish",
           "collection": "ShelfPolishProposal",
-          "description": "Submit exact local edits as edits_json, a JSON array of {block_id,old_text,new_text,reason}. Each old_text must occur exactly once in that block. Limit each old_text to 1200 bytes and new_text to 2400 bytes. For source-confirmed non-text OCR only, replace the complete block quote with an empty new_text and include non_text_ocr_page (physical scan page). First inspect that page with load_page_image in this attempt. Do not use this for genuine text or uncertain OCR. Use [] when no correction is supported. Scope and chunk identity are filled by the host.",
+          "description": "Submit exact local edits as edits_json, a JSON array of {block_id,old_text,new_text,reason}. Submit at most 50 edits; combine neighboring corrections in the same block into one exact source quote when needed. Each old_text must occur exactly once in that block. Limit each old_text to 1200 bytes and new_text to 2400 bytes. For source-confirmed non-text OCR only, replace the complete block quote with an empty new_text and include non_text_ocr_page (physical scan page). First inspect that page with load_page_image in this attempt. Do not use this for genuine text or uncertain OCR. Use [] when no correction is supported. Scope and chunk identity are filled by the host.",
           "fields": [
             {
               "name": "run_id",

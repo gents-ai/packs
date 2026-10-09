@@ -459,7 +459,10 @@ fn validate_review(
 ) -> Result<Reviewed> {
     let edits: Vec<Edit> = serde_json::from_str(raw).map_err(|e| format!("edits_json: {e}"))?;
     if edits.len() > 50 {
-        return Err("at most 50 focused edits are allowed per review".into());
+        return Err(format!(
+            "Submitted {} edits; at most 50 focused edits are allowed per review. Submit write_shelf_polish again using the original blocks. Combine neighboring corrections in the same block into one exact source quote where possible, within the 1200-byte old_text and 2400-byte new_text limits. Preserve all supported corrections. No edits committed.",
+            edits.len()
+        ));
     }
     let mut reviewed = Reviewed {
         plan_hash: digest,
@@ -934,6 +937,59 @@ mod tests {
             .unwrap_err()
             .contains("evidence changed")
         );
+    }
+    #[test]
+    fn oversized_review_can_regroup_corrections_without_losing_text_or_provenance() {
+        let original = (0..51)
+            .map(|i| format!("<OCR-{i}>"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let expected = (0..51)
+            .map(|i| format!("word{i}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let block = Block {
+            id: "passage".into(),
+            markdown: original.clone(),
+            sources: vec![Span {
+                source: "fixture.pdf".into(),
+                page: 2,
+                start_byte: 0,
+                end_byte: original.len(),
+            }],
+        };
+        let chunk = Chunk {
+            key: "c0000".into(),
+            title: "One".into(),
+            blocks: vec![block.clone()],
+        };
+        let mut edits = (0..51).map(|i| json!({"block_id":"passage", "old_text":format!("<OCR-{i}>"), "new_text":format!("word{i}"), "reason":"Source-confirmed OCR correction"})).collect::<Vec<_>>();
+        let error = validate_review(
+            &chunk,
+            &chunk.key,
+            "hash".into(),
+            &json!(edits).to_string(),
+            &BTreeMap::new(),
+        )
+        .err()
+        .unwrap();
+        assert!(error.contains("Submitted 51 edits"));
+        assert!(error.contains("write_shelf_polish again"));
+        assert!(error.contains("No edits committed"));
+        assert_eq!(chunk.blocks[0].markdown, original);
+        edits.truncate(49);
+        edits.push(json!({"block_id":"passage", "old_text":"<OCR-49> <OCR-50>", "new_text":"word49 word50", "reason":"Source-confirmed neighboring OCR corrections"}));
+        let reviewed = validate_review(
+            &chunk,
+            &chunk.key,
+            "hash".into(),
+            &json!(edits).to_string(),
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        assert_eq!(reviewed.edits.len(), 50);
+        assert_eq!(reviewed.blocks[0].markdown, expected);
+        assert_eq!(reviewed.blocks[0].sources, block.sources);
     }
     #[test]
     fn quote_variant_feedback_never_applies_an_inexact_edit() {
