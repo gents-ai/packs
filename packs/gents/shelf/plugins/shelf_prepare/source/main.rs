@@ -31,6 +31,20 @@ struct Section {
     level: u64,
     matter_type: String,
     blocks: Vec<Block>,
+    #[serde(default)]
+    chapter_key: Option<String>,
+    #[serde(default)]
+    parent_id: Option<String>,
+    #[serde(default)]
+    entry_number: Option<String>,
+    #[serde(default)]
+    level_name: Option<String>,
+    #[serde(default)]
+    content_type: String,
+    #[serde(default)]
+    audio_include: Option<bool>,
+    #[serde(default)]
+    audio_include_reasoning: String,
 }
 #[derive(Clone, Serialize, Deserialize)]
 struct Chunk {
@@ -144,6 +158,16 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     if field(v, "book_id")? != book {
         return Err("structured book identity does not match job".into());
     }
+    if let Some(scope) = source.get("source_evidence") {
+        let bytes = read(root, field(scope, "book_file")?)?;
+        if hash(&bytes) != field(scope, "book_hash")? {
+            return Err("source evidence changed before text review".into());
+        }
+        let capsule: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        if capsule["run_id"] != scope["run_id"] || capsule["book_id"] != book {
+            return Err("text review evidence belongs to another book/run".into());
+        }
+    }
     let output = field(v, "output")?;
     name(output)?;
     let mut plan = Plan {
@@ -162,6 +186,7 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     };
     let mut seen = BTreeSet::new();
     let vocabulary = clean::vocabulary(&source);
+    let mut chapter_ids = BTreeMap::new();
     for (ci, ch) in source["chapters"]
         .as_array()
         .ok_or("missing chapters")?
@@ -170,17 +195,50 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     {
         let title = field(ch, "title")?;
         let pages = ch["pages"].as_array().ok_or("chapter missing pages")?;
+        let level = ch["level"].as_u64().unwrap_or(1);
+        let opening = if let Some(first) = pages.first() {
+            (
+                field(first, "source")?.to_owned(),
+                first["page"].as_u64().ok_or("invalid opening page")?,
+            )
+        } else {
+            let scan = ch["start_page"]
+                .as_u64()
+                .ok_or("empty container needs a verified opening")?;
+            let mut offset = 0;
+            let mut opening = None;
+            for src in source["sources"]
+                .as_array()
+                .ok_or("empty container needs the source manifest")?
+            {
+                let count = src["page_count"].as_u64().ok_or("invalid source count")?;
+                if scan > offset && scan <= offset + count {
+                    opening = Some((field(src, "source")?.to_owned(), scan - offset));
+                    break;
+                }
+                offset += count;
+            }
+            opening.ok_or("container opening outside source manifest")?
+        };
         let id = format!(
             "s-{}",
-            &hash(
-                format!(
-                    "{book}:{}:{}",
-                    pages.first().ok_or("empty chapter")?["source"],
-                    pages[0]["page"]
-                )
-                .as_bytes()
-            )[..20]
+            &hash(format!("{book}:{}:{}:{level}", opening.0, opening.1).as_bytes())[..20]
         );
+        let chapter_key = ch["chapter_key"].as_str().map(str::to_owned);
+        let parent_id = match ch["parent_key"].as_str() {
+            Some(key) => Some(
+                chapter_ids
+                    .get(key)
+                    .cloned()
+                    .ok_or("chapter parent must precede its children")?,
+            ),
+            None => None,
+        };
+        if let Some(key) = &chapter_key {
+            if chapter_ids.insert(key.clone(), id.clone()).is_some() {
+                return Err("duplicate chapter key".into());
+            }
+        }
         for page in pages {
             let key = (
                 field(page, "source")?.to_string(),
@@ -232,6 +290,13 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
             level: ch["level"].as_u64().unwrap_or(1),
             matter_type: ch["matter_type"].as_str().unwrap_or("body").into(),
             blocks,
+            chapter_key,
+            parent_id,
+            entry_number: ch["entry_number"].as_str().map(str::to_owned),
+            level_name: ch["level_name"].as_str().map(str::to_owned),
+            content_type: ch["content_type"].as_str().unwrap_or("").into(),
+            audio_include: ch["audio_include"].as_bool(),
+            audio_include_reasoning: ch["audio_include_reasoning"].as_str().unwrap_or("").into(),
         });
     }
     if seen.len() as u64 != source["page_count"].as_u64().ok_or("missing page count")?
@@ -258,10 +323,37 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
     )
 }
 fn review_attempt(plan: &Plan, chunk: &Chunk, path: &str, file: &str) -> Value {
-    json!({"attempt_id":format!("{}:{}:0",plan.edition_id,chunk.key),"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
+    let attempt_id = format!("{}:{}:0", plan.edition_id, chunk.key);
+    let mut out = json!({"attempt_id":attempt_id,"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":file,
         "chunk_ref":chunk.key,"title":chunk.title,"attempt":"0","feedback":"",
         "blocks_json":serde_json::to_string(&chunk.blocks).unwrap(),
-        "lane":if chunk.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}})
+        "lane":if chunk.key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"}});
+    if let Some(scope) = plan.source.get("source_evidence") {
+        out["source_run_id"] = scope["run_id"].clone();
+        out["book_file"] = scope["book_file"].clone();
+        out["book_hash"] = scope["book_hash"].clone();
+        out["stage_job_id"] = out["attempt_id"].clone();
+        out["image_command"] = json!("image");
+        out["ocr_command"] = json!("ocr");
+        let mut pages = BTreeMap::new();
+        for block in &chunk.blocks {
+            for span in &block.sources {
+                let mut offset = 0;
+                if let Some(sources) = plan.source["sources"].as_array() {
+                    for src in sources {
+                        if src["source"] == span.source {
+                            pages.insert((span.source.clone(),span.page),json!({"source":span.source,"source_page":span.page,"scan_page":offset+span.page}));
+                            break;
+                        }
+                        offset += src["page_count"].as_u64().unwrap_or(0);
+                    }
+                }
+            }
+        }
+        out["source_pages_json"] =
+            json!(serde_json::to_string(&pages.into_values().collect::<Vec<_>>()).unwrap());
+    }
+    out
 }
 fn quote_variant_source(source: &str, quoted: &str) -> Option<String> {
     fn fold(c: char) -> char {
@@ -445,13 +537,50 @@ fn apply_with_repair(v: &Value, root: &Path) -> Result<Value> {
                     json!({"chunk":null,"retry":null,"failure":{"run_id":plan.edition_id,"book_id":plan.book_id,"chunk_ref":key,"error":error}}),
                 );
             }
-            Ok(
-                json!({"chunk":null,"failure":null,"retry":{"attempt_id":format!("{}:{key}:{}",plan.edition_id,attempt+1),"run_id":plan.edition_id,"book_id":plan.book_id,"path":path,"plan":v["plan"],"chunk_ref":key,"title":chunk.title,"attempt":(attempt+1).to_string(),"feedback":error,"lane":if key.trim_start_matches('c').parse::<usize>().unwrap()%2==0{"reader"}else{"librarian"},"blocks_json":serde_json::to_string(&chunk.blocks).unwrap()}}),
-            )
+            let mut retry = review_attempt(&plan, chunk, path, field(v, "plan")?);
+            retry["attempt"] = json!((attempt + 1).to_string());
+            retry["attempt_id"] = json!(format!("{}:{key}:{}", plan.edition_id, attempt + 1));
+            if retry.get("stage_job_id").is_some() {
+                retry["stage_job_id"] = retry["attempt_id"].clone();
+            }
+            retry["feedback"] = json!(error);
+            Ok(json!({"chunk":null,"failure":null,"retry":retry}))
         }
     }
 }
 
+fn human_book(plan: &Plan) -> Result<Value> {
+    fn section(ch: &Section, all: &[Section], depth: usize) -> Result<Value> {
+        if depth > 6 {
+            return Err("chapter hierarchy exceeds six levels".into());
+        }
+        let children: Vec<_> = all
+            .iter()
+            .filter(|c| c.parent_id.as_deref() == Some(&ch.id))
+            .map(|c| section(c, all, depth + 1))
+            .collect::<Result<_>>()?;
+        let paragraphs: Vec<_> = ch.blocks.iter().enumerate().map(|(i,b)| json!({
+            "id":b.id,"ordinal":i+1,"kind":if b.markdown.trim_start().starts_with('#'){"heading"}else{"paragraph"},
+            "text":b.markdown,"source_spans":b.sources,"epub_href":format!("OEBPS/{}.xhtml#{}",ch.id,b.id)
+        })).collect();
+        Ok(
+            json!({"id":ch.id,"title":ch.title,"entry_number":ch.entry_number,"level":ch.level,
+            "level_name":ch.level_name,"matter_type":ch.matter_type,"content_type":ch.content_type,
+            "audio_include":ch.audio_include,"audio_include_reasoning":ch.audio_include_reasoning,
+            "paragraphs":paragraphs,"sections":children}),
+        )
+    }
+    let sections: Vec<_> = plan
+        .chapters
+        .iter()
+        .filter(|ch| ch.parent_id.is_none())
+        .map(|ch| section(ch, &plan.chapters, 1))
+        .collect::<Result<_>>()?;
+    Ok(
+        json!({"id":plan.book_id,"edition_id":plan.edition_id,"title":plan.title,"author":plan.author,
+        "language":plan.language,"metadata":plan.source["metadata"],"sections":sections}),
+    )
+}
 fn finish(v: &Value, root: &Path) -> Result<Value> {
     let (mut plan, digest) = load_plan(v, root)?;
     let mut blocks = BTreeMap::new();
@@ -496,12 +625,13 @@ fn finish(v: &Value, root: &Path) -> Result<Value> {
     let prefix = field(v, "plan")?.trim_end_matches(".json");
     let manuscript = format!("{prefix}-manuscript.json");
     let structured = format!("{prefix}-book.json");
+    let human = human_book(&plan)?;
     let edition = json!({"identifier":plan.edition_id,"title":plan.title,"author":plan.author,"language":plan.language,"modified":plan.modified,"chapters":plan.chapters});
     save(root, &manuscript, &edition)?;
     save(
         root,
         &structured,
-        &json!({"edition":edition,"original":plan.source,"mechanical_edits":plan.mechanical_edits,"polish_edits":edits,"passages":passages}),
+        &json!({"book":human,"edition":edition,"original":plan.source,"mechanical_edits":plan.mechanical_edits,"polish_edits":edits,"passages":passages}),
     )?;
     let path = v["path_original"].as_str().unwrap_or(field(v, "path")?);
     Ok(
@@ -549,6 +679,54 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_opening_part_and_chapter_remain_hierarchical_narration_units() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let source = json!({"book_id":"book-one","title":"Unfamiliar Book","author":"Author","language":"en","page_count":3,"sources":[{"source":"scan.pdf","page_count":3}],"chapters":[
+            {"chapter_key":"run:part","title":"Part I","entry_number":"I","level_name":"part","level":1,"matter_type":"body","content_type":"body","audio_include":true,"audio_include_reasoning":"Announce the part heading.","start_page":1,"pages":[]},
+            {"chapter_key":"run:first","parent_key":"run:part","title":"First chapter","entry_number":"1","level_name":"chapter","level":2,"matter_type":"body","content_type":"body","audio_include":true,"audio_include_reasoning":"Narrative prose.","pages":[{"source":"scan.pdf","page":1,"markdown":"Opening paragraph."},{"source":"scan.pdf","page":2,"markdown":"Continuation paragraph."}]},
+            {"chapter_key":"run:notes","title":"Notes","level_name":"notes","level":1,"matter_type":"back_matter","content_type":"notes","audio_include":false,"audio_include_reasoning":"Reference citations.","pages":[{"source":"scan.pdf","page":3,"markdown":"1. A reference."}]}
+        ]});
+        save(root, "source.json", &source).unwrap();
+        let prepared=run(json!({"run_id":"edition","book_id":"book-one","path":root,"structured":"source.json","modified":"2026-10-09T00:00:00Z","output":"book.epub"})).unwrap();
+        let chunks = prepared["chunks"].as_array().unwrap();
+        for chunk in chunks {
+            let mut job = chunk.clone();
+            job["edits_json"] = json!("[]");
+            apply(&job, root).unwrap();
+        }
+        let out = finish(&chunks[0], root).unwrap();
+        let snapshot: Value = serde_json::from_slice(
+            &read(root, out["prepared"]["structured_file"].as_str().unwrap()).unwrap(),
+        )
+        .unwrap();
+        let book = &snapshot["book"];
+        assert_eq!(book["sections"].as_array().unwrap().len(), 2);
+        assert!(
+            book["sections"][0]["paragraphs"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        let chapter = &book["sections"][0]["sections"][0];
+        assert_eq!(chapter["entry_number"], "1");
+        assert_eq!(chapter["audio_include"], true);
+        assert_eq!(book["sections"][1]["audio_include"], false);
+        assert_eq!(
+            chapter["paragraphs"][0]["id"],
+            snapshot["passages"][0]["passage_id"]
+        );
+        assert_eq!(
+            chapter["paragraphs"][0]["epub_href"],
+            snapshot["passages"][0]["epub_href"]
+        );
+        assert_ne!(
+            snapshot["edition"]["chapters"][0]["id"],
+            snapshot["edition"]["chapters"][1]["id"]
+        );
+        assert_eq!(snapshot["original"], source);
+    }
     #[test]
     fn quote_variant_feedback_never_applies_an_inexact_edit() {
         let source = "Élodie’s bi- ography includes “road-map”.";

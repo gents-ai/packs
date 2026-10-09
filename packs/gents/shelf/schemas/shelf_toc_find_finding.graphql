@@ -1,0 +1,24 @@
+type ShelfTocFindFinding {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  body_start: Int
+  body_end: Int
+  stage: String
+  stage_job_id: String @index(unique: true) @immutable
+  toc_start: Int
+  toc_end: Int
+  structure_summary_json: String
+  structure_notes_json: String
+  access: String
+  license: String
+  total_pages: String
+  toc_found: Boolean
+  toc_page_range: String
+  confidence: Float64
+  search_strategy_used: String
+  reasoning: String
+  structure_summary: String
+}

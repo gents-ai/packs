@@ -1,0 +1,21 @@
+type ShelfClassifyFinding {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  body_start: String
+  body_end: String
+  stage: String
+  stage_job_id: String @index(unique: true) @immutable
+  toc_start: String
+  toc_end: String
+  structure_summary_json: String
+  structure_notes_json: String
+  access: String
+  license: String
+  entries_json: String
+  metadata_json: String
+  classification_prompt: String
+  classification: String
+}

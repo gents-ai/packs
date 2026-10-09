@@ -54,6 +54,20 @@ struct Chapter {
     matter_type: String,
     #[serde(default)]
     blocks: Vec<Block>,
+    #[serde(default)]
+    chapter_key: Option<String>,
+    #[serde(default)]
+    parent_id: Option<String>,
+    #[serde(default)]
+    entry_number: Option<String>,
+    #[serde(default)]
+    level_name: Option<String>,
+    #[serde(default)]
+    content_type: String,
+    #[serde(default)]
+    audio_include: Option<bool>,
+    #[serde(default)]
+    audio_include_reasoning: String,
 }
 fn one() -> u64 {
     1
@@ -211,6 +225,24 @@ fn xml(text: &str) -> Result<String, String> {
         .replace('\'', "&apos;"))
 }
 
+fn chapter_label(ch: &Chapter) -> String {
+    let Some(number) = ch.entry_number.as_deref().filter(|s| !s.trim().is_empty()) else {
+        return ch.title.clone();
+    };
+    let kind = ch.level_name.as_deref().unwrap_or("");
+    let mut chars = kind.chars();
+    let label = chars
+        .next()
+        .map(|c| c.to_uppercase().to_string())
+        .unwrap_or_default()
+        + chars.as_str();
+    let marker = format!("{label} {number}").trim().to_owned();
+    if ch.title.trim().eq_ignore_ascii_case(&marker) {
+        marker
+    } else {
+        format!("{marker}: {}", ch.title)
+    }
+}
 fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
     for (name, value) in [
         ("identifier", &book.identifier),
@@ -288,8 +320,12 @@ fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
     let mut citations = Vec::new();
     add("OEBPS/style.css", render::CSS)?;
     for (i, chapter) in book.chapters.iter().enumerate() {
+        let container = !chapter.id.is_empty()
+            && book.chapters.get(i + 1).is_some_and(|next| {
+                next.parent_id.as_deref() == Some(&chapter.id) && next.level == chapter.level + 1
+            });
         if chapter.title.trim().is_empty()
-            || (chapter.paragraphs.is_empty() && chapter.blocks.is_empty())
+            || (chapter.paragraphs.is_empty() && chapter.blocks.is_empty() && !container)
             || !(1..=6).contains(&chapter.level)
         {
             return Err(format!(
@@ -297,6 +333,12 @@ fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
                 i + 1
             ));
         }
+        let label = chapter_label(chapter);
+        let kind = if chapter.level_name.as_deref() == Some("part") {
+            "part"
+        } else {
+            "chapter"
+        };
         let mut content = String::new();
         let is_contents = chapter.title.trim().eq_ignore_ascii_case("contents")
             || chapter
@@ -339,8 +381,8 @@ fn epub(book: &Manuscript) -> Result<Vec<u8>, String> {
         add(
             &format!("OEBPS/{}", names[i]),
             &format!(
-                r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>{}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body class="{}"><section epub:type="chapter" id="section"><h1>{}</h1>{content}</section></body></html>"#,
-                xml(&chapter.title)?,
+                r#"<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{language}"><head><title>{}</title><link rel="stylesheet" type="text/css" href="style.css"/></head><body class="{}"><section epub:type="{kind}" id="section"><h1>{}</h1>{content}</section></body></html>"#,
+                xml(&label)?,
                 xml(&chapter.matter_type)?,
                 xml(&chapter.title)?
             ),
@@ -432,6 +474,55 @@ mod tests {
                 assert!(doc.descendants().any(|n| n.text() == Some("尾声")));
             }
         }
+    }
+    #[test]
+    fn empty_part_containers_preserve_nested_navigation_and_chapter_numbers() {
+        let b: Manuscript = serde_json::from_value(json!({"identifier":"edition","title":"Book","author":"Author","language":"en","modified":"2026-10-09T00:00:00Z","chapters":[
+            {"id":"part-one","title":"Part I","level":1,"entry_number":"I","level_name":"part","audio_include":true,"blocks":[]},
+            {"id":"chapter-one","parent_id":"part-one","title":"Beginnings","level":2,"entry_number":"1","level_name":"chapter","audio_include":true,"paragraphs":["First narrative paragraph."]},
+            {"id":"chapter-two","parent_id":"part-one","title":"Continuations","level":2,"entry_number":"2","level_name":"chapter","audio_include":true,"paragraphs":["Second narrative paragraph."]}
+        ]})).unwrap();
+        let raw = epub(&b).unwrap();
+        let mut zip = zip::ZipArchive::new(Cursor::new(raw)).unwrap();
+        let mut nav = String::new();
+        zip.by_name("OEBPS/nav.xhtml")
+            .unwrap()
+            .read_to_string(&mut nav)
+            .unwrap();
+        let doc = roxmltree::Document::parse(&nav).unwrap();
+        let first = doc
+            .descendants()
+            .find(|n| {
+                n.has_tag_name(("http://www.w3.org/1999/xhtml", "a")) && n.text() == Some("Part I")
+            })
+            .unwrap();
+        assert_eq!(
+            first
+                .parent()
+                .unwrap()
+                .descendants()
+                .filter(|n| n.has_tag_name(("http://www.w3.org/1999/xhtml", "a")))
+                .count(),
+            3
+        );
+        assert!(nav.contains("Chapter 1: Beginnings"));
+        let mut part = String::new();
+        zip.by_name("OEBPS/part-one.xhtml")
+            .unwrap()
+            .read_to_string(&mut part)
+            .unwrap();
+        assert!(part.contains("epub:type=\"part\""));
+        assert!(!part.contains("First narrative"));
+        let mut chapter = String::new();
+        zip.by_name("OEBPS/chapter-one.xhtml")
+            .unwrap()
+            .read_to_string(&mut chapter)
+            .unwrap();
+        assert!(chapter.contains("First narrative paragraph."));
+        assert!(!chapter.contains("Second narrative paragraph."));
+        let mut malformed = b;
+        malformed.chapters[1].parent_id = None;
+        assert!(epub(&malformed).is_err());
     }
     #[test]
     fn rejects_invalid_or_empty_content() {

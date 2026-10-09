@@ -2,6 +2,14 @@ type ShelfChapter {
   run_id: String @index
   chapter_key: String @index(unique: true) @immutable
   book_id: String @index
+  toc_entry_id: String
+  toc_title: String
+  entry_number: String
+  level_name: String
+  parent_key: String
+  audio_include: Boolean
+  audio_include_reasoning: String
+  owned_end_page: Int
   sequence: Int
   title: String
   level: Int

@@ -9,24 +9,6 @@
       "inference_profile_id": "gents:inference-slot:librarian"
     },
     {
-      "behavior_id": "shelf-analyze",
-      "context_id": "shelf-analyze-context",
-      "display_name": "Shelf analyze",
-      "inference_profile_id": "gents:inference-slot:reader"
-    },
-    {
-      "behavior_id": "shelf-outline",
-      "context_id": "shelf-outline-context",
-      "display_name": "Shelf outline",
-      "inference_profile_id": "gents:inference-slot:librarian"
-    },
-    {
-      "behavior_id": "shelf-verify",
-      "context_id": "shelf-verify-context",
-      "display_name": "Shelf verify",
-      "inference_profile_id": "gents:inference-slot:librarian"
-    },
-    {
       "behavior_id": "shelf-polish",
       "context_id": "shelf-polish-context",
       "display_name": "Shelf text polish",
@@ -44,6 +26,54 @@
       "display_name": "Shelf research",
       "description": "Search reviewed editions and cite exact source passages.",
       "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-toc-find",
+      "context_id": "shelf-toc-find-context",
+      "display_name": "Shelf toc find",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-toc-extract",
+      "context_id": "shelf-toc-extract-context",
+      "display_name": "Shelf toc extract",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-entry-find",
+      "context_id": "shelf-entry-find-context",
+      "display_name": "Shelf entry find",
+      "inference_profile_id": "gents:inference-slot:reader"
+    },
+    {
+      "behavior_id": "shelf-pattern",
+      "context_id": "shelf-pattern-context",
+      "display_name": "Shelf pattern",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-chapter-find",
+      "context_id": "shelf-chapter-find-context",
+      "display_name": "Shelf chapter find",
+      "inference_profile_id": "gents:inference-slot:reader"
+    },
+    {
+      "behavior_id": "shelf-gap",
+      "context_id": "shelf-gap-context",
+      "display_name": "Shelf gap",
+      "inference_profile_id": "gents:inference-slot:reader"
+    },
+    {
+      "behavior_id": "shelf-metadata",
+      "context_id": "shelf-metadata-context",
+      "display_name": "Shelf metadata",
+      "inference_profile_id": "gents:inference-slot:librarian"
+    },
+    {
+      "behavior_id": "shelf-classify",
+      "context_id": "shelf-classify-context",
+      "display_name": "Shelf classify",
+      "inference_profile_id": "gents:inference-slot:librarian"
     }
   ],
   "contexts": [
@@ -54,21 +84,6 @@
       "tools_id": "shelf-tools"
     },
     {
-      "context_id": "shelf-analyze-context",
-      "system_prompt": "./agent_behaviors/shelf_analyze/system_prompt.md",
-      "tools_id": "shelf-analyze-tools"
-    },
-    {
-      "context_id": "shelf-outline-context",
-      "system_prompt": "./agent_behaviors/shelf_outline/system_prompt.md",
-      "tools_id": "shelf-outline-tools"
-    },
-    {
-      "context_id": "shelf-verify-context",
-      "system_prompt": "./agent_behaviors/shelf_verify/system_prompt.md",
-      "tools_id": "shelf-verify-tools"
-    },
-    {
       "context_id": "shelf-polish-context",
       "system_prompt": "./agent_behaviors/shelf_polish/system_prompt.md",
       "tools_id": "shelf-polish-tools"
@@ -77,6 +92,46 @@
       "context_id": "shelf-research-context",
       "system_prompt": "./agent_behaviors/shelf_research/system_prompt.md",
       "tools_id": "shelf-research-tools"
+    },
+    {
+      "context_id": "shelf-toc-find-context",
+      "system_prompt": "./agent_behaviors/shelf_toc_find/system_prompt.md",
+      "tools_id": "shelf-toc-find-tools"
+    },
+    {
+      "context_id": "shelf-toc-extract-context",
+      "system_prompt": "./agent_behaviors/shelf_toc_extract/system_prompt.md",
+      "tools_id": "shelf-toc-extract-tools"
+    },
+    {
+      "context_id": "shelf-entry-find-context",
+      "system_prompt": "./agent_behaviors/shelf_entry_find/system_prompt.md",
+      "tools_id": "shelf-entry-find-tools"
+    },
+    {
+      "context_id": "shelf-pattern-context",
+      "system_prompt": "./agent_behaviors/shelf_pattern/system_prompt.md",
+      "tools_id": "shelf-pattern-tools"
+    },
+    {
+      "context_id": "shelf-chapter-find-context",
+      "system_prompt": "./agent_behaviors/shelf_chapter_find/system_prompt.md",
+      "tools_id": "shelf-chapter-find-tools"
+    },
+    {
+      "context_id": "shelf-gap-context",
+      "system_prompt": "./agent_behaviors/shelf_gap/system_prompt.md",
+      "tools_id": "shelf-gap-tools"
+    },
+    {
+      "context_id": "shelf-metadata-context",
+      "system_prompt": "./agent_behaviors/shelf_metadata/system_prompt.md",
+      "tools_id": "shelf-metadata-tools"
+    },
+    {
+      "context_id": "shelf-classify-context",
+      "system_prompt": "./agent_behaviors/shelf_classify/system_prompt.md",
+      "tools_id": "shelf-classify-tools"
     }
   ],
   "tools": [
@@ -106,9 +161,6 @@
           "ShelfExtract",
           "ShelfPage",
           "ShelfFigure",
-          "ShelfChunkAnalysis",
-          "ShelfOutline",
-          "ShelfStructureProposal",
           "ShelfStructureReport",
           "ShelfBook",
           "ShelfChapter",
@@ -123,50 +175,14 @@
           "ShelfPassage",
           "ShelfLibraryEdition",
           "ShelfLibraryPassage",
-          "ShelfEditionFailure"
+          "ShelfEditionFailure",
+          "ShelfToC",
+          "ShelfToCEntry",
+          "ShelfStructureFailure"
         ],
         "datastore_tool_surface_ids": [
           "shelf-requests"
         ]
-      }
-    },
-    {
-      "tools_id": "shelf-analyze-tools",
-      "display_name": "Shelf analyze tools",
-      "datastore": {
-        "enable_defra_query": false,
-        "datastore_tool_surface_ids": [
-          "shelf-analyze-writes"
-        ]
-      },
-      "built_ins": {
-        "enable_session_history_tool": false
-      }
-    },
-    {
-      "tools_id": "shelf-outline-tools",
-      "display_name": "Shelf outline tools",
-      "datastore": {
-        "enable_defra_query": false,
-        "datastore_tool_surface_ids": [
-          "shelf-outline-writes"
-        ]
-      },
-      "built_ins": {
-        "enable_session_history_tool": false
-      }
-    },
-    {
-      "tools_id": "shelf-verify-tools",
-      "display_name": "Shelf verify tools",
-      "datastore": {
-        "enable_defra_query": false,
-        "datastore_tool_surface_ids": [
-          "shelf-verify-writes"
-        ]
-      },
-      "built_ins": {
-        "enable_session_history_tool": false
       }
     },
     {
@@ -179,6 +195,104 @@
       },
       "built_ins": {
         "enable_session_history_tool": false
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": {
+                  "source_field": "source_run_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": {
+                  "source_field": "source_run_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -192,6 +306,1307 @@
         "datastore_tool_surface_ids": [
           "shelf-research-reads"
         ]
+      }
+    },
+    {
+      "tools_id": "shelf-toc-find-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/get_frontmatter_grep_report",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "frontmatter_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-toc-find-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-toc-extract-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-toc-extract-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-entry-find-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/grep_text",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "search_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_heading_pages",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "toc_start",
+                "fill": {
+                  "source_field": "toc_start"
+                }
+              },
+              {
+                "name": "toc_end",
+                "fill": {
+                  "source_field": "toc_end"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "heading_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-entry-find-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-pattern-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/grep_text",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "search_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_heading_pages",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "toc_start",
+                "fill": {
+                  "source_field": "toc_start"
+                }
+              },
+              {
+                "name": "toc_end",
+                "fill": {
+                  "source_field": "toc_end"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "heading_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-pattern-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-chapter-find-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/grep_text",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "search_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_heading_pages",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "toc_start",
+                "fill": {
+                  "source_field": "toc_start"
+                }
+              },
+              {
+                "name": "toc_end",
+                "fill": {
+                  "source_field": "toc_end"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "heading_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-chapter-find-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-gap-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/grep_text",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "search_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_heading_pages",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "toc_start",
+                "fill": {
+                  "source_field": "toc_start"
+                }
+              },
+              {
+                "name": "toc_end",
+                "fill": {
+                  "source_field": "toc_end"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "heading_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-gap-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-metadata-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-metadata-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
+      }
+    },
+    {
+      "tools_id": "shelf-classify-tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/get_page_ocr",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "ocr_command"
+                }
+              }
+            ]
+          },
+          {
+            "plugin": "gents/load_page_image",
+            "input_fields": [
+              {
+                "name": "path",
+                "fill": {
+                  "source_field": "path"
+                }
+              },
+              {
+                "name": "book_file",
+                "fill": {
+                  "source_field": "book_file"
+                }
+              },
+              {
+                "name": "book_hash",
+                "fill": {
+                  "source_field": "book_hash"
+                }
+              },
+              {
+                "name": "book_id",
+                "fill": {
+                  "source_field": "book_id"
+                }
+              },
+              {
+                "name": "run_id",
+                "fill": "correlation"
+              },
+              {
+                "name": "stage_job_id",
+                "fill": {
+                  "source_field": "stage_job_id"
+                }
+              },
+              {
+                "name": "command",
+                "fill": {
+                  "source_field": "image_command"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "datastore": {
+        "enable_defra_query": false,
+        "datastore_tool_surface_ids": [
+          "shelf-classify-writes"
+        ]
+      },
+      "built_ins": {
+        "enable_session_history_tool": false
       }
     }
   ],
@@ -258,50 +1673,6 @@
           }
         ],
         "plugin": "gents/ocr"
-      }
-    },
-    {
-      "callback_id": "shelf-assemble",
-      "display_name": "Assemble structured book",
-      "handler": {
-        "kind": "plugin",
-        "plugin": "shelf_structure",
-        "digest": "",
-        "correlation_field": "run_id",
-        "outputs": [
-          {
-            "name": "book",
-            "collection": "ShelfBook",
-            "schema": "ShelfBook/v1",
-            "correlation_field": "run_id",
-            "cardinality": "one",
-            "required": false
-          },
-          {
-            "name": "chapters",
-            "collection": "ShelfChapter",
-            "schema": "ShelfChapter/v1",
-            "correlation_field": "run_id",
-            "cardinality": "many",
-            "required": false
-          },
-          {
-            "name": "report",
-            "collection": "ShelfStructureReport",
-            "schema": "ShelfStructureReport/v1",
-            "correlation_field": "run_id",
-            "cardinality": "one",
-            "required": false
-          },
-          {
-            "name": "retry",
-            "collection": "ShelfStructureRetry",
-            "schema": "ShelfStructureRetry/v1",
-            "correlation_field": "run_id",
-            "cardinality": "one",
-            "required": false
-          }
-        ]
       }
     },
     {
@@ -475,7 +1846,7 @@
       }
     },
     {
-      "callback_id": "shelf-analysis-ready",
+      "callback_id": "shelf-source-ready",
       "handler": {
         "kind": "plugin",
         "plugin": "shelf_structure",
@@ -484,11 +1855,321 @@
         "outputs": [
           {
             "name": "job",
-            "collection": "ShelfOutlineJob",
-            "schema": "ShelfOutlineJob/v1",
+            "collection": "ShelfSourceReady",
+            "schema": "ShelfSourceReady/v1",
             "correlation_field": "run_id",
             "cardinality": "one",
             "required": true
+          }
+        ]
+      }
+    },
+    {
+      "callback_id": "shelf-toc",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_toc",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "toc_find_job",
+            "collection": "ShelfTocFindJob",
+            "schema": "ShelfTocFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "metadata_job",
+            "collection": "ShelfMetadataJob",
+            "schema": "ShelfMetadataJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "toc_extract_job",
+            "collection": "ShelfTocExtractJob",
+            "schema": "ShelfTocExtractJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "toc",
+            "collection": "ShelfToC",
+            "schema": "ShelfToC/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "entries",
+            "collection": "ShelfToCEntry",
+            "schema": "ShelfToCEntry/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "link_jobs",
+            "collection": "ShelfEntryFindJob",
+            "schema": "ShelfEntryFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "pattern_prepare_job",
+            "collection": "ShelfPatternPrepareJob",
+            "schema": "ShelfPatternPrepareJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "pattern_job",
+            "collection": "ShelfPatternJob",
+            "schema": "ShelfPatternJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "discovery_jobs",
+            "collection": "ShelfChapterFindJob",
+            "schema": "ShelfChapterFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "gap_plan_job",
+            "collection": "ShelfGapPlanJob",
+            "schema": "ShelfGapPlanJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "gap_jobs",
+            "collection": "ShelfGapJob",
+            "schema": "ShelfGapJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "ready",
+            "collection": "ShelfBookReady",
+            "schema": "ShelfBookReady/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "classify_prepare_job",
+            "collection": "ShelfClassifyPrepareJob",
+            "schema": "ShelfClassifyPrepareJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "classify_job",
+            "collection": "ShelfClassifyJob",
+            "schema": "ShelfClassifyJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "book",
+            "collection": "ShelfBook",
+            "schema": "ShelfBook/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "chapters",
+            "collection": "ShelfChapter",
+            "schema": "ShelfChapter/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "report",
+            "collection": "ShelfStructureReport",
+            "schema": "ShelfStructureReport/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "failure",
+            "collection": "ShelfStructureFailure",
+            "schema": "ShelfStructureFailure/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          }
+        ]
+      }
+    },
+    {
+      "callback_id": "shelf-toc-join",
+      "handler": {
+        "kind": "plugin",
+        "plugin": "shelf_toc_join",
+        "digest": "",
+        "correlation_field": "run_id",
+        "outputs": [
+          {
+            "name": "toc_find_job",
+            "collection": "ShelfTocFindJob",
+            "schema": "ShelfTocFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "metadata_job",
+            "collection": "ShelfMetadataJob",
+            "schema": "ShelfMetadataJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "toc_extract_job",
+            "collection": "ShelfTocExtractJob",
+            "schema": "ShelfTocExtractJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "toc",
+            "collection": "ShelfToC",
+            "schema": "ShelfToC/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "entries",
+            "collection": "ShelfToCEntry",
+            "schema": "ShelfToCEntry/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "link_jobs",
+            "collection": "ShelfEntryFindJob",
+            "schema": "ShelfEntryFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "pattern_prepare_job",
+            "collection": "ShelfPatternPrepareJob",
+            "schema": "ShelfPatternPrepareJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "pattern_job",
+            "collection": "ShelfPatternJob",
+            "schema": "ShelfPatternJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "discovery_jobs",
+            "collection": "ShelfChapterFindJob",
+            "schema": "ShelfChapterFindJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "gap_plan_job",
+            "collection": "ShelfGapPlanJob",
+            "schema": "ShelfGapPlanJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "gap_jobs",
+            "collection": "ShelfGapJob",
+            "schema": "ShelfGapJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "ready",
+            "collection": "ShelfBookReady",
+            "schema": "ShelfBookReady/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "classify_prepare_job",
+            "collection": "ShelfClassifyPrepareJob",
+            "schema": "ShelfClassifyPrepareJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "classify_job",
+            "collection": "ShelfClassifyJob",
+            "schema": "ShelfClassifyJob/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "book",
+            "collection": "ShelfBook",
+            "schema": "ShelfBook/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "chapters",
+            "collection": "ShelfChapter",
+            "schema": "ShelfChapter/v1",
+            "correlation_field": "run_id",
+            "cardinality": "many",
+            "required": false
+          },
+          {
+            "name": "report",
+            "collection": "ShelfStructureReport",
+            "schema": "ShelfStructureReport/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
+          },
+          {
+            "name": "failure",
+            "collection": "ShelfStructureFailure",
+            "schema": "ShelfStructureFailure/v1",
+            "correlation_field": "run_id",
+            "cardinality": "one",
+            "required": false
           }
         ]
       }
@@ -536,25 +2217,6 @@
         "book_id",
         "access",
         "license"
-      ]
-    },
-    {
-      "binding_id": "shelf-assemble",
-      "callback_id": "shelf-assemble",
-      "event_source_id": "shelf-assemble",
-      "input_fields": [
-        "run_id",
-        "title",
-        "author",
-        "language",
-        "sources_json",
-        "entries_json",
-        "review_notes",
-        "book_id",
-        "access",
-        "license",
-        "attempt",
-        "attempt_id"
       ]
     },
     {
@@ -663,9 +2325,9 @@
       ]
     },
     {
-      "binding_id": "shelf-analysis-ready",
-      "callback_id": "shelf-analysis-ready",
-      "event_source_id": "shelf-analysis-ready",
+      "binding_id": "shelf-source-ready",
+      "callback_id": "shelf-source-ready",
+      "event_source_id": "shelf-source-ready",
       "input_fields": [
         "run_id",
         "chunk",
@@ -678,6 +2340,359 @@
         "error",
         "access",
         "license"
+      ]
+    },
+    {
+      "binding_id": "shelf-toc-find-result",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-toc-find-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "total_pages",
+        "toc_found",
+        "toc_page_range",
+        "confidence",
+        "search_strategy_used",
+        "reasoning",
+        "structure_summary",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-toc-extract-result",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-toc-extract-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "total_pages",
+        "toc_pages_json",
+        "extraction",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-entry-find-result",
+      "callback_id": "shelf-toc-join",
+      "event_source_id": "shelf-entry-find-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entry_id",
+        "entry_json",
+        "expected_total",
+        "expected_ids_json",
+        "plan_id",
+        "total_pages",
+        "scan_page",
+        "reasoning",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-pattern-result",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-pattern-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entries_json",
+        "candidates_json",
+        "body_start",
+        "body_end",
+        "total_pages",
+        "analysis"
+      ]
+    },
+    {
+      "binding_id": "shelf-chapter-find-result",
+      "callback_id": "shelf-toc-join",
+      "event_source_id": "shelf-chapter-find-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entry_id",
+        "entry_json",
+        "entries_json",
+        "expected_total",
+        "expected_ids_json",
+        "plan_id",
+        "total_pages",
+        "excluded_json",
+        "heading_format",
+        "scan_page",
+        "reasoning",
+        "found_title",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-gap-result",
+      "callback_id": "shelf-toc-join",
+      "event_source_id": "shelf-gap-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "gap_id",
+        "gap_context_json",
+        "entries_json",
+        "total_pages",
+        "expected_total",
+        "expected_ids_json",
+        "plan_id",
+        "fix",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-metadata-result",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-metadata-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "total_pages",
+        "metadata",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-classify-result",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-classify-result",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entries_json",
+        "metadata_json",
+        "classification_prompt",
+        "classification",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-discover",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-discover",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "frontmatter_command",
+        "search_command",
+        "heading_command",
+        "ocr_command",
+        "image_command",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-pattern-prepare",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-pattern-prepare",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entries_json",
+        "total_pages",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-gap-plan",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-gap-plan",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entries_json",
+        "total_pages",
+        "discovery_count",
+        "excluded_json",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-classification-ready",
+      "callback_id": "shelf-toc-join",
+      "event_source_id": "shelf-classification-ready",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "ready_kind",
+        "payload_json",
+        "expected_total",
+        "plan_id",
+        "expected_ids_json",
+        "ready_id",
+        "body_start",
+        "body_end"
+      ]
+    },
+    {
+      "binding_id": "shelf-classify-prepare",
+      "callback_id": "shelf-toc",
+      "event_source_id": "shelf-classify-prepare",
+      "input_fields": [
+        "run_id",
+        "book_id",
+        "path",
+        "book_file",
+        "book_hash",
+        "stage",
+        "stage_job_id",
+        "toc_start",
+        "toc_end",
+        "structure_summary_json",
+        "structure_notes_json",
+        "access",
+        "license",
+        "entries_json",
+        "metadata_json",
+        "body_start",
+        "body_end"
       ]
     }
   ],
@@ -697,16 +2712,9 @@
       "correlation_field": "run_id"
     },
     {
-      "event_source_id": "shelf-analyze",
-      "display_name": "Shelf analyze",
+      "event_source_id": "shelf-source-ready",
+      "display_name": "Wait for complete book OCR",
       "source_collection": "ShelfExtract",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "shelf-analysis-ready",
-      "display_name": "Shelf outline",
-      "source_collection": "ShelfChunkAnalysis",
       "event_kind": "created",
       "correlation_field": "run_id",
       "group": {
@@ -714,19 +2722,6 @@
           "source_field": "expected_total"
         }
       }
-    },
-    {
-      "event_source_id": "shelf-verify",
-      "display_name": "Shelf verify",
-      "source_collection": "ShelfOutline",
-      "event_kind": "created",
-      "correlation_field": "run_id"
-    },
-    {
-      "event_source_id": "shelf-assemble",
-      "source_collection": "ShelfStructureProposal",
-      "event_kind": "created",
-      "correlation_field": "run_id"
     },
     {
       "event_source_id": "shelf-export",
@@ -790,37 +2785,153 @@
       "correlation_field": "run_id"
     },
     {
-      "event_source_id": "shelf-outline",
-      "source_collection": "ShelfOutlineJob",
+      "event_source_id": "shelf-toc-find",
+      "source_collection": "ShelfTocFindJob",
       "event_kind": "created",
       "correlation_field": "run_id"
     },
     {
-      "event_source_id": "shelf-verify-retry",
-      "source_collection": "ShelfStructureRetry",
+      "event_source_id": "shelf-toc-find-result",
+      "source_collection": "ShelfTocFindFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-toc-extract",
+      "source_collection": "ShelfTocExtractJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-toc-extract-result",
+      "source_collection": "ShelfTocExtractFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-entry-find",
+      "source_collection": "ShelfEntryFindJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-entry-find-result",
+      "source_collection": "ShelfEntryFindFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-pattern",
+      "source_collection": "ShelfPatternJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-pattern-result",
+      "source_collection": "ShelfPatternFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-chapter-find",
+      "source_collection": "ShelfChapterFindJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-chapter-find-result",
+      "source_collection": "ShelfChapterFindFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-gap",
+      "source_collection": "ShelfGapJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-gap-result",
+      "source_collection": "ShelfGapFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-metadata",
+      "source_collection": "ShelfMetadataJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-metadata-result",
+      "source_collection": "ShelfMetadataFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-classify",
+      "source_collection": "ShelfClassifyJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-classify-result",
+      "source_collection": "ShelfClassifyFinding",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-discover",
+      "source_collection": "ShelfDiscoveryJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-pattern-prepare",
+      "source_collection": "ShelfPatternPrepareJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-gap-plan",
+      "source_collection": "ShelfGapPlanJob",
+      "event_kind": "created",
+      "correlation_field": "run_id"
+    },
+    {
+      "event_source_id": "shelf-classification-ready",
+      "source_collection": "ShelfBookReady",
+      "event_kind": "created",
+      "correlation_field": "run_id",
+      "group": {
+        "expected_count": {
+          "source_field": "expected_total"
+        }
+      }
+    },
+    {
+      "event_source_id": "shelf-classify-prepare",
+      "source_collection": "ShelfClassifyPrepareJob",
       "event_kind": "created",
       "correlation_field": "run_id"
     }
   ],
   "tasks": [
-    {
-      "task_id": "shelf-analyze",
-      "behavior_id": "shelf-analyze",
-      "display_name": "Shelf analyze",
-      "prompt_template": "./tasks/shelf_analyze/prompt.md"
-    },
-    {
-      "task_id": "shelf-outline",
-      "behavior_id": "shelf-outline",
-      "display_name": "Shelf outline",
-      "prompt_template": "./tasks/shelf_outline/prompt.md"
-    },
-    {
-      "task_id": "shelf-verify",
-      "behavior_id": "shelf-verify",
-      "display_name": "Shelf verify",
-      "prompt_template": "./tasks/shelf_verify/prompt.md"
-    },
     {
       "task_id": "shelf-polish",
       "behavior_id": "shelf-polish",
@@ -830,39 +2941,49 @@
       "task_id": "shelf-polish-secondary",
       "behavior_id": "shelf-polish-secondary",
       "prompt_template": "./tasks/shelf_polish/prompt.md"
+    },
+    {
+      "task_id": "shelf-toc-find",
+      "behavior_id": "shelf-toc-find",
+      "prompt_template": "./tasks/shelf_toc_find/prompt.md"
+    },
+    {
+      "task_id": "shelf-toc-extract",
+      "behavior_id": "shelf-toc-extract",
+      "prompt_template": "./tasks/shelf_toc_extract/prompt.md"
+    },
+    {
+      "task_id": "shelf-entry-find",
+      "behavior_id": "shelf-entry-find",
+      "prompt_template": "./tasks/shelf_entry_find/prompt.md"
+    },
+    {
+      "task_id": "shelf-pattern",
+      "behavior_id": "shelf-pattern",
+      "prompt_template": "./tasks/shelf_pattern/prompt.md"
+    },
+    {
+      "task_id": "shelf-chapter-find",
+      "behavior_id": "shelf-chapter-find",
+      "prompt_template": "./tasks/shelf_chapter_find/prompt.md"
+    },
+    {
+      "task_id": "shelf-gap",
+      "behavior_id": "shelf-gap",
+      "prompt_template": "./tasks/shelf_gap/prompt.md"
+    },
+    {
+      "task_id": "shelf-metadata",
+      "behavior_id": "shelf-metadata",
+      "prompt_template": "./tasks/shelf_metadata/prompt.md"
+    },
+    {
+      "task_id": "shelf-classify",
+      "behavior_id": "shelf-classify",
+      "prompt_template": "./tasks/shelf_classify/prompt.md"
     }
   ],
   "triggers": [
-    {
-      "trigger_id": "shelf-analyze",
-      "display_name": "Shelf analyze",
-      "task_id": "shelf-analyze",
-      "source": {
-        "kind": "event",
-        "event_source_id": "shelf-analyze"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "shelf-outline",
-      "display_name": "Shelf outline",
-      "task_id": "shelf-outline",
-      "source": {
-        "kind": "event",
-        "event_source_id": "shelf-outline"
-      },
-      "concurrency": "parallel"
-    },
-    {
-      "trigger_id": "shelf-verify",
-      "display_name": "Shelf verify",
-      "task_id": "shelf-verify",
-      "source": {
-        "kind": "event",
-        "event_source_id": "shelf-verify"
-      },
-      "concurrency": "parallel"
-    },
     {
       "trigger_id": "shelf-polish",
       "task_id": "shelf-polish",
@@ -882,524 +3003,79 @@
       "concurrency": "parallel"
     },
     {
-      "trigger_id": "shelf-verify-retry",
-      "task_id": "shelf-verify",
+      "trigger_id": "shelf-toc-find",
+      "task_id": "shelf-toc-find",
       "source": {
         "kind": "event",
-        "event_source_id": "shelf-verify-retry"
+        "event_source_id": "shelf-toc-find"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-toc-extract",
+      "task_id": "shelf-toc-extract",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-toc-extract"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-entry-find",
+      "task_id": "shelf-entry-find",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-entry-find"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-pattern",
+      "task_id": "shelf-pattern",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-pattern"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-chapter-find",
+      "task_id": "shelf-chapter-find",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-chapter-find"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-gap",
+      "task_id": "shelf-gap",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-gap"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-metadata",
+      "task_id": "shelf-metadata",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-metadata"
+      },
+      "concurrency": "parallel"
+    },
+    {
+      "trigger_id": "shelf-classify",
+      "task_id": "shelf-classify",
+      "source": {
+        "kind": "event",
+        "event_source_id": "shelf-classify"
       },
       "concurrency": "parallel"
     }
   ],
   "datastore_tool_surfaces": [
-    {
-      "surface_id": "shelf-analyze-writes",
-      "display_name": "Shelf analyze output",
-      "entries": [
-        {
-          "tool_name": "write_shelf_analyze",
-          "collection": "ShelfChunkAnalysis",
-          "description": "Persist the analyze result for this book run.",
-          "fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "chunk",
-              "fill": {
-                "source_field": "chunk"
-              }
-            },
-            {
-              "name": "expected_total",
-              "fill": {
-                "source_field": "expected_total"
-              }
-            },
-            {
-              "name": "source",
-              "fill": {
-                "source_field": "source"
-              }
-            },
-            {
-              "name": "page_count",
-              "fill": {
-                "source_field": "page_count"
-              }
-            },
-            {
-              "name": "analysis",
-              "required": true
-            },
-            {
-              "name": "error",
-              "fill": {
-                "source_field": "error"
-              }
-            },
-            {
-              "name": "chunk_id",
-              "fill": {
-                "source_field": "chunk_id"
-              }
-            },
-            {
-              "name": "sources_json",
-              "fill": {
-                "source_field": "sources_json"
-              }
-            },
-            {
-              "name": "book_id",
-              "fill": {
-                "source_field": "book_id"
-              }
-            },
-            {
-              "name": "format",
-              "fill": {
-                "source_field": "format"
-              }
-            },
-            {
-              "name": "extraction_state",
-              "fill": {
-                "source_field": "extraction_state"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            }
-          ],
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          }
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_chunks",
-          "collection": "ShelfChunk",
-          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
-          "fields": [
-            "chunk",
-            "source",
-            "pages"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "surface_id": "shelf-outline-writes",
-      "display_name": "Shelf outline output",
-      "entries": [
-        {
-          "tool_name": "write_shelf_outline",
-          "collection": "ShelfOutline",
-          "description": "Persist the outline result for this book run. entries_json is a JSON array of {title,source,page,level,matter_type,content_type,review_notes}. page is a physical 1-based integer; level is 1-6; matter_type must be exactly front_matter, body, or back_matter; content_type is a nonempty section classification.",
-          "fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "title",
-              "required": true
-            },
-            {
-              "name": "author",
-              "required": true
-            },
-            {
-              "name": "language",
-              "required": true
-            },
-            {
-              "name": "sources_json",
-              "fill": {
-                "source_field": "sources_json"
-              }
-            },
-            {
-              "name": "entries_json",
-              "required": true
-            },
-            {
-              "name": "review_notes",
-              "required": true
-            },
-            {
-              "name": "book_id",
-              "fill": {
-                "source_field": "book_id"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "attempt",
-              "fill": {
-                "source_field": "attempt"
-              }
-            },
-            {
-              "name": "attempt_id",
-              "fill": {
-                "source_field": "attempt_id"
-              }
-            },
-            {
-              "name": "feedback",
-              "fill": {
-                "source_field": "feedback"
-              }
-            }
-          ],
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          }
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_chunks",
-          "collection": "ShelfChunk",
-          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
-          "fields": [
-            "chunk",
-            "source",
-            "pages"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_analyses",
-          "collection": "ShelfChunkAnalysis",
-          "description": "Read all chunk analyses for this run.",
-          "fields": [
-            "chunk",
-            "source",
-            "extraction_state",
-            "analysis",
-            "error"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_extractions",
-          "collection": "ShelfExtract",
-          "description": "Check extraction completeness for this run without loading raw text.",
-          "fields": [
-            "chunk",
-            "source",
-            "complete",
-            "error",
-            "cursor",
-            "warnings",
-            "page_count"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_job",
-          "collection": "ShelfJob",
-          "description": "Read the input file or explicit ordered source list for this run.",
-          "fields": [
-            "path",
-            "files"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_page_index",
-          "collection": "ShelfPage",
-          "description": "List physical page numbers for this book without text. Optional source selects one PDF. Use read_shelf_page with source and page to inspect a candidate boundary; the native manifest provides complete source page counts.",
-          "fields": [
-            "_docID",
-            "source",
-            "page"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "source"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_page",
-          "collection": "ShelfPage",
-          "description": "Read physical pages in this book. To inspect one page, pass source filename and integer page: {\"source\":\"book.pdf\",\"page\":32,\"fields\":[\"page\",\"markdown\"]}. Recover truncated text with the returned field_page and fields:[\"markdown\"]; source/page are optional during recovery. The host always supplies the book filter.",
-          "fields": [
-            "_docID",
-            "source",
-            "page",
-            "markdown"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "source"
-            },
-            {
-              "name": "page"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "surface_id": "shelf-verify-writes",
-      "display_name": "Shelf verify output",
-      "entries": [
-        {
-          "tool_name": "write_shelf_verify",
-          "collection": "ShelfStructureProposal",
-          "description": "Persist the verify result for this book run. entries_json is a JSON array of {title,source,page,level,matter_type,content_type,review_notes}. page is a physical 1-based integer; level is 1-6; matter_type must be exactly front_matter, body, or back_matter; content_type is a nonempty section classification.",
-          "fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "title",
-              "required": true
-            },
-            {
-              "name": "author",
-              "required": true
-            },
-            {
-              "name": "language",
-              "required": true
-            },
-            {
-              "name": "sources_json",
-              "fill": {
-                "source_field": "sources_json"
-              }
-            },
-            {
-              "name": "entries_json",
-              "required": true
-            },
-            {
-              "name": "review_notes",
-              "required": true
-            },
-            {
-              "name": "book_id",
-              "fill": {
-                "source_field": "book_id"
-              }
-            },
-            {
-              "name": "access",
-              "fill": {
-                "source_field": "access"
-              }
-            },
-            {
-              "name": "license",
-              "fill": {
-                "source_field": "license"
-              }
-            },
-            {
-              "name": "attempt",
-              "fill": {
-                "source_field": "attempt"
-              }
-            },
-            {
-              "name": "attempt_id",
-              "fill": {
-                "source_field": "attempt_id"
-              }
-            }
-          ],
-          "output_obligation": {
-            "scope": "trigger",
-            "minimum_writes": 1
-          }
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_chunks",
-          "collection": "ShelfChunk",
-          "description": "Read the planned chunks for this run. Identity, counts and source manifest are filled by the host.",
-          "fields": [
-            "chunk",
-            "source",
-            "pages"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_analyses",
-          "collection": "ShelfChunkAnalysis",
-          "description": "Read all chunk analyses for this run.",
-          "fields": [
-            "chunk",
-            "source",
-            "extraction_state",
-            "analysis",
-            "error"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_extractions",
-          "collection": "ShelfExtract",
-          "description": "Check extraction completeness for this run without loading raw text.",
-          "fields": [
-            "chunk",
-            "source",
-            "complete",
-            "error",
-            "cursor",
-            "warnings",
-            "page_count"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_job",
-          "collection": "ShelfJob",
-          "description": "Read the input file or explicit ordered source list for this run.",
-          "fields": [
-            "path",
-            "files"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_page_index",
-          "collection": "ShelfPage",
-          "description": "List physical page numbers for this book without text. Optional source selects one PDF. Use read_shelf_page with source and page to inspect a candidate boundary; the native manifest provides complete source page counts.",
-          "fields": [
-            "_docID",
-            "source",
-            "page"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "source"
-            }
-          ]
-        },
-        {
-          "kind": "query",
-          "tool_name": "read_shelf_page",
-          "collection": "ShelfPage",
-          "description": "Read physical pages in this book. To inspect one page, pass source filename and integer page: {\"source\":\"book.pdf\",\"page\":32,\"fields\":[\"page\",\"markdown\"]}. Recover truncated text with the returned field_page and fields:[\"markdown\"]; source/page are optional during recovery. The host always supplies the book filter.",
-          "fields": [
-            "_docID",
-            "source",
-            "page",
-            "markdown"
-          ],
-          "filter_fields": [
-            {
-              "name": "run_id",
-              "fill": "correlation"
-            },
-            {
-              "name": "source"
-            },
-            {
-              "name": "page"
-            }
-          ]
-        }
-      ]
-    },
     {
       "surface_id": "shelf-requests",
       "display_name": "Shelf ingestion and edition requests",
@@ -1612,6 +3288,968 @@
               "required": true
             }
           ]
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-toc-find-writes",
+      "entries": [
+        {
+          "tool_name": "write_toc_result",
+          "collection": "ShelfTocFindFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "toc_found",
+              "required": true
+            },
+            {
+              "name": "toc_page_range",
+              "required": false
+            },
+            {
+              "name": "confidence",
+              "required": true
+            },
+            {
+              "name": "search_strategy_used",
+              "required": true
+            },
+            {
+              "name": "reasoning",
+              "required": true
+            },
+            {
+              "name": "structure_summary",
+              "required": false
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-toc-extract-writes",
+      "entries": [
+        {
+          "tool_name": "write_extracted_toc",
+          "collection": "ShelfTocExtractFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "structure_notes_json",
+              "fill": {
+                "source_field": "structure_notes_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "toc_pages_json",
+              "fill": {
+                "source_field": "toc_pages_json"
+              }
+            },
+            {
+              "name": "extraction",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-entry-find-writes",
+      "entries": [
+        {
+          "tool_name": "write_result",
+          "collection": "ShelfEntryFindFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "entry_id",
+              "fill": {
+                "source_field": "entry_id"
+              }
+            },
+            {
+              "name": "entry_json",
+              "fill": {
+                "source_field": "entry_json"
+              }
+            },
+            {
+              "name": "expected_total",
+              "fill": {
+                "source_field": "expected_total"
+              }
+            },
+            {
+              "name": "expected_ids_json",
+              "fill": {
+                "source_field": "expected_ids_json"
+              }
+            },
+            {
+              "name": "plan_id",
+              "fill": {
+                "source_field": "plan_id"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "scan_page",
+              "required": false
+            },
+            {
+              "name": "reasoning",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-pattern-writes",
+      "entries": [
+        {
+          "tool_name": "write_pattern_result",
+          "collection": "ShelfPatternFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "entries_json",
+              "fill": {
+                "source_field": "entries_json"
+              }
+            },
+            {
+              "name": "candidates_json",
+              "fill": {
+                "source_field": "candidates_json"
+              }
+            },
+            {
+              "name": "body_start",
+              "fill": {
+                "source_field": "body_start"
+              }
+            },
+            {
+              "name": "body_end",
+              "fill": {
+                "source_field": "body_end"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "analysis",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-chapter-find-writes",
+      "entries": [
+        {
+          "tool_name": "write_result",
+          "collection": "ShelfChapterFindFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "entry_id",
+              "fill": {
+                "source_field": "entry_id"
+              }
+            },
+            {
+              "name": "entry_json",
+              "fill": {
+                "source_field": "entry_json"
+              }
+            },
+            {
+              "name": "entries_json",
+              "fill": {
+                "source_field": "entries_json"
+              }
+            },
+            {
+              "name": "expected_total",
+              "fill": {
+                "source_field": "expected_total"
+              }
+            },
+            {
+              "name": "expected_ids_json",
+              "fill": {
+                "source_field": "expected_ids_json"
+              }
+            },
+            {
+              "name": "plan_id",
+              "fill": {
+                "source_field": "plan_id"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "excluded_json",
+              "fill": {
+                "source_field": "excluded_json"
+              }
+            },
+            {
+              "name": "heading_format",
+              "fill": {
+                "source_field": "heading_format"
+              }
+            },
+            {
+              "name": "scan_page",
+              "required": false
+            },
+            {
+              "name": "reasoning",
+              "required": true
+            },
+            {
+              "name": "found_title",
+              "required": false
+            },
+            {
+              "name": "body_start",
+              "fill": {
+                "source_field": "body_start"
+              }
+            },
+            {
+              "name": "body_end",
+              "fill": {
+                "source_field": "body_end"
+              }
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-gap-writes",
+      "entries": [
+        {
+          "tool_name": "write_fix",
+          "collection": "ShelfGapFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "gap_id",
+              "fill": {
+                "source_field": "gap_id"
+              }
+            },
+            {
+              "name": "gap_context_json",
+              "fill": {
+                "source_field": "gap_context_json"
+              }
+            },
+            {
+              "name": "entries_json",
+              "fill": {
+                "source_field": "entries_json"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "expected_total",
+              "fill": {
+                "source_field": "expected_total"
+              }
+            },
+            {
+              "name": "expected_ids_json",
+              "fill": {
+                "source_field": "expected_ids_json"
+              }
+            },
+            {
+              "name": "plan_id",
+              "fill": {
+                "source_field": "plan_id"
+              }
+            },
+            {
+              "name": "fix",
+              "required": true
+            },
+            {
+              "name": "body_start",
+              "fill": {
+                "source_field": "body_start"
+              }
+            },
+            {
+              "name": "body_end",
+              "fill": {
+                "source_field": "body_end"
+              }
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-metadata-writes",
+      "entries": [
+        {
+          "tool_name": "write_metadata",
+          "collection": "ShelfMetadataFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "total_pages",
+              "fill": {
+                "source_field": "total_pages"
+              }
+            },
+            {
+              "name": "metadata",
+              "required": true
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
+        }
+      ]
+    },
+    {
+      "surface_id": "shelf-classify-writes",
+      "entries": [
+        {
+          "tool_name": "write_classification",
+          "collection": "ShelfClassifyFinding",
+          "description": "Persist the finding for this stage. JSON results are serialized strings; identity and input evidence are runtime-filled.",
+          "fields": [
+            {
+              "name": "run_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "book_id",
+              "fill": {
+                "source_field": "book_id"
+              }
+            },
+            {
+              "name": "path",
+              "fill": {
+                "source_field": "path"
+              }
+            },
+            {
+              "name": "book_file",
+              "fill": {
+                "source_field": "book_file"
+              }
+            },
+            {
+              "name": "book_hash",
+              "fill": {
+                "source_field": "book_hash"
+              }
+            },
+            {
+              "name": "stage",
+              "fill": {
+                "source_field": "stage"
+              }
+            },
+            {
+              "name": "stage_job_id",
+              "fill": {
+                "source_field": "stage_job_id"
+              }
+            },
+            {
+              "name": "toc_start",
+              "fill": {
+                "source_field": "toc_start"
+              }
+            },
+            {
+              "name": "toc_end",
+              "fill": {
+                "source_field": "toc_end"
+              }
+            },
+            {
+              "name": "structure_summary_json",
+              "fill": {
+                "source_field": "structure_summary_json"
+              }
+            },
+            {
+              "name": "access",
+              "fill": {
+                "source_field": "access"
+              }
+            },
+            {
+              "name": "license",
+              "fill": {
+                "source_field": "license"
+              }
+            },
+            {
+              "name": "entries_json",
+              "fill": {
+                "source_field": "entries_json"
+              }
+            },
+            {
+              "name": "metadata_json",
+              "fill": {
+                "source_field": "metadata_json"
+              }
+            },
+            {
+              "name": "classification_prompt",
+              "fill": {
+                "source_field": "classification_prompt"
+              }
+            },
+            {
+              "name": "classification",
+              "required": true
+            },
+            {
+              "name": "body_start",
+              "fill": {
+                "source_field": "body_start"
+              }
+            },
+            {
+              "name": "body_end",
+              "fill": {
+                "source_field": "body_end"
+              }
+            }
+          ],
+          "output_obligation": {
+            "scope": "trigger",
+            "minimum_writes": 1
+          }
         }
       ]
     }

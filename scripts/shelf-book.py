@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import functools
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -238,9 +239,61 @@ def query(home, collection, run_id, fields, limit=1000, offset=0, reader=None):
     return value["results"]
 
 
+def source_capsule(home, run_id, fields, directory, endpoint, expected_hashes=None):
+    read = functools.partial(query, reader=FieldReader(endpoint))
+    receipts = read(home, "ShelfSourceReady", run_id, ["book_id", "sources_json", "access", "license"])
+    if len(receipts) != 1:
+        raise RuntimeError("expected one complete source readiness receipt")
+    receipt = receipts[0]
+    manifest = json.loads(receipt["sources_json"])
+    pages, offset = {}, 0
+    while True:
+        rows = read(home, "ShelfPage", run_id, ["source", "page", "markdown"], 10, offset)
+        if not rows:
+            break
+        for row in rows:
+            key = (row["source"], row["page"])
+            if key in pages:
+                raise RuntimeError(f"duplicate source page: {key}")
+            pages[key] = row
+        offset += len(rows)
+    expected = {(item["source"], n) for item in manifest for n in range(1, item["page_count"] + 1)}
+    if not manifest or len({item["source"] for item in manifest}) != len(manifest) or set(pages) != expected:
+        raise RuntimeError("source capsule pages do not exactly cover the OCR manifest")
+    input_path = Path(fields["path"])
+    folder = input_path if "files" in fields else input_path.parent
+    allowed = set(fields.get("files", [input_path.name]))
+    sources, ordered = [], []
+    for item in manifest:
+        name = item["source"]
+        if name not in allowed or Path(name).name != name or item["page_count"] <= 0:
+            raise RuntimeError("source manifest is outside the submitted PDF inputs")
+        original = folder / name
+        asset = f"source-{len(sources):04}.pdf"
+        target = directory / asset
+        with original.open("rb") as src, target.open("xb") as dst:
+            digest = hashlib.sha256()
+            while data := src.read(1024 * 1024):
+                digest.update(data)
+                dst.write(data)
+        if expected_hashes is not None and expected_hashes.get(name) != digest.hexdigest():
+            raise RuntimeError(f"source PDF changed during OCR: {name}; start a new book run")
+        sources.append(dict(item, asset=asset, sha256=digest.hexdigest()))
+        for physical in range(1, item["page_count"] + 1):
+            ordered.append(dict(pages[(name, physical)], scan_page=len(ordered) + 1))
+    capsule = {"run_id": run_id, "book_id": receipt["book_id"], "sources": sources,
+               "pages": ordered, "access": receipt["access"], "license": receipt["license"]}
+    raw = json.dumps(capsule, ensure_ascii=False).encode()
+    with (directory / "source-book.json").open("xb") as stream:
+        stream.write(raw)
+    return {"run_id": run_id, "book_id": receipt["book_id"], "path": str(directory),
+            "book_file": "source-book.json", "book_hash": hashlib.sha256(raw).hexdigest(),
+            "stage": "start", "stage_job_id": run_id + ":start", "access": receipt["access"], "license": receipt["license"]}
+
+
 def export(home, run_id, output, mcp_endpoint=None):
     read = functools.partial(query, reader=FieldReader(mcp_endpoint) if mcp_endpoint else None)
-    books = read(home, "ShelfBook", run_id, ["book_id", "title", "author", "language", "access", "license", "source_manifest", "page_count", "chapter_count", "review_notes"])
+    books = read(home, "ShelfBook", run_id, ["book_id", "title", "author", "language", "access", "license", "metadata_json", "source_book_file", "source_book_hash", "source_manifest", "page_count", "chapter_count", "review_notes"])
     if len(books) != 1:
         raise RuntimeError(f"expected one assembled book for {run_id}, found {len(books)}")
     book = books[0]
@@ -255,7 +308,7 @@ def export(home, run_id, output, mcp_endpoint=None):
     reports = read(home, "ShelfStructureReport", run_id, ["covered_pages", "page_count", "chapter_count"])
     if len(reports) != 1 or reports[0]["covered_pages"] != book["page_count"]:
         raise RuntimeError("missing or inconsistent structure receipt")
-    chapters = read(home, "ShelfChapter", run_id, ["sequence", "title", "level", "matter_type", "content_type", "start_page", "end_page", "source_ranges_json", "review_notes"])
+    chapters = read(home, "ShelfChapter", run_id, ["chapter_key", "toc_entry_id", "toc_title", "entry_number", "level_name", "parent_key", "audio_include", "audio_include_reasoning", "owned_end_page", "sequence", "title", "level", "matter_type", "content_type", "start_page", "end_page", "source_ranges_json", "review_notes"])
     if len(chapters) != book["chapter_count"]:
         raise RuntimeError("chapter collection does not match the book receipt")
     chapters.sort(key=lambda c: c["sequence"])
@@ -286,10 +339,12 @@ def export(home, run_id, output, mcp_endpoint=None):
                     raise RuntimeError(f"overlapping or missing chapter page: {key}")
                 used.add(key)
                 chapter["pages"].append(pages[key])
-        if len(chapter["pages"]) != chapter["end_page"] - chapter["start_page"] + 1:
+        if len(chapter["pages"]) != max(0, chapter["owned_end_page"] - chapter["start_page"] + 1):
             raise RuntimeError("chapter source ranges disagree with cumulative scan positions")
     if used != expected:
         raise RuntimeError("chapters leave source pages unassigned")
+    book["metadata"] = json.loads(book.pop("metadata_json"))
+    book["source_evidence"] = {"run_id":run_id,"book_file":book.pop("source_book_file"),"book_hash":book.pop("source_book_hash")}
     book.update(run_id=run_id, sources=sources, chapters=chapters, extraction_warnings=[{ "source": row["source"], "chunk": row["chunk"], "warnings": row["warnings"] } for row in extracts if row.get("warnings")])
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("x") as stream:
@@ -346,7 +401,13 @@ def input_books(args):
                       license=item.get("license", args.license))
         if book_id:
             fields["book_id"] = book_id
-        books.append({"fields": fields, "edition_id": None, "done": False})
+        input_path = Path(fields["path"])
+        folder = input_path if "files" in fields else input_path.parent
+        input_hashes = {}
+        for name in fields.get("files", [input_path.name]):
+            with (folder / name).open("rb") as stream:
+                input_hashes[name] = hashlib.file_digest(stream, "sha256").hexdigest()
+        books.append({"fields": fields, "input_hashes": input_hashes, "edition_id": None, "done": False})
     return books
 
 
@@ -376,7 +437,7 @@ def run(args):
     ocr_slots = ["document_reader=" + reader]
     if args.remote_ocr != "off":
         ocr_slots.append("remote_ocr=" + reader)
-    for pack, slots in [("ocr", ocr_slots), ("shelf", ["reader=" + reader, "librarian=" + librarian])]:
+    for pack, slots in [("ocr", ocr_slots), ("shelf", ["reader=" + reader, "librarian=" + librarian, "page_vision=" + reader])]:
         source = ROOT / "packs/gents" / pack
         call("pack", "build", source, "--out", directory / (pack + ".pack"))
         install = ["pack", "install", source, "--home", home, "--grant-authority"]
@@ -393,16 +454,15 @@ def run(args):
         edition_dir = directory / ("edition" if len(books) == 1 else f"edition-{i+1:02}")
         edition_dir.mkdir()
         book["directory"] = edition_dir
-        if args.epub:
-            call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
+        call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
     (directory / "run.json").write_text(json.dumps({"run_id": run_prefix, "home": str(home),
         "books": [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
-                   "directory": str(b["directory"])} for b in books]}))
+                   "directory": str(b["directory"]), "input_hashes":b["input_hashes"]} for b in books]}))
     with (directory / "server.log").open("w") as log:
-        server = subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
+        server = subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract", "ShelfSourceReady"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
         try:
             deadline = time.monotonic() + args.timeout
             ready = time.monotonic() + 60
@@ -426,11 +486,19 @@ def run(args):
                     run_id = book["fields"]["run_id"]
                     edition_id = book["edition_id"]
                     edition_dir = book["directory"]
+                    structure_failures = query(home, "ShelfStructureFailure", run_id, ["stage", "reason"])
+                    if structure_failures:
+                        raise RuntimeError(f"book structure needs review; preserved findings: {structure_failures}")
+                    if not book.get("discovery_started") and query(home, "ShelfSourceReady", run_id, ["book_id"]):
+                        discovery = source_capsule(home, run_id, book["fields"], edition_dir, f"http://127.0.0.1:{port}/mcp", book["input_hashes"])
+                        call("document", "create", "ShelfDiscoveryJob", "--home", home, "--json", json.dumps(discovery))
+                        book["discovery_started"] = True
+                        print(f"Finding contents and verifying boundaries for {run_id}", flush=True)
                     check_stage_failures(home, [run_id] + ([edition_id] if edition_id else []))
                     failed = [r for r in query(home,"ShelfExtract",run_id,["chunk","extraction_state","error"]) if r["extraction_state"]=="failed"]
                     if failed:
                         raise RuntimeError(f"source extraction failed; preserved diagnostic receipts: {failed}")
-                    if edition_id is None and query(home, "ShelfStructureReport", run_id, ["book_id"]):
+                    if edition_id is None and book.get("discovery_started") and query(home, "ShelfStructureReport", run_id, ["book_id"]):
                         structured = edition_dir / "structured-book.json"
                         export(home, run_id, structured, f"http://127.0.0.1:{port}/mcp")
                         if not args.epub:
@@ -498,7 +566,7 @@ def main():
     run_parser.add_argument("sources", type=Path, nargs="*")
     run_parser.add_argument("--manifest", type=Path, help="JSON array of {book_id, sources}; run all books in one shared runtime")
     run_parser.add_argument("--endpoint", required=True, help="OpenAI-compatible /v1 endpoint exposing one model")
-    run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for outline and verification")
+    run_parser.add_argument("--structure-endpoint", help="Optional separate endpoint for contents discovery, metadata and classification")
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")
     run_parser.add_argument("--timeout", type=int, default=7200)
     run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")

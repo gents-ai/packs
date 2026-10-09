@@ -1,0 +1,11 @@
+type ShelfToC {
+  run_id: String @index(unique: true) @immutable
+  book_id: String @index
+  start_page: Int
+  end_page: Int
+  structure_summary_json: String
+  structure_notes_json: String
+  confidence: Float64
+  search_strategy_used: String
+  reasoning: String
+}

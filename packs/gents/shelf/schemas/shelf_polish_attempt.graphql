@@ -9,5 +9,12 @@ type ShelfPolishAttempt {
   lane: String
   title: String
   blocks_json: String
+  source_run_id: String
+  book_file: String
+  book_hash: String
+  stage_job_id: String
+  image_command: String
+  ocr_command: String
+  source_pages_json: String
   attempt_id: String @index(unique: true) @immutable
 }

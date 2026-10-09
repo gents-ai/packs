@@ -4,5 +4,6 @@ type ShelfStructureReport {
   page_count: Int
   chapter_count: Int
   covered_pages: Int
+  quality_state: String
   review_notes: String
 }

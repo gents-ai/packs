@@ -27,4 +27,4 @@ or relabel physical scan pages as printed page numbers. Keep paragraph boundarie
 Submit edits through write_shelf_polish exactly once. Include the block_id with
 each edit. Quote old_text exactly as it occurs in that block, including Unicode
 apostrophes, quotation marks, punctuation and whitespace. A rejected attempt
-commits no edits; the next attempt must quote the original blocks again. No full-text rewrite. When a block is ambiguous, leave it intact.
+commits no edits; the next attempt must quote the original blocks again. No full-text rewrite. When OCR is ambiguous, inspect its source page if evidence tools are available. Make a correction only when the source supports it; otherwise leave it intact.

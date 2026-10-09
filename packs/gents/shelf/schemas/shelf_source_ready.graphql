@@ -1,0 +1,8 @@
+type ShelfSourceReady {
+  run_id: String @index(unique: true) @immutable
+  book_id: String @index
+  sources_json: String
+  expected_total: Int
+  access: String
+  license: String
+}

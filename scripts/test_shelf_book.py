@@ -27,7 +27,7 @@ class BatchSubmission(unittest.TestCase):
                                    access="local_only", license="unknown", remote_ocr="off",
                                    directory=root / "run", endpoint="http://model/v1", structure_endpoint=None,
                                    max_concurrent=3, epub=True, timeout=60)
-            jobs, prepares, grants, polls = {}, {}, [], {}
+            jobs, discoveries, prepares, grants, polls = {}, {}, {}, [], {}
 
             def call(*argv, **kwargs):
                 if argv[0] == "init":
@@ -40,12 +40,18 @@ class BatchSubmission(unittest.TestCase):
                     fields = json.loads(argv[-1])
                     if argv[2] == "ShelfJob":
                         jobs[fields["run_id"]] = fields
+                    elif argv[2] == "ShelfDiscoveryJob":
+                        self.assertEqual(len(jobs), 2)
+                        discoveries[fields["run_id"]] = fields
                     else:
+                        self.assertIn(fields["run_id"].removesuffix("-readable"), discoveries)
                         self.assertEqual(len(jobs), 2)
                         prepares[fields["run_id"]] = fields
                 return {}
 
             def query(home, collection, run_id, fields):
+                if collection == "ShelfSourceReady":
+                    return [{"book_id": jobs[run_id]["book_id"]}]
                 if collection == "ShelfStructureReport":
                     return [{"book_id": jobs[run_id]["book_id"]}]
                 if collection == "ShelfLibraryEdition":
@@ -63,16 +69,49 @@ class BatchSubmission(unittest.TestCase):
                 return Mock(poll=lambda: None)
 
             with patch.object(shelf, "call", call), patch.object(shelf, "query", query), \
-                 patch.object(shelf, "export", export), patch.object(shelf, "model", return_value="model"), \
+                 patch.object(shelf, "export", export), patch.object(shelf, "source_capsule", side_effect=lambda home, run_id, fields, directory, endpoint, expected_hashes: {"run_id":run_id,"book_id":fields["book_id"]}), patch.object(shelf, "model", return_value="model"), \
                  patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep"), \
                  contextlib.redirect_stdout(io.StringIO()):
                 shelf.run(args)
+            self.assertEqual(len(discoveries), 2)
             self.assertEqual(len(prepares), 2)
             self.assertEqual(list(polls.values()), [2, 2])
             self.assertEqual(len({job["path"] for job in prepares.values()}), 2)
             for job in prepares.values():
                 grant = next(g for g in grants if str(g[3]) == job["path"])
                 self.assertEqual(grant[grant.index("--access") + 1], "read_write")
+
+    def test_source_capsule_keeps_ordered_parts_and_refuses_missing_pages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for name in ["one.pdf","two.pdf"]:
+                (root/name).write_bytes(name.encode())
+            directory=root/"edition";directory.mkdir()
+            fields={"path":str(root),"files":["one.pdf","two.pdf"]}
+            rows=[{"source":name,"page":page,"markdown":f"{name} page {page}"}
+                  for name in ["two.pdf","one.pdf"] for page in [2,1]]
+            manifest=[{"source":"one.pdf","page_count":2},{"source":"two.pdf","page_count":2}]
+            def query(home,collection,run_id,fields,*pagination,**kwargs):
+                if collection=="ShelfSourceReady":
+                    return [{"book_id":"book","sources_json":json.dumps(manifest),"access":"local_only","license":"unknown"}]
+                return rows if pagination[1]==0 else []
+            with patch.object(shelf,"query",query),patch.object(shelf,"FieldReader"):
+                job=shelf.source_capsule("home","run",fields,directory,"http://runtime/mcp")
+                raw=(directory/"source-book.json").read_bytes();capsule=json.loads(raw)
+                self.assertEqual(shelf.hashlib.sha256(raw).hexdigest(),job["book_hash"])
+                self.assertEqual([(p["scan_page"],p["source"],p["page"]) for p in capsule["pages"]],
+                                 [(1,"one.pdf",1),(2,"one.pdf",2),(3,"two.pdf",1),(4,"two.pdf",2)])
+                for item in capsule["sources"]:
+                    self.assertEqual((directory/item["asset"]).read_bytes(),item["source"].encode())
+                rows.pop()
+                incomplete=root/"incomplete";incomplete.mkdir()
+                with self.assertRaisesRegex(RuntimeError,"exactly cover"):
+                    shelf.source_capsule("home","run",fields,incomplete,"http://runtime/mcp")
+                self.assertEqual(list(incomplete.iterdir()),[])
+                rows.append({"source":"one.pdf","page":1,"markdown":"Restored source page"})
+                changed=root/"changed";changed.mkdir()
+                with self.assertRaisesRegex(RuntimeError,"changed during OCR"):
+                    shelf.source_capsule("home","run",fields,changed,"http://runtime/mcp",{"one.pdf":"wrong-source-hash"})
 
     def test_denied_native_stage_is_reported_without_waiting_for_timeout(self):
         def call(*args):

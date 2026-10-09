@@ -1,0 +1,11 @@
+type ShelfToCEntry {
+  run_id: String @index
+  book_id: String @index
+  entry_id: String @index(unique: true) @immutable
+  sort_order: Int
+  entry_number: String
+  title: String
+  level: Int
+  level_name: String
+  printed_page_number: String
+}

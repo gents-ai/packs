@@ -109,7 +109,7 @@ pub(super) fn navigation(book: &Manuscript, names: &[String]) -> Result<String, 
             out.push_str(&format!(
                 r#"<li><a href="{}">{}</a>"#,
                 names[i],
-                xml(&ch.title)?
+                xml(&chapter_label(ch))?
             ));
             *index += 1;
             if *index < book.chapters.len() && book.chapters[*index].level > ch.level {

@@ -5,24 +5,32 @@
       "expr": "[.config.callbacks[] | select(.callback_id == \"shelf-plan\" or .callback_id == \"shelf-extract\") | .handler.plugin] == [\"gents/ocr\",\"gents/ocr\"]"
     },
     {
-      "name": "outline waits for every chunk analysis",
-      "expr": ".config.event_sources[] | select(.event_source_id == \"shelf-analysis-ready\") | .group.expected_count.source_field == \"expected_total\""
+      "name": "discovery starts only after complete book OCR",
+      "expr": ".config.event_sources[] | select(.event_source_id == \"shelf-source-ready\") | .source_collection == \"ShelfExtract\" and .group.expected_count.source_field == \"expected_total\""
     },
     {
-      "name": "pipeline agents have only scoped reads",
-      "expr": "[.config.tools[] | select(.tools_id == \"shelf-analyze-tools\" or .tools_id == \"shelf-outline-tools\" or .tools_id == \"shelf-verify-tools\") | .datastore.enable_defra_query] == [false,false,false]"
+      "name": "entry, discovery, gaps and metadata-boundary joins retain explicit fan-in",
+      "expr": "[.config.event_sources[] | select(.group != null) | .source_collection] | sort == ([\"ShelfExtract\",\"ShelfEntryFindFinding\",\"ShelfChapterFindFinding\",\"ShelfGapFinding\",\"ShelfBookReady\",\"ShelfPolishedChunk\"] | sort)"
     },
     {
-      "name": "pipeline read filters are runtime-bound to the book",
-      "expr": "[.config.datastore_tool_surfaces[] | select(.surface_id != \"shelf-research-reads\") | (.entries.entries // .entries)[] | select(.kind == \"query\") | .filter_fields | any(.name == \"run_id\" and .fill == \"correlation\")] | all"
+      "name": "scoped evidence cannot accept model-selected books",
+      "expr": "[.config.tools[].integrations.plugins[]? | select(.input_fields != null) | .input_fields | any(.name == \"run_id\" and .fill == \"correlation\" or .fill.source_field == \"source_run_id\") and any(.name == \"book_hash\" and .fill.source_field == \"book_hash\") and any(.name == \"path\" and .fill.source_field == \"path\")] | all"
     },
     {
-      "name": "native assembly and EPUB output run as callbacks",
-      "expr": "[.config.callbacks[] | select(.callback_id == \"shelf-assemble\" or .callback_id == \"shelf-export\") | .handler.kind] == [\"plugin\",\"plugin\"]"
+      "name": "pipeline agents have no transcript or raw database access",
+      "expr": "[.config.tools[] | select(.tools_id != \"shelf-tools\" and .tools_id != \"shelf-research-tools\") | .datastore.enable_defra_query == false and .built_ins.enable_session_history_tool == false] | all"
     },
     {
-      "name": "pipeline agents use datastore evidence instead of cross-session history",
-      "expr": "[.config.tools[] | select(.tools_id == \"shelf-analyze-tools\" or .tools_id == \"shelf-outline-tools\" or .tools_id == \"shelf-verify-tools\" or .tools_id == \"shelf-polish-tools\") | .built_ins.enable_session_history_tool] == [false,false,false,false]"
+      "name": "native joins are separate from filesystem callbacks",
+      "expr": "[.manifest.plugins[] | select(.name == \"shelf_toc_join\") | .bind_dir == null] == [true]"
+    },
+    {
+      "name": "all task stages allow book and chapter parallelism",
+      "expr": "[.config.triggers[].concurrency == \"parallel\"] | all"
+    },
+    {
+      "name": "collapsed outline stages are retired",
+      "expr": "[.config.agent_behaviors[].behavior_id | select(. == \"shelf-analyze\" or . == \"shelf-outline\" or . == \"shelf-verify\")] == []"
     }
   ]
 }

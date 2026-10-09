@@ -9,7 +9,7 @@ graph packs). Use absolute paths or `./packs/...` for local packs.
 gents pack build ./packs/gents/ocr
 gents pack install ./packs/gents/ocr --inference-slot document_reader=<profile>
 gents pack build ./packs/gents/shelf
-gents pack install ./packs/gents/shelf --inference-slot librarian=<profile> --inference-slot reader=<profile>
+gents pack install ./packs/gents/shelf --inference-slot librarian=<profile> --inference-slot reader=<profile> --inference-slot page_vision=<vision-profile>
 ```
 
 Shelf's OCR callbacks pin the OCR artifact declared in pack_config.json. Install
@@ -23,15 +23,19 @@ ordered files list using `gents document create ShelfJob --json '<fields>'`.
 The path names one file, or a folder whose files list names one book in source order.
 Omit files for a single PDF. Keep unrelated books out of the same job.
 
-OCR callbacks persist chunks, extracted pages and figures. Chunk analysis agents
-identify contents and heading evidence; a grouped outline agent resolves chapter
-starts; a verifier checks source pages; native assembly writes ShelfBook,
-ShelfChapter and ShelfStructureReport with complete scan-page coverage. Each chapter
-references the original pages through source_ranges_json. Select the Shelf behavior
-to inspect the library. A failed extraction prevents structure publication.
+OCR callbacks persist source pages and figures. The launcher creates a source
+capsule from the complete OCR receipt, retaining scan coordinates and immutable
+PDF copies for visual inspection. ToC discovery checks every contents page and
+its continuation boundary; extraction preserves printed labels and hierarchy.
+Parallel agents locate individual entries, discover missing sequences and
+investigate gaps. Native handoffs validate the findings before chapter text
+review starts. Unresolved findings remain in ShelfStructureFailure.
 
-EPUB export currently supports text editions. Audio, rich layout and Shelf's custom
-web interface are not included.
+ShelfChapter retains parentage, numbering, exact page ownership and narration
+inclusion with its reason. The reviewed structured artifact includes a human
+book hierarchy with ordered paragraphs and stable EPUB/source citations.
+EPUB export supports text editions and nested contents navigation. TTS rendering
+and Shelf's web interface are not included.
 
 From the packs checkout, an isolated run and validated JSON export can be started with:
 
@@ -201,9 +205,9 @@ with a read-only MCP grant for ShelfLibraryPassage; the opener verifies the text
 
 The initial index explicitly uses the English analyzer. Native tests cover exact
 English, French, Latin and Greek terms; multilingual morphology, accent folding
-and stop-word quality are not established. Original-file hashes on the OCR
-review lane, language-specific analyzers, automatic selective OCR and verified
-backup/restore remain unfinished.
+and stop-word quality are not established. Reviewed scans retain original-file
+hashes. Language-specific analyzers, automatic selective OCR and a pack-owned
+backup/restore workflow remain unfinished.
 
 The launcher enables the local read-only query MCP surface for long-field export.
 To export an existing run, start its server with `--enable-mcp` and
@@ -215,9 +219,10 @@ claim corrected prose or restored layout.
 
 The reviewed scan workflow currently requires PDFs. Its native plan supplies
 source order, page counts, work identity, chunk identity and fan-in size. Agents
-write analysis and section proposals; host-filled fields preserve that manifest
-through verification. Incomplete or non-PDF extractions cannot pass the native
-outline barrier. Use source-text intake for other formats.
+locate contents entries, investigate missing boundaries and classify verified
+sections; host-filled fields preserve the book evidence through those handoffs.
+Incomplete or non-PDF extractions cannot start discovery. Use source-text intake
+for other formats.
 
 OCR chunk reads resume through durable `ShelfReadRequest` documents when the
 vision batch or time budget is exhausted. Only the completed chunk publishes

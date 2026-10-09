@@ -10,8 +10,45 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 
+def chapter_label(chapter):
+    number = chapter.get("entry_number")
+    if not number:
+        return chapter["title"]
+    kind = chapter.get("level_name") or ""
+    label = kind[:1].upper() + kind[1:]
+    marker = f"{label} {number}".strip()
+    return marker if chapter["title"].strip().lower() == marker.lower() else f"{marker}: {chapter['title']}"
+
+
+def validate_human_book(book):
+    if "book" not in book:
+        return
+    human = []
+    def walk(sections, parent=None):
+        for section in sections:
+            if not isinstance(section.get("audio_include"), bool) or not section.get("audio_include_reasoning"):
+                raise ValueError("human chapter needs a narration decision and reason")
+            human.append((section, parent))
+            walk(section["sections"], section["id"])
+    walk(book["book"]["sections"])
+    edition = book["edition"]["chapters"]
+    if [s["id"] for s, _ in human] != [c["id"] for c in edition]:
+        raise ValueError("human hierarchy disagrees with EPUB chapter order")
+    for (section, parent), chapter in zip(human, edition):
+        if parent != chapter.get("parent_id"):
+            raise ValueError("human chapter parent disagrees with EPUB hierarchy")
+        for key in ["title", "entry_number", "level", "level_name", "matter_type", "content_type", "audio_include", "audio_include_reasoning"]:
+            if section.get(key) != chapter.get(key):
+                raise ValueError(f"human chapter metadata differs: {key}")
+        if [(p["id"], p["text"], p["source_spans"]) for p in section["paragraphs"]] != [(b["id"], b["markdown"], b["sources"]) for b in chapter["blocks"]]:
+            raise ValueError("human paragraphs differ from the accepted EPUB text")
+        if [p["ordinal"] for p in section["paragraphs"]] != list(range(1, len(section["paragraphs"]) + 1)):
+            raise ValueError("human paragraph ordering is inconsistent")
+
+
 def validate(structured, epub):
     book = json.loads(structured.read_text())
+    validate_human_book(book)
     edition, original = book["edition"], book["original"]
     pages = {}
     for chapter in original["chapters"]:
@@ -49,7 +86,7 @@ def validate(structured, epub):
                    if e.attrib.get("{http://www.idpf.org/2007/ops}type") == "toc")
         links = toc.findall(".//h:a", x)
         if [(a.attrib["href"], "".join(a.itertext())) for a in links] != [
-                (name, c["title"]) for name, c in zip(expected_spine, edition["chapters"])]:
+                (name, chapter_label(c)) for name, c in zip(expected_spine, edition["chapters"])]:
             raise ValueError("EPUB table of contents disagrees with manuscript")
         documents = {}
         for chapter, name in zip(edition["chapters"], spine):

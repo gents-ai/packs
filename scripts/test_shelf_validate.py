@@ -30,6 +30,20 @@ class EditionValidation(unittest.TestCase):
             z.writestr("OEBPS/chapter.xhtml", f'<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="{anchor}">Text.</p></body></html>')
         return structured, epub
 
+    def test_human_hierarchy_narration_and_paragraphs_match_the_epub_projection(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(validator.subprocess,"run"):
+            structured,epub=self.fixture(Path(tmp))
+            book=json.loads(structured.read_text());chapter=book["edition"]["chapters"][0]
+            chapter.update(level=1,level_name="chapter",matter_type="body",content_type="body",audio_include=True,audio_include_reasoning="Narrative prose.")
+            section={k:chapter[k] for k in ["id","title","level","level_name","matter_type","content_type","audio_include","audio_include_reasoning"]}
+            section.update(sections=[],paragraphs=[{"id":"passage","ordinal":1,"text":"Text.","source_spans":chapter["blocks"][0]["sources"]}])
+            book["book"]={"sections":[section]}
+            structured.write_text(json.dumps(book));validator.validate(structured,epub)
+            for key,value,error in [("audio_include",False,"metadata differs"),("paragraphs",[{"id":"passage","ordinal":1,"text":"Rewritten.","source_spans":chapter["blocks"][0]["sources"]}],"paragraphs differ")]:
+                altered=json.loads(json.dumps(book));altered["book"]["sections"][0][key]=value
+                structured.write_text(json.dumps(altered))
+                with self.assertRaisesRegex(ValueError,error):validator.validate(structured,epub)
+
     def test_navigation_anchors_and_source_spans_are_checked_independently(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(validator.subprocess, "run") as check:
             root = Path(tmp)
