@@ -24,7 +24,14 @@ class BatchSubmission(unittest.TestCase):
     def test_resume_reuses_jobs_and_refuses_changed_sources(self):
         self._run_books(resume=True)
 
-    def _run_books(self, fail_first=False, resume=False):
+    def test_attach_reuses_runtime_and_jobs_without_managing_server(self):
+        self._run_books(resume=True, attach=True)
+
+    def test_attach_requires_existing_batch(self):
+        with self.assertRaisesRegex(RuntimeError, "--attach requires --resume"):
+            shelf.run(SimpleNamespace(attach=True, resume=False))
+
+    def _run_books(self, fail_first=False, resume=False, attach=False):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ["one.pdf", "two.pdf"]:
@@ -39,6 +46,7 @@ class BatchSubmission(unittest.TestCase):
             jobs, discoveries, prepares, grants, polls = {}, {}, {}, [], {}
             job_writes = []
             initializations = []
+            servers = []
 
             def call(*argv, **kwargs):
                 if argv[0] == "init":
@@ -85,7 +93,9 @@ class BatchSubmission(unittest.TestCase):
                 kwargs["stdout"].write("gents server is running\n")
                 kwargs["stdout"].flush()
                 from unittest.mock import Mock
-                return Mock(poll=lambda: None)
+                server = Mock(poll=lambda: None)
+                servers.append(server)
+                return server
 
             with patch.object(shelf, "call", call), patch.object(shelf, "query", query), \
                  patch.object(shelf, "export", export), patch.object(shelf, "source_capsule", side_effect=lambda home, run_id, fields, directory, endpoint, expected_hashes: {"run_id":run_id,"book_id":fields["book_id"]}), patch.object(shelf, "model", return_value="model"), \
@@ -99,8 +109,23 @@ class BatchSubmission(unittest.TestCase):
                         with self.assertRaisesRegex(RuntimeError, "operator pause"):
                             shelf.run(args)
                         args.resume = True
+                        if attach:
+                            args.attach = True
+                            (args.directory / "home").mkdir()
+                            runtime_path = args.directory / "home" / "runtime.json"
+                            runtime = {"home": str(args.directory / "home"), "graphql": "http://127.0.0.1:50327/api/v0/graphql"}
+                            runtime_path.write_text(json.dumps({**runtime, "home": str(root / "wrong")}))
+                            with self.assertRaisesRegex(RuntimeError, "original home's local Gents runtime endpoint"):
+                                shelf.run(args)
+                            runtime_path.write_text(json.dumps({**runtime, "graphql": "http://other-host:50327/api/v0/graphql"}))
+                            with self.assertRaisesRegex(RuntimeError, "original home's local Gents runtime endpoint"):
+                                shelf.run(args)
+                            runtime_path.write_text(json.dumps(runtime))
                         sleeping.side_effect = None
                         shelf.run(args)
+                        self.assertEqual(len(servers), 1 if attach else 2)
+                        for server in servers:
+                            server.terminate.assert_called_once()
                         self.assertEqual(len(initializations), 1)
                         self.assertEqual(len(job_writes), 2)
                         (root / "one.pdf").write_bytes(b"changed source")

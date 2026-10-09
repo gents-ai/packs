@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 GENTS = os.environ.get("GENTS", "gents")
@@ -412,6 +413,9 @@ def input_books(args):
 
 
 def run(args):
+    attach = getattr(args, "attach", False)
+    if attach and not getattr(args, "resume", False):
+        raise RuntimeError("--attach requires --resume and the original batch directory")
     books = input_books(args)
     directory = args.directory.expanduser().resolve()
     resume = getattr(args, "resume", False)
@@ -478,20 +482,30 @@ def run(args):
             edition_dir.mkdir()
             book["directory"] = edition_dir
             call("plugin", "dirs", "add", edition_dir, "--access", "read_write", "--home", home, json_output=False)
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
+    if attach:
+        runtime = json.loads((home / "runtime.json").read_text())
+        endpoint = urlsplit(runtime["graphql"])
+        if (Path(runtime["home"]).resolve() != home or endpoint.scheme != "http"
+                or endpoint.hostname != "127.0.0.1" or not endpoint.port
+                or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment
+                or endpoint.path != "/api/v0/graphql"):
+            raise RuntimeError("attach needs the original home's local Gents runtime endpoint")
+        port = endpoint.port
+    else:
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
     if not resume:
         (directory / "run.json").write_text(json.dumps({"run_id": run_prefix, "home": str(home),
             "books": [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
                        "directory": str(b["directory"]), "input_hashes":b["input_hashes"]} for b in books]}))
     with (directory / "server.log").open("a" if resume else "w") as log:
         log_start = log.tell()
-        server = subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract", "ShelfSourceReady"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
+        server = None if attach else subprocess.Popen([GENTS, "server", "--home", str(home), "--http-port", str(port), "--p2p-transport", "none", "--no-codex-shim", "--enable-mcp", *[arg for collection in ["ShelfBook", "ShelfChapter", "ShelfPage", "ShelfExtract", "ShelfSourceReady"] for arg in ["--mcp-query-collection", collection]]], stdout=log, stderr=log, cwd=directory)
         try:
             deadline = time.monotonic() + args.timeout
             ready = time.monotonic() + 60
-            while True:
+            while server is not None:
                 if server.poll() is not None:
                     raise RuntimeError("runtime exited; inspect server.log")
                 with (directory / "server.log").open() as status_log:
@@ -512,7 +526,7 @@ def run(args):
                     call("document", "create", "ShelfJob", "--home", home, "--json", json.dumps(book["fields"]))
                 print(f"Shelf run {book['fields']['run_id']}; persisted state: {home}", flush=True)
             while time.monotonic() < deadline:
-                if server.poll() is not None:
+                if server is not None and server.poll() is not None:
                     raise RuntimeError("runtime exited; inspect server.log")
                 for book in books:
                     if book["done"]:
@@ -574,12 +588,13 @@ def run(args):
                 time.sleep(10)
             raise RuntimeError("timed out; persisted state is retained in the run home")
         finally:
-            server.terminate()
-            try:
-                server.wait(timeout=30)
-            except subprocess.TimeoutExpired:
-                server.kill()
-                server.wait()
+            if server is not None:
+                server.terminate()
+                try:
+                    server.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    server.kill()
+                    server.wait()
 
 
 def main():
@@ -620,6 +635,7 @@ def main():
     run_parser.add_argument("--directory", type=Path, required=True, help="New directory for the isolated home and structured book")
     run_parser.add_argument("--timeout", type=int, default=7200)
     run_parser.add_argument("--resume", action="store_true", help="Resume a stopped batch in --directory with the same source manifest")
+    run_parser.add_argument("--attach", action="store_true", help="With --resume, monitor the existing local runtime without starting or stopping it")
     run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")
     run_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
                             help="Bind the reader endpoint for vision OCR: auto tries bundled OCR first; force checks every scanned page")
