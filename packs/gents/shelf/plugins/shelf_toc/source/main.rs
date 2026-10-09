@@ -154,7 +154,7 @@ fn dispatch(mut v: Value) -> Result<Value> {
                 "gap_plan" => plan_gaps(&v),
                 "metadata" => metadata(&v),
                 "classify_prepare" => classify_prepare(&v),
-                "classify" => assemble(&v),
+                "classify" => classify(&v),
                 "join_ready" => handoff::finish_group(&v),
                 other => Err(format!("unknown structure stage {other}")),
             }
@@ -877,7 +877,7 @@ fn classify_prepare(v: &Value) -> Result<Value> {
             }
         ));
     }
-    lines.push("Return JSON with classifications, content_types, audio_include, and reasoning for each entry.".into());
+    lines.push("Return JSON with classifications, content_types, audio_include, and reasoning. Each mapping must cover all listed entry IDs exactly, including Contents, blank front matter, and parent sections without owned text. Excluding an entry from narration means audio_include=false; it never means omitting the entry.".into());
     let mut out = job(v, "classify")?;
     out["entries_json"] = json!(serde_json::to_string(&es).unwrap());
     out["metadata_json"] = v["metadata_json"].clone();
@@ -899,12 +899,34 @@ fn display_title(e: &Entry) -> String {
         .trim()
         .to_owned()
 }
-fn assemble(v: &Value) -> Result<Value> {
-    let book = BookInput::load(Path::new(field(v, "path")?), v)?;
+fn classify(v: &Value) -> Result<Value> {
+    BookInput::load(Path::new(field(v, "path")?), v)?;
     let es = entries(v)?;
     validate_entries(&es)?;
-    let meta = value(v, "metadata_json")?;
-    let classifications = value(v, "classification")?;
+    let validation = value(v, "classification").and_then(|c| validate_classification(&es, &c));
+    if let Err(error) = validation {
+        let attempt = v["retry_count"].as_u64().unwrap_or(0);
+        if attempt >= 2 {
+            return Err(format!(
+                "classification failed after {} attempts: {error}",
+                attempt + 1
+            ));
+        }
+        let mut next = job(v, "classify")?;
+        next["entries_json"] = v["entries_json"].clone();
+        next["metadata_json"] = v["metadata_json"].clone();
+        next["retry_count"] = json!(attempt + 1);
+        next["classification_prompt"] = json!(format!(
+            "{}\n\nNative validation rejected the previous result: {}\nPrevious result:\n{}\nSubmit a complete corrected result covering every listed entry ID in each mapping. Preserve all verified entries and boundaries.",
+            field(v, "classification_prompt")?,
+            error,
+            v["classification"]
+        ));
+        return Ok(json!({"classify_job": next}));
+    }
+    assemble(v)
+}
+fn validate_classification(es: &[Entry], classifications: &Value) -> Result<()> {
     let expected: BTreeSet<_> = es.iter().map(|e| e.key.as_str()).collect();
     for k in [
         "classifications",
@@ -914,37 +936,22 @@ fn assemble(v: &Value) -> Result<Value> {
     ] {
         let mapping = classifications[k]
             .as_object()
-            .ok_or(format!("missing {k}"))?;
-        if mapping.keys().map(String::as_str).collect::<BTreeSet<_>>() != expected {
-            return Err(format!("{k} does not cover the exact chapter set"));
+            .ok_or(format!("missing {k} mapping"))?;
+        let actual = mapping.keys().map(String::as_str).collect::<BTreeSet<_>>();
+        if actual != expected {
+            return Err(format!(
+                "{k} does not cover the exact section set; missing IDs: {:?}; unexpected IDs: {:?}",
+                expected.difference(&actual).collect::<Vec<_>>(),
+                actual.difference(&expected).collect::<Vec<_>>()
+            ));
         }
     }
-    let mut chapters = Vec::new();
-    let mut stack: Vec<(u32, String)> = Vec::new();
-    let mut covered = 0;
-    for (i, e) in es.iter().enumerate() {
-        let start = e.scan_page.ok_or("unverified chapter start")?;
-        let owned_end = es
-            .get(i + 1)
-            .and_then(|n| n.scan_page)
-            .map(|p| p - 1)
-            .unwrap_or(book.pages.len() as u32);
-        let end = es[i + 1..]
-            .iter()
-            .find(|n| n.level <= e.level)
-            .and_then(|n| n.scan_page)
-            .map(|p| p - 1)
-            .unwrap_or(book.pages.len() as u32);
-        while stack.last().is_some_and(|(level, _)| *level >= e.level) {
-            stack.pop();
-        }
-        let parent = stack.last().map(|(_, key)| key.clone());
-        stack.push((e.level, e.key.clone()));
+    for e in es {
         let matter = classifications["classifications"][&e.key]
             .as_str()
             .ok_or("invalid matter classification")?;
         if !["front_matter", "body", "back_matter"].contains(&matter) {
-            return Err("invalid matter classification".into());
+            return Err(format!("invalid matter classification for {}", e.key));
         }
         let content = field(&classifications["content_types"], &e.key)?;
         if ![
@@ -971,11 +978,46 @@ fn assemble(v: &Value) -> Result<Value> {
         ]
         .contains(&content)
         {
-            return Err("unknown content classification".into());
+            return Err(format!("unknown content classification for {}", e.key));
         }
-        let audio = classifications["audio_include"][&e.key]
-            .as_bool()
-            .ok_or("audio_include must be a Boolean")?;
+        if !classifications["audio_include"][&e.key].is_boolean() {
+            return Err(format!("audio_include must be a Boolean for {}", e.key));
+        }
+        field(&classifications["reasoning"], &e.key)?;
+    }
+    Ok(())
+}
+fn assemble(v: &Value) -> Result<Value> {
+    let book = BookInput::load(Path::new(field(v, "path")?), v)?;
+    let es = entries(v)?;
+    validate_entries(&es)?;
+    let meta = value(v, "metadata_json")?;
+    let classifications = value(v, "classification")?;
+    validate_classification(&es, &classifications)?;
+    let mut chapters = Vec::new();
+    let mut stack: Vec<(u32, String)> = Vec::new();
+    let mut covered = 0;
+    for (i, e) in es.iter().enumerate() {
+        let start = e.scan_page.ok_or("unverified chapter start")?;
+        let owned_end = es
+            .get(i + 1)
+            .and_then(|n| n.scan_page)
+            .map(|p| p - 1)
+            .unwrap_or(book.pages.len() as u32);
+        let end = es[i + 1..]
+            .iter()
+            .find(|n| n.level <= e.level)
+            .and_then(|n| n.scan_page)
+            .map(|p| p - 1)
+            .unwrap_or(book.pages.len() as u32);
+        while stack.last().is_some_and(|(level, _)| *level >= e.level) {
+            stack.pop();
+        }
+        let parent = stack.last().map(|(_, key)| key.clone());
+        stack.push((e.level, e.key.clone()));
+        let matter = classifications["classifications"][&e.key].as_str().unwrap();
+        let content = field(&classifications["content_types"], &e.key)?;
+        let audio = classifications["audio_include"][&e.key].as_bool().unwrap();
         let reason = field(&classifications["reasoning"], &e.key)?;
         let pages: Vec<_> = book
             .pages

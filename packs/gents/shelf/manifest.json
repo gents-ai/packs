@@ -744,6 +744,7 @@
     "schemas/shelf_to_c_entry.graphql",
     "schemas/shelf_structure_failure.graphql",
     "tests/classification.json",
+    "tests/classification_repair.json",
     "schemas/shelf_finding_join_job.graphql"
   ]
 }

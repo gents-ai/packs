@@ -252,6 +252,7 @@ fn prepare(v: &Value, root: &Path) -> Result<Value> {
             book,
             title,
             &plan.title,
+            ch["level_name"].as_str().zip(ch["entry_number"].as_str()),
             pages,
             &vocabulary,
             &mut plan.mechanical_edits,

@@ -112,13 +112,19 @@ pub(super) fn section(
     book: &str,
     title: &str,
     book_title: &str,
+    numbering: Option<(&str, &str)>,
     pages: &[Value],
     words: &BTreeSet<String>,
     edits: &mut Vec<Value>,
 ) -> Result<Vec<Block>> {
     let numbered = Regex::new(r"(?i)^(?:chapter\s+)?([0-9]+)[.:\s-]+\s*(.+)$").unwrap();
     let captures = numbered.captures(title);
-    let number = captures.as_ref().and_then(|c| c.get(1)).map(|m| m.as_str());
+    let number = numbering
+        .map(|(_, number)| number)
+        .or_else(|| captures.as_ref().and_then(|c| c.get(1)).map(|m| m.as_str()));
+    let numbered_label = numbering
+        .map(|(kind, number)| norm(&format!("{kind} {number}")))
+        .or_else(|| number.map(|number| format!("chapter{number}")));
     let short = captures
         .as_ref()
         .and_then(|c| c.get(2))
@@ -231,7 +237,8 @@ pub(super) fn section(
                 let n = norm(plain(&b.markdown));
                 if (!n.is_empty() && [norm(short), norm(main_title), norm(subtitle)].contains(&n))
                     || number.is_some_and(|numb| {
-                        n == format!("chapter{numb}") || (b.markdown.starts_with('#') && n == numb)
+                        numbered_label.as_deref() == Some(n.as_str())
+                            || (b.markdown.starts_with('#') && n == norm(numb))
                     })
                 {
                     let b = bs.remove(0);
@@ -317,6 +324,7 @@ mod tests {
             "book",
             "1. Metamorphosis",
             "Book",
+            None,
             &pages,
             &words,
             &mut edits,
@@ -342,6 +350,7 @@ mod tests {
                 "book",
                 "1. Metamorphosis",
                 "Book",
+                None,
                 &pages,
                 &words,
                 &mut vec![]
@@ -357,7 +366,16 @@ mod tests {
             json!({"source":"x","page":2,"markdown":"Route66\n\nA road name is substantive text.\n\nRésumé"}),
         ];
         let mut edits = vec![];
-        let out = section("b", "Route", "Résumé", &pages, &BTreeSet::new(), &mut edits).unwrap();
+        let out = section(
+            "b",
+            "Route",
+            "Résumé",
+            None,
+            &pages,
+            &BTreeSet::new(),
+            &mut edits,
+        )
+        .unwrap();
         assert!(out.iter().any(|b| b.markdown.contains("Route66")));
         assert!(out.iter().any(|b| b.markdown == "Résumé"));
         assert!(!edits.iter().any(|e| e["rule"] == "running_header"));
@@ -374,6 +392,7 @@ mod tests {
             "b",
             "Chapter 1: Hot War, Cold War: China's Conflicts",
             "China's Good War",
+            None,
             &pages,
             &BTreeSet::new(),
             &mut edits,
@@ -411,6 +430,7 @@ mod tests {
             "b",
             "1. Origins",
             "Book",
+            None,
             &pages,
             &BTreeSet::new(),
             &mut vec![],
@@ -420,6 +440,43 @@ mod tests {
         assert_eq!(out[1].markdown, "A numbered example.");
     }
     #[test]
+    fn separate_numbering_removes_only_verified_opening_labels() {
+        for (kind, number) in [
+            ("chapter", "23"),
+            ("chapter", "XVII"),
+            ("part", "III"),
+            ("section", "B"),
+        ] {
+            let label = format!("{} {}", kind.to_uppercase(), number);
+            let pages = vec![json!({"source":"unfamiliar.pdf", "page":8,
+                "markdown":format!("{label}\n\n## Arrival\n\nA narrative opening.\n\n{label}\n\nAn example quoting that label.")})];
+            let mut edits = vec![];
+            let out = section(
+                "other-book",
+                "Arrival",
+                "Unfamiliar Book",
+                Some((kind, number)),
+                &pages,
+                &BTreeSet::new(),
+                &mut edits,
+            )
+            .unwrap();
+            assert_eq!(out[0].markdown, "A narrative opening.");
+            assert!(out.iter().any(|b| b.markdown == label));
+            assert_eq!(
+                edits
+                    .iter()
+                    .filter(|e| e["rule"] == "section_heading")
+                    .count(),
+                2
+            );
+            assert!(
+                out.iter()
+                    .any(|b| b.markdown == "An example quoting that label.")
+            );
+        }
+    }
+    #[test]
     fn preserves_legitimate_compounds_and_new_sections() {
         let words = BTreeSet::new();
         assert_eq!(join("well-", "known", &words), "well-known");
@@ -427,7 +484,7 @@ mod tests {
             json!({"source":"x","page":1,"markdown":"A paragraph ends.\n\n1"}),
             json!({"source":"x","page":2,"markdown":"## A heading\n\nText."}),
         ];
-        let out = section("b", "Title", "B", &pages, &words, &mut vec![]).unwrap();
+        let out = section("b", "Title", "B", None, &pages, &words, &mut vec![]).unwrap();
         assert_eq!(out.len(), 3);
         assert!(out[1].markdown.starts_with("##"));
     }

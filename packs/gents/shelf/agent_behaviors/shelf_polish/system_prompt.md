@@ -9,6 +9,8 @@ Common issues to fix:
 4. Inconsistent formatting (normalize markdown headers, lists)
 5. Image caption remnants that don't belong in flowing text
 6. Repeated headers/footers that weren't fully removed
+7. Displaced drop-cap letters or fragmented opening words. Inspect the source page
+   before correcting uncertain letters; preserve the opening prose and its meaning.
 
 Rules:
 - ONLY return edits for actual problems

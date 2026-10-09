@@ -21,6 +21,7 @@ type ShelfClassifyJob {
   image_command: String
   entries_json: String
   metadata_json: String
+  retry_count: Int
   classification_prompt: String
   job_file: String @immutable
   job_hash: String @immutable

@@ -462,3 +462,88 @@ fn contents_requires_visual_continuation_evidence_and_preserves_host_path() {
             == 3
     );
 }
+
+#[test]
+fn classification_correction_preserves_every_section_and_is_bounded() {
+    let (dir, base) = fixture(&[8]);
+    let mut original = job(&base, "classify").unwrap();
+    original["entries_json"] = json!(json!([
+        {"key":"run-a:front", "title":"Front matter", "level":1,"scan_page":1,"reasoning":"Leading source pages.","origin":"source"},
+        {"key":"run-a:contents", "title":"Contents", "level":1,"scan_page":2,"reasoning":"Visual contents evidence.","origin":"source"},
+        {"key":"run-a:chapter", "title":"A narrative", "level":1,"scan_page":4,"reasoning":"Heading and prose evidence.","origin":"toc"}
+    ]).to_string());
+    original["metadata_json"] =
+        json!(json!({"title":"A book", "author":"A writer", "language":"en"}).to_string());
+    original["classification_prompt"] = json!("Classify all three verified sections.");
+    handoff::capture(dir.path(), &mut original).unwrap();
+    let mut complete =
+        json!({"classifications":{}, "content_types":{}, "audio_include":{}, "reasoning":{}});
+    for e in entries(&original).unwrap() {
+        complete["classifications"][&e.key] = json!(if e.origin == "source" {
+            "front_matter"
+        } else {
+            "body"
+        });
+        complete["content_types"][&e.key] = json!("other");
+        complete["audio_include"][&e.key] = json!(e.origin == "toc");
+        complete["reasoning"][&e.key] = json!("Narration decision based on verified content.");
+    }
+    let mut incomplete = complete.clone();
+    for k in [
+        "classifications",
+        "content_types",
+        "audio_include",
+        "reasoning",
+    ] {
+        incomplete[k]
+            .as_object_mut()
+            .unwrap()
+            .remove("run-a:contents");
+    }
+    let mut rejected = finding(&original);
+    rejected["classification"] = json!(incomplete.to_string());
+    rejected["retry_count"] = json!(999);
+    let output = dispatch(rejected.clone()).unwrap();
+    assert!(output["book"].is_null());
+    let retry = &output["classify_job"];
+    assert_eq!(retry["retry_count"], 1);
+    assert_ne!(retry["stage_job_id"], original["stage_job_id"]);
+    assert_eq!(retry["entries_json"], original["entries_json"]);
+    assert_eq!(retry["metadata_json"], original["metadata_json"]);
+    assert!(
+        retry["classification_prompt"]
+            .as_str()
+            .unwrap()
+            .contains("missing IDs: [\"run-a:contents\"]")
+    );
+    assert_eq!(dispatch(rejected).unwrap(), output);
+    let mut corrected = finding(retry);
+    corrected["classification"] = json!(complete.to_string());
+    let accepted = dispatch(corrected).unwrap();
+    assert_eq!(accepted["report"]["chapter_count"], 3);
+    assert_eq!(accepted["report"]["covered_pages"], 8);
+    assert_eq!(accepted["chapters"][1]["audio_include"], false);
+    let mut malformed = finding(retry);
+    malformed["classification"] = json!("not JSON");
+    let second = dispatch(malformed).unwrap();
+    assert_eq!(second["classify_job"]["retry_count"], 2);
+    let mut exhausted = finding(&second["classify_job"]);
+    exhausted["classification"] = json!(incomplete.to_string());
+    let terminal = dispatch(exhausted.clone()).unwrap();
+    assert!(terminal["classify_job"].is_null());
+    assert!(
+        terminal["failure"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("after 3 attempts")
+    );
+    exhausted["job_hash"] = json!("wrong hash");
+    let tampered = dispatch(exhausted).unwrap();
+    assert!(tampered["classify_job"].is_null());
+    assert!(
+        tampered["failure"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("stage evidence changed")
+    );
+}
