@@ -46,7 +46,7 @@ pub(super) fn vocabulary(book: &Value) -> BTreeSet<String> {
                         .unwrap_or("")
                         .split(|c: char| !c.is_alphabetic())
                     {
-                        if word.len() > 2 {
+                        if word.len() > 1 {
                             words.insert(word.to_lowercase());
                         }
                     }
@@ -69,6 +69,7 @@ fn join(a: &str, b: &str, words: &BTreeSet<String>) -> String {
         let right = b.split(|c: char| !c.is_alphabetic()).next().unwrap_or("");
         if !left.is_empty()
             && !right.is_empty()
+            && left.len() + right.len() > 2
             && words.contains(&format!("{left}{right}").to_lowercase())
         {
             return format!("{stem}{b}");
@@ -193,6 +194,12 @@ pub(super) fn section(
         let mut i = 1;
         while i + 1 < bs.len() {
             let cap = plain(&bs[i].markdown).to_string();
+            let opening_word = bs[i - 1]
+                .markdown
+                .split(|c: char| !c.is_alphabetic())
+                .next()
+                .unwrap_or("");
+            let completed_opening = words.contains(&format!("{cap}{opening_word}").to_lowercase());
             if cap.len() == 1
                 && cap.as_bytes()[0].is_ascii_uppercase()
                 && prose(&bs[i - 1].markdown)
@@ -202,11 +209,12 @@ pub(super) fn section(
                     .chars()
                     .next()
                     .is_some_and(|c| c.is_uppercase())
-                && bs[i + 1]
-                    .markdown
-                    .chars()
-                    .next()
-                    .is_some_and(|c| c.is_lowercase())
+                && (completed_opening
+                    || bs[i + 1]
+                        .markdown
+                        .chars()
+                        .next()
+                        .is_some_and(|c| c.is_lowercase()))
             {
                 let next = bs.remove(i + 1);
                 let letter = bs.remove(i);
@@ -438,6 +446,48 @@ mod tests {
         .unwrap();
         assert_eq!(out[0].markdown, "1");
         assert_eq!(out[1].markdown, "A numbered example.");
+    }
+    #[test]
+    fn capitalized_continuations_need_a_completed_word_in_this_source() {
+        for (cap, opening, word) in [
+            ("T", "HE NARRATIVE CONTINUES with a reference to", "the"),
+            ("A", "S EVENTS CONTINUE we return to", "as"),
+            ("B", "Y THE TIME THE STORY BEGINS we reach", "by"),
+        ] {
+            let pages = vec![
+                json!({"source":"other.pdf", "page":1, "markdown":format!("{opening}\n\n# {cap}\n\nLondon and its surroundings.")}),
+            ];
+            let words = BTreeSet::from([word.to_string()]);
+            let out = section(
+                "other",
+                "Narrative",
+                "A book",
+                None,
+                &pages,
+                &words,
+                &mut vec![],
+            )
+            .unwrap();
+            assert_eq!(out.len(), 1);
+            assert!(out[0].markdown.starts_with(&format!("{cap}{opening}")));
+            assert_eq!(out[0].sources.len(), 3);
+            let uncertain = section(
+                "other",
+                "Narrative",
+                "A book",
+                None,
+                &pages,
+                &BTreeSet::new(),
+                &mut vec![],
+            )
+            .unwrap();
+            assert!(
+                uncertain
+                    .iter()
+                    .any(|block| block.markdown == format!("# {cap}"))
+            );
+        }
+        assert_eq!(join("a-", "m", &BTreeSet::from(["am".to_string()])), "a-m");
     }
     #[test]
     fn separate_numbering_removes_only_verified_opening_labels() {

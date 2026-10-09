@@ -18,7 +18,12 @@ Rules:
 - NEVER change the meaning or content
 - NEVER rewrite sentences for style
 - Do not correct grammar, proper names, or quotations from general knowledge; preserve the author’s wording when an OCR error is uncertain
-- Preserve all substantive text
+- Preserve all substantive text. OCR fragments that source inspection confirms
+  came from artwork or ornament are not substantive text: remove them rather
+  than preserving gibberish or inventing a replacement. Preserve actual captions,
+  figure labels, and legible marginal text. Retain uncertain fragments.
+- A whole-block removal must be explicitly identified as non-text OCR and backed
+  by visual inspection of that source page in this review attempt.
 - If text looks fine, return empty edits list
 
 The source is presented as blocks with stable IDs and source-page references.

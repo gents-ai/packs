@@ -75,6 +75,10 @@ struct Edit {
     old_text: String,
     new_text: String,
     reason: String,
+    /// Whole-block removal needs an explicit non-text decision and a native
+    /// visual observation of this source page in the current review attempt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    non_text_ocr_page: Option<u64>,
 }
 #[derive(Serialize, Deserialize)]
 struct Reviewed {
@@ -383,7 +387,72 @@ fn quote_variant_source(source: &str, quoted: &str) -> Option<String> {
     Some(source[*offsets.get(&start)?..*offsets.get(&(start + needle.len()))?].into())
 }
 
-fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Result<Reviewed> {
+fn inspected_noise_pages(
+    plan: &Plan,
+    v: &Value,
+    root: &Path,
+    raw: &str,
+) -> Result<BTreeMap<u64, (String, u64)>> {
+    let edits: Vec<Edit> = serde_json::from_str(raw).map_err(|e| format!("edits_json: {e}"))?;
+    if !edits.iter().any(|edit| edit.non_text_ocr_page.is_some()) {
+        return Ok(BTreeMap::new());
+    }
+    let scope = &plan.source["source_evidence"];
+    let bytes = read(root, field(scope, "book_file")?)?;
+    if hash(&bytes) != field(scope, "book_hash")? {
+        return Err("source evidence changed before non-text review".into());
+    }
+    let book: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    if book["run_id"] != scope["run_id"] || book["book_id"] != plan.book_id {
+        return Err("non-text evidence belongs to another source book".into());
+    }
+    let ledger_name = format!(
+        "inspection-{}.json",
+        &hash(field(v, "attempt_id")?.as_bytes())[..32]
+    );
+    let ledger: Value = serde_json::from_slice(&read(root, &ledger_name).map_err(|_| {
+        "Call load_page_image for the source page in this attempt before removing non-text OCR."
+            .to_string()
+    })?)
+    .map_err(|e| e.to_string())?;
+    let observations = ledger["observations"]
+        .as_array()
+        .ok_or("missing native visual observations")?;
+    let pages = book["pages"]
+        .as_array()
+        .ok_or("missing source page coordinates")?;
+    let mut inspected = BTreeMap::new();
+    for observation in observations {
+        if observation["visual_observations"]
+            .as_str()
+            .is_none_or(|s| s.trim().is_empty())
+        {
+            return Err("missing native visual observation text".into());
+        }
+        let scan = observation["page_num"]
+            .as_u64()
+            .ok_or("missing inspected scan page")?;
+        let page = pages
+            .iter()
+            .find(|page| page["scan_page"].as_u64() == Some(scan))
+            .ok_or("inspected page outside source")?;
+        inspected.insert(
+            scan,
+            (
+                field(page, "source")?.to_owned(),
+                page["page"].as_u64().ok_or("invalid source page")?,
+            ),
+        );
+    }
+    Ok(inspected)
+}
+fn validate_review(
+    chunk: &Chunk,
+    key: &str,
+    digest: String,
+    raw: &str,
+    inspected: &BTreeMap<u64, (String, u64)>,
+) -> Result<Reviewed> {
     let edits: Vec<Edit> = serde_json::from_str(raw).map_err(|e| format!("edits_json: {e}"))?;
     if edits.len() > 50 {
         return Err("at most 50 focused edits are allowed per review".into());
@@ -432,7 +501,22 @@ fn validate_review(chunk: &Chunk, key: &str, digest: String, raw: &str) -> Resul
         }
         let next = b.markdown.replacen(&edit.old_text, &edit.new_text, 1);
         if next.trim().is_empty() {
-            return Err("do not delete an entire passage; flag uncertain OCR for review".into());
+            let page = edit.non_text_ocr_page.and_then(|scan| inspected.get(&scan));
+            if edit.old_text != b.markdown
+                || b.sources.is_empty()
+                || !page.is_some_and(|(source, page)| {
+                    b.sources
+                        .iter()
+                        .all(|span| span.source == *source && span.page == *page)
+                })
+            {
+                return Err("Whole-block removal requires a non-text OCR decision and visual evidence for this exact source page. Call load_page_image, then submit non_text_ocr_page with the complete original block quote; preserve genuine text and uncertain OCR.".into());
+            }
+        } else if edit.non_text_ocr_page.is_some() {
+            return Err(
+                "non_text_ocr_page is only for removing a complete source-confirmed non-text block"
+                    .into(),
+            );
         }
         b.markdown = next;
         reviewed.edits.push(edit);
@@ -483,8 +567,11 @@ fn apply(v: &Value, root: &Path) -> std::result::Result<Value, ApplyFailure> {
             accepted
         }
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            let candidate = validate_review(chunk, key, digest, field(v, "edits_json")?)
-                .map_err(ApplyFailure::Edit)?;
+            let raw = field(v, "edits_json")?;
+            let inspected =
+                inspected_noise_pages(&plan, v, root, raw).map_err(ApplyFailure::Edit)?;
+            let candidate =
+                validate_review(chunk, key, digest, raw, &inspected).map_err(ApplyFailure::Edit)?;
             save(root, &file, &json!(candidate))?;
             candidate
         }
@@ -729,6 +816,118 @@ mod tests {
         assert_eq!(snapshot["original"], source);
     }
     #[test]
+    fn removing_non_text_requires_this_attempts_visual_page_and_keeps_provenance() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let capsule = json!({"run_id":"source-run", "book_id":"book-one", "pages":[
+            {"scan_page":1, "source":"part-a.pdf", "page":1},
+            {"scan_page":2, "source":"part-b.pdf", "page":1}
+        ]});
+        save(root, "source-book.json", &capsule).unwrap();
+        let source = json!({"book_id":"book-one", "title":"Unfamiliar Book", "author":"Author", "language":"en", "page_count":2,
+        "source_evidence":{"run_id":"source-run", "book_file":"source-book.json", "book_hash":hash(&read(root,"source-book.json").unwrap())},
+        "sources":[{"source":"part-a.pdf","page_count":1},{"source":"part-b.pdf","page_count":1}],
+        "chapters":[{"title":"Front matter", "level":1,"matter_type":"front_matter", "audio_include":false,"audio_include_reasoning":"Non-narrative front matter.","pages":[
+            {"source":"part-a.pdf","page":1,"markdown":"q7g pattern artifact"},
+            {"source":"part-b.pdf","page":1,"markdown":"A genuine figure caption."}
+        ]}]});
+        save(root, "source.json", &source).unwrap();
+        let prepared = run(json!({"run_id":"edition", "book_id":"book-one", "path":root, "structured":"source.json", "modified":"2026-10-09T00:00:00Z", "output":"book.epub"})).unwrap();
+        let mut proposal = prepared["chunks"][0].clone();
+        let (plan, digest) = load_plan(&proposal, root).unwrap();
+        let original = &plan.chunks[0].blocks[0];
+        let mut edit = json!({"block_id":original.id, "old_text":original.markdown, "new_text":"", "reason":"Source inspection confirms ornament, not printed text.", "non_text_ocr_page":1});
+        proposal["edits_json"] = json!(json!([edit]).to_string());
+        assert!(
+            inspected_noise_pages(
+                &plan,
+                &proposal,
+                root,
+                field(&proposal, "edits_json").unwrap()
+            )
+            .unwrap_err()
+            .contains("load_page_image")
+        );
+        let ledger = format!(
+            "inspection-{}.json",
+            &hash(field(&proposal, "attempt_id").unwrap().as_bytes())[..32]
+        );
+        save(root, &ledger, &json!({"observations":[
+            {"page_num":1,"visual_observations":"Decorative ornament without printed lettering."},
+            {"page_num":2,"visual_observations":"A genuine figure caption is visible."}
+        ]})).unwrap();
+        let inspected = inspected_noise_pages(
+            &plan,
+            &proposal,
+            root,
+            field(&proposal, "edits_json").unwrap(),
+        )
+        .unwrap();
+        edit["non_text_ocr_page"] = json!(2);
+        assert!(
+            validate_review(
+                &plan.chunks[0],
+                &plan.chunks[0].key,
+                digest.clone(),
+                &json!([edit]).to_string(),
+                &inspected
+            )
+            .is_err()
+        );
+        edit.as_object_mut().unwrap().remove("non_text_ocr_page");
+        assert!(
+            validate_review(
+                &plan.chunks[0],
+                &plan.chunks[0].key,
+                digest.clone(),
+                &json!([edit]).to_string(),
+                &inspected
+            )
+            .is_err()
+        );
+        edit["non_text_ocr_page"] = json!(1);
+        proposal["edits_json"] = json!(json!([edit]).to_string());
+        apply(&proposal, root).unwrap();
+        let checkpoint: Reviewed = serde_json::from_slice(
+            &read(
+                root,
+                &format!(
+                    "{}-c0000.json",
+                    field(&proposal, "plan").unwrap().trim_end_matches(".json")
+                ),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(checkpoint.blocks[0].markdown, "");
+        assert_eq!(checkpoint.blocks[0].id, original.id);
+        assert_eq!(checkpoint.blocks[0].sources, original.sources);
+        assert_eq!(checkpoint.blocks[1].markdown, "A genuine figure caption.");
+        assert_eq!(plan.source, source);
+        let mut another_attempt = proposal.clone();
+        another_attempt["attempt_id"] = json!("another-attempt");
+        assert!(
+            inspected_noise_pages(
+                &plan,
+                &another_attempt,
+                root,
+                field(&proposal, "edits_json").unwrap()
+            )
+            .is_err()
+        );
+        fs::write(root.join("source-book.json"), "changed").unwrap();
+        assert!(
+            inspected_noise_pages(
+                &plan,
+                &proposal,
+                root,
+                field(&proposal, "edits_json").unwrap()
+            )
+            .unwrap_err()
+            .contains("evidence changed")
+        );
+    }
+    #[test]
     fn quote_variant_feedback_never_applies_an_inexact_edit() {
         let source = "Élodie’s bi- ography includes “road-map”.";
         let block = Block {
@@ -752,6 +951,7 @@ mod tests {
             &chunk.key,
             "hash".into(),
             &json!([edit]).to_string(),
+            &BTreeMap::new(),
         )
         .err()
         .unwrap();
@@ -765,6 +965,7 @@ mod tests {
             &chunk.key,
             "hash".into(),
             &json!([edit]).to_string(),
+            &BTreeMap::new(),
         )
         .unwrap();
         assert_eq!(
