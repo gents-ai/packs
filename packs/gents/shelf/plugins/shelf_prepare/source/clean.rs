@@ -35,6 +35,82 @@ fn prose(s: &str) -> bool {
 fn audit(edits: &mut Vec<Value>, rule: &str, old: &str, new: &str, sources: &[Span]) {
     edits.push(json!({"rule":rule,"old_text":old,"new_text":new,"sources":sources}));
 }
+/// Review can recover a printed opening label that OCR merged with ornament.
+/// Only the opening page's exact chapter label is represented by the section
+/// heading; later occurrences and any additional prose remain passages.
+pub(super) fn reviewed_heading(
+    section: &mut Section,
+    opening: Option<(&str, u64)>,
+    edits: &mut Vec<Value>,
+) {
+    let Some((source, page)) = opening else {
+        return;
+    };
+    let title = norm(&section.title);
+    if title.is_empty() {
+        return;
+    }
+    let number = section
+        .entry_number
+        .as_deref()
+        .map(norm)
+        .filter(|s| !s.is_empty());
+    let kind = section.level_name.as_deref().map(norm).unwrap_or_default();
+    let same_page = |b: &Block| {
+        !b.sources.is_empty()
+            && b.sources
+                .iter()
+                .all(|s| s.source == source && s.page == page)
+    };
+    let is_title = |b: &Block| {
+        if !same_page(b) {
+            return false;
+        }
+        let text = norm(plain(&b.markdown));
+        text == title
+            || number.as_ref().is_some_and(|number| {
+                text == format!("{number}{title}") || text == format!("{kind}{number}{title}")
+            })
+    };
+    let mut examined = 0;
+    let mut cursor = 0;
+    while examined < 3 {
+        let Some(first) = section.blocks.get(cursor) else {
+            break;
+        };
+        if first.markdown.trim().is_empty() && same_page(first) {
+            examined += 1;
+            cursor += 1;
+            continue;
+        }
+        let count = if is_title(first) {
+            1
+        } else if same_page(first)
+            && number.as_ref().is_some_and(|number| {
+                let text = norm(plain(&first.markdown));
+                text == *number || text == format!("{kind}{number}")
+            })
+            && section.blocks.get(cursor + 1).is_some_and(is_title)
+        {
+            2
+        } else {
+            break;
+        };
+        if examined + count > 3 {
+            break;
+        }
+        for block in section.blocks.drain(cursor..cursor + count) {
+            audit(
+                edits,
+                "reviewed_section_heading",
+                &block.markdown,
+                "",
+                &block.sources,
+            );
+        }
+        examined += count;
+    }
+}
 pub(super) fn vocabulary(book: &Value) -> BTreeSet<String> {
     let mut words = BTreeSet::new();
     if let Some(chs) = book["chapters"].as_array() {
@@ -320,6 +396,89 @@ pub(super) fn section(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reviewed_opening_labels_require_exact_metadata_and_the_opening_page() {
+        let template: Section = serde_json::from_value(json!({"id":"section","title":"Arrival","level":1,"matter_type":"body","entry_number":"VII","level_name":"chapter","blocks":[]})).unwrap();
+        for labels in [
+            vec!["VII\n\nARRIVAL"],
+            vec!["CHAPTER VII", "ARRIVAL"],
+            vec!["VII", "ARRIVAL"],
+        ] {
+            let mut section = template.clone();
+            for (i, text) in labels
+                .iter()
+                .chain(["Narrative prose.", "VII ARRIVAL"].iter())
+                .enumerate()
+            {
+                section.blocks.push(Block {
+                    id: format!("passage-{i}"),
+                    markdown: (*text).into(),
+                    sources: vec![Span {
+                        source: "scan.pdf".into(),
+                        page: 8,
+                        start_byte: i * 100,
+                        end_byte: i * 100 + text.len(),
+                    }],
+                });
+            }
+            let body = section.blocks[labels.len()].clone();
+            let mut audit = vec![];
+            reviewed_heading(&mut section, Some(("scan.pdf", 8)), &mut audit);
+            assert_eq!(section.blocks.len(), 2);
+            assert_eq!(section.blocks[0].id, body.id);
+            assert_eq!(section.blocks[0].sources, body.sources);
+            assert_eq!(section.blocks[1].markdown, "VII ARRIVAL");
+            assert_eq!(audit.len(), labels.len());
+        }
+        for (text, source, page) in [
+            ("VII ARRIVAL", "scan.pdf", 9),
+            ("VII ARRIVAL", "another.pdf", 8),
+            ("VII ARRIVAL starts our journey.", "scan.pdf", 8),
+            ("VI ARRIVAL", "scan.pdf", 8),
+            ("VII ORNAMENT ARRIVAL", "scan.pdf", 8),
+            ("VII", "scan.pdf", 8),
+        ] {
+            let mut section = template.clone();
+            section.blocks.push(Block {
+                id: "passage".into(),
+                markdown: text.into(),
+                sources: vec![Span {
+                    source: source.into(),
+                    page,
+                    start_byte: 0,
+                    end_byte: text.len(),
+                }],
+            });
+            let mut audit = vec![];
+            reviewed_heading(&mut section, Some(("scan.pdf", 8)), &mut audit);
+            assert_eq!(section.blocks[0].markdown, text);
+            assert!(audit.is_empty());
+        }
+        let mut section = template.clone();
+        for (i, text) in ["", "VII ARRIVAL", "Narrative prose."].iter().enumerate() {
+            section.blocks.push(Block {
+                id: format!("passage-{i}"),
+                markdown: (*text).into(),
+                sources: vec![Span {
+                    source: "scan.pdf".into(),
+                    page: 8,
+                    start_byte: i * 100,
+                    end_byte: i * 100 + 10,
+                }],
+            });
+        }
+        let mut audit = vec![];
+        reviewed_heading(&mut section, Some(("scan.pdf", 8)), &mut audit);
+        assert_eq!(
+            section
+                .blocks
+                .iter()
+                .map(|b| b.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["passage-0", "passage-2"]
+        );
+        assert_eq!(audit.len(), 1);
+    }
     #[test]
     fn joins_drop_cap_and_pages_without_erasing_tables_or_provenance() {
         let pages = vec![

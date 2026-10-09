@@ -708,9 +708,17 @@ fn finish(v: &Value, root: &Path) -> Result<Value> {
         }
     }
     let mut passages = vec![];
-    for ch in &mut plan.chapters {
+    for (index, ch) in plan.chapters.iter_mut().enumerate() {
         for b in &mut ch.blocks {
             *b = blocks.remove(&b.id).ok_or("missing reviewed passage")?;
+        }
+        let opening = &plan.source["chapters"][index]["pages"][0];
+        clean::reviewed_heading(
+            ch,
+            opening["source"].as_str().zip(opening["page"].as_u64()),
+            &mut plan.mechanical_edits,
+        );
+        for b in &ch.blocks {
             passages.push(json!({"run_id":plan.edition_id,"book_id":plan.book_id,"edition_id":plan.edition_id,"passage_id":b.id,"chapter_id":ch.id,"chapter_title":ch.title,"markdown":b.markdown,"source_spans_json":serde_json::to_string(&b.sources).unwrap(),"epub_href":format!("OEBPS/{}.xhtml#{}",ch.id,b.id)}));
         }
     }
@@ -774,6 +782,53 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recovered_opening_label_is_audited_as_structure_after_review() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let source = json!({"book_id":"unfamiliar-work","title":"Unfamiliar Work","author":"Author","language":"en","page_count":1,"sources":[{"source":"scan.pdf","page_count":1}],"chapters":[
+            {"chapter_key":"run:first","title":"Arrival","entry_number":"SEVEN","level_name":"chapter","level":1,"matter_type":"body","content_type":"body","audio_include":true,"audio_include_reasoning":"Narrative prose.","pages":[{"source":"scan.pdf","page":1,"markdown":"SEVEN ORNAMENT ARRIVAL\n\nA complete opening sentence.\n\nSEVEN ARRIVAL\n\nA later quotation stays."}]}
+        ]});
+        save(root, "source.json", &source).unwrap();
+        let prepared = run(json!({"run_id":"edition","book_id":"unfamiliar-work","path":root,"structured":"source.json","modified":"2026-10-09T00:00:00Z","output":"book.epub"})).unwrap();
+        let mut job = prepared["chunks"][0].clone();
+        let (plan, _) = load_plan(&job, root).unwrap();
+        let heading = &plan.chunks[0].blocks[0];
+        job["edits_json"] = json!(json!([{"block_id":heading.id,"old_text":"SEVEN ORNAMENT ARRIVAL","new_text":"SEVEN\n\nARRIVAL","reason":"The inspected opening page confirms numbering and title separated by ornament."}]).to_string());
+        apply(&job, root).unwrap();
+        let output = finish(&job, root).unwrap();
+        let snapshot: Value = serde_json::from_slice(
+            &read(
+                root,
+                output["prepared"]["structured_file"].as_str().unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let paragraphs = snapshot["book"]["sections"][0]["paragraphs"]
+            .as_array()
+            .unwrap();
+        assert_eq!(paragraphs.len(), 3);
+        assert_eq!(paragraphs[0]["text"], "A complete opening sentence.");
+        assert_eq!(paragraphs[1]["text"], "SEVEN ARRIVAL");
+        assert_eq!(paragraphs[2]["text"], "A later quotation stays.");
+        assert_eq!(snapshot["original"], source);
+        assert_eq!(
+            snapshot["mechanical_edits"][0]["rule"],
+            "reviewed_section_heading"
+        );
+        assert_eq!(
+            snapshot["mechanical_edits"][0]["sources"],
+            json!(heading.sources)
+        );
+        assert_eq!(snapshot["polish_edits"].as_array().unwrap().len(), 1);
+        assert_eq!(paragraphs[0]["id"], plan.chunks[0].blocks[1].id);
+        assert_eq!(
+            paragraphs[0]["source_spans"],
+            json!(plan.chunks[0].blocks[1].sources)
+        );
+        assert_eq!(output["prepared"]["passage_count"], 3);
+    }
     #[test]
     fn shared_opening_part_and_chapter_remain_hierarchical_narration_units() {
         let dir = tempfile::tempdir().unwrap();
