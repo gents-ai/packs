@@ -7,12 +7,13 @@ gents pack install ./packs/gents/mailbox --home <home>
 gents pack install gents/mailbox --home <home>   # once published to the registry
 ```
 
-Assets packs take no `--inference-slot`.
+This pack declares no inference slots.
 
 `gents pack install mailbox --home <home>` materializes this reusable surface
 asset under the home's pack assets; it is not a complete desired-state root and
 does not write runtime configuration. Incorporate the surface into a document
-pack's canonical `pack_config.json`, then reference `mailbox-writes` from the
+pack's canonical `pack_config.json`, bind its `node_did` to the consuming
+pack's owning node, then reference `mailbox-writes` from the
 intended context's `Tools.datastore` configuration after reviewing its declared
 fields. There is no graph or seed in this asset pack.
 
