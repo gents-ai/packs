@@ -10,7 +10,7 @@ gents pack install ./packs/gents/graph_pipeline --home <home>
 gents pack install gents/graph_pipeline --home <home>   # once published to the registry
 ```
 
-Assets packs take no `--inference-slot`. This installs these evaluation
+This pack declares no inference slots. Installation materializes these evaluation
 assets locally; it does not create agent instances or launch inference. The
 compiler examples below describe how to use the fixtures programmatically.
 
@@ -36,8 +36,6 @@ let tool = CompileGraphTool::new(
     approved_existing_task_capabilities,
     CompilerPolicy::default(),
 );
-
-let agent = Agent::builder(provider).custom_tool(tool);
 ```
 
 ## Inputs and outputs
