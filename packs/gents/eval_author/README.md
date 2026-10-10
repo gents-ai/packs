@@ -1,9 +1,9 @@
 # Eval author
 
 The eval author is the model side of `gents eval init`. It is a single
-behavior, `eval-author`, with a fixed system prompt and no tools: it cannot
+agent, `eval-author`, with a fixed system prompt and no tools: it cannot
 read or write documents, files or configuration. It interviews an operator
-about one subject behavior and drafts an eval definition - cases that will
+about one subject agent and drafts an eval definition - cases that will
 later run against that subject and grade what it does.
 
 ## Installation
@@ -20,7 +20,7 @@ profile.
 ## Bindings and prerequisites
 
 The pack declares one inference slot, `author`, bound to the `eval-author`
-behavior. Nothing else is configurable: the behavior's context is the
+agent. Nothing else is configurable: the agent's context is the
 authoring contract in `agent_behaviors/eval_author/system_prompt.md` (the
 case vocabulary, the worked example, the seven rules drafts are held to, the
 five interview questions, and the draft reply format).
@@ -33,7 +33,7 @@ tools.
 ## Inputs and outputs
 
 ```
-gents eval init <subject-pack> --out <dir> [--behavior <id>] [--profile <profile_id>] [--pilot]
+gents eval init <subject-pack> --out <dir> [--agent <id>] [--profile <profile_id>] [--pilot]
 ```
 
 The command opens a fresh `AgentSession` against the served home, sends the

@@ -1,5 +1,5 @@
 {
-  "agent_principal": {},
+  "node": {},
   "event_sources": [
     {
       "display_name": "image-tools-live",
@@ -11,7 +11,7 @@
   ],
   "tasks": [
     {
-      "behavior_id": "image-helper",
+      "agent_id": "image-helper",
       "display_name": "image-tools-live-task",
       "prompt_template": "./tasks/live_task/prompt.md",
       "task_id": "image-tools-live-task"

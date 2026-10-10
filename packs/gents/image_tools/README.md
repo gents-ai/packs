@@ -46,14 +46,14 @@ From a terminal:
 
 ```sh
 gents pack install gents/image_tools --inference-slot image_helper=<profile>
-gents chat --behavior-id image-helper "What is in screenshots/login.png?"
+gents chat --agent-id image-helper "What is in screenshots/login.png?"
 ```
 
 ## Use it as a model tool
 
-The `image-helper` behavior's Tools document grants exactly the plugin as a
+The `image-helper` agent's Tools document grants exactly the plugin as a
 model tool (`integrations.plugins: [{"plugin": "gents/image_tools"}]`). To
-give it to another behavior, add the same entry to that behavior's Tools. The model calls
+give it to another agent, add the same entry to that agent's Tools. The model calls
 `image_tools` with, for example:
 
 ```json
@@ -207,7 +207,7 @@ plugin's own `cargo test` runs the native ones.
 | Property tests (`prop_tests`, proptest, fixed seed) | Four quarter turns and two flips are the identity; every orientation is undone by its inverse; crop gives the asked size; fit never exceeds its box and keeps the aspect within a pixel; PNG to lossless WebP to PNG is pixel-identical; `diff(a, a)` is zero and diff is symmetric; tiles reassemble to the source; perceptual hashes survive a resize and separate unrelated pictures; accepted names never leave the folder; drawing with any coordinates never panics; arbitrary requests never panic |
 | Mutation fuzz (`fuzz_tests`) | Every committed fixture is corrupted 150 times with a fixed seed and run through the pixel steps; damaged code pictures and noise go through the code reader. `IMAGE_TOOLS_FUZZ_SCALE=8` digs deeper |
 | Plugin cases (`plugins/image_tools/tests/*.json`) | Exact output through the real WebAssembly host for every operation, every input format, bind folder, inline data, cursor paging, warnings and hostile files |
-| Pack cases (`tests/*.json`) | Install (behavior, Tools, the plugin; reinstall keeps; remove releases), content assertions, and graph runs through a real server for a folder and a single file |
+| Pack cases (`tests/*.json`) | Install (agent, Tools, the plugin; reinstall keeps; remove releases), content assertions, and graph runs through a real server for a folder and a single file |
 
 Fixtures are small and committed, written by
 `plugins/image_tools/tools/gen_fixtures.rs` (`cargo run --example gen_fixtures`)

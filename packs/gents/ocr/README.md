@@ -31,14 +31,14 @@ The same agent runs from a terminal:
 
 ```sh
 gents pack install gents/ocr --inference-slot document_reader=<profile>
-gents chat --behavior-id document-reader "Summarize reports/q3.pdf"
+gents chat --agent-id document-reader "Summarize reports/q3.pdf"
 ```
 
 ## Use it as a model tool
 
-The `document-reader` behavior's Tools document grants exactly this plugin as
+The `document-reader` agent's Tools document grants exactly this plugin as
 a model tool (`integrations.plugins: [{"plugin": "gents/ocr"}]`). To give the
-tool to another behavior, add the same entry to that behavior's Tools:
+tool to another agent, add the same entry to that agent's Tools:
 
 ```json
 {"tools_id": "my-tools", "integrations": {"plugins": [{"plugin": "gents/ocr"}]}}
@@ -308,7 +308,7 @@ With `figure_images: true` and at least one image attached, the result becomes
 `{"response": {"documents": [...]}, "parts": [{"type": "image", "data":
 "<base64>", "mimeType": "image/jpeg"}]}` and each figure's `part` is its index
 in `parts`. This is the exact shape gents turns into model-visible content: a
-plugin offered to a behavior as a tool returns its output through
+plugin offered to an agent as a tool returns its output through
 `ToolResultContent::from_tool_output`, which makes the text of `response` and
 one image per entry of `parts` (checked in gents `message.rs`, `plugin/tool.rs`
 and the loop's tool-result threading). A caller that reads the JSON directly,

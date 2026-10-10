@@ -36,15 +36,15 @@ gents pack install gents/background_continuation --home <home> \
 ## Bindings and prerequisites
 
 The pack declares two inference slots: `coordinator`, bound to the
-`background-parent` behavior (owns the durable continuation and synthesizes
+`background-parent` agent (owns the durable continuation and synthesizes
 worker results), and `worker`, bound to `background-worker` (runs bounded
 background investigations). Bind both at install time as shown above.
 
 ## Authority
 
-`background-parent-tools` grants background subagent orchestration only: it
-may target the `background-parent-tools:worker` subagent
-(`background-worker` behavior, "Returns one concise analysis result") and
+`background-parent-tools` grants background agent-target orchestration only: it
+may target the `background-parent-tools:worker` agent target
+(`background-worker` agent, "Returns one concise analysis result") and
 nothing else. `background-worker-tools` grants no tools at all.
 
 ## Inputs and outputs

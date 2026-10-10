@@ -1,19 +1,19 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "exp-stage1",
+      "agent_id": "exp-stage1",
       "context_id": "exp-stage1-context",
       "display_name": "Pipeline stage 1",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "exp-stage2",
+      "agent_id": "exp-stage2",
       "context_id": "exp-stage2-context",
       "display_name": "Pipeline stage 2",
       "inference_profile_id": "gents:inference-slot:worker"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "contexts": [
     {
       "context_id": "exp-stage1-context",
@@ -77,14 +77,14 @@
   ],
   "tasks": [
     {
-      "behavior_id": "exp-stage1",
+      "agent_id": "exp-stage1",
       "display_name": "exp-stage1-task",
       "goal_objective_template": "Complete pipeline stage 1 for job {{ doc.job_id }} and persist its finding.",
       "prompt_template": "./tasks/exp_stage1_task/prompt.md",
       "task_id": "exp-stage1-task"
     },
     {
-      "behavior_id": "exp-stage2",
+      "agent_id": "exp-stage2",
       "display_name": "exp-stage2-task",
       "prompt_template": "./tasks/exp_stage2_task/prompt.md",
       "task_id": "exp-stage2-task"

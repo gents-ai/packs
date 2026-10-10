@@ -1,5 +1,5 @@
 {
-  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agent_behaviors[] | select(.behavior_id == $t.behavior_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def tool_names($id): [entries($id) | .tool_name]; def prompt($id): .config.tasks[] | select(.task_id == $id) | .prompt_template;",
+  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agents[] | select(.agent_id == $t.agent_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def tool_names($id): [entries($id) | .tool_name]; def prompt($id): .config.tasks[] | select(.task_id == $id) | .prompt_template;",
   "jq": [
     {
       "name": "every text asset is non-empty",
@@ -14,8 +14,8 @@
       "expr": ".manifest.external_dependencies | length == 1 and .[0].service_id == \"web-research-mcp\" and .[0].install_command == \"./scripts/stack install-mcp\""
     },
     {
-      "name": "no stage has host tools, memory, history, context budget, subagents, self-config or defra queries",
-      "expr": "stages | length == 4 and all((.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and (.tools.built_ins.enable_memory // false) == false and (.tools.built_ins.enable_session_history_tool // false) == false and (.tools.built_ins.enable_context_budget // false) == false and (.tools.built_ins.enable_goal_creation // false) == false and (.tools.subagents.enabled // false) == false and (.tools.self_config.enable_self_config // false) == false and (.tools.datastore.enable_defra_query // false) == false and .capability.workspace_authority == null)"
+      "name": "no stage has host tools, memory, history, context budget, agents, self-config or defra queries",
+      "expr": "stages | length == 4 and all((.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and (.tools.built_ins.enable_memory // false) == false and (.tools.built_ins.enable_session_history_tool // false) == false and (.tools.built_ins.enable_context_budget // false) == false and (.tools.built_ins.enable_goal_creation // false) == false and (.tools.agents.enabled // false) == false and (.tools.self_config.enable_self_config // false) == false and (.tools.datastore.enable_defra_query // false) == false and .capability.workspace_authority == null)"
     },
     {
       "name": "plan and investigate call only named remote tools of the one required service",

@@ -68,7 +68,7 @@ documents.
 
 Bind `coordinator`, `worker`, and `reviewer` explicitly and query the selected
 profiles' backends before launching live probes. The job's immutable
-`live_endpoint` must equal the effective backend used by the live behavior.
+`live_endpoint` must equal the effective backend used by the live agent.
 Run the checked-in vacancy preflight before launching the live server.
 
 ## Authority
@@ -78,11 +78,11 @@ Grok permission UI. Threat model is reachability of the Gents server / leader
 socket. Workers never `make worktree` or `git commit`; the host creates,
 seals, and integrates worktrees.
 
-Per-behavior tool grants, derived from the `tools` documents in
-`pack_config.json` (`tools_id`, host bash/files/network mode, subagent
+Per-agent tool grants, derived from the `tools` documents in
+`pack_config.json` (`tools_id`, host bash/files/network mode, agent-target
 grants, bound datastore surface):
 
-| Behavior tools | Bash | Files | Network | Subagents | Datastore surface |
+| Agent tools | Bash | Files | Network | Agent targets | Datastore surface |
 |---|---|---|---|---|---|
 | `port-converge-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-converge-io` |
 | `port-final-review-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-final-review-io` |
@@ -91,7 +91,7 @@ grants, bound datastore surface):
 | `port-integrate-tools` | none | none | - | none | none (acknowledgement only) |
 | `port-live-review-tools` | none | none | - | none | `port-live-review-io` |
 | `port-live-tools` | unrestricted | ReadWrite (`.`) | enabled | grants `port-live-tools:port-live-worker` | `port-live-io` |
-| `port-live-worker-tools` | none | none | - | none (no shell/files/subagents) | none |
+| `port-live-worker-tools` | none | none | - | none (no shell/files/agent targets) | none |
 | `port-plan-skip-tools` | none | none | - | none | `port-plan-skip-writes` |
 | `port-plan-tools` | none | none | - | none | `port-plan-io` |
 | `port-publish-tools` | unrestricted | ReadWrite (`.`) | enabled | none | `port-publish-writes` |
@@ -147,7 +147,7 @@ output is persisted.
 The resolved pack environment is part of the run. Do not repair a live run by
 applying this directory directly: use `gents pack install` with the original
 slot bindings so inference remains on the user's existing profiles. Restore the
-original environment first, wait until the affected behavior is runnable, and
+original environment first, wait until the affected agent is runnable, and
 only then reactivate paused goals. Requests retain the tool-policy snapshot they were
 created with, so a policy correction takes effect on a continuation request,
 not an already-processing request.
@@ -313,8 +313,8 @@ as a completion notification.
 
 `--edge all` runs the same checks on one multi-turn session. Keep one separate
 stock `grok --leader --leader-socket <path>` PTY smoke in the final gate.
-The integrated server must use `--grok-shim-behavior-id port-live`; the shim
-derives its advertised model and context window from that bound behavior.
+The integrated server must use `--grok-shim-agent-id port-live`; the shim
+derives its advertised model and context window from that bound agent.
 Pass `--model "$GENTS_GROK_PORT_MODEL"` for a non-default pack model; the probe
 also reads that environment variable directly when the flag is omitted. The
 same applies to the context window: the probe's standalone default is 524288,

@@ -23,7 +23,7 @@
   "description": "Reads PDF, EPUB, DOCX, PPTX, XLSX, OpenDocument, HTML, Markdown, CSV and image files into Markdown, including the text inside figures, as a Document reader agent and a plugin.",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "document-reader"
       ],
       "description": "Reads the documents the user names with the ocr tool and answers from them. Any capable profile; one that accepts images also describes figures.",

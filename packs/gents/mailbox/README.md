@@ -34,7 +34,7 @@ agents may ask their human owner for attention. It is not granted by default.
 
 ## Inputs and outputs
 
-Input: none from this pack directly; a consuming pack's behavior calls
+Input: none from this pack directly; a consuming pack's agent calls
 `file_mailbox_item`. Output: one `MailboxItem` document per call.
 
 ## Completion and failure

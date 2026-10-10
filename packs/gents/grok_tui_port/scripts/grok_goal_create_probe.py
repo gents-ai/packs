@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise /goal creation through a real leader socket and live inference.
 
-Requires a behavior with get_goal/update_goal enabled. Creates a fresh session;
+Requires an agent with get_goal/update_goal enabled. Creates a fresh session;
 does not touch existing user goals or ask the model to run host tools.
 """
 import argparse

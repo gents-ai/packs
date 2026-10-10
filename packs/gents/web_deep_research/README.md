@@ -26,9 +26,9 @@ gents graph run web_deep_research --field question="..." --field investigator_co
 ## Bindings and prerequisites
 
 Installation binds its `coordinator`, `researcher`, and `verifier` slots to
-existing profiles owned by the selected principal; installation binds their
-owner to the requested principal. Inference resolves through each task's
-behavior and bound user profile; inference connectivity and model settings
+existing profiles owned by the selected node; installation binds their
+owner to the requested node. Inference resolves through each task's
+agent and bound user profile; inference connectivity and model settings
 remain on existing user configuration.
 
 Declared external services must be provisioned by the operator; installing a
@@ -46,7 +46,7 @@ ceiling still constrains every configured capability. `research-plan` and
 `web_find_in_fetch`). `research-adjudicate` and `research-report` have no
 remote tools, only their datastore reads and writes. Each stage's exact MCP
 tool names, datastore surfaces, tasks, capabilities and graph intent are
-authored once in `pack_config.json`. No subagents are granted to any stage.
+authored once in `pack_config.json`. No agents are granted to any stage.
 
 ## Inputs and outputs
 

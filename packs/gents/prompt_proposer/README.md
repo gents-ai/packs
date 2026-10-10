@@ -1,9 +1,9 @@
 # Prompt proposer
 
 The prompt proposer is the model side of `gents optimization run`. It is a
-single behavior, `prompt-proposer`, with a fixed system prompt and no tools:
+single agent, `prompt-proposer`, with a fixed system prompt and no tools:
 it cannot read or write documents, files or configuration. Each round it
-receives one behavior's current system instruction and the feedback a
+receives one agent's current system instruction and the feedback a
 training run produced against it, and answers with one rewritten
 instruction and the rationale for it. The optimization driver, never the
 proposer, decides whether the candidate is worth a validation run.
@@ -22,7 +22,7 @@ default profile.
 ## Bindings and prerequisites
 
 The pack declares one inference slot, `proposer`, bound to the
-`prompt-proposer` behavior. Nothing else is configurable: the behavior's
+`prompt-proposer` agent. Nothing else is configurable: the agent's
 context is the proposing contract in
 `agent_behaviors/prompt_proposer/system_prompt.md` (what the turn carries,
 what to carry over from the feedback, the rules a candidate is held to, and
@@ -36,7 +36,7 @@ self-config tools.
 ## Inputs and outputs
 
 ```
-gents optimization run <definition_id> --subject <pack>[:<behavior>] --proposer behavior:prompt_proposer[:<behavior>] [--proposer-profile <profile_id>]
+gents optimization run <definition_id> --subject <pack>[:<agent>] --proposer agent:prompt_proposer[:<agent>] [--proposer-profile <profile_id>]
 ```
 
 The command opens a fresh session against the served home, sends the

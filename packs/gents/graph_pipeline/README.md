@@ -11,7 +11,7 @@ gents pack install gents/graph_pipeline --home <home>   # once published to the 
 ```
 
 Assets packs take no `--inference-slot`. This installs these evaluation
-assets locally; it does not create agent behaviors or launch inference. The
+assets locally; it does not create agent instances or launch inference. The
 compiler examples below describe how to use the fixtures programmatically.
 
 ## Bindings and prerequisites
@@ -23,10 +23,10 @@ configuration of its own.
 
 `compile_graph` accepts topology over configured capability revisions.
 Each capability points at an existing Task document and declares its typed
-ports. The model cannot author Task prompts, behaviors, tools, models, or
+ports. The model cannot author Task prompts, agents, tools, models, or
 physical collections. The tool performs pure whole-graph validation first and,
 only on success, writes the entry and edge EventTriggers in one transaction.
-Selecting `compile_graph` in a behavior's tools grants that behavior the
+Selecting `compile_graph` in an agent's tools grants that agent the
 publication capability.
 
 ```rust,ignore

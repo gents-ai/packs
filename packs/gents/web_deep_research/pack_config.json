@@ -1,35 +1,35 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "research-plan",
+      "agent_id": "research-plan",
       "context_id": "research-plan-context",
       "description": "Turns one research question into a bounded, closed assignment set.",
       "display_name": "Web research planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "research-investigate",
+      "agent_id": "research-investigate",
       "context_id": "research-investigate-context",
       "description": "Searches, extracts, and records evidence for one bounded research lens.",
       "display_name": "Web evidence investigator",
       "inference_profile_id": "gents:inference-slot:researcher"
     },
     {
-      "behavior_id": "research-adjudicate",
+      "agent_id": "research-adjudicate",
       "context_id": "research-adjudicate-context",
       "description": "Cross-checks claims, contradictions, provenance, and quote support.",
       "display_name": "Research evidence adjudicator",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "research-report",
+      "agent_id": "research-report",
       "context_id": "research-report-context",
       "description": "Writes the final answer from adjudicated claims and source provenance.",
       "display_name": "Cited research reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "compactions": [
     {
       "compaction_id": "research-compaction",
@@ -735,7 +735,7 @@
   "graph_capabilities": [
     {
       "allowed_callers": [
-        "${GENTS_PACK_AGENT_DID}"
+        "${GENTS_PACK_NODE_DID}"
       ],
       "capability_id": "research-plan",
       "input_ports": [
@@ -772,7 +772,7 @@
     },
     {
       "allowed_callers": [
-        "${GENTS_PACK_AGENT_DID}"
+        "${GENTS_PACK_NODE_DID}"
       ],
       "capability_id": "research-investigate",
       "input_ports": [
@@ -823,7 +823,7 @@
     },
     {
       "allowed_callers": [
-        "${GENTS_PACK_AGENT_DID}"
+        "${GENTS_PACK_NODE_DID}"
       ],
       "capability_id": "research-adjudicate",
       "input_ports": [
@@ -860,7 +860,7 @@
     },
     {
       "allowed_callers": [
-        "${GENTS_PACK_AGENT_DID}"
+        "${GENTS_PACK_NODE_DID}"
       ],
       "capability_id": "research-report",
       "input_ports": [
@@ -1091,25 +1091,25 @@
   ],
   "tasks": [
     {
-      "behavior_id": "research-plan",
+      "agent_id": "research-plan",
       "display_name": "Plan bounded web research",
       "prompt_template": "./tasks/research_plan_task/prompt.md",
       "task_id": "research-plan-task"
     },
     {
-      "behavior_id": "research-investigate",
+      "agent_id": "research-investigate",
       "display_name": "Investigate one web research lens",
       "prompt_template": "./tasks/research_investigate_task/prompt.md",
       "task_id": "research-investigate-task"
     },
     {
-      "behavior_id": "research-adjudicate",
+      "agent_id": "research-adjudicate",
       "display_name": "Adjudicate the complete evidence ledger",
       "prompt_template": "./tasks/research_adjudicate_task/prompt.md",
       "task_id": "research-adjudicate-task"
     },
     {
-      "behavior_id": "research-report",
+      "agent_id": "research-report",
       "display_name": "Write the cited research report",
       "prompt_template": "./tasks/research_report_task/prompt.md",
       "task_id": "research-report-task"

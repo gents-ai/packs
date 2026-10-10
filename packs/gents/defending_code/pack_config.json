@@ -1,119 +1,119 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "defend-cluster",
+      "agent_id": "defend-cluster",
       "context_id": "defend-cluster-context",
       "description": "Collapses confirmed consequence findings into a closed remediation-unit ledger.",
       "display_name": "Root-cause clusterer",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-contract-review",
+      "agent_id": "defend-contract-review",
       "context_id": "defend-contract-review-context",
       "description": "Checks one remediation unit against repository intent, tests, history, and formal specifications.",
       "display_name": "Contract and specification reviewer",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "defend-patch",
+      "agent_id": "defend-patch",
       "context_id": "defend-patch-context",
       "description": "Drafts one contract-aware unapplied unified diff for a root-cause cluster.",
       "display_name": "Static patch author",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "defend-patch-integrate",
+      "agent_id": "defend-patch-integrate",
       "context_id": "defend-patch-integrate-context",
       "description": "Inspects a sealed accepted patch; the host applies the sealed diff.",
       "display_name": "Typed integrator",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "defend-patch-review",
+      "agent_id": "defend-patch-review",
       "context_id": "defend-patch-review-context",
       "description": "Reviews a patch from its location, category, diff, and source without finder or author rationale.",
       "display_name": "Isolated static patch reviewer",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "defend-patch-security-review",
+      "agent_id": "defend-patch-security-review",
       "context_id": "defend-patch-security-review-context",
       "description": "Independently checks whether one reviewed patch closes the exploit family without bypasses.",
       "display_name": "Adversarial patch re-attacker",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "defend-patch-skip",
+      "agent_id": "defend-patch-skip",
       "context_id": "defend-patch-skip-context",
       "description": "Writes an explicit no-patch sentinel for a skipped DefensePatchAssignment.",
       "display_name": "Skipped-assignment no-patch recorder",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "defend-patch-validation",
+      "agent_id": "defend-patch-validation",
       "context_id": "defend-patch-validation-context",
       "description": "Applies one draft in a disposable local checkout and records mechanical evidence.",
       "display_name": "Isolated patch validator",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "defend-plan",
+      "agent_id": "defend-plan",
       "context_id": "defend-plan-context",
       "description": "Partitions the attack surface into a closed, non-overlapping review-area set.",
       "display_name": "Threat-scoped review planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-remediation-plan",
+      "agent_id": "defend-remediation-plan",
       "context_id": "defend-remediation-plan-context",
       "description": "Joins the closed cluster and contract ledgers into one patch assignment per cluster.",
       "display_name": "Remediation work planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-report",
+      "agent_id": "defend-report",
       "context_id": "defend-report-context",
       "description": "Checks the closed ledgers and publishes one operator-facing report.",
       "display_name": "Defense campaign reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-scan",
+      "agent_id": "defend-scan",
       "context_id": "defend-scan-context",
       "description": "Reviews one threat-scoped area and records plausible candidates without prematurely filtering them.",
       "display_name": "Static vulnerability discoverer",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "defend-threat-model",
+      "agent_id": "defend-threat-model",
       "context_id": "defend-threat-model-context",
       "description": "Maps system context, assets, entry points, trust boundaries, threats, and controls from source.",
       "display_name": "Threat-model bootstrapper",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-triage",
+      "agent_id": "defend-triage",
       "context_id": "defend-triage-context",
       "description": "Reduces a closed typed verdict ledger into exact counts and confirmed findings.",
       "display_name": "Adversarial triage reducer",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "defend-verification-plan",
+      "agent_id": "defend-verification-plan",
       "context_id": "defend-verification-plan-context",
       "description": "Closes the candidate ledger into one durable verification assignment per candidate.",
       "display_name": "Verification work planner",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "behavior_id": "defend-verifier",
+      "agent_id": "defend-verifier",
       "context_id": "defend-verifier-context",
       "description": "Receives exactly one candidate assignment, re-derives it from source, and writes one typed verdict without seeing other verifier reasoning.",
       "display_name": "Independent adversarial candidate verifier",
       "inference_profile_id": "gents:inference-slot:verifier"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "callback_bindings": [
     {
       "binding_id": "defense-patch-workspace",
@@ -3740,103 +3740,103 @@
   ],
   "tasks": [
     {
-      "behavior_id": "defend-cluster",
+      "agent_id": "defend-cluster",
       "description": "Produces a closed root-cause ledger for parallel contract review.",
       "display_name": "Cluster confirmed findings into remediation units",
       "prompt_template": "./tasks/defend_cluster_task/prompt.md",
       "task_id": "defend-cluster-task"
     },
     {
-      "behavior_id": "defend-contract-review",
+      "agent_id": "defend-contract-review",
       "description": "One document-triggered contract reviewer per root-cause cluster.",
       "display_name": "Review one finding cluster against repository contracts",
       "prompt_template": "./tasks/defend_contract_review_task/prompt.md",
       "task_id": "defend-contract-review-task"
     },
     {
-      "behavior_id": "defend-patch-integrate",
+      "agent_id": "defend-patch-integrate",
       "display_name": "Apply a sealed accepted patch",
       "prompt_template": "./tasks/defend_patch_integrate_task/prompt.md",
       "task_id": "defend-patch-integrate-task"
     },
     {
-      "behavior_id": "defend-patch-review",
+      "agent_id": "defend-patch-review",
       "display_name": "Independently review one static patch",
       "prompt_template": "./tasks/defend_patch_review_task/prompt.md",
       "task_id": "defend-patch-review-task"
     },
     {
-      "behavior_id": "defend-patch-security-review",
+      "agent_id": "defend-patch-security-review",
       "description": "Checks exploit closure, siblings, bypasses, and contract alignment.",
       "display_name": "Adversarially re-attack one reviewed patch",
       "prompt_template": "./tasks/defend_patch_security_review_task/prompt.md",
       "task_id": "defend-patch-security-review-task"
     },
     {
-      "behavior_id": "defend-patch-skip",
+      "agent_id": "defend-patch-skip",
       "display_name": "Record an explicit no-patch sentinel",
       "prompt_template": "./tasks/defend_patch_skip_task/prompt.md",
       "task_id": "defend-patch-skip-task"
     },
     {
-      "behavior_id": "defend-patch",
+      "agent_id": "defend-patch",
       "display_name": "Draft one unapplied security patch",
       "prompt_template": "./tasks/defend_patch_task/prompt.md",
       "task_id": "defend-patch-task"
     },
     {
-      "behavior_id": "defend-patch-validation",
+      "agent_id": "defend-patch-validation",
       "description": "Records apply, format, compile, test, and proof evidence.",
       "display_name": "Mechanically validate one patch in isolation",
       "prompt_template": "./tasks/defend_patch_validation_task/prompt.md",
       "task_id": "defend-patch-validation-task"
     },
     {
-      "behavior_id": "defend-plan",
+      "agent_id": "defend-plan",
       "display_name": "Partition the threat model into review areas",
       "prompt_template": "./tasks/defend_plan_task/prompt.md",
       "task_id": "defend-plan-task"
     },
     {
-      "behavior_id": "defend-remediation-plan",
+      "agent_id": "defend-remediation-plan",
       "description": "Creates a closed document-triggered patch work set.",
       "display_name": "Materialize contract-aware patch assignments",
       "prompt_template": "./tasks/defend_remediation_plan_task/prompt.md",
       "task_id": "defend-remediation-plan-task"
     },
     {
-      "behavior_id": "defend-report",
+      "agent_id": "defend-report",
       "display_name": "Publish the closed defense campaign report",
       "prompt_template": "./tasks/defend_report_task/prompt.md",
       "task_id": "defend-report-task"
     },
     {
-      "behavior_id": "defend-scan",
+      "agent_id": "defend-scan",
       "display_name": "Discover candidates in one threat-scoped area",
       "prompt_template": "./tasks/defend_scan_task/prompt.md",
       "task_id": "defend-scan-task"
     },
     {
-      "behavior_id": "defend-threat-model",
+      "agent_id": "defend-threat-model",
       "display_name": "Bootstrap a source-derived threat model",
       "prompt_template": "./tasks/defend_threat_model_task/prompt.md",
       "task_id": "defend-threat-model-task"
     },
     {
-      "behavior_id": "defend-triage",
+      "agent_id": "defend-triage",
       "display_name": "Reduce the closed verdict ledger and route confirmed findings",
       "prompt_template": "./tasks/defend_triage_task/prompt.md",
       "task_id": "defend-triage-task"
     },
     {
-      "behavior_id": "defend-verification-plan",
+      "agent_id": "defend-verification-plan",
       "description": "Writes graph-native assignments that trigger verifier requests.",
       "display_name": "Materialize the closed candidate verification work set",
       "prompt_template": "./tasks/defend_verification_plan_task/prompt.md",
       "task_id": "defend-verification-plan-task"
     },
     {
-      "behavior_id": "defend-verifier",
+      "agent_id": "defend-verifier",
       "description": "Per-assignment event-triggered verifier; one durable verdict per request.",
       "display_name": "Independently verify one vulnerability candidate",
       "prompt_template": "./tasks/defend_verifier_task/prompt.md",

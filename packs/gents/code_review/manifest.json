@@ -35,7 +35,7 @@
   "description": "Host-evidenced four-stage review: deterministic dispatch, immutable paged evidence, bounded lens swarm, verification, and triage.",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "review-recon",
         "review-triage"
       ],
@@ -43,14 +43,14 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "review-scan"
       ],
       "description": "Bounded parallel code-review scans. A fast, capable worker profile is appropriate.",
       "name": "worker"
     },
     {
-      "behaviors": [
+      "agents": [
         "review-verify"
       ],
       "description": "Adversarial verification of candidate findings. Prefer an independent high-quality profile.",

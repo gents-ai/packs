@@ -44,7 +44,7 @@
   "description": "Six-stage repository maintenance round: inventory -> concern swarm -> verification -> commit planning -> serial execution -> one reviewed PR",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "maintenance-execute-skip",
         "maintenance-integrate",
         "maintenance-publish",
@@ -56,7 +56,7 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "maintenance-execute",
         "maintenance-scan"
       ],

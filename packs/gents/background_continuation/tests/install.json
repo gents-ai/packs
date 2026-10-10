@@ -1,12 +1,12 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/background-parent",
-      "AgentBehavior/background-worker",
+      "Agent/background-parent",
+      "Agent/background-worker",
       "AgentContext/background-parent-context",
       "AgentContext/background-worker-context",
       "EventSource/background-parent",
-      "SubagentTarget/background-parent-tools:worker",
+      "AgentTarget/background-parent-tools:worker",
       "Task/background-parent-task",
       "Tools/background-parent-tools",
       "Tools/background-worker-tools",

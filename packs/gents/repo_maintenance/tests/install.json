@@ -1,14 +1,14 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/maintenance-execute",
-      "AgentBehavior/maintenance-execute-skip",
-      "AgentBehavior/maintenance-integrate",
-      "AgentBehavior/maintenance-publish",
-      "AgentBehavior/maintenance-recon",
-      "AgentBehavior/maintenance-scan",
-      "AgentBehavior/maintenance-triage",
-      "AgentBehavior/maintenance-verify",
+      "Agent/maintenance-execute",
+      "Agent/maintenance-execute-skip",
+      "Agent/maintenance-integrate",
+      "Agent/maintenance-publish",
+      "Agent/maintenance-recon",
+      "Agent/maintenance-scan",
+      "Agent/maintenance-triage",
+      "Agent/maintenance-verify",
       "AgentContext/maintenance-execute-context",
       "AgentContext/maintenance-execute-skip-context",
       "AgentContext/maintenance-integrate-context",

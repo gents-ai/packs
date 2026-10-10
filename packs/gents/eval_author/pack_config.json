@@ -1,14 +1,14 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "eval-author",
+      "agent_id": "eval-author",
       "context_id": "eval-author-context",
       "description": "Interviews the operator and drafts eval cases for one subject behavior.",
       "display_name": "Eval author",
       "inference_profile_id": "gents:inference-slot:author"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "contexts": [
     {
       "context_id": "eval-author-context",

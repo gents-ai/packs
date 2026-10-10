@@ -174,7 +174,7 @@ fn run(reader: impl Read) -> Result<PluginOutput, String> {
     let stat = required_str(git_diff, "host.git_diff", "stat")?;
     let patch = required_str(git_diff, "host.git_diff", "patch")?;
     let workspace_id = required_str(workspace, "host.workspace", "workspace_id")?;
-    let workspace_owner = required_str(workspace, "host.workspace", "owner_agent_did")?;
+    let workspace_owner = required_str(workspace, "host.workspace", "owner_node_did")?;
     let workspace_authority = required_str(workspace, "host.workspace", "authority")?;
     let focus = required_str(input, "input", "focus")?;
 
@@ -211,7 +211,7 @@ fn run(reader: impl Read) -> Result<PluginOutput, String> {
         "head_ref": head_sha,
         "workspace_id": workspace_id,
         "workspace_authority": workspace_authority,
-        "workspace_owner_agent_did": workspace_owner,
+        "workspace_owner_node_did": workspace_owner,
         "lens_count": "4",
         "lens_min": "4",
         "lens_max": "4",
@@ -302,7 +302,7 @@ mod tests {
                     "name_status": "", "stat": "", "patch": "",
                 },
                 "workspace": {
-                    "workspace_id": "w", "owner_agent_did": "did:key:z", "authority": "readOnly",
+                    "workspace_id": "w", "owner_node_did": "did:key:z", "authority": "readOnly",
                 },
             },
         })
@@ -321,7 +321,7 @@ mod tests {
                     "name_status": "M\tfile.rs", "stat": "1 file changed", "patch": "diff --git",
                 },
                 "workspace": {
-                    "workspace_id": "w1", "owner_agent_did": "did:key:zOwner", "authority": "readOnly",
+                    "workspace_id": "w1", "owner_node_did": "did:key:zOwner", "authority": "readOnly",
                 },
             },
         })

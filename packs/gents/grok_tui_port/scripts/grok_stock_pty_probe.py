@@ -225,8 +225,8 @@ def request_rows_for_prompt(graphql_url: str, prompt: str) -> list[dict[str, Any
     data = graphql_query(
         graphql_url,
         f'{{ AgentRequest(filter: {{content: {{_eq: "{escaped}"}}, '
-        'behavior_id: {_eq: "port-live"}}, order: {created_at: DESC}, limit: 2) '
-        "{ request_id lifecycle_state behavior_id session_id content } }",
+        'agent_id: {_eq: "port-live"}}, order: {created_at: DESC}, limit: 2) '
+        "{ request_id lifecycle_state agent_id session_id content } }",
     )
     rows = data.get("AgentRequest")
     require(isinstance(rows, list), "AgentRequest query did not return a list")
@@ -308,7 +308,7 @@ def validate_prompt_request(
     require(len(rows) == 1, "expected exactly one AgentRequest for the random prompt")
     row = rows[0]
     require(row.get("content") == prompt, "AgentRequest content does not match PTY prompt")
-    require(row.get("behavior_id") == "port-live", "PTY request used the wrong behavior")
+    require(row.get("agent_id") == "port-live", "PTY request used the wrong agent")
     require(row.get("lifecycle_state") == "completed", "PTY request is not completed")
     request_id = row.get("request_id")
     session_id = row.get("session_id")
@@ -1023,7 +1023,7 @@ def self_test() -> dict[str, int]:
             {
                 "request_id": "request-1",
                 "session_id": "session-1",
-                "behavior_id": "port-live",
+                "agent_id": "port-live",
                 "content": prompt,
                 "lifecycle_state": "completed",
             }
@@ -1117,7 +1117,7 @@ def self_test() -> dict[str, int]:
     good_row = {
         "request_id": "request-1",
         "session_id": "session-1",
-        "behavior_id": "port-live",
+        "agent_id": "port-live",
         "content": "prompt-1",
         "lifecycle_state": "completed",
     }
@@ -1142,7 +1142,7 @@ def self_test() -> dict[str, int]:
     )
     reject(
         lambda: validate_prompt_request(
-            [{**good_row, "behavior_id": "other"}],
+            [{**good_row, "agent_id": "other"}],
             prompt="prompt-1",
             expected_session="session-1",
         )

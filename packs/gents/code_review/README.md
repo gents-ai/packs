@@ -8,16 +8,16 @@ Install from the registry (`gents pack install gents/code_review`), from a
 directory or `.pack`, or from the home's pack store.
 
 ```sh
-gents pack install gents/code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
+gents pack install gents/code_review --home ./.gents --node-did "$REVIEW_NODE_DID" \
   --preview \
   --inference-slot coordinator=claude-coordinator \
   --inference-slot worker=glm-worker \
   --inference-slot verifier=grok-verifier
-gents pack install gents/code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
+gents pack install gents/code_review --home ./.gents --node-did "$REVIEW_NODE_DID" \
   --inference-slot coordinator=claude-coordinator \
   --inference-slot worker=glm-worker \
   --inference-slot verifier=grok-verifier
-gents graph run code_review --home ./.gents --agent-did "$REVIEW_AGENT_DID" \
+gents graph run code_review --home ./.gents --node-did "$REVIEW_NODE_DID" \
   --field base=origin/main --watch
 ```
 
@@ -27,15 +27,15 @@ JSON object (or `@FILE`).
 
 ## Bindings and prerequisites
 
-Use the same home and principal for installation and execution. Bind the
-three declared slots to profiles already configured for that principal:
+Use the same home and node for installation and execution. Bind the
+three declared slots to profiles already configured for that node:
 `coordinator` for recon/triage, `worker` for parallel scans, and `verifier`
 for adversarial verification. Inference resolves through each stage's Task
--> Behavior -> the user profile bound to its named slot; connectivity,
+-> Agent -> the user profile bound to its named slot; connectivity,
 credentials, model selection, effort, sampling, execution, and concurrency
 stay on the selected user profiles and backends. The authored documents and
 their references live in `pack_config.json`; prompt files remain literal
-sidecars. Set `REVIEW_AGENT_DID` to the principal running in that home;
+sidecars. Set `REVIEW_NODE_DID` to the node running in that home;
 these commands require the runtime and pack from the same config generation.
 
 The verification stage currently needs a macOS runtime with `sandbox-exec`
@@ -51,10 +51,10 @@ no workspace at all. Verification can write scratch artifacts through its
 network disabled); reviewed source remains read-only throughout, and review
 output is evidence, not permission to merge. Installation creates no
 inference configuration and fills each document's owner from the requested
-`--agent-did`; behavior, context, tools, tasks, capabilities and the intent
+`--node-did`; agent, context, tools, tasks, capabilities and the intent
 inherit that explicit installation owner. Capabilities explicitly permit
-that installation owner through `${GENTS_PACK_AGENT_DID}`, which the common
-loader binds to `--agent-did`. Empty caller lists deny access. No subagents
+that installation owner through `${GENTS_PACK_NODE_DID}`, which the common
+loader binds to `--node-did`. Empty caller lists deny access. No agents
 are granted to any stage.
 
 ## Inputs and outputs

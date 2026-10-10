@@ -1,6 +1,6 @@
 {
   "surface_id": "mailbox-writes",
-  "agent_did": "did:key:zMailboxAgentPlaceholder000000000000000000000000000",
+  "node_did": "did:key:zMailboxAgentPlaceholder000000000000000000000000000",
   "display_name": "Stamped mailbox writes",
   "enabled": true,
   "entries": [

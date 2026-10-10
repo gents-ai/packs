@@ -20,7 +20,7 @@
   "description": "Least-privilege lsp tool against rust-analyzer on the Gents workspace. Not a CI gate.",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "lsp-coder"
       ],
       "description": "Rust coding and rust-analyzer tool use.",

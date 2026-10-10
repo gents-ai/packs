@@ -1,19 +1,19 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "background-parent",
+      "agent_id": "background-parent",
       "context_id": "background-parent-context",
       "display_name": "Background delegation parent",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "background-worker",
+      "agent_id": "background-worker",
       "context_id": "background-worker-context",
       "display_name": "Background worker",
       "inference_profile_id": "gents:inference-slot:worker"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "contexts": [
     {
       "context_id": "background-parent-context",
@@ -37,18 +37,18 @@
       "source_collection": "BackgroundContinuationJob"
     }
   ],
-  "subagent_targets": [
+  "agent_targets": [
     {
-      "behavior_id": "background-worker",
+      "agent_id": "background-worker",
       "description": "Returns one concise analysis result",
       "name": "worker",
-      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
+      "target_node_did": "${GENTS_PACK_NODE_DID}",
       "target_id": "background-parent-tools:worker"
     }
   ],
   "tasks": [
     {
-      "behavior_id": "background-parent",
+      "agent_id": "background-parent",
       "display_name": "background-parent-task",
       "prompt_template": "./tasks/background_parent_task/prompt.md",
       "task_id": "background-parent-task"
@@ -57,7 +57,7 @@
   "tools": [
     {
       "display_name": "Background subagent orchestration only",
-      "subagents": {
+      "agents": {
         "enabled": true,
         "target_ids": [
           "background-parent-tools:worker"

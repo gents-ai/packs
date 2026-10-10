@@ -2768,9 +2768,9 @@ def probe_subagent(
             f"child AgentRequest lacks caused_by_parent_request_id; got: {child_row}",
         )
         require(
-            child_row.get("behavior_id") == "port-live-worker",
-            f"child AgentRequest behavior_id must be port-live-worker; got "
-            f"{child_row.get('behavior_id')!r}",
+            child_row.get("agent_id") == "port-live-worker",
+            f"child AgentRequest agent_id must be port-live-worker; got "
+            f"{child_row.get('agent_id')!r}",
         )
         spawn_calls = matching_spawn_calls(documents, child_row)
         require(
@@ -2787,7 +2787,7 @@ def probe_subagent(
         result["documents"] = {
             "caused_request_id": child_row.get("request_id"),
             "parent_request_id": parent_request_id,
-            "child_behavior_id": child_row.get("behavior_id"),
+            "child_agent_id": child_row.get("agent_id"),
             "child_lifecycle_state": child_row.get("lifecycle_state"),
         }
     return result
@@ -2845,7 +2845,7 @@ def query_subagent_documents(
     child_data = query_fn(
         endpoint,
         f'''{{ AgentRequest(filter: {{caused_by_parent_tool_call_doc_id: {{_in: [{call_literals}]}}}}, limit: 65) {{
-          request_id session_id behavior_id lifecycle_state created_at
+          request_id session_id agent_id lifecycle_state created_at
           caused_by_parent_request_id caused_by_parent_request_doc_id caused_by_parent_tool_call_doc_id
         }} }}''',
         timeout=10,
@@ -2890,7 +2890,7 @@ def self_test_subagent_document_query() -> dict[str, int]:
         return {
             "request_id": f"child-{index}",
             "session_id": f"child-session-{index}",
-            "behavior_id": "port-live-worker",
+            "agent_id": "port-live-worker",
             "lifecycle_state": "completed",
             "caused_by_parent_request_id": f"parent-{index}",
             "caused_by_parent_request_doc_id": f"parent-doc-{index}",
@@ -2965,7 +2965,7 @@ def query_documents(endpoint: str, session_id: str) -> dict[str, Any]:
     escaped = graphql_escape(session_id)
     query = f"""{{
       AgentSession(filter: {{session_id: {{_eq: \"{escaped}\"}}}}) {{
-        session_id behavior_id created_at closed_at
+        session_id agent_id created_at closed_at
       }}
       AgentRequest(filter: {{session_id: {{_eq: \"{escaped}\"}}, purpose: {{_eq: \"normal\"}}}}, order: {{created_at: ASC}}) {{
         _docID request_id lifecycle_state terminalized_at interrupt_requested_at terminal_output input

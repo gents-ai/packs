@@ -3,7 +3,7 @@
   "jq": [
     {
       "name": "the pack is typed, static and writes through the write tool package",
-      "expr": ".scenario.init.tool_package == \"write\" and (.scenario.expect.prompt_tool_contracts | length) == 14 and (.scenario.expect.result_documents | length) == 17 and (.config.agent_behaviors | length) == 16 and (.config.tasks | length) == 16 and (.config.triggers | length) == 16"
+      "expr": ".scenario.init.tool_package == \"write\" and (.scenario.expect.prompt_tool_contracts | length) == 14 and (.scenario.expect.result_documents | length) == 17 and (.config.agents | length) == 16 and (.config.tasks | length) == 16 and (.config.triggers | length) == 16"
     },
     {
       "name": "both fan-outs close: each fan-out trigger reads a run-correlated source and declares its count source",

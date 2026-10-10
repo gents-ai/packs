@@ -31,21 +31,21 @@
   "description": "One exact-path repository change in a sealed workspace, independently reviewed against its writer receipt, and integrated by the host only after acceptance.",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "change-unit-writer"
       ],
       "description": "Implement one bounded change in the isolated writer workspace.",
       "name": "writer"
     },
     {
-      "behaviors": [
+      "agents": [
         "change-unit-reviewer"
       ],
       "description": "Independently review and accept or reject the exact sealed receipt.",
       "name": "reviewer"
     },
     {
-      "behaviors": [
+      "agents": [
         "change-unit-failed",
         "change-unit-integrator",
         "change-unit-record",
