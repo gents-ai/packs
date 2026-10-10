@@ -3,7 +3,7 @@
     {
       "agent_id": "eval-author",
       "context_id": "eval-author-context",
-      "description": "Interviews the operator and drafts eval cases for one subject behavior.",
+      "description": "Interviews the operator and drafts eval cases for one subject agent.",
       "display_name": "Eval author",
       "inference_profile_id": "gents:inference-slot:author"
     }
