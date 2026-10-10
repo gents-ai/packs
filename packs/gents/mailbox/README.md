@@ -7,12 +7,13 @@ gents pack install ./packs/gents/mailbox --home <home>
 gents pack install gents/mailbox --home <home>   # once published to the registry
 ```
 
-Assets packs take no `--inference-slot`.
+This pack declares no inference slots.
 
 `gents pack install mailbox --home <home>` materializes this reusable surface
 asset under the home's pack assets; it is not a complete desired-state root and
 does not write runtime configuration. Incorporate the surface into a document
-pack's canonical `pack_config.json`, then reference `mailbox-writes` from the
+pack's canonical `pack_config.json`, bind its `node_did` to the consuming
+pack's owning node, then reference `mailbox-writes` from the
 intended context's `Tools.datastore` configuration after reviewing its declared
 fields. There is no graph or seed in this asset pack.
 
@@ -23,24 +24,23 @@ configuration of its own.
 
 ## Authority
 
-The surface grants the stamped `file_mailbox_item` tool, writing a
-`MailboxItem` document with the fields declared in
-`datastore_tool_surfaces/mailbox_writes/object.json`: `kind`, `action`,
-`title`, `source_kind`, `source_id` required; `summary`, `payload`,
-`session_id`, `request_id`, `graph_run_id`, `cause_doc_id`,
-`expected_collection`, `parent_item_id`, `deadline_at` optional. Packs copy or
-reference it and explicitly attach `mailbox-writes` only to contexts whose
-agents may ask their human owner for attention. It is not granted by default.
+The surface grants the stamped `file_mailbox_item` tool. Callers supply
+`title` and optional `summary` and `payload`; the runtime stamps ownership,
+provenance, and routing. The example uses the canonical event notification
+policy: a `flag` requiring `ack`, with identity derived from the current event.
+Packs copy or reference it and explicitly attach `mailbox-writes` only to
+contexts whose agents may ask their human owner for attention. It is not
+granted by default.
 
 ## Inputs and outputs
 
-Input: none from this pack directly; a consuming pack's behavior calls
+Input: none from this pack directly; a consuming pack's agent calls
 `file_mailbox_item`. Output: one `MailboxItem` document per call.
 
 ## Completion and failure
 
-Not applicable: this pack installs a reusable surface definition, not a
-runtime behavior that completes or fails.
+Not applicable: this pack installs a reusable surface definition and does
+not start requests.
 
 ## Validation
 

@@ -1,7 +1,7 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/document-reader",
+      "Agent/document-reader",
       "AgentContext/document-reader-context",
       "Callback/ocr-extract",
       "Callback/ocr-plan",

@@ -87,7 +87,7 @@ explicit short root such as `/tmp`.
 For `acp_session`, implement only `acp.rs`: initialize capabilities,
 session/new with preferred id, model/catalog/mode updates, monotonic event ids,
 and exact shaped errors for `session/load`, `x.ai/interject`, and
-`x.ai/compact_conversation`. Model/context/behavior come from bound configuration. Do not
+`x.ai/compact_conversation`. Model/context/agent come from bound configuration. Do not
 synthesize runtime documents or permission UI.
 
 For `prompt_cancel`, implement only `turn.rs`: one pending prompt per session,
@@ -118,7 +118,7 @@ list-running, and cancel. Never use static Task rows as runtime state.
 
 For `assembly_cli`, implement only the five listed assembly/CLI paths: declare
 all sibling modules, build `ProjectionEngine`, `AcpService`, and the leader
-server from the embedded node plus bound behavior/model/context, and expose
+server from the embedded node plus bound agent/model/context, and expose
 the smallest server flags. Use `tracing`, never `println!`/`eprintln!`.
 
 Stable Gents anchors

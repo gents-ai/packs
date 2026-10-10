@@ -19,7 +19,7 @@
     },
     {
       "name": "the helper agent is granted exactly the plugin and nothing else",
-      "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\"] and (.config.agent_behaviors | map(.behavior_id)) == [\"image-helper\"]"
+      "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\"] and (.config.agents | map(.agent_id)) == [\"image-helper\"]"
     },
     {
       "name": "the graph nodes run the plugin and every output collection has a schema",

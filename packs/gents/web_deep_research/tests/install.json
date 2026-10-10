@@ -7,10 +7,10 @@
       "verifier"
     ],
     "documents": [
-      "AgentBehavior/research-adjudicate",
-      "AgentBehavior/research-investigate",
-      "AgentBehavior/research-plan",
-      "AgentBehavior/research-report",
+      "Agent/research-adjudicate",
+      "Agent/research-investigate",
+      "Agent/research-plan",
+      "Agent/research-report",
       "AgentContext/research-adjudicate-context",
       "AgentContext/research-investigate-context",
       "AgentContext/research-plan-context",

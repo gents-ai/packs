@@ -1,35 +1,35 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "scan-investigate",
+      "agent_id": "scan-investigate",
       "context_id": "scan-investigate-context",
       "description": "Investigates one candidate batch in depth and records findings.",
       "display_name": "Batch investigator",
       "inference_profile_id": "gents:inference-slot:scanner"
     },
     {
-      "behavior_id": "scan-plan",
+      "agent_id": "scan-plan",
       "context_id": "scan-plan-context",
       "description": "Batches pre-scan candidates into investigation assignments.",
       "display_name": "Scan batch planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "scan-report",
+      "agent_id": "scan-report",
       "context_id": "scan-report-context",
       "description": "Publishes confirmed findings and the run report.",
       "display_name": "Scan reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "scan-revalidate",
+      "agent_id": "scan-revalidate",
       "context_id": "scan-revalidate-context",
       "description": "Re-checks every candidate finding and stamps verdicts.",
       "display_name": "Adversarial revalidator",
       "inference_profile_id": "gents:inference-slot:verifier"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "compactions": [
     {
       "compaction_id": "security-scan-compaction",
@@ -480,25 +480,25 @@
   ],
   "tasks": [
     {
-      "behavior_id": "scan-investigate",
+      "agent_id": "scan-investigate",
       "display_name": "Investigate a candidate batch",
       "prompt_template": "./tasks/scan_investigate_task/prompt.md",
       "task_id": "scan-investigate-task"
     },
     {
-      "behavior_id": "scan-plan",
+      "agent_id": "scan-plan",
       "display_name": "Plan investigation batches",
       "prompt_template": "./tasks/scan_plan_task/prompt.md",
       "task_id": "scan-plan-task"
     },
     {
-      "behavior_id": "scan-report",
+      "agent_id": "scan-report",
       "display_name": "Publish the scan report",
       "prompt_template": "./tasks/scan_report_task/prompt.md",
       "task_id": "scan-report-task"
     },
     {
-      "behavior_id": "scan-revalidate",
+      "agent_id": "scan-revalidate",
       "display_name": "Revalidate candidate findings",
       "prompt_template": "./tasks/scan_revalidate_task/prompt.md",
       "task_id": "scan-revalidate-task"

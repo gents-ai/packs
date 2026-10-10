@@ -39,7 +39,7 @@ includes an `apply_root` field with the apply report.
 
 Add `--apply-prune` only on a home dedicated to this pack: it makes the
 pack the complete desired state for that home's agent and deletes any
-config the pack does not declare (other behaviors, contexts, Tools documents, skills,
+config the pack does not declare (other agents, contexts, Tools documents, skills,
 surfaces, and their reachable tasks/schedules/triggers).
 
 Equivalent without folding into server:
@@ -48,13 +48,13 @@ Equivalent without folding into server:
 gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim
 gents config apply --root packs/gents/pipeline --home <home> \
   --graphql http://127.0.0.1:19191/api/v0/graphql \
-  --bind-agent-did home --force-rebind-concrete-did --prune
+  --bind-node-did home --force-rebind-concrete-did --prune
 ```
 
 ## Bindings and prerequisites
 
 The pack declares one inference slot, `worker`, bound to both the `exp-stage1`
-and `exp-stage2` behaviors: it executes both stages of the example pipeline.
+and `exp-stage2` agents: it executes both stages of the example pipeline.
 Bind it at install time as shown above, against an already-initialized
 inference owner (example uses the GLM-5.3 Flash vLLM deployment on
 workstation-1):
@@ -72,7 +72,7 @@ existing inference owner, and a disabled or missing binding fails before
 installation writes:
 
 ```text
-runtime reconcile applied generation=3 ... proposed_unavailable_behavior_count=0
+runtime reconcile applied generation=3 ... proposed_unavailable_agent_count=0
 event source now observing source collection source_collection=ExperimentJob
 ```
 
@@ -82,7 +82,7 @@ as already-seen and never fires.
 
 ## Authority
 
-| Behavior | Tools | Why |
+| Agent | Tools | Why |
 | --- | --- | --- |
 | stage-1 | `write_experiment_finding`, `get_goal`, `update_goal` | The surface grants one bounded create; the Task goal declaration is controller-provisioned, so discovery and model-facing `create_goal` remain off |
 | stage-2 | none | Finding is already in the task prompt via `{{ doc.* }}` |
@@ -165,7 +165,7 @@ it happens once at startup.
 | Path | Role |
 | --- | --- |
 | `schemas/` | Pack-scoped SDL (`ExperimentJob`, `ExperimentFinding`) - applied by `config apply` |
-| `pack_config.json` | Canonical behaviors, contexts, Tools, surfaces, tasks, EventSources, Triggers, and inference settings |
+| `pack_config.json` | Canonical agents, contexts, Tools, surfaces, tasks, EventSources, Triggers, and inference settings |
 | `tasks/*/prompt.md` | Prompt sidecars referenced by canonical Task documents |
 | `agent_behaviors/*/system_prompt.md` | System-prompt sidecars referenced by canonical AgentContext documents |
 | `runs/` | Gitignored exports |

@@ -66,7 +66,7 @@
   "description": "Threat-model-driven static defense campaign: discover -> verify -> cluster -> contract review -> patch -> validate -> maintainer review -> re-attack -> report",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "defend-cluster",
         "defend-plan",
         "defend-remediation-plan",
@@ -78,7 +78,7 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "defend-patch",
         "defend-patch-integrate",
         "defend-patch-skip",
@@ -88,7 +88,7 @@
       "name": "worker"
     },
     {
-      "behaviors": [
+      "agents": [
         "defend-contract-review",
         "defend-patch-review",
         "defend-patch-security-review",

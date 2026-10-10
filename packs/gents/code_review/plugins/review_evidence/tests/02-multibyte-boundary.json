@@ -55,7 +55,7 @@
       "repository_path": ".",
       "workspace_authority": "readOnly",
       "workspace_id": "00000000-0000-0000-0000-0000000000w5",
-      "workspace_owner_agent_did": "did:key:golden-owner"
+      "workspace_owner_node_did": "did:key:golden-owner"
     }
   },
   "input": {
@@ -70,7 +70,7 @@
       },
       "workspace": {
         "authority": "readOnly",
-        "owner_agent_did": "did:key:golden-owner",
+        "owner_node_did": "did:key:golden-owner",
         "workspace_id": "00000000-0000-0000-0000-0000000000w5"
       }
     },

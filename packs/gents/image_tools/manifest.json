@@ -23,7 +23,7 @@
   "description": "Looks at and works on PNG, JPEG, GIF, BMP, TIFF and WebP images: right-sized, upright pictures for a model, facts, tiles, montages, annotations, diffs, colour palettes, QR and barcode reading and perceptual hashes, as an Image helper agent and a plugin.",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "image-helper"
       ],
       "description": "Works on the images the user names with the image_tools tool and answers from them. Any capable profile; one that accepts images also looks at the pictures.",

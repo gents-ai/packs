@@ -1,7 +1,7 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/image-helper",
+      "Agent/image-helper",
       "AgentContext/image-helper-context",
       "Callback/image-plan",
       "Callback/image-run",

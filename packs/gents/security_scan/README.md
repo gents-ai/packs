@@ -79,7 +79,7 @@ Per stage, from the Tools documents in `pack_config.json`:
   compiled plugin, not a choice this pack makes) raise the call's budget
   above the sandbox default for a whole-repository walk.
 
-No subagents are granted to any stage.
+No agents are granted to any stage.
 
 ## Inputs and outputs
 

@@ -1,5 +1,5 @@
 {
-  "agent_principal": {},
+  "node": {},
   "event_sources": [
     {
       "display_name": "data-tables-live",
@@ -11,7 +11,7 @@
   ],
   "tasks": [
     {
-      "behavior_id": "data-analyst",
+      "agent_id": "data-analyst",
       "display_name": "data-tables-live-task",
       "prompt_template": "./tasks/live_task/prompt.md",
       "task_id": "data-tables-live-task"

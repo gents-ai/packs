@@ -32,7 +32,7 @@
   "description": "Whole-codebase security scan: free regex pre-scan -> batch planner -> investigator fan-out -> adversarial revalidation -> report",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "scan-plan",
         "scan-report"
       ],
@@ -40,14 +40,14 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "scan-investigate"
       ],
       "description": "Investigates candidate findings in parallel.",
       "name": "scanner"
     },
     {
-      "behaviors": [
+      "agents": [
         "scan-revalidate"
       ],
       "description": "Adversarially revalidates candidate findings.",

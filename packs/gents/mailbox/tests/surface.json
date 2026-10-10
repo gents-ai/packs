@@ -1,0 +1,8 @@
+{
+  "jq": [
+    {
+      "name": "mailbox example exposes only notification content with explicit event policy",
+      "expr": "(.assets[\"datastore_tool_surfaces/mailbox_writes/object.json\"] | fromjson) as $surface | $surface.entries | length == 1 and (.[0] | .tool_name == \"file_mailbox_item\" and .collection == \"MailboxItem\" and .notification == {\"identity\":{\"mode\":\"event\"},\"kind\":\"flag\",\"action\":\"ack\"} and .fields == [{\"name\":\"title\",\"required\":true},{\"name\":\"summary\",\"required\":false},{\"name\":\"payload\",\"required\":false}])"
+    }
+  ]
+}

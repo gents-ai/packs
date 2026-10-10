@@ -1,8 +1,8 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/exp-stage1",
-      "AgentBehavior/exp-stage2",
+      "Agent/exp-stage1",
+      "Agent/exp-stage2",
       "AgentContext/exp-stage1-context",
       "AgentContext/exp-stage2-context",
       "DatastoreToolSurface/experiment-writes",

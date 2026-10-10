@@ -1,112 +1,112 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "port-converge",
+      "agent_id": "port-converge",
       "context_id": "port-converge-context",
       "description": "Semantically stitch, compile, test, and commit the serially applied path-disjoint slices.",
       "display_name": "Converge parallel Grok port slices",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "port-final-review",
+      "agent_id": "port-final-review",
       "context_id": "port-final-review-context",
       "description": "Run the bundled four-stage review graph after the combined convergence commit and repair confirmed findings.",
       "display_name": "Full review of the combined Grok port trunk",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
-      "behavior_id": "port-implement",
+      "agent_id": "port-implement",
       "context_id": "port-implement-context",
       "description": "Edit the Gents tree to speak the mapped Grok surface.",
       "display_name": "Implement one Grok wire surface in a bound workspace",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "port-integrate",
+      "agent_id": "port-integrate",
       "context_id": "port-integrate-context",
       "description": "Acknowledge a reviewed sealed workspace; the host applies the diff.",
       "display_name": "Integration acknowledgement for an accepted unit",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-integrate-record",
+      "agent_id": "port-integrate-record",
       "context_id": "port-integrate-record-context",
       "description": "Close one logical integration slot from an integrator receipt.",
       "display_name": "Record a durable host integration",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-live",
+      "agent_id": "port-live",
       "context_id": "port-live-context",
       "description": "Drive real prompts at the integrated shim and record wire plus Gents observations.",
       "display_name": "Live GLM probes through the Grok wire",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-live-review",
+      "agent_id": "port-live-review",
       "context_id": "port-live-review-context",
       "description": "Fail closed unless each non-ignore surface has wire and document evidence.",
       "display_name": "Adversarial live-report",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
-      "behavior_id": "port-live-worker",
+      "agent_id": "port-live-worker",
       "context_id": "port-live-worker-context",
-      "description": "Deterministic same-principal subagent target for the live subagent edge.",
-      "display_name": "Live GLM subagent worker",
+      "description": "Deterministic same-node agent target for the live subagent edge.",
+      "display_name": "Live GLM agent target",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "port-plan",
+      "agent_id": "port-plan",
       "context_id": "port-plan-context",
       "description": "Reducer over the closed PortSurface ledger.",
       "display_name": "Cluster surfaces into work units",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-plan-skip",
+      "agent_id": "port-plan-skip",
       "context_id": "port-plan-skip-context",
       "description": "Write sentinel closure and integrate rows without provisioning a workspace.",
       "display_name": "Close a non-executable Grok port plan",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-publish",
+      "agent_id": "port-publish",
       "context_id": "port-publish-context",
       "description": "Unbound on the operator checkout. Host already applied accepted sealed diffs.",
       "display_name": "Open one PR from the integrated trunk",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-recon",
+      "agent_id": "port-recon",
       "context_id": "port-recon-context",
       "description": "Read grok-build call sites and emit PortSurface rows.",
       "display_name": "Map Grok TUI feature surfaces",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "port-recon-audit",
+      "agent_id": "port-recon-audit",
       "context_id": "port-recon-audit-context",
       "description": "Reject incomplete, path-only, or out-of-bounds reconnaissance before planning.",
       "display_name": "Audit the closed Grok wire ledger",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
-      "behavior_id": "port-retry",
+      "agent_id": "port-retry",
       "context_id": "port-retry-context",
       "description": "Preserve a rejected seal and create a new attempt workspace request.",
       "display_name": "Plan a fresh repair attempt",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "behavior_id": "port-review",
+      "agent_id": "port-review",
       "context_id": "port-review-context",
       "description": "Accept or reject an implementation against grok-build evidence.",
       "display_name": "Adversarial Grok call-site review",
       "inference_profile_id": "gents:inference-slot:reviewer"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "callback_bindings": [
     {
       "binding_id": "port-implement-workspace",
@@ -197,7 +197,7 @@
     {
       "compaction_id": "grok-port-compaction",
       "context_id": "port-live-worker-context",
-      "display_name": "Live GLM subagent worker",
+      "display_name": "Live GLM agent target",
       "system_prompt": "./agent_behaviors/port_live_worker/system_prompt.md",
       "tools_id": "port-live-worker-tools"
     },
@@ -2260,39 +2260,39 @@
       "repository_id": "gents-checkout"
     }
   ],
-  "subagent_targets": [
+  "agent_targets": [
     {
-      "behavior_id": "port-live-worker",
-      "description": "Deterministic one-sentence subagent for the live subagent edge",
+      "agent_id": "port-live-worker",
+      "description": "Deterministic one-sentence agent for the live subagent edge",
       "name": "port-live-worker",
-      "target_agent_did": "${GENTS_PACK_AGENT_DID}",
+      "target_node_did": "${GENTS_PACK_NODE_DID}",
       "target_id": "port-live-tools:port-live-worker"
     }
   ],
   "tasks": [
     {
-      "behavior_id": "port-converge",
+      "agent_id": "port-converge",
       "display_name": "port-converge-task",
       "goal_objective_template": "Complete combined Grok TUI port convergence for run {{ event.correlation }}, repair confirmed defects, and persist the convergence report.",
       "prompt_template": "./tasks/port_converge_task/prompt.md",
       "task_id": "port-converge-task"
     },
     {
-      "behavior_id": "port-final-review",
+      "agent_id": "port-final-review",
       "display_name": "port-final-review-task",
       "goal_objective_template": "Complete the final combined Grok TUI port review for run {{ event.correlation }} and persist its reviewed terminal report.",
       "prompt_template": "./tasks/port_final_review_task/prompt.md",
       "task_id": "port-final-review-task"
     },
     {
-      "behavior_id": "port-implement",
+      "agent_id": "port-implement",
       "display_name": "port-implement-task",
       "goal_objective_template": "Complete the assigned Grok TUI port implementation unit {{ event.correlation }} and persist its implementation receipt.",
       "prompt_template": "./tasks/port_implement_task/prompt.md",
       "task_id": "port-implement-task"
     },
     {
-      "behavior_id": "port-integrate-record",
+      "agent_id": "port-integrate-record",
       "description": "Record an applied slice from its host integrator receipt",
       "display_name": "port-integrate-record-task",
       "goal_objective_template": "Complete integration receipt recording for Grok TUI port unit {{ event.correlation }} and persist its durable result.",
@@ -2300,63 +2300,63 @@
       "task_id": "port-integrate-record-task"
     },
     {
-      "behavior_id": "port-integrate",
+      "agent_id": "port-integrate",
       "display_name": "port-integrate-task",
       "goal_objective_template": "Complete integration authorization for Grok TUI port unit {{ event.correlation }} and persist the required callback result.",
       "prompt_template": "./tasks/port_integrate_task/prompt.md",
       "task_id": "port-integrate-task"
     },
     {
-      "behavior_id": "port-live-review",
+      "agent_id": "port-live-review",
       "display_name": "port-live-review-task",
       "goal_objective_template": "Complete live-result review for Grok TUI port run {{ event.correlation }} and persist its coverage verdict.",
       "prompt_template": "./tasks/port_live_review_task/prompt.md",
       "task_id": "port-live-review-task"
     },
     {
-      "behavior_id": "port-live",
+      "agent_id": "port-live",
       "display_name": "port-live-task",
       "goal_objective_template": "Complete live Grok pager edge verification for run {{ event.correlation }} and persist every required probe result.",
-      "prompt_template": "Run {{ event.correlation }} finished full combined review.\n\nstatus={{ doc.status }} head={{ doc.head_sha }} findings={{ doc.confirmed_findings }}\nimplement_surfaces={{ doc.implement_surface_count }} expected_results={{ doc.live_result_count }}\n<untrusted_review_summary>\n{{ doc.summary }}\n</untrusted_review_summary>\n\nCall `read_grok_port_job`, `read_port_final_review_report`, and\n`read_port_surface`. For each surface, interpret the complete wire packet as\n`grok_wire` followed verbatim by optional `grok_wire_continuation`. If review\nstatus is not `green`, write exactly one\n`surface_id=none`, `status=blocked` result explaining the review block and\nstop. Do not fabricate an environment proof on this path: the proof write is\ndeliberately not a trigger-scoped output obligation, and the grouped reviewer\nwill turn its absence into failed coverage before publication.\n\nRequire current HEAD to equal the report's exact `head_sha`. Use the job's\n`gents_root`, `live_model`, `live_endpoint`, `live_home`, `live_graphql`, and\n`live_socket`. Never reuse the orchestration home or its running process.\nBuild the integrated CLI, initialize the run-owned live home against the\ndeclared model endpoint, and launch the integrated Grok leader/shim on the\nrun-owned GraphQL port and socket, explicitly binding Grok turns to the\n`port-live` behavior. Verify that this bound behavior's effective model and\ncontext window are `live_model` and 524288 before accepting the catalog\nadvertisement. Discover the exact launch flags from the integrated `--help`\nand implementation; do not invent a protocol substitute.\nEvery `gents provision` or `gents config apply` invocation used to build\nthe live home must export\n`GENTS_GROK_PORT_ENDPOINT_1=\"<job live_endpoint>\"`. Never use the obsolete\n`GENTS_GROK_PORT_ENDPOINT` name and never rely on the pack's localhost\nfallback.\n\nFirst run `GENTS_ROOT=${GENTS_GROK_PORT_GENTS_ROOT:-.} python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_edge_probe.py --edge offline` and\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py self-test`; require both\nembedded validator matrices to pass without a socket. Before starting the server, run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py preflight` for `live_graphql` and `live_socket` and\nsave its fresh vacancy proof under the run directory.\nWait for both HTTP readiness and socket readiness. Record the PID of the\nactual process listening on `live_graphql`, not a wrapper shell PID, verify it\nbelongs to the launched run-owned server, and clean up only that PID when\nprobes finish. Require the listener and socket to be gone afterward.\nThe checked-in probes preserve and report the job's exact `live_socket`\nidentity while bridging an over-limit Unix `connect(2)` pathname through a\nshort absolute alias in a private temporary directory; do not bypass that\nportable-path handling in a deep worktree.\n\nImmediately after readiness, run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py run` against the stock\n`grok` binary and `live_socket`, passing the exact job endpoint,\nbackend ID `grok-port-backend-ws1`, run-owned live home, preflight JSON,\nactual listener PID, GraphQL URL, and repository cwd, and save its structured\nJSON under the run directory. Invoke this foreground command with the full\n120-second tool timeout and pass `--ready-timeout 15 --timeout 90\n--total-timeout 95`; do not wrap it in another timeout, pipe its output, or\notherwise mask its exit status. Require both a zero process exit and the saved\nproof before continuing. The script queries the live-home\n`InferenceBackend` itself and requires its endpoint to equal the job endpoint.\nIt launches stock interactive\n`grok --leader --leader-socket <live_socket>` in a PTY, uses a fresh random\nmarker, then requires its exact echo in the correlated durable assistant\nmessage. A second distinct challenge must complete in the same stock-client\nsession while the pager process remains alive, proving the client returned to\nusable input. Terminal repaint bytes and local input echo are not model-output\nevidence; the framed probe below owns exact ACP output-wire verification. `grok -p`\nbypasses leader mode and is never evidence for this port.\n\nThen run the edge probe against `live_socket` and `live_graphql`, passing\n`--model live_model`, one edge at a time: handshake, prompt, tool, subprocess,\nsubagent, and cancel. The probe must pass its wire and document assertions,\nincluding the subprocess command and output on both the Grok wire and the\npersisted AgentToolCall. The subagent edge must also prove the foreground spawn\ncontract end to end: the parent's early standard-rail `task`-titled tool_call\ncarrying `_meta.subagentBackground: false` (the pager-local foreground wait\nmarker), the exact live extension-rail `x.ai/session_notification`\nspawned/progress/finished lifecycle for the `port-live-worker` target, the\nchild-session identity, the exact `subagent_finished` DTO (snake_case variant\nfields under the camelCase `sessionId/update/_meta` envelope: required\n`subagent_id`, `child_session_id`, `status`, `tool_calls`, `turns`,\n`duration_ms`, `tokens_used`, `will_wake` with `will_wake: false` for the\nforeground child, optional `error`/`output`, never `parent_session_id`), the\nterminal `tool_call_update` reusing the same toolCallId, and - via\n`live_graphql` - the durable parent/child AgentRequest linkage\n(`caused_by_parent_request_id`) plus the persisted child\nAgentToolCall/AgentMessage rows for the spawned child session.\n\nMap those observed edges to every surface whose verdict is `implement` or\n`shaped-stub`. A shaped stub passes only when its explicit error/not-found\ncontract and absence of fabricated documents match `live_expect`. Do not treat\nfixture replay, direct provider HTTP, or the outer orchestration server as a\npass. Query `live_graphql` for the correlated Gents documents required by each\n`live_expect`.\n\nIf preflight, launch, stock PTY, or a global probe dependency fails, do not\ninvent a proof. Clean up the exact listener if it exists, then write one\ntruthful `blocked` or `failed` result for every non-ignore surface so the\ngrouped reviewer can close the ledger and fail publication.\n\nAfter all probes, stop the script-verified actual listener PID. Run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py cleanup` against the saved proof and require both the\nlistener/port and socket to be absent. Then call\n`write_port_live_environment_proof` exactly once from the final structured\nJSON, with `final_review_head` set to the reviewed HEAD and all proof booleans\ntrue. Preserve the complete JSON under the datastore string ceiling by\nsplitting the compact JSON verbatim into exactly two non-empty strings, each\nat most 2,000 UTF-8 bytes, stored in `proof_json` and\n`proof_json_continuation`; concatenation must reproduce the original JSON\nexactly. Write this singleton\nbefore any surface result so the grouped reviewer cannot start without it.\n\nCall `write_port_live_result` once per non-ignore surface (or one sentinel\n`surface_id=none` / `status=blocked` if none exist). The runtime fills\n`expected_total` from the reviewed ledger; do not supply or reinterpret it.\n`status` is `passed` only when both `grok_wire_observed` and\n`gents_docs_observed` satisfy `live_expect`. Do not supply `run_id`.\n\nAfter every required live-result row (or the single permitted blocked sentinel)\nis durably written, call `update_goal` with `status=\"complete\"`. Never complete\nthe goal while required surface coverage remains unrecorded.\n",
+      "prompt_template": "Run {{ event.correlation }} finished full combined review.\n\nstatus={{ doc.status }} head={{ doc.head_sha }} findings={{ doc.confirmed_findings }}\nimplement_surfaces={{ doc.implement_surface_count }} expected_results={{ doc.live_result_count }}\n<untrusted_review_summary>\n{{ doc.summary }}\n</untrusted_review_summary>\n\nCall `read_grok_port_job`, `read_port_final_review_report`, and\n`read_port_surface`. For each surface, interpret the complete wire packet as\n`grok_wire` followed verbatim by optional `grok_wire_continuation`. If review\nstatus is not `green`, write exactly one\n`surface_id=none`, `status=blocked` result explaining the review block and\nstop. Do not fabricate an environment proof on this path: the proof write is\ndeliberately not a trigger-scoped output obligation, and the grouped reviewer\nwill turn its absence into failed coverage before publication.\n\nRequire current HEAD to equal the report's exact `head_sha`. Use the job's\n`gents_root`, `live_model`, `live_endpoint`, `live_home`, `live_graphql`, and\n`live_socket`. Never reuse the orchestration home or its running process.\nBuild the integrated CLI, initialize the run-owned live home against the\ndeclared model endpoint, and launch the integrated Grok leader/shim on the\nrun-owned GraphQL port and socket, explicitly binding Grok turns to the\n`port-live` agent. Verify that this bound agent's effective model and\ncontext window are `live_model` and 524288 before accepting the catalog\nadvertisement. Discover the exact launch flags from the integrated `--help`\nand implementation; do not invent a protocol substitute.\nEvery `gents provision` or `gents config apply` invocation used to build\nthe live home must export\n`GENTS_GROK_PORT_ENDPOINT_1=\"<job live_endpoint>\"`. Never use the obsolete\n`GENTS_GROK_PORT_ENDPOINT` name and never rely on the pack's localhost\nfallback.\n\nFirst run `GENTS_ROOT=${GENTS_GROK_PORT_GENTS_ROOT:-.} python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_edge_probe.py --edge offline` and\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py self-test`; require both\nembedded validator matrices to pass without a socket. Before starting the server, run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py preflight` for `live_graphql` and `live_socket` and\nsave its fresh vacancy proof under the run directory.\nWait for both HTTP readiness and socket readiness. Record the PID of the\nactual process listening on `live_graphql`, not a wrapper shell PID, verify it\nbelongs to the launched run-owned server, and clean up only that PID when\nprobes finish. Require the listener and socket to be gone afterward.\nThe checked-in probes preserve and report the job's exact `live_socket`\nidentity while bridging an over-limit Unix `connect(2)` pathname through a\nshort absolute alias in a private temporary directory; do not bypass that\nportable-path handling in a deep worktree.\n\nImmediately after readiness, run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py run` against the stock\n`grok` binary and `live_socket`, passing the exact job endpoint,\nbackend ID `grok-port-backend-ws1`, run-owned live home, preflight JSON,\nactual listener PID, GraphQL URL, and repository cwd, and save its structured\nJSON under the run directory. Invoke this foreground command with the full\n120-second tool timeout and pass `--ready-timeout 15 --timeout 90\n--total-timeout 95`; do not wrap it in another timeout, pipe its output, or\notherwise mask its exit status. Require both a zero process exit and the saved\nproof before continuing. The script queries the live-home\n`InferenceBackend` itself and requires its endpoint to equal the job endpoint.\nIt launches stock interactive\n`grok --leader --leader-socket <live_socket>` in a PTY, uses a fresh random\nmarker, then requires its exact echo in the correlated durable assistant\nmessage. A second distinct challenge must complete in the same stock-client\nsession while the pager process remains alive, proving the client returned to\nusable input. Terminal repaint bytes and local input echo are not model-output\nevidence; the framed probe below owns exact ACP output-wire verification. `grok -p`\nbypasses leader mode and is never evidence for this port.\n\nThen run the edge probe against `live_socket` and `live_graphql`, passing\n`--model live_model`, one edge at a time: handshake, prompt, tool, subprocess,\nsubagent, and cancel. The probe must pass its wire and document assertions,\nincluding the subprocess command and output on both the Grok wire and the\npersisted AgentToolCall. The subagent edge must also prove the foreground spawn\ncontract end to end: the parent's early standard-rail `task`-titled tool_call\ncarrying `_meta.subagentBackground: false` (the pager-local foreground wait\nmarker), the exact live extension-rail `x.ai/session_notification`\nspawned/progress/finished lifecycle for the `port-live-worker` target, the\nchild-session identity, the exact `subagent_finished` DTO (snake_case variant\nfields under the camelCase `sessionId/update/_meta` envelope: required\n`subagent_id`, `child_session_id`, `status`, `tool_calls`, `turns`,\n`duration_ms`, `tokens_used`, `will_wake` with `will_wake: false` for the\nforeground child, optional `error`/`output`, never `parent_session_id`), the\nterminal `tool_call_update` reusing the same toolCallId, and - via\n`live_graphql` - the durable parent/child AgentRequest linkage\n(`caused_by_parent_request_id`) plus the persisted child\nAgentToolCall/AgentMessage rows for the spawned child session.\n\nMap those observed edges to every surface whose verdict is `implement` or\n`shaped-stub`. A shaped stub passes only when its explicit error/not-found\ncontract and absence of fabricated documents match `live_expect`. Do not treat\nfixture replay, direct provider HTTP, or the outer orchestration server as a\npass. Query `live_graphql` for the correlated Gents documents required by each\n`live_expect`.\n\nIf preflight, launch, stock PTY, or a global probe dependency fails, do not\ninvent a proof. Clean up the exact listener if it exists, then write one\ntruthful `blocked` or `failed` result for every non-ignore surface so the\ngrouped reviewer can close the ledger and fail publication.\n\nAfter all probes, stop the script-verified actual listener PID. Run\n`python3 ${GENTS_GROK_PORT_SCRIPTS_DIR:-./packs/gents/grok_tui_port/scripts}/grok_stock_pty_probe.py cleanup` against the saved proof and require both the\nlistener/port and socket to be absent. Then call\n`write_port_live_environment_proof` exactly once from the final structured\nJSON, with `final_review_head` set to the reviewed HEAD and all proof booleans\ntrue. Preserve the complete JSON under the datastore string ceiling by\nsplitting the compact JSON verbatim into exactly two non-empty strings, each\nat most 2,000 UTF-8 bytes, stored in `proof_json` and\n`proof_json_continuation`; concatenation must reproduce the original JSON\nexactly. Write this singleton\nbefore any surface result so the grouped reviewer cannot start without it.\n\nCall `write_port_live_result` once per non-ignore surface (or one sentinel\n`surface_id=none` / `status=blocked` if none exist). The runtime fills\n`expected_total` from the reviewed ledger; do not supply or reinterpret it.\n`status` is `passed` only when both `grok_wire_observed` and\n`gents_docs_observed` satisfy `live_expect`. Do not supply `run_id`.\n\nAfter every required live-result row (or the single permitted blocked sentinel)\nis durably written, call `update_goal` with `status=\"complete\"`. Never complete\nthe goal while required surface coverage remains unrecorded.\n",
       "task_id": "port-live-task"
     },
     {
-      "behavior_id": "port-plan-skip",
+      "agent_id": "port-plan-skip",
       "display_name": "port-plan-skip-task",
       "goal_objective_template": "Complete the Grok TUI port skip-plan stage for run {{ event.correlation }} and persist its required terminal records.",
       "prompt_template": "./tasks/port_plan_skip_task/prompt.md",
       "task_id": "port-plan-skip-task"
     },
     {
-      "behavior_id": "port-plan",
+      "agent_id": "port-plan",
       "display_name": "port-plan-task",
       "goal_objective_template": "Complete Grok TUI port planning for run {{ event.correlation }} and persist every required work unit and plan record.",
       "prompt_template": "./tasks/port_plan_task/prompt.md",
       "task_id": "port-plan-task"
     },
     {
-      "behavior_id": "port-publish",
+      "agent_id": "port-publish",
       "display_name": "port-publish-task",
       "goal_objective_template": "Complete publication of the reviewed Grok TUI port run {{ event.correlation }} as an unmerged pull request and persist its receipt.",
       "prompt_template": "./tasks/port_publish_task/prompt.md",
       "task_id": "port-publish-task"
     },
     {
-      "behavior_id": "port-recon-audit",
+      "agent_id": "port-recon-audit",
       "display_name": "port-recon-audit-task",
       "goal_objective_template": "Complete the Grok TUI port reconnaissance audit for run {{ event.correlation }} and persist its required durable output.",
       "prompt_template": "./tasks/port_recon_audit_task/prompt.md",
       "task_id": "port-recon-audit-task"
     },
     {
-      "behavior_id": "port-recon",
+      "agent_id": "port-recon",
       "display_name": "port-recon-task",
       "goal_objective_template": "Complete Grok TUI port reconnaissance for run {{ event.correlation }} and persist its required durable output.",
       "prompt_template": "./tasks/port_recon_task/prompt.md",
       "task_id": "port-recon-task"
     },
     {
-      "behavior_id": "port-retry",
+      "agent_id": "port-retry",
       "description": "Create a fresh workspace attempt from a rejected sealed slice",
       "display_name": "port-retry-task",
       "goal_objective_template": "Complete retry preparation for rejected Grok TUI port unit {{ event.correlation }} and persist the next work-unit attempt.",
@@ -2364,7 +2364,7 @@
       "task_id": "port-retry-task"
     },
     {
-      "behavior_id": "port-review",
+      "agent_id": "port-review",
       "display_name": "port-review-task",
       "goal_objective_template": "Complete the sealed Grok TUI port unit review {{ event.correlation }} and persist its review and closure records.",
       "prompt_template": "./tasks/port_review_task/prompt.md",
@@ -2517,7 +2517,7 @@
         },
         "root": "."
       },
-      "subagents": {
+      "agents": {
         "enabled": true,
         "target_ids": [
           "port-live-tools:port-live-worker"
@@ -2526,7 +2526,7 @@
       "tools_id": "port-live-tools"
     },
     {
-      "display_name": "Live worker: deterministic subagent target, no shell/files/subagents",
+      "display_name": "Live worker: deterministic agent target, no shell/files/agent targets",
       "tools_id": "port-live-worker-tools",
       "built_ins": {
         "enable_session_history_tool": false

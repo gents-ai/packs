@@ -44,7 +44,7 @@ scenario's expected tool calls name files in the Gents tree, so
 
 ## Authority
 
-| Behavior | Tools | Why |
+| Agent | Tools | Why |
 | --- | --- | --- |
 | lsp-coder | `read_file` / `list_files` / `glob` / `grep` (ReadOnly) + `lsp` | rust-analyzer needs a file root; no writes, no bash |
 
@@ -125,7 +125,7 @@ GENTS_LIVE_LSP=1 GENTS_LSP_RUST_PACK_DIR=/abs/path/to/packs/gents/lsp_rust \
 | Path | Role |
 | --- | --- |
 | `workspace/` | Tiny Rust lib for the offline rust-analyzer unit test |
-| `pack_config.json` | Canonical behavior, context, Tools, task, EventSource, Trigger, and inference configuration |
+| `pack_config.json` | Canonical agent, context, Tools, task, EventSource, Trigger, and inference configuration |
 | `tasks/lsp_hover_task/prompt.md` | Deterministic prompt asks checkable semantic questions |
 | `schemas/` | Pack-scoped `LspDemoJob` schema observed by the EventSource |
 

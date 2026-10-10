@@ -1,63 +1,63 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "maintenance-execute",
+      "agent_id": "maintenance-execute",
       "context_id": "maintenance-execute-context",
       "description": "Creates one branch worktree, performs its bounded cleanup, and records validation.",
       "display_name": "Isolated maintenance executor",
       "inference_profile_id": "gents:inference-slot:scanner"
     },
     {
-      "behavior_id": "maintenance-execute-skip",
+      "agent_id": "maintenance-execute-skip",
       "context_id": "maintenance-execute-skip-context",
       "description": "Records skipped execution without creating a workspace.",
       "display_name": "Zero-finding maintenance skip",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "maintenance-integrate",
+      "agent_id": "maintenance-integrate",
       "context_id": "maintenance-integrate-context",
       "description": "Inspects the sealed workspace; the host applies the sealed diff.",
       "display_name": "Typed maintenance integrator",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "maintenance-publish",
+      "agent_id": "maintenance-publish",
       "context_id": "maintenance-publish-context",
       "description": "Reviews the assembled commit series, opens one PR, and drives it toward green.",
       "display_name": "Maintenance PR reviewer and publisher",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "maintenance-recon",
+      "agent_id": "maintenance-recon",
       "context_id": "maintenance-recon-context",
       "description": "Partitions a repository maintenance into a closed set of areas.",
       "display_name": "Maintenance reconnaissance",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "maintenance-scan",
+      "agent_id": "maintenance-scan",
       "context_id": "maintenance-scan-context",
       "description": "Inspects one repository area and records findings.",
       "display_name": "Maintenance area scanner",
       "inference_profile_id": "gents:inference-slot:scanner"
     },
     {
-      "behavior_id": "maintenance-triage",
+      "agent_id": "maintenance-triage",
       "context_id": "maintenance-triage-context",
       "description": "Ranks verified findings and writes the final report.",
       "display_name": "Maintenance triage",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "behavior_id": "maintenance-verify",
+      "agent_id": "maintenance-verify",
       "context_id": "maintenance-verify-context",
       "description": "Refutes or confirms every candidate against freshly read code.",
       "display_name": "Adversarial maintenance verification",
       "inference_profile_id": "gents:inference-slot:coordinator"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "callback_bindings": [
     {
       "binding_id": "maintenance-execute-workspace",
@@ -1130,49 +1130,49 @@
   ],
   "tasks": [
     {
-      "behavior_id": "maintenance-execute-skip",
+      "agent_id": "maintenance-execute-skip",
       "display_name": "Record a zero-finding maintenance skip",
       "prompt_template": "./tasks/maintenance_execute_skip_task/prompt.md",
       "task_id": "maintenance-execute-skip-task"
     },
     {
-      "behavior_id": "maintenance-execute",
+      "agent_id": "maintenance-execute",
       "display_name": "Execute one maintenance branch",
       "prompt_template": "./tasks/maintenance_execute_task/prompt.md",
       "task_id": "maintenance-execute-task"
     },
     {
-      "behavior_id": "maintenance-integrate",
+      "agent_id": "maintenance-integrate",
       "display_name": "Apply a sealed maintenance workspace",
       "prompt_template": "./tasks/maintenance_integrate_task/prompt.md",
       "task_id": "maintenance-integrate-task"
     },
     {
-      "behavior_id": "maintenance-publish",
+      "agent_id": "maintenance-publish",
       "display_name": "Review and publish the maintenance PR",
       "prompt_template": "./tasks/maintenance_publish_task/prompt.md",
       "task_id": "maintenance-publish-task"
     },
     {
-      "behavior_id": "maintenance-recon",
+      "agent_id": "maintenance-recon",
       "display_name": "Partition repository maintenance",
       "prompt_template": "./tasks/maintenance_recon_task/prompt.md",
       "task_id": "maintenance-recon-task"
     },
     {
-      "behavior_id": "maintenance-scan",
+      "agent_id": "maintenance-scan",
       "display_name": "Scan one maintenance area",
       "prompt_template": "./tasks/maintenance_scan_task/prompt.md",
       "task_id": "maintenance-scan-task"
     },
     {
-      "behavior_id": "maintenance-triage",
+      "agent_id": "maintenance-triage",
       "display_name": "Triage completed maintenance",
       "prompt_template": "./tasks/maintenance_triage_task/prompt.md",
       "task_id": "maintenance-triage-task"
     },
     {
-      "behavior_id": "maintenance-verify",
+      "agent_id": "maintenance-verify",
       "display_name": "Verify completed maintenance candidates",
       "prompt_template": "./tasks/maintenance_verify_task/prompt.md",
       "task_id": "maintenance-verify-task"

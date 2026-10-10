@@ -1,14 +1,14 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "prompt-proposer",
+      "agent_id": "prompt-proposer",
       "context_id": "prompt-proposer-context",
-      "description": "Rewrites one behavior's system instruction from a training run's feedback.",
+      "description": "Rewrites one agent's system instruction from a training run's feedback.",
       "display_name": "Prompt proposer",
       "inference_profile_id": "gents:inference-slot:proposer"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "contexts": [
     {
       "context_id": "prompt-proposer-context",

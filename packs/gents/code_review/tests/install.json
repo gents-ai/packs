@@ -7,10 +7,10 @@
       "worker"
     ],
     "documents": [
-      "AgentBehavior/review-recon",
-      "AgentBehavior/review-scan",
-      "AgentBehavior/review-triage",
-      "AgentBehavior/review-verify",
+      "Agent/review-recon",
+      "Agent/review-scan",
+      "Agent/review-triage",
+      "Agent/review-verify",
       "AgentContext/review-recon-context",
       "AgentContext/review-scan-context",
       "AgentContext/review-triage-context",

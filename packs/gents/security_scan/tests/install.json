@@ -1,10 +1,10 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/scan-investigate",
-      "AgentBehavior/scan-plan",
-      "AgentBehavior/scan-report",
-      "AgentBehavior/scan-revalidate",
+      "Agent/scan-investigate",
+      "Agent/scan-plan",
+      "Agent/scan-report",
+      "Agent/scan-revalidate",
       "AgentContext/scan-investigate-context",
       "AgentContext/scan-plan-context",
       "AgentContext/scan-report-context",

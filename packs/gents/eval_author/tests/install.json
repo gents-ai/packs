@@ -1,7 +1,7 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/eval-author",
+      "Agent/eval-author",
       "AgentContext/eval-author-context",
       "Tools/eval-author-tools"
     ],

@@ -1,5 +1,5 @@
 {
-  "agent_principal": {},
+  "node": {},
   "event_sources": [
     {
       "display_name": "charts-live",
@@ -11,7 +11,7 @@
   ],
   "tasks": [
     {
-      "behavior_id": "chart-maker",
+      "agent_id": "chart-maker",
       "display_name": "charts-live-task",
       "prompt_template": "./tasks/live_task/prompt.md",
       "task_id": "charts-live-task"

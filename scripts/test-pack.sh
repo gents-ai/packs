@@ -299,7 +299,7 @@ register_services() {
       [$manifest[0].external_dependencies[] | {
         service_id: .service_id, display_name: .service_id,
         description: "test registration", hostname: "localhost", lan_ip: "127.0.0.1",
-        mcp_port: 9, mcp_path: "/mcp", send_agent_did: false, enabled: true
+        mcp_port: 9, mcp_path: "/mcp", send_node_did: false, enabled: true
       }])
   ' "$root/pack_config.json" >"$root/config-next.json"
   mv "$root/config-next.json" "$root/pack_config.json"

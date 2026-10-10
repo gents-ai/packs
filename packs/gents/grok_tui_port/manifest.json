@@ -73,7 +73,7 @@
   "description": "Map the Grok TUI wire, fan out eight path-disjoint GLM writers, retry rejected seals in fresh workspaces, record host-confirmed serial integration, semantically converge, full-review, live-prove, then open a PR",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "port-integrate",
         "port-integrate-record",
         "port-live",
@@ -86,7 +86,7 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "port-converge",
         "port-implement",
         "port-live-worker",
@@ -96,7 +96,7 @@
       "name": "worker"
     },
     {
-      "behaviors": [
+      "agents": [
         "port-final-review",
         "port-live-review",
         "port-recon-audit",

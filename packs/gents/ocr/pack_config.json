@@ -1,13 +1,13 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "document-reader",
+      "agent_id": "document-reader",
       "context_id": "document-reader-context",
       "display_name": "Document reader",
       "inference_profile_id": "gents:inference-slot:document_reader"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "callback_bindings": [
     {
       "binding_id": "ocr-plan",

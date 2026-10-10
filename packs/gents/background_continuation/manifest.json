@@ -14,17 +14,17 @@
   ],
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "Parent -> two background subagents -> durable acknowledged continuation wake",
+  "description": "Parent -> two background agents -> durable acknowledged continuation wake",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "background-parent"
       ],
       "description": "Owns the durable continuation and synthesizes worker results.",
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "background-worker"
       ],
       "description": "Runs bounded background investigations.",

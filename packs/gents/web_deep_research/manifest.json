@@ -42,7 +42,7 @@
   ],
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "research-plan",
         "research-report"
       ],
@@ -50,14 +50,14 @@
       "name": "coordinator"
     },
     {
-      "behaviors": [
+      "agents": [
         "research-investigate"
       ],
       "description": "Runs bounded parallel web investigations.",
       "name": "researcher"
     },
     {
-      "behaviors": [
+      "agents": [
         "research-adjudicate"
       ],
       "description": "Adjudicates claims and source quality independently.",

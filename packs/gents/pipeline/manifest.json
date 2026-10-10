@@ -20,7 +20,7 @@
   "description": "Job -> finding (written by a DatastoreToolSurface create tool) -> stage-2",
   "inference_slots": [
     {
-      "behaviors": [
+      "agents": [
         "exp-stage1",
         "exp-stage2"
       ],

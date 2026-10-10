@@ -1,49 +1,49 @@
 {
-  "agent_behaviors": [
+  "agents": [
     {
-      "behavior_id": "change-unit-writer",
+      "agent_id": "change-unit-writer",
       "context_id": "change-unit-writer-context",
       "description": "Implements one exact-path change in a host-sealed isolated workspace.",
       "display_name": "Change Writer",
       "inference_profile_id": "gents:inference-slot:writer"
     },
     {
-      "behavior_id": "change-unit-reviewer",
+      "agent_id": "change-unit-reviewer",
       "context_id": "change-unit-reviewer-context",
       "description": "Independently reviews the sealed workspace and binds acceptance to its writer receipt.",
       "display_name": "Change Reviewer",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
     {
-      "behavior_id": "change-unit-integrator",
+      "agent_id": "change-unit-integrator",
       "context_id": "change-unit-integrator-context",
       "description": "Acknowledges host-owned integration of an accepted sealed workspace.",
       "display_name": "Change Integrator",
       "inference_profile_id": "gents:inference-slot:integrator"
     },
     {
-      "behavior_id": "change-unit-record",
+      "agent_id": "change-unit-record",
       "context_id": "change-unit-record-context",
       "description": "Records host-confirmed integration from the integrator receipt.",
       "display_name": "Integration Recorder",
       "inference_profile_id": "gents:inference-slot:integrator"
     },
     {
-      "behavior_id": "change-unit-rejected",
+      "agent_id": "change-unit-rejected",
       "context_id": "change-unit-rejected-context",
       "description": "Records a rejected review as the unit's terminal result.",
       "display_name": "Rejection Recorder",
       "inference_profile_id": "gents:inference-slot:integrator"
     },
     {
-      "behavior_id": "change-unit-failed",
+      "agent_id": "change-unit-failed",
       "context_id": "change-unit-failed-context",
       "description": "Records a failed or interrupted stage as the unit's terminal result.",
       "display_name": "Failure Recorder",
       "inference_profile_id": "gents:inference-slot:integrator"
     }
   ],
-  "agent_principal": {},
+  "node": {},
   "callback_bindings": [
     {
       "binding_id": "change-unit-workspace",
@@ -793,43 +793,43 @@
       "repository_id": "change-unit-repository"
     }
   ],
-  "subagent_targets": [],
+  "agent_targets": [],
   "tasks": [
     {
-      "behavior_id": "change-unit-writer",
+      "agent_id": "change-unit-writer",
       "display_name": "Implement Change",
       "prompt_template": "./tasks/change_unit_writer_task/prompt.md",
       "task_id": "change-unit-writer-task",
       "emit_outcome": true
     },
     {
-      "behavior_id": "change-unit-reviewer",
+      "agent_id": "change-unit-reviewer",
       "display_name": "Review Sealed Change",
       "prompt_template": "./tasks/change_unit_review_task/prompt.md",
       "task_id": "change-unit-review-task",
       "emit_outcome": true
     },
     {
-      "behavior_id": "change-unit-integrator",
+      "agent_id": "change-unit-integrator",
       "display_name": "Integrate Accepted Change",
       "prompt_template": "./tasks/change_unit_integrate_task/prompt.md",
       "task_id": "change-unit-integrate-task",
       "emit_outcome": true
     },
     {
-      "behavior_id": "change-unit-record",
+      "agent_id": "change-unit-record",
       "display_name": "Record Integration",
       "prompt_template": "./tasks/change_unit_record_task/prompt.md",
       "task_id": "change-unit-record-task"
     },
     {
-      "behavior_id": "change-unit-rejected",
+      "agent_id": "change-unit-rejected",
       "display_name": "Record Rejection",
       "prompt_template": "./tasks/change_unit_rejected_task/prompt.md",
       "task_id": "change-unit-rejected-task"
     },
     {
-      "behavior_id": "change-unit-failed",
+      "agent_id": "change-unit-failed",
       "display_name": "Record Failure",
       "prompt_template": "./tasks/change_unit_failed_task/prompt.md",
       "task_id": "change-unit-failed-task"

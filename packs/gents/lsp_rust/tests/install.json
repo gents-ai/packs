@@ -1,7 +1,7 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/lsp-coder",
+      "Agent/lsp-coder",
       "AgentContext/lsp-coder-context",
       "EventSource/lsp-hover",
       "Task/lsp-hover-task",

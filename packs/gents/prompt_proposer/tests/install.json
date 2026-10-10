@@ -1,7 +1,7 @@
 {
   "install": {
     "documents": [
-      "AgentBehavior/prompt-proposer",
+      "Agent/prompt-proposer",
       "AgentContext/prompt-proposer-context",
       "Tools/prompt-proposer-tools"
     ],
