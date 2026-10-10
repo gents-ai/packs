@@ -14,7 +14,7 @@
   ],
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "Parent -> two background subagents -> durable acknowledged continuation wake",
+  "description": "Parent -> two background agents -> durable acknowledged continuation wake",
   "inference_slots": [
     {
       "agents": [

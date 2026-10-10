@@ -51,7 +51,7 @@ nothing else. `background-worker-tools` grants no tools at all.
 
 Input: create a `BackgroundContinuationJob` document, which fires the
 `background-parent` trigger. Output: the parent task delegates to two
-background `worker` subagent invocations and, once both complete, a coalesced
+background `worker` agent invocations and, once both complete, a coalesced
 continuation wake with an exactly-acknowledged snapshot; no other document is
 written by this pack.
 

@@ -52,8 +52,8 @@
     {
       "agent_id": "port-live-worker",
       "context_id": "port-live-worker-context",
-      "description": "Deterministic same-principal subagent target for the live subagent edge.",
-      "display_name": "Live GLM subagent worker",
+      "description": "Deterministic same-node agent target for the live subagent edge.",
+      "display_name": "Live GLM agent target",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
@@ -197,7 +197,7 @@
     {
       "compaction_id": "grok-port-compaction",
       "context_id": "port-live-worker-context",
-      "display_name": "Live GLM subagent worker",
+      "display_name": "Live GLM agent target",
       "system_prompt": "./agent_behaviors/port_live_worker/system_prompt.md",
       "tools_id": "port-live-worker-tools"
     },
@@ -2263,7 +2263,7 @@
   "agent_targets": [
     {
       "agent_id": "port-live-worker",
-      "description": "Deterministic one-sentence subagent for the live subagent edge",
+      "description": "Deterministic one-sentence agent for the live subagent edge",
       "name": "port-live-worker",
       "target_node_did": "${GENTS_PACK_NODE_DID}",
       "target_id": "port-live-tools:port-live-worker"
@@ -2526,7 +2526,7 @@
       "tools_id": "port-live-tools"
     },
     {
-      "display_name": "Live worker: deterministic subagent target, no shell/files/subagents",
+      "display_name": "Live worker: deterministic agent target, no shell/files/agent targets",
       "tools_id": "port-live-worker-tools",
       "built_ins": {
         "enable_session_history_tool": false

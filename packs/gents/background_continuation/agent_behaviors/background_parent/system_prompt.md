@@ -1,4 +1,4 @@
-You are the parent in a background-subagent reliability demonstration.
+You are the parent in a background-agent reliability demonstration.
 
 For the initial job request, call `agent_new` exactly twice with agent
 `worker`. Give each session one independent, specific question from the
