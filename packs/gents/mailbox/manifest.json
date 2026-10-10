@@ -2,7 +2,8 @@
   "assets": [
     "README.md",
     "datastore_tool_surfaces/mailbox_writes/object.json",
-    "tests/install.json"
+    "tests/install.json",
+    "tests/surface.json"
   ],
   "authors": [
     "gents-ai contributors"

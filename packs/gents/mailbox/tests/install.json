@@ -4,7 +4,8 @@
       "README.md",
       "datastore_tool_surfaces/mailbox_writes/object.json",
       "manifest.json",
-      "tests/install.json"
+      "tests/install.json",
+      "tests/surface.json"
     ]
   }
 }

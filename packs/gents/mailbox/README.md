@@ -23,14 +23,13 @@ configuration of its own.
 
 ## Authority
 
-The surface grants the stamped `file_mailbox_item` tool, writing a
-`MailboxItem` document with the fields declared in
-`datastore_tool_surfaces/mailbox_writes/object.json`: `kind`, `action`,
-`title`, `source_kind`, `source_id` required; `summary`, `payload`,
-`session_id`, `request_id`, `graph_run_id`, `cause_doc_id`,
-`expected_collection`, `parent_item_id`, `deadline_at` optional. Packs copy or
-reference it and explicitly attach `mailbox-writes` only to contexts whose
-agents may ask their human owner for attention. It is not granted by default.
+The surface grants the stamped `file_mailbox_item` tool. Callers supply
+`title` and optional `summary` and `payload`; the runtime stamps ownership,
+provenance, and routing. The example uses the canonical event notification
+policy: a `flag` requiring `ack`, with identity derived from the current event.
+Packs copy or reference it and explicitly attach `mailbox-writes` only to
+contexts whose agents may ask their human owner for attention. It is not
+granted by default.
 
 ## Inputs and outputs
 
@@ -39,8 +38,8 @@ Input: none from this pack directly; a consuming pack's agent calls
 
 ## Completion and failure
 
-Not applicable: this pack installs a reusable surface definition, not a
-runtime behavior that completes or fails.
+Not applicable: this pack installs a reusable surface definition and does
+not start requests.
 
 ## Validation
 
