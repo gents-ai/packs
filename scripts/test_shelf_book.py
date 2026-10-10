@@ -20,7 +20,7 @@ class BatchSubmission(unittest.TestCase):
         connection = shelf.LIVE_GRAPHQL.set(endpoint)
         try:
             with patch.object(shelf.subprocess, "run", return_value=SimpleNamespace(stdout="{}")) as run:
-                for command in [("query", "find"), ("document", "create")]:
+                for command in [("query", "find"), ("document", "create"), ("request", "interrupt")]:
                     shelf.call(*command, "--home", "home")
                     self.assertEqual(run.call_args.args[0][-2:], ["--graphql", endpoint])
                 shelf.call("pack", "build", "pack")
@@ -36,6 +36,9 @@ class BatchSubmission(unittest.TestCase):
 
     def test_failed_book_does_not_stop_the_other_book(self):
         self._run_books(fail_first=True)
+
+    def test_resume_cleans_up_failed_books_without_resubmitting_them(self):
+        self._run_books(fail_first=True, resume=True)
 
     def test_resume_reuses_jobs_and_refuses_changed_sources(self):
         self._run_books(resume=True)
@@ -63,6 +66,8 @@ class BatchSubmission(unittest.TestCase):
             job_writes = []
             initializations = []
             servers = []
+            interruptions = []
+            cleanup_polls = []
 
             def call(*argv, **kwargs):
                 if argv[0] == "init":
@@ -71,7 +76,16 @@ class BatchSubmission(unittest.TestCase):
                 if argv[:3] == ("plugin", "dirs", "add"):
                     grants.append(argv)
                 if argv[:2] == ("query", "find"):
+                    filters = json.loads(argv[argv.index("--filter") + 1])
+                    if filters["lifecycle_state"]["_in"] == ["pending", "claimed", "processing"]:
+                        failed_id = next(run for run, job in jobs.items() if job["book_id"] == "one")
+                        self.assertEqual(filters["caused_by_correlation"]["_in"], [failed_id])
+                        cleanup_polls.append(failed_id)
+                        return {"results": [{"request_id": "failed-book-agent", "interrupt_requested_at":
+                                              "2026-10-10T00:00:00Z" if interruptions else None}]}
                     return {"results": []}
+                if argv[:2] == ("request", "interrupt"):
+                    interruptions.append(argv[2])
                 if argv[:2] == ("document", "create"):
                     fields = json.loads(argv[-1])
                     if argv[2] == "ShelfJob":
@@ -117,7 +131,7 @@ class BatchSubmission(unittest.TestCase):
                  patch.object(shelf, "export", export), patch.object(shelf, "source_capsule", side_effect=lambda home, run_id, fields, directory, endpoint, expected_hashes: {"run_id":run_id,"book_id":fields["book_id"]}), patch.object(shelf, "model", return_value="model"), \
                  patch.object(shelf.subprocess, "Popen", process), patch.object(shelf.time, "sleep", side_effect=RuntimeError("operator pause") if resume else None) as sleeping, \
                  contextlib.redirect_stdout(io.StringIO()):
-                if fail_first:
+                if fail_first and not resume:
                     with self.assertRaisesRegex(RuntimeError, "1 of 2 books failed"):
                         shelf.run(args)
                 else:
@@ -138,7 +152,11 @@ class BatchSubmission(unittest.TestCase):
                                 shelf.run(args)
                             runtime_path.write_text(json.dumps(runtime))
                         sleeping.side_effect = None
-                        shelf.run(args)
+                        if fail_first:
+                            with self.assertRaisesRegex(RuntimeError, "1 of 2 books failed"):
+                                shelf.run(args)
+                        else:
+                            shelf.run(args)
                         self.assertEqual(len(servers), 1 if attach else 2)
                         for server in servers:
                             server.terminate.assert_called_once()
@@ -153,6 +171,8 @@ class BatchSubmission(unittest.TestCase):
             self.assertEqual([r["status"] for r in outcomes], ["failed", "completed"] if fail_first else ["completed", "completed"])
             if fail_first:
                 self.assertIn("ambiguous heading", outcomes[0]["error"])
+                self.assertEqual(interruptions, ["failed-book-agent"])
+                self.assertEqual(len(cleanup_polls), 2)
             self.assertEqual(len(discoveries), 1 if fail_first else 2)
             self.assertEqual(len(prepares), 1 if fail_first else 2)
             self.assertEqual(list(polls.values()), [2] if fail_first else [2, 2])
@@ -160,6 +180,32 @@ class BatchSubmission(unittest.TestCase):
             for job in prepares.values():
                 grant = next(g for g in grants if str(g[3]) == job["path"])
                 self.assertEqual(grant[grant.index("--access") + 1], "read_write")
+
+    def test_failed_work_cleanup_pages_before_interrupting_and_keeps_existing_latches(self):
+        requests = [{"request_id": f"r-{i}", "interrupt_requested_at": None} for i in range(103)]
+        requests[7]["interrupt_requested_at"] = "2026-10-10T00:00:00Z"
+        offsets, interrupted = [], []
+        def call(*argv):
+            if argv[:2] == ("query", "find"):
+                filters = json.loads(argv[argv.index("--filter") + 1])
+                self.assertEqual(filters["caused_by_correlation"]["_in"], ["book", "edition"])
+                offset = int(argv[argv.index("--offset") + 1])
+                offsets.append(offset)
+                self.assertEqual(interrupted, [])
+                return {"results": requests[offset:offset + 100]}
+            self.assertEqual(argv[:2], ("request", "interrupt"))
+            self.assertEqual(argv[-4:], ("--cause", "interrupted", "--output", "json"))
+            interrupted.append(argv[2])
+        with patch.object(shelf, "call", call):
+            self.assertEqual(shelf.interrupt_failed_work("home", ["book", "edition"]), 102)
+        self.assertEqual(offsets, [0, 100])
+        self.assertNotIn("r-7", interrupted)
+
+    def test_truncated_cleanup_inventory_does_not_interrupt_partial_results(self):
+        with patch.object(shelf, "call", return_value={"truncated": True, "results": [{"request_id": "r"}]}) as call:
+            with self.assertRaisesRegex(RuntimeError, "inventory was truncated"):
+                shelf.interrupt_failed_work("home", ["book"])
+        self.assertEqual(call.call_count, 1)
 
     def test_source_capsule_keeps_ordered_parts_and_refuses_missing_pages(self):
         with tempfile.TemporaryDirectory() as tmp:

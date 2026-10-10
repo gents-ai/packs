@@ -22,7 +22,7 @@ LIVE_GRAPHQL = ContextVar("shelf_live_graphql", default=None)
 
 def call(*args, json_output=True):
     endpoint = LIVE_GRAPHQL.get()
-    if endpoint and args[0] in ["query", "document"] and "--graphql" not in args:
+    if endpoint and args[0] in ["query", "document", "request"] and "--graphql" not in args:
         args = (*args, "--graphql", endpoint)
     result = subprocess.run([GENTS, *map(str, args)], check=True, text=True, stdout=subprocess.PIPE)
     return json.loads(result.stdout) if json_output else result.stdout
@@ -380,6 +380,27 @@ def check_stage_failures(home, correlations):
             raise RuntimeError(f"{collection} stage failed; persisted diagnostics: {result['results']}")
 
 
+def interrupt_failed_work(home, correlations):
+    """Release a failed book's agent capacity through the request interruption owner."""
+    requests, offset = [], 0
+    while True:
+        result = call("query", "find", "--home", home, "--collection", "AgentRequest",
+                      "--filter", json.dumps({"caused_by_correlation": {"_in": correlations},
+                                               "lifecycle_state": {"_in": ["pending", "claimed", "processing"]}}),
+                      "--field", "request_id", "--field", "interrupt_requested_at",
+                      "--limit", 100, "--offset", offset)
+        if result.get("truncated"):
+            raise RuntimeError("failed-book request inventory was truncated; no interruptions submitted")
+        rows = result["results"]
+        requests.extend(row["request_id"] for row in rows if not row.get("interrupt_requested_at"))
+        if len(rows) < 100:
+            break
+        offset += len(rows)
+    for request in requests:
+        call("request", "interrupt", request, "--home", home, "--cause", "interrupted", "--output", "json")
+    return len(requests)
+
+
 def input_books(args):
     if args.manifest:
         if args.sources or args.book_id:
@@ -580,10 +601,24 @@ def run(args):
                         book["done"] = True
                         print(json.dumps({"run_id": run_id, "book_id": book["fields"].get("book_id"),
                                           "status": "failed", "error": str(error)}), flush=True)
+                for book in books:
+                    if not book.get("error"):
+                        continue
+                    run_id = book["fields"]["run_id"]
+                    correlations = [run_id] + ([book["edition_id"]] if book["edition_id"] else [])
+                    try:
+                        interrupted = interrupt_failed_work(home, correlations)
+                        book.pop("cleanup_error", None)
+                        if interrupted:
+                            print(json.dumps({"run_id": run_id, "interruptions_requested": interrupted}), flush=True)
+                    except (RuntimeError, OSError, subprocess.CalledProcessError) as error:
+                        if book.get("cleanup_error") != str(error):
+                            print(json.dumps({"run_id": run_id, "cleanup_error": str(error)}), flush=True)
+                        book["cleanup_error"] = str(error)
                 outcomes = [{"run_id": b["fields"]["run_id"], "book_id": b["fields"].get("book_id"),
                              "status": "failed" if b.get("error") else "completed" if b["done"] else "running",
                              "edition_id": b["edition_id"], "directory": str(b["directory"]),
-                             "error": b.get("error")} for b in books]
+                             "error": b.get("error"), **({"cleanup_error": b["cleanup_error"]} if b.get("cleanup_error") else {})} for b in books]
                 snapshot = directory / "results.json.tmp"
                 snapshot.write_text(json.dumps(outcomes, indent=2) + "\n")
                 snapshot.replace(directory / "results.json")
