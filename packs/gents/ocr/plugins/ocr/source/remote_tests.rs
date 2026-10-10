@@ -118,6 +118,159 @@ fn force_sends_the_page_and_the_answer_becomes_its_markdown() {
 }
 
 #[test]
+fn refine_checks_even_a_readable_scan_against_its_image_and_draft() {
+    let mut base = force(&fixtures(), "scan.pdf");
+    base["remote_ocr"] = json!("refine");
+    let round = call(&base).unwrap();
+    let req = &round["model_calls"]["requests"][0];
+    let prompt = req["prompt"].as_str().unwrap();
+    assert!(prompt.contains("image is the authoritative source"));
+    let draft: Value =
+        serde_json::from_str(prompt.split_once("OCR_DRAFT_JSON:\n").unwrap().1).unwrap();
+    assert!(
+        draft["text"]
+            .as_str()
+            .unwrap()
+            .to_lowercase()
+            .contains("quick brown fox")
+    );
+    assert_eq!(draft["truncated"], false);
+    assert_eq!(req["images"][0]["mime"], "image/jpeg");
+    let (md, warnings, rounds) = drive(
+        &base,
+        |_| json!({"text":json!({"html":"<p>Image-confirmed text.</p>"}).to_string()}),
+    );
+    assert_eq!(rounds, 1);
+    assert!(md.contains("<!-- page 1 -->\n\nImage-confirmed text."));
+    assert!(!md.to_lowercase().contains("quick brown fox"));
+    assert!(warnings.iter().any(|w| w.contains("remote OCR backend")));
+}
+
+#[test]
+fn transcribe_uses_the_same_contract_without_a_draft() {
+    let mut base = force(&fixtures(), "scan.pdf");
+    base["remote_ocr"] = json!("transcribe");
+    let round = call(&base).unwrap();
+    let prompt = round["model_calls"]["requests"][0]["prompt"]
+        .as_str()
+        .unwrap();
+    let draft: Value =
+        serde_json::from_str(prompt.split_once("OCR_DRAFT_JSON:\n").unwrap().1).unwrap();
+    assert_eq!(draft["text"], "");
+    assert_eq!(draft["truncated"], false);
+    assert!(prompt.contains("image is the authoritative source"));
+    let (md, warnings, _) = drive(
+        &base,
+        |_| json!({"text":"{\"html\":\"<p>Image-only transcription.</p>\"}"}),
+    );
+    assert!(md.contains("Image-only transcription."));
+    assert!(warnings.iter().any(|w| w.contains("remote OCR backend")));
+}
+
+#[test]
+fn refine_does_not_publish_model_commentary_or_malformed_transcriptions() {
+    let mut base = force(&fixtures(), "scan.pdf");
+    base["remote_ocr"] = json!("refine");
+    for answer in [
+        "I will transcribe faithfully. <p>invented text</p>",
+        "{\"html\":\"<p>invented text</p>\",\"commentary\":\"extra\"}",
+        "{\"html\":42}",
+    ] {
+        let (md, warnings, _) = drive(&base, |_| json!({"text":answer}));
+        assert!(md.to_lowercase().contains("quick brown fox"));
+        assert!(!md.contains("invented text"));
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.contains("expected one JSON object containing only html"))
+        );
+    }
+}
+
+#[test]
+fn page_numbers_with_degenerate_spacing_do_not_count_as_remote_transcriptions() {
+    let answer = format!("<p>44 {}</p>", "&nbsp;".repeat(4096));
+    let (md, warnings, _) = drive(&force(&fixtures(), "scan.pdf"), |_| json!({"text":answer}));
+    assert!(md.to_lowercase().contains("quick brown fox"));
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.contains("almost entirely whitespace"))
+    );
+    assert!(
+        !warnings
+            .iter()
+            .any(|w| w.contains("were read by the remote OCR backend"))
+    );
+    assert!(!degenerate_whitespace("44"));
+    assert!(!degenerate_whitespace("<p>Short title.</p>"));
+}
+
+#[test]
+fn refine_bounds_drafts_and_counts_their_serialized_bytes_with_images() {
+    let line = OcrLine {
+        text: "\"\\\n".repeat(DRAFT_BYTES_CAP / 3),
+        left: 0.,
+        top: 0.,
+        right: 1.,
+        bottom: 1.,
+    };
+    let overflow = OcrLine {
+        text: "not included".into(),
+        ..line.clone()
+    };
+    let prompt = draft_prompt(&[line.clone(), overflow]);
+    let draft: Value =
+        serde_json::from_str(prompt.split_once("OCR_DRAFT_JSON:\n").unwrap().1).unwrap();
+    assert!(draft["text"].as_str().unwrap().len() <= DRAFT_BYTES_CAP);
+    assert_eq!(draft["truncated"], true);
+    let input: Input = serde_json::from_value(json!({"path":"/x"})).unwrap();
+    let mut remote = Remote::new(&input, RemoteOcr::Refine).unwrap();
+    let jpeg = vec![7u8; 600_000];
+    while remote.add_page(
+        format!("p{}", remote.requests.len()),
+        &jpeg,
+        usize::MAX,
+        &[line.clone()],
+    ) == Add::Added
+    {}
+    let bytes: usize = remote
+        .requests
+        .iter()
+        .map(|r| serde_json::to_vec(r).unwrap().len())
+        .sum();
+    assert_eq!(remote.bytes, bytes);
+    assert!(bytes <= REQUEST_BYTES_CAP);
+}
+
+#[test]
+fn refine_and_force_cannot_share_continuation_cursors() {
+    let dir = blank_scan("refine-cursor", MAX_REQUESTS + 1);
+    let mut base = force(&dir, "scan.pdf");
+    base["remote_ocr"] = json!("refine");
+    let round = call(&base).unwrap();
+    base["state"] = round["model_calls"]["state"].clone();
+    base["model_results"] = Value::Object(
+        round["model_calls"]["requests"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| {
+                (
+                    r["id"].as_str().unwrap().into(),
+                    json!({"text":"{\"html\":\"<p>read page</p>\"}"}),
+                )
+            })
+            .collect(),
+    );
+    let out = call(&base).unwrap();
+    let cursor = out["next"]["cursor"].as_str().unwrap();
+    let input = json!({"path":dir,"files":["scan.pdf"],"model_calls":true,"remote_ocr":"force","cursor":cursor});
+    assert!(call(&input).unwrap_err().contains("request"));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
 fn html_answers_become_markdown_and_fences_are_removed() {
     let html = "```html\n<h1>Title</h1><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table><img alt=\"a bar chart\"></div>\n```";
     let (md, _, _) = drive(&force(&fixtures(), "scan.pdf"), |_| json!({"text": html}));
@@ -195,6 +348,8 @@ fn off_preserves_output_and_an_unbound_requested_slot_is_reported() {
         json!({"remote_ocr": "off", "model_calls": true}),
         json!({"remote_ocr": "force"}),
         json!({"remote_ocr": "auto"}),
+        json!({"remote_ocr": "refine"}),
+        json!({"remote_ocr": "transcribe"}),
         // A caller's own state and answers mean nothing to an unbound slot,
         // and a plugin clock shifted by them would stop the read at once.
         json!({"state": {"ms": 900_000}, "model_results": {"f0p1": {"text": "x"}}}),
@@ -207,7 +362,10 @@ fn off_preserves_output_and_an_unbound_requested_slot_is_reported() {
             .unwrap()
             .extend(extra.as_object().unwrap().clone());
         let mut actual = call(&input).unwrap();
-        if extra["remote_ocr"] == "auto" || extra["remote_ocr"] == "force" {
+        if ["auto", "force", "refine", "transcribe"]
+            .iter()
+            .any(|mode| extra["remote_ocr"] == *mode)
+        {
             for doc in actual["documents"].as_array_mut().unwrap() {
                 assert!(
                     doc["warnings"]

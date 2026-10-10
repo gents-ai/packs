@@ -73,7 +73,12 @@ For a vision-capable reader endpoint, add `--remote-ocr auto`. The launcher bind
 that same endpoint to OCR's optional vision slot. Embedded PDF text is used first;
 scanned pages go through bundled ocrs/RTen recognition, with image requests for
 reads that fail the OCR pack's quality heuristic. `--remote-ocr force` sends every
-scanned page through the vision model; `off` (the default) uses bundled OCR only.
+scanned page through the vision model using the Chandra prompt.
+`--remote-ocr transcribe` uses a faithful-transcription prompt for general vision
+models such as GLM. `--remote-ocr refine` uses that same prompt and supplies
+the bundled OCR draft. Both require a JSON-wrapped HTML transcription before page
+publication and retain warned bundled-OCR fallback on failed
+requests; inspect extraction warnings before accepting quality. `off` (the default) uses bundled OCR only.
 The option is named remote_ocr by the OCR pack even when the model runs on a local
 workstation. It does not select a cloud service. Automatic fallback detects
 garbled output, not every fluent misreading, and downstream text agents do not

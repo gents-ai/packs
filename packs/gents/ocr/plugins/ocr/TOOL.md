@@ -29,7 +29,9 @@ Options, all optional:
 - `remote_ocr`: only when the pack's optional `remote_ocr` slot is bound.
 `auto` (default) sends a scanned PDF page or an image to the remote OCR
 backend when the built-in OCR reads it poorly; `force` sends every one that
-needs OCR; `off` keeps the built-in OCR. Text-layer pages and other formats
+needs OCR; `transcribe` uses faithful image-only transcription; `refine` uses
+the same contract with an untrusted built-in OCR draft. Both require JSON-wrapped
+HTML. `off` keeps the built-in OCR. Text-layer pages and other formats
 are never sent. See Optional: Chandra.
 - `figure_images`: `true` attaches each figure image so you can look at it
   (see Output). Default `false`.
@@ -185,7 +187,12 @@ or image the built-in OCR reads poorly (always, with `remote_ocr: "force"`) is
 then read by the model and returned as Markdown; its tables, lists and
 headings come from the model's HTML. A page the model could not read is read
 by the built-in OCR and the document says so in `warnings`
-(`p.N: remote OCR unavailable (...)`). Pages read remotely are listed in a
+(`p.N: remote OCR unavailable (...)`). `transcribe` and `refine` are intended for general vision
+models such as GLM: the image remains authoritative and the draft is only a
+hint. Its response must be exactly `{"html":"<p>...</p>"}`; malformed responses
+fall back with a warning, so check warnings before accepting text quality.
+Degenerate whitespace-only answers also fall back with a warning. Drafts and
+images share the bounded request budget. Pages read remotely are listed in a
 warning and carry text only. A long scan is read in rounds of up to 12 pages,
 so expect a `next.cursor` after them. The README has the details, including
 the licence: the pack bundles nothing, and the operator is responsible for the
@@ -232,7 +239,7 @@ licence of the endpoint they bind.
 - A PDF whose cross-reference data is damaged, or that is encrypted, is read
   whole when it is at most 256 MiB, and fails with that limit and the way out
   above it. Annotations and form fields are not read. An image is at most 50
-  megapixels (a PDF image over that is skipped with a warning and its page is
+  megapixels (a PDF image over 96 megapixels is skipped with a warning and its page is
   not rendered for OCR); a single stream over 128 MiB inside a PDF is left out
   with a warning.
 - ODT, ODS and ODP text (`content.xml`) is read as one tree and is limited to

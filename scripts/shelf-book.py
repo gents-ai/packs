@@ -651,8 +651,8 @@ def main():
     batch_parser = sub.add_parser("submit-batch", help="Enqueue independent books on one running, configured Gents home")
     batch_parser.add_argument("--home", type=Path, required=True)
     batch_parser.add_argument("--manifest", type=Path, required=True, help="JSON array of {run_id, sources}; paths relative to this file")
-    batch_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
-                              help="Vision fallback; auto/force require the installed OCR pack's remote_ocr slot")
+    batch_parser.add_argument("--remote-ocr", choices=["off", "auto", "force", "refine", "transcribe"], default="off",
+                              help="Vision fallback; auto/force/refine/transcribe require the installed OCR pack's remote_ocr slot")
     search_parser = sub.add_parser("search", help="BM25 over the latest reviewed edition of each book")
     search_parser.add_argument("--home", type=Path, required=True)
     search_parser.add_argument("--text", required=True)
@@ -680,8 +680,8 @@ def main():
     run_parser.add_argument("--resume", action="store_true", help="Resume a stopped batch in --directory with the same source manifest")
     run_parser.add_argument("--attach", action="store_true", help="With --resume, monitor the existing local runtime without starting or stopping it")
     run_parser.add_argument("--max-concurrent", type=int, default=3, help="Maximum simultaneous requests per backend")
-    run_parser.add_argument("--remote-ocr", choices=["off", "auto", "force"], default="off",
-                            help="Bind the reader endpoint for vision OCR: auto tries bundled OCR first; force checks every scanned page")
+    run_parser.add_argument("--remote-ocr", choices=["off", "auto", "force", "refine", "transcribe"], default="off",
+                            help="Bind the reader endpoint for vision OCR: auto tries bundled OCR first; transcribe checks each scan image; refine adds the bundled OCR draft")
     args = parser.parse_args()
     try:
         if args.command == "export":

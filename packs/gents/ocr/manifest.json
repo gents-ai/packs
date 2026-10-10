@@ -140,11 +140,13 @@
           },
           "remote_ocr": {
             "default": "auto",
-            "description": "With a bound remote OCR backend, auto sends a scanned page or image there when the built-in OCR reads it poorly; force sends every page or image that needs OCR; off keeps the built-in OCR. Text-layer pages and other formats are never sent.",
+            "description": "With a bound vision profile: auto escalates poor built-in OCR; force uses the Chandra image prompt; transcribe uses faithful image-only transcription; refine uses the same contract plus an untrusted OCR draft; off stays local. Text-layer pages and other formats stay local.",
             "enum": [
               "auto",
               "off",
-              "force"
+              "force",
+              "refine",
+              "transcribe"
             ],
             "type": "string"
           }

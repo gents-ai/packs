@@ -34,6 +34,11 @@ class BatchSubmission(unittest.TestCase):
     def test_shared_runtime_submits_all_books_and_waits_for_every_epub(self):
         self._run_books()
 
+    def test_transcription_modes_bind_the_vision_profile_and_preserve_the_job_mode(self):
+        for mode in ["refine", "transcribe"]:
+            with self.subTest(mode=mode):
+                self._run_books(remote_ocr=mode)
+
     def test_failed_book_does_not_stop_the_other_book(self):
         self._run_books(fail_first=True)
 
@@ -50,7 +55,7 @@ class BatchSubmission(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "--attach requires --resume"):
             shelf.run(SimpleNamespace(attach=True, resume=False))
 
-    def _run_books(self, fail_first=False, resume=False, attach=False):
+    def _run_books(self, fail_first=False, resume=False, attach=False, remote_ocr="off"):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for name in ["one.pdf", "two.pdf"]:
@@ -59,7 +64,7 @@ class BatchSubmission(unittest.TestCase):
             manifest.write_text(json.dumps([{"book_id": name, "sources": [name + ".pdf"]}
                                             for name in ["one", "two"]]))
             args = SimpleNamespace(manifest=manifest, sources=[], book_id=None,
-                                   access="local_only", license="unknown", remote_ocr="off",
+                                   access="local_only", license="unknown", remote_ocr=remote_ocr,
                                    directory=root / "run", endpoint="http://model/v1", structure_endpoint=None,
                                    max_concurrent=3, epub=True, timeout=60)
             jobs, discoveries, prepares, grants, polls = {}, {}, {}, [], {}
@@ -68,6 +73,7 @@ class BatchSubmission(unittest.TestCase):
             servers = []
             interruptions = []
             cleanup_polls = []
+            ocr_installs = []
 
             def call(*argv, **kwargs):
                 if argv[0] == "init":
@@ -75,6 +81,8 @@ class BatchSubmission(unittest.TestCase):
                     return {"inference_profile_id": "reader"}
                 if argv[:3] == ("plugin", "dirs", "add"):
                     grants.append(argv)
+                if argv[:2] == ("pack", "install") and Path(argv[2]).name == "ocr":
+                    ocr_installs.append(argv)
                 if argv[:2] == ("query", "find"):
                     filters = json.loads(argv[argv.index("--filter") + 1])
                     if filters["lifecycle_state"]["_in"] == ["pending", "claimed", "processing"]:
@@ -89,6 +97,7 @@ class BatchSubmission(unittest.TestCase):
                 if argv[:2] == ("document", "create"):
                     fields = json.loads(argv[-1])
                     if argv[2] == "ShelfJob":
+                        self.assertEqual(fields["remote_ocr"], remote_ocr)
                         job_writes.append(fields["run_id"])
                         jobs[fields["run_id"]] = fields
                     elif argv[2] == "ShelfDiscoveryJob":
@@ -168,6 +177,8 @@ class BatchSubmission(unittest.TestCase):
                     else:
                         shelf.run(args)
             outcomes = json.loads((args.directory / "results.json").read_text())
+            self.assertEqual(len(ocr_installs), 1)
+            self.assertEqual("remote_ocr=reader" in ocr_installs[0], remote_ocr != "off")
             self.assertEqual([r["status"] for r in outcomes], ["failed", "completed"] if fail_first else ["completed", "completed"])
             if fail_first:
                 self.assertIn("ambiguous heading", outcomes[0]["error"])
