@@ -1,0 +1,6 @@
+type ShelfStructureFailure {
+  run_id: String @index
+  book_id: String @index
+  stage: String
+  reason: String
+}

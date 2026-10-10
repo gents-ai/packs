@@ -1,0 +1,6 @@
+type ShelfEditionFailure {
+  run_id: String @index
+  book_id: String
+  chunk_ref: String
+  error: String
+}

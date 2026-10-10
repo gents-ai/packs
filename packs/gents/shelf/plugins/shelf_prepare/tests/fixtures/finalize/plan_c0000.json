@@ -1,0 +1,19 @@
+{
+  "blocks": [
+    {
+      "id": "p-d0df0a89e102ee4f95681c98",
+      "markdown": "Grain ships arrive at Ostia.",
+      "sources": [
+        {
+          "end_byte": 28,
+          "page": 1,
+          "source": "fixture.pdf",
+          "start_byte": 0
+        }
+      ]
+    }
+  ],
+  "edits": [],
+  "key": "c0000",
+  "plan_hash": "82e4bd3d42079e6beeca6daf9cb59bd6025da80c66d46fa29f81493fbc3c22fc"
+}

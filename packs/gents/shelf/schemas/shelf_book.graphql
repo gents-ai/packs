@@ -1,0 +1,16 @@
+type ShelfBook {
+  run_id: String @index(unique: true) @immutable
+  book_id: String @index
+  source_book_file: String
+  source_book_hash: String
+  metadata_json: String
+  title: String
+  author: String
+  language: String
+  source_manifest: String
+  page_count: Int
+  chapter_count: Int
+  review_notes: String
+  access: String
+  license: String
+}

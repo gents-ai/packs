@@ -17,7 +17,20 @@ const EXTRACT_MAX_BYTES: u64 = 1_500_000;
 /// The graph runs at most 1024 invocations: the plan and one extract per chunk.
 const MAX_CHUNKS: usize = 1000;
 /// Fields the graph adds; the ordinary input does not know them.
-const GRAPH_ONLY: [&str; 4] = ["run_id", "chunk", "source", "format"];
+const GRAPH_ONLY: [&str; 12] = [
+    "run_id",
+    "chunk",
+    "source",
+    "format",
+    "chunk_id",
+    "expected_total",
+    "sources_json",
+    "book_id",
+    "graph_state",
+    "read_id",
+    "access",
+    "license",
+];
 /// Options a chunk repeats from its job.
 const OPTIONS: [&str; 5] = [
     "ocr",
@@ -62,12 +75,28 @@ fn plan(job: &Map<String, Value>, started: Instant) -> Result<String, String> {
     let mut request = job.clone();
     request.insert("mode".into(), json!("plan"));
     request.retain(|k, _| !GRAPH_ONLY.contains(&k.as_str()));
+    request.entry("remote_ocr").or_insert(json!("off"));
     let listing = crate::run_at(&Value::Object(request).to_string(), started)?;
     let listing: Value =
         serde_json::from_str(&listing).map_err(|e| format!("reading the plan: {e}"))?;
     if listing["omitted"].as_u64().unwrap_or(0) > 0 {
         return Err(
             "the job holds more files than one plan lists; name the files to read in files".into(),
+        );
+    }
+    let access = job
+        .get("access")
+        .and_then(Value::as_str)
+        .unwrap_or("local_only");
+    let license = job
+        .get("license")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+    if !matches!(access, "open" | "local_only" | "restricted")
+        || (access == "open" && (license.trim().is_empty() || license == "unknown"))
+    {
+        return Err(
+            "access must be open/local_only/restricted; open requires an explicit license".into(),
         );
     }
     let mut chunks = Vec::new();
@@ -93,6 +122,7 @@ fn plan(job: &Map<String, Value>, started: Instant) -> Result<String, String> {
                     chunk.insert(key.into(), v.clone());
                 }
             }
+            chunk.entry("remote_ocr").or_insert(json!("off"));
             chunks.push(Value::Object(chunk));
         }
     }
@@ -102,11 +132,32 @@ fn plan(job: &Map<String, Value>, started: Instant) -> Result<String, String> {
             chunks.len()
         ));
     }
+    let sources: Vec<Value> = listing["documents"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| json!({"source":d["source"], "page_count":d["count"].as_u64().unwrap_or(1)}))
+        .collect();
+    let manifest = serde_json::to_string(&sources).map_err(|e| e.to_string())?;
+    let total = chunks.len();
+    for chunk in &mut chunks {
+        chunk["chunk_id"] = json!(format!(
+            "{}:{}",
+            job["run_id"].as_str().unwrap_or_default(),
+            chunk["chunk"]
+        ));
+        chunk["expected_total"] = json!(total);
+        chunk["sources_json"] = json!(manifest);
+        chunk["access"] = json!(access);
+        chunk["license"] = json!(license);
+        chunk["book_id"] = job.get("book_id").unwrap_or(&job["run_id"]).clone();
+    }
     Ok(Value::Array(chunks).to_string())
 }
 
 /// Reads one chunk into its document, page and figure records.
 fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Result<String, String> {
+    let original = chunk.clone();
     let source = chunk["source"].as_str().unwrap_or_default().to_owned();
     chunk.retain(|k, _| !GRAPH_ONLY.contains(&k.as_str()));
     chunk.insert("max_bytes".into(), json!(EXTRACT_MAX_BYTES));
@@ -117,7 +168,19 @@ fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Resul
     {
         return read;
     }
-    let mut document = json!({"chunk": index, "source": source});
+    let mut document = json!({"chunk": index, "source": source, "page_count":0, "error":""});
+    for key in [
+        "chunk_id",
+        "expected_total",
+        "sources_json",
+        "book_id",
+        "access",
+        "license",
+    ] {
+        if let Some(value) = original.get(key) {
+            document[key] = value.clone();
+        }
+    }
     let (mut pages, mut figures) = (Vec::new(), Vec::new());
     match read.and_then(|raw| serde_json::from_str::<Value>(&raw).map_err(|e| e.to_string())) {
         Err(why) => {
@@ -133,8 +196,22 @@ fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Resul
             document["format"] = json!(format);
             document["page_count"] = doc["pages"].clone();
             document["markdown"] = json!(markdown);
+            document["joint"] = doc["joint"].clone();
             document["complete"] = json!(body["next"].is_null());
-            if let Some(cursor) = body["next"]["cursor"].as_str() {
+            if let Some(unread) = doc["unread_pages"]
+                .as_array()
+                .filter(|pages| !pages.is_empty())
+            {
+                document["complete"] = json!(false);
+                document["error"] = json!(format!(
+                    "source pages could not be read: {}. Inspect the extraction warnings; retry with usable source images or sufficient resources.",
+                    serde_json::to_string(unread).unwrap()
+                ));
+            }
+            if let Some(cursor) = body["next"]["cursor"]
+                .as_str()
+                .filter(|_| document["error"] == "")
+            {
                 document["cursor"] = json!(cursor);
             }
             document["warnings"] = doc["warnings"].clone();
@@ -163,14 +240,142 @@ fn extract(mut chunk: Map<String, Value>, index: u64, started: Instant) -> Resul
             }
         }
     }
-    let out = json!({"document": document, "pages": pages, "figures": figures}).to_string();
-    if out.len() > crate::model::OUTPUT_CAP_BYTES + 400_000 {
-        return Err(
-            "the chunk's records are over the output limit; read it with fewer figure images"
-                .into(),
-        );
+    let failure = |error: String| {
+        let mut failed = document.clone();
+        failed["complete"] = json!(false);
+        failed["extraction_state"] = json!("failed");
+        failed["error"] = json!(error);
+        failed["page_count"] = json!(0);
+        failed["markdown"] = json!("");
+        failed.as_object_mut().unwrap().remove("joint");
+        failed.as_object_mut().unwrap().remove("cursor");
+        json!({"document":failed,"pages":[],"figures":[],"continuation":null}).to_string()
+    };
+    match continue_read(original, document.clone(), pages, figures) {
+        Err(error) => Ok(failure(error)),
+        Ok(result) => {
+            let out = result.to_string();
+            if out.len() > crate::model::OUTPUT_CAP_BYTES + 400_000 {
+                Ok(failure(
+                    "chunk records exceed the output limit; reduce the chunk or figure images"
+                        .into(),
+                ))
+            } else {
+                Ok(out)
+            }
+        }
     }
-    Ok(out)
+}
+
+/// Partial output is held on a durable continuation request. Only the final
+/// read publishes pages and the chunk receipt, so repeated page fragments cannot
+/// be mistaken for separate completed pages by downstream grouped stages.
+fn continue_read(
+    mut input: Map<String, Value>,
+    mut document: Value,
+    pages: Vec<Value>,
+    mut figures: Vec<Value>,
+) -> Result<Value, String> {
+    if document["complete"] == false && document["cursor"].is_null() {
+        document["extraction_state"] = json!("failed");
+        document["markdown"] = json!("");
+        document["page_count"] = json!(0);
+        document.as_object_mut().unwrap().remove("joint");
+        return Ok(json!({"document":document,"pages":[],"figures":[],"continuation":null}));
+    }
+    let prior: Value = match input.get("graph_state").and_then(Value::as_str) {
+        Some(raw) => serde_json::from_str(raw).map_err(|e| format!("invalid graph state: {e}"))?,
+        None => json!({"markdown":"", "figures":[], "warnings":[], "round":0}),
+    };
+    let joint = match document
+        .as_object_mut()
+        .unwrap()
+        .remove("joint")
+        .as_ref()
+        .and_then(Value::as_str)
+    {
+        Some("none") => "",
+        Some("line") => "\n",
+        _ => "\n\n",
+    };
+    let previous = prior["markdown"].as_str().unwrap_or_default();
+    let markdown = format!(
+        "{}{}{}",
+        previous,
+        if previous.is_empty() { "" } else { joint },
+        document["markdown"].as_str().unwrap_or_default()
+    );
+    let mut all_figures = prior["figures"].as_array().cloned().unwrap_or_default();
+    all_figures.append(&mut figures);
+    let mut warnings = prior["warnings"].as_array().cloned().unwrap_or_default();
+    warnings.extend(
+        document["warnings"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .cloned(),
+    );
+    let round = prior["round"].as_u64().unwrap_or(0) + 1;
+    if let Some(cursor) = document["cursor"].as_str() {
+        if round >= 128 || input.get("cursor").and_then(Value::as_str) == Some(cursor) {
+            return Err(
+                "OCR continuation made no progress or exceeded 128 reads; reduce the chunk".into(),
+            );
+        }
+        let state =
+            json!({"markdown":markdown,"figures":all_figures,"warnings":warnings,"round":round})
+                .to_string();
+        if state.len() > 1_500_000 {
+            return Err("OCR accumulated chunk exceeds 1.5 MB; use smaller page ranges".into());
+        }
+        input.remove("model_calls");
+        input.remove("model_results");
+        input.remove("state");
+        if let Some(path) = input.remove("path_original") {
+            input.insert("path".into(), path);
+        }
+        input.insert("cursor".into(), json!(cursor));
+        input.insert("graph_state".into(), json!(state));
+        input.insert(
+            "read_id".into(),
+            json!(format!(
+                "{}:{}:{round}",
+                input["run_id"].as_str().unwrap_or_default(),
+                input["chunk"]
+            )),
+        );
+        input.remove("run_id");
+        return Ok(json!({"continuation":input,"document":null,"pages":[],"figures":[]}));
+    }
+    let mut merged: Vec<Value> = Vec::new();
+    if !markdown.is_empty() {
+        for (page, text) in split_pages(document["format"].as_str().unwrap_or_default(), &markdown)
+        {
+            merged.push(json!({"chunk":document["chunk"],"source":document["source"],"page":page,"markdown":text}));
+        }
+    } else {
+        merged = pages;
+    }
+    if document["complete"] == true && document["format"] == "pdf" {
+        if let Some(range) = input.get("pages").and_then(Value::as_str) {
+            let (a, b) = range.split_once('-').unwrap_or((range, range));
+            let lo = a.parse::<u64>().map_err(|_| "invalid planned page range")?;
+            let hi = b.parse::<u64>().map_err(|_| "invalid planned page range")?;
+            let actual: Vec<_> = merged.iter().filter_map(|p| p["page"].as_u64()).collect();
+            if actual != (lo..=hi).collect::<Vec<_>>() {
+                document["complete"] = json!(false);
+                document["error"] = json!("extracted pages do not exactly cover the planned range");
+            }
+        }
+    }
+    document["extraction_state"] = json!(if document["complete"] == true {
+        "complete"
+    } else {
+        "failed"
+    });
+    document["markdown"] = json!(markdown);
+    document["warnings"] = json!(warnings);
+    Ok(json!({"document":document,"pages":merged,"figures":all_figures,"continuation":null}))
 }
 
 /// The text of each page, slide, sheet or section, from its marker comment to
@@ -221,6 +426,27 @@ mod tests {
             .map(|out| serde_json::from_str(&out).expect("JSON"))
     }
 
+    #[test]
+    fn failed_continuations_publish_a_failure_receipt_without_fake_pages() {
+        let mut input = json!({"run_id":"r","chunk":1,"path":fixtures(),"files":["missing.pdf"],
+            "source":"missing.pdf","format":"pdf","pages":"21-40",
+            "graph_state":json!({"markdown":"<!-- page 21 -->\nPartial text.","figures":[],"warnings":[],"round":1}).to_string()});
+        let out = call(input.clone()).unwrap();
+        assert_eq!(out["document"]["extraction_state"], "failed");
+        assert_eq!(out["pages"], json!([]));
+        input["files"] = json!(["text.pdf"]);
+        input["source"] = json!("text.pdf");
+        input["pages"] = json!("1-2");
+        input["graph_state"] = json!("invalid state");
+        let out = call(input).unwrap();
+        assert_eq!(out["document"]["extraction_state"], "failed");
+        assert!(
+            out["document"]["error"]
+                .as_str()
+                .unwrap()
+                .contains("graph state")
+        );
+    }
     #[test]
     fn only_a_request_with_a_run_id_is_a_graph_call() {
         assert!(run(r#"{"path":"/x"}"#, Instant::now()).is_none());

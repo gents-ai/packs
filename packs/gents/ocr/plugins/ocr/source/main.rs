@@ -235,6 +235,16 @@ fn run_at(raw: &str, started: Instant) -> Result<String, String> {
         let before = ctx.emitted;
         match process(&mut ctx, src, &root, continuing.as_ref()) {
             Ok((mut doc, mut srcf)) => {
+                if input.model_calls != Some(true)
+                    && input
+                        .remote_ocr
+                        .is_some_and(|mode| mode != input::RemoteOcr::Off)
+                {
+                    doc.warnings.push(
+                        "remote OCR requested but no model slot is available; using bundled OCR"
+                            .into(),
+                    );
+                }
                 if let Some(mut at) = doc.next.take() {
                     let cut = (at.skip > 0).then(|| ctx.remote.id(at.unit));
                     at.ans = ctx.remote.undelivered(cut.as_deref());
@@ -344,6 +354,7 @@ fn unread(name: &str, why: &str) -> Document {
         markdown: String::new(),
         figures: Vec::new(),
         warnings: vec![why.to_string()],
+        unread_pages: Vec::new(),
         joint: None,
         table_header: None,
         next: None,

@@ -1,0 +1,17 @@
+type ShelfLibraryEdition {
+  run_id: String @index(unique: true) @immutable
+  book_id: String @index
+  edition_id: String @index
+  title: String
+  author: String
+  language: String @index
+  access: String @index
+  license: String
+  source_hash: String
+  source_hash_scope: String
+  revision: String
+  modified: String
+  passage_count: Int
+  status: String
+  source_metadata_json: String
+}

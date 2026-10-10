@@ -172,6 +172,8 @@ With the slot bound, the `remote_ocr` input chooses what is sent:
 | --- | --- |
 | `auto` (default) | The built-in OCR reads a scanned page or image first; one it reads poorly goes to the backend (see below). |
 | `force` | Every PDF page or image that needs OCR goes to the backend. |
+| `transcribe` | Faithful image-only transcription for general vision models, with a JSON-wrapped HTML response. |
+| `refine` | Every scanned page or image goes with a built-in OCR draft; the image is authoritative. General vision models return a JSON-wrapped HTML transcription. |
 | `off` | Built-in OCR only. |
 
 Only scanned PDF pages and image files can go remote. A PDF page with a text
@@ -181,14 +183,14 @@ is read by OCR at all.
 
 How a call works: the plugin renders each page that needs it (192 dpi, longest
 side at most 2048 pixels, JPEG) and asks the host to run the requests, up to 12
-pages and about 3 MB of images per round. The host sends them to your backend
+pages and about 3 MB of images and prompts per round. The host sends them to your backend
 with temperature 0, several at a time up to the profile's limit, and calls the
 plugin again with the answers. A call that has more pages than a round holds
 returns a `next.cursor` like any other call, so a long scan is read round by
 round. The endpoint address and key stay with the host: they never enter the
 sandbox, the plugin's input or output, or the logs.
 
-The prompt is Chandra's own page prompt, which asks for the page as HTML (a
+For `auto` and `force`, the prompt is Chandra's own page prompt, which asks for the page as HTML (a
 fixed set of tags: headings, paragraphs, lists, tables with spans, math, code).
 The plugin converts it to the same Markdown the rest of the pack writes, so
 tables arrive as Markdown tables and an `<img alt>` description becomes an
@@ -197,12 +199,23 @@ prompt wording was read from the Chandra repository through a summarizing
 fetch and is not verified byte for byte against a release; another model may
 need a different one.
 
+`transcribe` and `refine` use the same faithful-transcription prompt suitable for
+general vision models, including GLM. Both require exactly `{"html":"..."}`.
+Only `refine` runs draft OCR, retaining up to 64 KiB as an explicitly untrusted
+hint. The response is decoded
+before HTML conversion, so model commentary cannot become book text. Malformed
+responses use the same warned fallback as failed requests. This mode performs
+both built-in recognition and vision inference; `transcribe` avoids the initial
+built-in read. Degenerate page-number-only responses padded with thousands of
+spaces fall back with a warning. Compare quality and throughput on your scans
+before choosing.
+
 What "reads poorly" means in `auto`: the OCR engine reports no confidence, so the
 output is judged. A page goes remote when the built-in read found no text on a
 page that has ink, when under 60% of the visible characters are letters or
 digits, when more than 60% of at least 8 words are one or two characters, or
 when more than half of at least 8 detected lines were dropped as noise. This
-catches garbled and empty reads, not a fluent misreading, so use `force` when
+catches garbled and empty reads, not a fluent misreading, so use `force`, `transcribe` or `refine` when
 the built-in text is wrong in ways that look fluent.
 
 Failures never lose a page. If a request fails, times out or gets no answer,
@@ -251,7 +264,7 @@ another machine cannot answer; the call then fails at once with that command.
 The allowed list and the questions are files in the gents home that the agent's
 file tools refuse to write; a shell run as your own user can still edit them, as
 it can any of your files. The plugin has no network, environment or write
-access. Its `limits` are 1536 MiB of memory, a 900 s wall clock and 4 MiB of
+access. Its `limits` are 2560 MiB of memory, a 900 s wall clock and 4 MiB of
 output, which is the host's own ceiling for plugin output.
 
 ## Inputs and outputs
@@ -264,7 +277,7 @@ working folder) or with `name` and `data_base64` (up to 64 MiB of base64).
 | --- | --- |
 | `pages` | pages, slides, sheets or EPUB sections to read, 1-based, like `"1-3,7"` or `"40-"` |
 | `ocr` | `auto` (default): OCR only where there is no usable text layer; `always`; `never` |
-| `remote_ocr` | with the `remote_ocr` slot bound: `auto` (default) sends a scanned page or image the built-in OCR reads poorly to the backend; `force` sends every one that needs OCR; `off` never |
+| `remote_ocr` | with the vision slot bound: `auto` escalates poor reads; `force` uses the Chandra image prompt; `transcribe` uses faithful image-only transcription; `refine` adds OCR drafts; `off` stays local |
 | `figure_images` | attach each figure image for the model to look at (default `false`) |
 | `max_image_px` | longest side OCR inputs and attached images are scaled down to, 256 to 4096 (default 2000) |
 | `min_figure_px` | images with a shorter side below this are skipped as decorative (default 96) |
@@ -333,7 +346,8 @@ Partial results are never silent. `warnings` names pages that could not be
 read and why, pages whose OCR was skipped because the time budget ran out
 (OCR stops starting new images, image files and PDF pages alike, once the next one might not finish inside the 900 s wall clock), glyphs without a Unicode
 mapping, rotated text, charts that are not read, images skipped as
-decorative, images over 50 megapixels that were skipped without being decoded
+decorative, images over their decode limit (50 megapixels for standalone images,
+96 megapixels for PDF images) that were skipped without being decoded
 (also when a page that holds one is not rendered for OCR), figure images past
 a 256 MiB per-page memory cap, an image already listed earlier in the
 document and skipped, repeated headers and footers that were left out, and
@@ -406,13 +420,18 @@ worse (a page shrunk to a few hundred pixels across garbles letters): give the
 OCR the largest image you have.
 
 There is no file size limit: memory follows the page, row or line being read,
-not the file (see Performance). What is bounded: an image to 50 megapixels
+not the file (see Performance). What is bounded: standalone images to 50
+megapixels and PDF images to 96 megapixels
 (refused before anything is decoded, in a PDF with a warning naming its size);
 ODT, ODS and ODP text to 16 MiB; a PDF with damaged cross-reference data or
 encryption is read whole up to 256 MiB; one stream inside a PDF to 128 MiB
 (left out with a warning). Continuing deep inside one compressed part (a DOCX
 body, an XLSX sheet) reads past the compressed bytes before it, so a later
 piece of such a file takes longer than the first.
+
+PDF results include `unread_pages` when a selected page could not be read;
+successfully read blank pages are excluded. Graph extraction fails the affected
+window instead of publishing unread pages as completed source coverage.
 
 ## Performance
 

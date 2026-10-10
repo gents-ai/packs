@@ -1,0 +1,7 @@
+type ShelfEdition {
+  edition_id: String @index(unique: true) @immutable
+  book_id: String @index
+  path: String
+  sha256: String
+  chapter_count: Int
+}

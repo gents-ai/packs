@@ -1,0 +1,48 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "repository": {
+      "access": "read_write",
+      "copy": {
+        "plan.json": "plugins/shelf_prepare/tests/fixtures/finalize/plan.json",
+        "plan-c0000.json": "plugins/shelf_prepare/tests/fixtures/finalize/plan_c0000.json"
+      }
+    },
+    "seed": {
+      "collection": "ShelfPolishedChunk",
+      "fields": {
+        "run_id": "finish-fixture",
+        "book_id": "finish-book",
+        "path": "${REPOSITORY}",
+        "plan": "plan.json",
+        "chunk_ref": "c0000",
+        "expected_total": 1
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfPreparedBook",
+        "fields": {
+          "run_id": "finish-fixture",
+          "passage_count": 1
+        }
+      },
+      {
+        "collection": "ShelfLibraryEdition",
+        "fields": {
+          "run_id": "finish-fixture",
+          "passage_count": 1
+        }
+      },
+      {
+        "collection": "ShelfEdition",
+        "fields": {
+          "edition_id": "finish-fixture",
+          "chapter_count": 1
+        }
+      }
+    ]
+  }
+}

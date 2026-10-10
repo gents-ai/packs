@@ -32,7 +32,8 @@
 #        {"cli_flags": {"command": [...], "flags": [...]}}
 #                            `gents <command> --help` documents every flag
 #        {"runtime": {"repository": {"files": {...}, "dirs": [...]},
-#                     "seed": {"collection": ..., "fields": {...}},
+#                     "seed": {"collection": ..., "fields": {...},
+#                              "file_hashes": {"field": "repository/path"}},
 #                     "taken": {"collection": ..., "filter": {...}},
 #                     "expect": [{"collection": ..., "filter": {...},
 #                                 "fields": {...}}]}}
@@ -41,13 +42,17 @@
 #                            ${BASE_SHA} in seed fields; ${ATTEMPT} keeps a
 #                            re-created seed unique) reaches every expected
 #                            document state after the seed is created, with
-#                            no model involved
+#                            no model involved. Repository file names with
+#                            ${ATTEMPT} are rendered for each seed; file_hashes
+#                            fills fields with those files' SHA-256 hashes.
 #        {"install": {"plugins": [...]}}
 #                            a plugins pack installed into a fresh home
 #                            registers exactly these plugins, a reinstall
 #                            keeps the same set, and a remove releases them;
 #                            next to "documents" it also checks the plugins
 #                            a documents or graph pack ships
+#        runtime "prerequisites" may list sibling packs installed explicitly before
+#        the subject pack, for integrations not supported by automatic dependencies.
 #        runtime "repository" may also hold "copy": {"<repo path>": "<file
 #                            path inside the pack>"} for binary files, which
 #                            are copied into the repository before its commit,
@@ -414,6 +419,17 @@ runtime_case() {
   "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
+  local prerequisite prerequisite_dir profile slot prerequisite_args=()
+  profile="$(jq -r '.inference_profile_id' "$home.json")"
+  while read -r prerequisite; do
+    [[ "$prerequisite" =~ ^[a-z][a-z0-9_]*$ ]] || { fail "$name: invalid prerequisite pack name"; return; }
+    prerequisite_dir="$(dirname "$dir")/$prerequisite"
+    "$gents" pack build "$prerequisite_dir" --out "$work/prerequisite-$prerequisite.pack" >"$work/$prerequisite-build.json"
+    prerequisite_args=()
+    while read -r slot; do prerequisite_args+=(--inference-slot "$slot=$profile"); done < <(
+      jq -r '.inference_slots // [] | .[] | select(.optional != true) | .name' "$prerequisite_dir/manifest.json")
+    "$gents" pack install "$prerequisite_dir" --home "$home" --grant-authority ${prerequisite_args[@]+"${prerequisite_args[@]}"} >"$work/$prerequisite-install.json"
+  done < <(jq -r '.runtime.prerequisites // [] | .[]' "$case")
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
@@ -435,10 +451,23 @@ runtime_case() {
   while ((SECONDS < deadline)); do
     kill -0 "$pid" 2>/dev/null || { fail "$name: gents server exited: $(tail -3 "$log" | tr '\n' ' ')"; return; }
     attempt=$((attempt + 1))
+    while read -r path; do
+      local expanded_path content
+      expanded_path="$(jq -nr --arg text "$path" --arg attempt "$attempt" '$text | gsub("\\$\\{ATTEMPT\\}"; $attempt)')"
+      content="$(jq -jr --arg p "$path" --arg repo "$repo" --arg base "$base" --arg attempt "$attempt" '.runtime.repository.files[$p] | gsub("\\$\\{REPOSITORY\\}"; $repo) | gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt)' "$case")"
+      mkdir -p "$(dirname "$repo/$expanded_path")"
+      printf '%s' "$content" >"$repo/$expanded_path"
+    done < <(jq -r '.runtime.repository.files // {} | to_entries[] | select(.key | contains("${ATTEMPT}")) | .key' "$case")
     fields="$(jq -c --arg base "$base" --arg attempt "$attempt" --arg repo "$repo" '.runtime.seed.fields
       | map_values(if type == "string"
           then gsub("\\$\\{BASE_SHA\\}"; $base) | gsub("\\$\\{ATTEMPT\\}"; $attempt) | gsub("\\$\\{REPOSITORY\\}"; $repo)
           else . end)' "$case")"
+    while read -r hash_field hash_path; do
+      local hash_value
+      hash_path="$(jq -nr --arg text "$hash_path" --arg attempt "$attempt" '$text | gsub("\\$\\{ATTEMPT\\}"; $attempt)')"
+      hash_value="$(python3 -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$repo/$hash_path")"
+      fields="$(jq -c --arg field "$hash_field" --arg value "$hash_value" '. + {($field): $value}' <<<"$fields")"
+    done < <(jq -r '.runtime.seed.file_hashes // {} | to_entries[] | "\(.key) \(.value)"' "$case")
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
     # the collection; retried below.

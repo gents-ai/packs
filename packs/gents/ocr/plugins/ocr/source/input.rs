@@ -70,6 +70,10 @@ pub enum RemoteOcr {
     Off,
     /// Remote OCR for every page or image that needs OCR.
     Force,
+    /// Image-based transcription of every scanned page with a built-in OCR draft.
+    Refine,
+    /// The same faithful transcription contract as refine, without running draft OCR.
+    Transcribe,
 }
 
 /// Selected 1-based page, slide, sheet or section numbers.
@@ -242,6 +246,12 @@ impl Input {
             }
             Some(RemoteOcr::Force) => {
                 h.field(b"remote-force");
+            }
+            Some(RemoteOcr::Refine) => {
+                h.field(b"remote-refine");
+            }
+            Some(RemoteOcr::Transcribe) => {
+                h.field(b"remote-transcribe");
             }
             _ => {}
         }

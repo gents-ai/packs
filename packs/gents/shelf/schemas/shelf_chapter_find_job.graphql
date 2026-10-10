@@ -1,0 +1,33 @@
+type ShelfChapterFindJob {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  body_start: Int
+  body_end: Int
+  stage: String
+  stage_job_id: String @index(unique: true) @immutable
+  toc_start: Int
+  toc_end: Int
+  structure_summary_json: String
+  structure_notes_json: String
+  access: String
+  license: String
+  frontmatter_command: String
+  search_command: String
+  heading_command: String
+  ocr_command: String
+  image_command: String
+  entry_id: String
+  entry_json: String
+  entries_json: String
+  expected_total: Int
+  expected_ids_json: String
+  plan_id: String
+  total_pages: Int
+  excluded_json: String
+  heading_format: String
+  job_file: String @immutable
+  job_hash: String @immutable
+}

@@ -1,0 +1,6 @@
+type ShelfFinalizeJob {
+  run_id: String @index(unique: true) @immutable
+  book_id: String
+  path: String
+  plan: String
+}

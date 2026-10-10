@@ -1,0 +1,23 @@
+type ShelfBookReady {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  body_start: Int
+  body_end: Int
+  stage: String
+  stage_job_id: String
+  toc_start: Int
+  toc_end: Int
+  structure_summary_json: String
+  structure_notes_json: String
+  access: String
+  license: String
+  ready_kind: String
+  payload_json: String
+  expected_total: Int
+  plan_id: String
+  expected_ids_json: String
+  ready_id: String @index(unique: true) @immutable
+}

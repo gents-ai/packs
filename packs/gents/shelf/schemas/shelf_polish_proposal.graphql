@@ -1,0 +1,10 @@
+type ShelfPolishProposal {
+  run_id: String @index
+  book_id: String
+  path: String
+  plan: String
+  chunk_ref: String
+  attempt: String
+  edits_json: String
+  attempt_id: String @index(unique: true) @immutable
+}

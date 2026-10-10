@@ -334,9 +334,10 @@ fn an_image_declared_far_too_large_is_skipped_not_decoded() {
         doc.markdown
     );
     assert!(doc.figures.is_empty());
+    assert!(doc.unread_pages.is_empty());
     assert_eq!(
         doc.warnings,
-        vec!["page 1: an image of 40000x40000 pixels is over the 50000000 pixel limit and was skipped".to_string()]
+        vec!["page 1: an image of 40000x40000 pixels is over the 96000000 pixel limit and was skipped".to_string()]
     );
     // A scanned page of that size cannot be rendered for OCR: said, not attempted.
     let scan = PageSpec {
@@ -346,12 +347,59 @@ fn an_image_declared_far_too_large_is_skipped_not_decoded() {
         images: vec![("Im1", &huge)],
     };
     let (doc, _) = run(pdf(&[scan]), Options::default());
+    assert_eq!(doc.unread_pages, vec![1]);
     assert_eq!(doc.warnings.len(), 2, "{:?}", doc.warnings);
     assert!(
         doc.warnings[1].contains("OCR was not possible: the page holds an image too large"),
         "{:?}",
         doc.warnings
     );
+}
+
+#[test]
+fn graph_fails_unread_scans_but_accepts_actual_blank_pages() {
+    use base64::Engine as _;
+    use serde_json::json;
+    let huge = Img {
+        w: 40_000,
+        h: 40_000,
+        gray: true,
+        data: vec![0; 64],
+        flate: false,
+    };
+    let scan = PageSpec {
+        w: 595.0,
+        h: 842.0,
+        content: draw("Im1", 0.0, 0.0, 595.0, 842.0),
+        images: vec![("Im1", &huge)],
+    };
+    let bytes = pdf(&[page(String::new()), scan]);
+    let request = json!({"run_id":"unread-scan", "chunk":0,"source":"scan.pdf", "name":"scan.pdf", "data_base64":base64::engine::general_purpose::STANDARD.encode(bytes),"remote_ocr":"off","pages":"1-2"});
+    let invoke = |request: &serde_json::Value| {
+        let result = crate::graph::run(&request.to_string(), std::time::Instant::now())
+            .unwrap()
+            .unwrap();
+        serde_json::from_str::<serde_json::Value>(&result).unwrap()
+    };
+    let failed = invoke(&request);
+    assert_eq!(failed["document"]["extraction_state"], "failed");
+    assert_eq!(failed["document"]["complete"], false);
+    assert!(
+        failed["document"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("[2]")
+    );
+    assert_eq!(failed["pages"], json!([]));
+    assert!(failed["continuation"].is_null());
+    let mut blank = request;
+    blank["pages"] = json!("1");
+    let completed = invoke(&blank);
+    assert_eq!(completed["document"]["extraction_state"], "complete");
+    assert_eq!(completed["document"]["complete"], true);
+    assert_eq!(completed["document"]["error"], "");
+    assert_eq!(completed["pages"].as_array().unwrap().len(), 1);
+    assert_eq!(completed["pages"][0]["page"], 1);
 }
 
 #[test]
