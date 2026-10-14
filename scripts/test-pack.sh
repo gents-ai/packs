@@ -525,7 +525,7 @@ run_jq_case() {
   done < <(jq -c '.jq[]' "$case")
 }
 
-# Runs the script on L2's fake host and checks each expect expression over its stdout.
+# Runs the script on the rhai_workflows fake host and checks each expect expression over its stdout.
 replay_case() {
   local case="$1" label manifest defs row name expr out extra=()
   label="$(basename "$case")"
