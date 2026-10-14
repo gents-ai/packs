@@ -261,11 +261,16 @@ defend-page:
 # The pack under test is built from LIVE_PACK_DIR and pre-stored with
 # --with-pack, as grok-port does; experiment.json's expect gates the run
 # (completed stage, completed tool calls naming the written files).
+# LIVE_WITH_PACKS names further packs under packs/gents/ (space separated);
+# each is built and passed as one extra --with-pack, as grok-port does for
+# code_review.
 #   make live LIVE_PACK=charts LIVE_ENDPOINT=http://workstation-1:8000/v1
+#   make live LIVE_PACK=code_review LIVE_WITH_PACKS="rhai_workflows"
 LIVE_PACK ?=
 LIVE_ENDPOINT ?= http://workstation-1:8000/v1
 LIVE_MODEL ?= GLM-5.3-Flash-NVFP4
 LIVE_PACK_DIR ?= $(CURDIR)/packs/gents/$(LIVE_PACK)
+LIVE_WITH_PACKS ?=
 LIVE_PORT ?= 19198
 LIVE_JOB_ID ?=
 LIVE_KEEP_HOME ?=
@@ -287,12 +292,14 @@ live:
 	live_dep="$$(mktemp -d)" || exit 2; \
 	trap 'rm -rf "$$live_dep"' EXIT; \
 	"$(GENTS)" pack build "$(LIVE_PACK_DIR)" --out "$$live_dep/$(LIVE_PACK).pack" >/dev/null || exit 2; \
+	$(foreach p,$(LIVE_WITH_PACKS),"$(GENTS)" pack build "$(CURDIR)/packs/gents/$(p)" --out "$$live_dep/$(p).pack" >/dev/null || exit 2;) \
 	GENTS_LIVE_ROOT="$$(cd "$$live_root" && pwd -P)" \
 	GENTS_LIVE_ENDPOINT="$(LIVE_ENDPOINT)" \
 	GENTS_LIVE_MODEL="$(LIVE_MODEL)" \
 	$(if $(LIVE_AWAIT_TIMEOUT_SECS),GENTS_LIVE_AWAIT_TIMEOUT_SECS="$(LIVE_AWAIT_TIMEOUT_SECS)",) \
 	"$(GENTS)" pack scenario run "$(LIVE_SCENARIO)" \
 		--with-pack "$$live_dep/$(LIVE_PACK).pack" \
+		$(foreach p,$(LIVE_WITH_PACKS),--with-pack "$$live_dep/$(p).pack") \
 		--grant-authority \
 		--http-port "$(LIVE_PORT)" \
 		--job-id "$$live_job_id" \
