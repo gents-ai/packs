@@ -144,7 +144,7 @@ wait_scan_active() {
   for _ in $(seq "$POLL_TRIES"); do
     cap view '{}' "$GENTS" job show "$KEY" --output json "${SCOPE[@]}"
     dry && return 0
-    jq -e '[.. | objects | select(.name? == "Scan")] | any(.status? == "active")' <<<"$view" >/dev/null && return 0
+    jq -e '[.. | objects | select(.title? == "Scan")] | any(.state? == "active")' <<<"$view" >/dev/null && return 0
     sleep 1
   done
   die "phase Scan never became active for $KEY"
