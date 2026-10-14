@@ -116,7 +116,7 @@ ask_agent() {
   local session=$1 content=$2
   shift 2
   scope_args
-  run "$GENTS" request submit "${SCOPE[@]}" --session-id "$session" --content "$content" "$@"
+  run "$GENTS" request submit "${SCOPE[@]+"${SCOPE[@]}"}" --session-id "$session" --content "$content" "$@"
 }
 
 # start_workflow: sets SESSION and KEY (the JobView address) for review-changes over the fixture.
@@ -128,7 +128,7 @@ start_workflow() {
   scope_args
   KEY=""
   for _ in $(seq "$POLL_TRIES"); do
-    cap jobs '[]' "$GENTS" job list --session "$SESSION" --output json "${SCOPE[@]}"
+    cap jobs '[]' "$GENTS" job list --session "$SESSION" --output json "${SCOPE[@]+"${SCOPE[@]}"}"
     dry && { KEY="<session_id:tool_call_id>"; break; }
     KEY="$(jq -r 'first(.. | objects | .address? | select(type == "string")) // empty' <<<"$jobs")"
     [ -z "$KEY" ] || break
@@ -142,7 +142,7 @@ wait_scan_active() {
   local view
   scope_args
   for _ in $(seq "$POLL_TRIES"); do
-    cap view '{}' "$GENTS" job show "$KEY" --output json "${SCOPE[@]}"
+    cap view '{}' "$GENTS" job show "$KEY" --output json "${SCOPE[@]+"${SCOPE[@]}"}"
     dry && return 0
     jq -e '[.. | objects | select(.title? == "Scan")] | any(.state? == "active")' <<<"$view" >/dev/null && return 0
     sleep 1
@@ -152,8 +152,9 @@ wait_scan_active() {
 
 # finish_workflow <out-file>: waits for the terminal state and reads `workflow result` into out-file.
 finish_workflow() {
-  local out=$1
-  run "$GENTS" job watch "$KEY" --until-terminal --graphql "$GRAPHQL"
+  local out=$1 watch=()
+  [ -z "$GRAPHQL" ] || watch=(--graphql "$GRAPHQL")
+  run "$GENTS" job watch "$KEY" --until-terminal "${watch[@]+"${watch[@]}"}"
   ask_agent "$SESSION" "Run the workflow tool with: result $KEY and reply with only its JSON value" --output-file "$out"
 }
 
@@ -200,7 +201,7 @@ ab() {
   dry && FIXTURE_DIR="<fixture-dir>"
   fixture "$FIXTURE_DIR"
   scope_args
-  cap graph_out '{}' "$GENTS" graph run code_review --field repository="$FIXTURE_DIR" --field base="$B" --field head="$H" --watch --output json "${SCOPE[@]}"
+  cap graph_out '{}' "$GENTS" graph run code_review --field repository="$FIXTURE_DIR" --field base="$B" --field head="$H" --watch --output json "${SCOPE[@]+"${SCOPE[@]}"}"
   start_workflow
   wf_out="${FIXTURE_DIR}.result.json"
   finish_workflow "$wf_out"
