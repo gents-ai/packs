@@ -46,10 +46,10 @@ show() {
 run() { show "$@"; dry || "$@"; }
 # cap VAR PLACEHOLDER cmd...: VAR gets the command's stdout, or PLACEHOLDER on a dry run.
 cap() {
-  local __var=$1 __ph=$2
+  local __var=$1 __ph=$2 __out
   shift 2
   show "$@"
-  if dry; then printf -v "$__var" '%s' "$__ph"; else printf -v "$__var" '%s' "$("$@")"; fi
+  if dry; then printf -v "$__var" '%s' "$__ph"; else __out="$("$@")" || return; printf -v "$__var" '%s' "$__out"; fi
 }
 
 while [ $# -gt 0 ]; do
