@@ -21,10 +21,10 @@
 #       Combinable with any mode, or alone for every mode. Prints each command,
 #       touches no network and no home, and exits 0.
 #
-# GENTS overrides the gents binary (default: $RW_GENTS_BIN, then gents).
+# GENTS overrides the gents binary (default: gents on PATH).
 set -euo pipefail
 
-GENTS="${GENTS:-${RW_GENTS_BIN:-gents}}"
+GENTS="${GENTS:-gents}"
 DRY=0
 MODES=()
 FIXTURE_DIR=""
