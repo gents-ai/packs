@@ -130,6 +130,9 @@ def snake(name):
 def check_index(pack):
     index = os.path.join(pack, "workflows", "index.json")
     if not os.path.exists(index):
+        rhai = sorted(os.path.basename(p) for p in glob.glob(os.path.join(pack, "workflows", "*.rhai")))
+        if rhai:
+            return ["FAIL workflows/index.json is missing; workflows/ ships %s" % ", ".join(rhai)]
         return []
     try:
         with open(index) as f:

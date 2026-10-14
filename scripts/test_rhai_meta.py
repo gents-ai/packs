@@ -109,6 +109,14 @@ class IndexTests(Base):
         r = run("check-index", self.root)
         self.assertEqual((r.returncode, r.stdout, r.stderr), (0, "", ""))
 
+    def test_index_absent_with_rhai_fails(self):
+        self.write("manifest.json", json.dumps({"kind": "assets", "assets": ["workflows/code_review.rhai"]}))
+        self.write("workflows/code_review.rhai", rhai("code-review"))
+        r = run("check-index", self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        lines = [l for l in r.stdout.splitlines() if l.startswith("FAIL ")]
+        self.assertEqual(lines, ["FAIL workflows/index.json is missing; workflows/ ships code_review.rhai"])
+
     def test_index_valid_pack_passes(self):
         r = run("check-index", self.pack())
         self.assertEqual((r.returncode, r.stdout, r.stderr), (0, "", ""))
