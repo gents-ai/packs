@@ -12,8 +12,9 @@
 #       H: head_sha == H, a confirmed finding at src/lib.rs:12, no mention of
 #       src/other.rs, every evidence excerpt present in `git show H:<path>`.
 #       The job is addressed only by its session_id:tool_call_id address. The
-#       cleanup stop is issued in-session (`workflow stop <address>`), never
-#       `gents job stop`, because control is local-only in v1.
+#       cleanup stop is issued in-session (`workflow stop <address>`) from an
+#       EXIT trap, so it also runs when an assertion fails; never `gents job
+#       stop`, because control is local-only in v1.
 #   workflow-parity.sh --ab [--home <h> --graphql <url>]
 #       Runs graph code_review and the workflow on the fixture on one backend
 #       and prints both confirmed counts and locations as JSON.
@@ -139,6 +140,9 @@ start_workflow() {
   [ -n "$KEY" ] || die "no job address for session $SESSION"
 }
 
+# stop_job: the in-session cleanup stop; `gents job stop` is refused (control is local-only).
+stop_job() { ask_agent "$SESSION" "Run the workflow tool with: stop $KEY" || true; }
+
 # wait_scan_active: polls the job (by address) until phase Scan is active.
 wait_scan_active() {
   local view
@@ -174,6 +178,7 @@ mid_run_edit() {
   dry && FIXTURE_DIR="<fixture-dir>"
   fixture "$FIXTURE_DIR"
   start_workflow
+  trap stop_job EXIT
   wait_scan_active
   # Mid-run: fix lib.rs:12 in the working tree only, then commit H2 with a bug in other.rs.
   run fixture_fix "$FIXTURE_DIR"
@@ -182,8 +187,6 @@ mid_run_edit() {
   run git -C "$FIXTURE_DIR" "${GIT_ID[@]}" commit -q -m "bug in other"
   out="${FIXTURE_DIR}.result.json"
   finish_workflow "$out"
-  # Cleanup stop goes in-session by address; `gents job stop` is refused (control is local-only).
-  ask_agent "$SESSION" "Run the workflow tool with: stop $KEY"
   if dry; then
     show jq -e ".head_sha == \"$H\"" "$out"
     show jq -e '[.findings[]? | select(.path == "src/lib.rs" and (.line | tostring) == "12")] | length > 0' "$out"
