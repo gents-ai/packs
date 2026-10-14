@@ -543,6 +543,8 @@ run_jq_case() {
 replay_case() {
   local case="$1" label manifest defs row name expr out extra=()
   label="$(basename "$case")"
+  jq -e '.replay.expect | type == "array" and length > 0' "$case" >/dev/null \
+    || { fail "$label: replay.expect must be a non-empty array"; return 0; }
   manifest="${RHAI_FAKEHOST_MANIFEST:-$(dirname "$0")/../packs/gents/rhai_workflows/plugins/workflow/Cargo.toml}"
   if ! command -v cargo >/dev/null 2>&1 || [[ ! -f "$manifest" ]]; then
     echo "note: cargo or $manifest absent; skipping $pack $label" >&2

@@ -2,6 +2,7 @@
 """Tests for rhai_meta.py. Run: python3 scripts/test_rhai_meta.py"""
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -147,6 +148,28 @@ class IndexTests(Base):
 
     def test_index_extra_key(self):
         self.assertIn("extra key", self.fails(entries=[dict(ENTRY, extra="x")]))
+
+
+class ReplayCaseTests(Base):
+    def test_replay_without_expect_list_fails(self):
+        gents = os.environ.get("GENTS") or os.environ.get("RW_GENTS_BIN") or "gents"
+        if not shutil.which(gents):
+            self.skipTest("gents binary not found")
+        root = os.path.dirname(TOOL)
+        pack = os.path.join(self.root, "pack")
+        shutil.copytree(os.path.join(root, "fixtures", "workflow_pack"), pack)
+        case = os.path.join(pack, "tests", "replay.json")
+        with open(case) as f:
+            doc = json.load(f)
+        doc["replay"]["expects"] = doc["replay"].pop("expect")
+        with open(case, "w") as f:
+            json.dump(doc, f)
+        r = subprocess.run(
+            [os.path.join(root, "test-pack.sh"), pack],
+            capture_output=True, text=True, env={**os.environ, "GENTS": gents},
+        )
+        self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("replay.expect must be a non-empty array", r.stderr)
 
 
 if __name__ == "__main__":
