@@ -1,0 +1,24 @@
+{
+  "assets": [
+    "README.md",
+    "tests/install.json",
+    "tests/replay.json",
+    "tests/replay/args.json",
+    "tests/replay/oracle.json",
+    "workflows/hello_world.rhai",
+    "workflows/index.json"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "dependencies": [],
+  "description": "Fixture pack for the workflow index check and the replay case kind",
+  "kind": "assets",
+  "manifest_version": 1,
+  "name": "workflow_fixture",
+  "namespace": "gents",
+  "tags": [
+    "fixture"
+  ],
+  "version": "0.1.0"
+}
