@@ -200,7 +200,7 @@ ab() {
   dry && FIXTURE_DIR="<fixture-dir>"
   fixture "$FIXTURE_DIR"
   scope_args
-  cap graph_out '{}' "$GENTS" graph run code_review --repo "$FIXTURE_DIR" --base "$B" --head "$H" --watch --output json "${SCOPE[@]}"
+  cap graph_out '{}' "$GENTS" graph run code_review --field repository="$FIXTURE_DIR" --field base="$B" --field head="$H" --watch --output json "${SCOPE[@]}"
   start_workflow
   wf_out="${FIXTURE_DIR}.result.json"
   finish_workflow "$wf_out"
