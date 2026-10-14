@@ -152,12 +152,16 @@ wait_scan_active() {
   die "phase Scan never became active for $KEY"
 }
 
-# finish_workflow <out-file>: waits for the terminal state and reads `workflow result` into out-file.
+# finish_workflow <out-file>: waits for the terminal state and leaves the JSON value the agent
+# replied for `workflow result` in out-file (the request output file wraps it in an envelope).
 finish_workflow() {
   local out=$1 watch=()
   [ -z "$GRAPHQL" ] || watch=(--graphql "$GRAPHQL")
   run "$GENTS" job watch "$KEY" --until-terminal "${watch[@]+"${watch[@]}"}"
   ask_agent "$SESSION" "Run the workflow tool with: result $KEY and reply with only its JSON value" --output-file "$out"
+  dry && return 0
+  jq '.output.presentation.body_markdown | fromjson' "$out" >"$out.value" || die "no JSON result in the agent reply ($out)"
+  mv "$out.value" "$out"
 }
 
 # count_filter: the confirmed findings of a result document, as {confirmed, locations}.
