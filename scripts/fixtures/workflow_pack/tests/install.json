@@ -1,0 +1,14 @@
+{
+  "install": {
+    "assets": [
+      "README.md",
+      "manifest.json",
+      "tests/install.json",
+      "tests/replay.json",
+      "tests/replay/args.json",
+      "tests/replay/oracle.json",
+      "workflows/hello_world.rhai",
+      "workflows/index.json"
+    ]
+  }
+}

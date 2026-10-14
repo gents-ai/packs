@@ -31,6 +31,16 @@
 #                            asset is an eval case gents accepts
 #        {"cli_flags": {"command": [...], "flags": [...]}}
 #                            `gents <command> --help` documents every flag
+#        {"replay": {"script": ..., "args": ..., "oracle": ..., "expect": [...],
+#                    "defs": "<jq defs>", "extra_args": [...]}}
+#                            the pack-relative workflow script run on the fake host
+#                            (packs/gents/rhai_workflows/plugins/workflow, example
+#                            fakehost; RHAI_FAKEHOST_MANIFEST overrides its
+#                            Cargo.toml) with the pack-relative args and oracle
+#                            files and the extra_args; each expect {name, expr}
+#                            (after the optional defs) is a jq boolean true over
+#                            the one JSON document it prints. Skipped with a
+#                            note when cargo or that manifest is absent
 #        {"runtime": {"repository": {"files": {...}, "dirs": [...]},
 #                     "seed": {"collection": ..., "fields": {...}},
 #                     "taken": {"collection": ..., "filter": {...}},
@@ -53,6 +63,8 @@
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
+# Every pack, of any kind, that ships workflows/index.json also gets
+# `scripts/rhai_meta.py check-index`.
 # Every documents or graph pack also gets the built-in checks: it declares
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
@@ -204,7 +216,15 @@ store_dependencies() {
 
 # Checks every pack of a configuration kind must pass; one jq pass.
 builtin_checks() {
-  local doc dep
+  local doc dep out line
+  if [[ -f "$dir/workflows/index.json" ]]; then
+    if out="$(python3 "$(dirname "$0")/rhai_meta.py" check-index "$dir" 2>&1)"; then
+      pass "workflows/index.json"
+    else
+      [[ -n "$out" ]] || out="FAIL check-index failed"
+      while read -r line; do fail "workflows/index.json: ${line#FAIL }"; done <<<"$out"
+    fi
+  fi
   [[ "$kind" == "documents" || "$kind" == "graph" ]] || return 0
   doc="$(show_document)"
   jq -e '(.manifest.inference_slots // []) | length > 0' "$doc" >/dev/null \
@@ -519,6 +539,35 @@ run_jq_case() {
   done < <(jq -c '.jq[]' "$case")
 }
 
+# Runs the script on L2's fake host and checks each expect expression over its stdout.
+replay_case() {
+  local case="$1" label manifest defs row name expr out extra=()
+  label="$(basename "$case")"
+  manifest="${RHAI_FAKEHOST_MANIFEST:-$(dirname "$0")/../packs/gents/rhai_workflows/plugins/workflow/Cargo.toml}"
+  if ! command -v cargo >/dev/null 2>&1 || [[ ! -f "$manifest" ]]; then
+    echo "note: cargo or $manifest absent; skipping $pack $label" >&2
+    return 0
+  fi
+  while read -r name; do extra+=("$name"); done < <(jq -r '.replay.extra_args // [] | .[]' "$case")
+  out="$work/replay-$label.json"
+  if ! cargo run --quiet --manifest-path "$manifest" --features fakehost --example fakehost -- \
+    --script "$dir/$(jq -r '.replay.script' "$case")" --args "$dir/$(jq -r '.replay.args' "$case")" \
+    --oracle "$dir/$(jq -r '.replay.oracle' "$case")" ${extra[@]+"${extra[@]}"} >"$out" 2>"$work/replay.err"; then
+    fail "$label: fake host failed: $(tail -3 "$work/replay.err" | tr '\n' ' ' | cut -c1-300)"
+    return 0
+  fi
+  defs="$(jq -r '.replay.defs // ""' "$case")"
+  while read -r row; do
+    name="$(jq -r '.name' <<<"$row")"
+    expr="$(jq -r '.expr' <<<"$row")"
+    if jq -e "$defs $expr" "$out" >/dev/null 2>"$work/jq.err"; then
+      pass "$label: $name"
+    else
+      fail "$label: $name$(head -1 "$work/jq.err" | sed 's/^/ (/;s/$/)/')"
+    fi
+  done < <(jq -c '.replay.expect[]' "$case")
+}
+
 # The first json fence after the heading line is an eval case gents accepts.
 eval_case() {
   local case="$1" asset after example
@@ -581,8 +630,10 @@ for case in "${cases[@]}"; do
     eval_case "$case"
   elif jq -e 'has("cli_flags")' "$case" >/dev/null; then
     cli_flags "$case"
+  elif jq -e 'has("replay")' "$case" >/dev/null; then
+    replay_case "$case"
   else
-    fail "$(basename "$case"): not a graphs, install, runtime, jq, eval_case or cli_flags case"
+    fail "$(basename "$case"): not a graphs, install, runtime, jq, eval_case, cli_flags or replay case"
   fi
 done
 
