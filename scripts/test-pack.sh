@@ -53,8 +53,8 @@
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
-# Every pack, of any kind, that ships workflows/index.json also gets
-# `scripts/rhai_meta.py check-index`.
+# Every pack, of any kind, that ships workflows/index.json or a
+# workflows/*.rhai also gets `scripts/rhai_meta.py check-index`.
 # Every documents or graph pack also gets the built-in checks: it declares
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
@@ -207,7 +207,7 @@ store_dependencies() {
 # Checks every pack of a configuration kind must pass; one jq pass.
 builtin_checks() {
   local doc dep out line
-  if [[ -f "$dir/workflows/index.json" ]]; then
+  if [[ -f "$dir/workflows/index.json" ]] || compgen -G "$dir/workflows/*.rhai" >/dev/null; then
     if out="$(python3 "$(dirname "$0")/rhai_meta.py" check-index "$dir" 2>&1)"; then
       pass "workflows/index.json"
     else
