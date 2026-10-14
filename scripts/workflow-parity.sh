@@ -164,8 +164,8 @@ finish_workflow() {
   mv "$out.value" "$out"
 }
 
-# count_filter: the confirmed findings of a result document, as {confirmed, locations}.
-SUMMARY='{confirmed: ([.findings[]?] | length), locations: [.findings[]? | "\(.path):\(.line)"]}'
+# SUMMARY: the findings of a result document, as {confirmed, locations}; fails without .findings.
+SUMMARY='{confirmed: ([.findings[]] | length), locations: [.findings[] | "\(.path):\(.line)"]}'
 
 mid_run_edit() {
   local out check
@@ -202,12 +202,21 @@ mid_run_edit() {
 }
 
 ab() {
-  local graph_out wf_out
+  local graph_out wf_out run_id="<run-id>" cmd
   dry || FIXTURE_DIR="$(mktemp -d)"
   dry && FIXTURE_DIR="<fixture-dir>"
   fixture "$FIXTURE_DIR"
   scope_args
-  cap graph_out '{}' "$GENTS" graph run code_review --field repository="$FIXTURE_DIR" --field base="$B" --field head="$H" --watch --output json "${SCOPE[@]+"${SCOPE[@]}"}"
+  cmd=("$GENTS" graph run code_review --field repository="$FIXTURE_DIR" --field base="$B" --field head="$H" --output json "${SCOPE[@]+"${SCOPE[@]}"}")
+  show "${cmd[@]}"
+  dry || run_id="$("${cmd[@]}" | jq -er .run_id)"
+  # The watch stream is progress only; the exit status says whether the run succeeded.
+  cmd=("$GENTS" graph watch "$run_id" --output json "${SCOPE[@]+"${SCOPE[@]}"}")
+  show "${cmd[@]}"
+  dry || "${cmd[@]}" >/dev/null
+  cmd=("$GENTS" graph result "$run_id" --output json "${SCOPE[@]+"${SCOPE[@]}"}")
+  show "${cmd[@]}"
+  dry || graph_out="$("${cmd[@]}" | jq '{findings: [.results[] | select(.name == "findings") | .documents[] | select(.verdict == "confirmed")]}')"
   start_workflow
   wf_out="${FIXTURE_DIR}.result.json"
   finish_workflow "$wf_out"
