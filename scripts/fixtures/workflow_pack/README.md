@@ -1,7 +1,7 @@
 # Workflow fixture pack
 
-This assets pack exercises `scripts/test-pack.sh`: the workflow index check
-(`scripts/rhai_meta.py check-index`) and the `replay` case kind.
+This assets pack exercises the workflow index check of `scripts/test-pack.sh`
+(`scripts/rhai_meta.py check-index`).
 It ships one trivial workflow, `hello-world`, and declares no inference slots.
 
 ## Configuration
