@@ -10,6 +10,7 @@ import os
 import re
 import sys
 
+NAME = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*\Z")
 KEYS = {"name", "file", "description", "when_to_use"}
 
 TOKEN = re.compile(r"""
@@ -17,7 +18,7 @@ TOKEN = re.compile(r"""
   | (?P<num>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)
   | (?P<id>[A-Za-z_]\w*)
   | (?P<str>"(?:[^"\\]|\\.)*")
-  | (?P<p>\#\{|[\[\]},:;])
+  | (?P<p>\#\{|[\[\]},:;=])
 """, re.X | re.S)
 ESCAPE = re.compile(r"\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|.)", re.S)
 SIMPLE = {"n": "\n", "r": "\r", "t": "\t", "0": "\0", "\\": "\\", '"': '"', "'": "'"}
@@ -111,12 +112,12 @@ def value(lx):
 
 
 def parse_meta(src):
-    m = re.search(r"\blet\s+meta\s*=\s*", src)
-    if not m:
-        raise Bad("no `let meta = #{...};` found")
-    lx = Lexer(src, m.end())
-    if lx.tok[1] != "#{":
-        lx.fail()
+    lx = Lexer(src, 0)
+    for want in ("let", "meta", "=", "#{"):
+        if lx.tok[1] != want or lx.tok[0] in ("str", "num"):
+            raise Bad("the script must start with `let meta = #{`")
+        if want != "#{":
+            lx.advance()
     meta = value(lx)
     lx.take(";")
     return meta
@@ -160,6 +161,8 @@ def check_index(pack):
         if name in seen:
             fails.append("FAIL duplicate name %s" % name)
         seen.add(name)
+        if not NAME.match(name):
+            fails.append("FAIL %s: name must be lowercase words joined by hyphens" % name)
         if file != snake(name) + ".rhai":
             fails.append("FAIL %s: file must be %s.rhai" % (name, snake(name)))
         if "workflows/" + file not in assets:

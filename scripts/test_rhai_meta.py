@@ -97,6 +97,11 @@ fn later() { 1 + 2 }
     def test_meta_refuses_backtick_interpolation(self):
         self.refused('let meta = #{\n  n: `a${b}`,\n};', "`", 2)
 
+    def test_meta_refuses_code_before_meta(self):
+        r = self.meta('const X = 1;\nlet meta = #{ name: "wf" };\n')
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("must start with `let meta = #{`", r.stderr)
+
 
 class IndexTests(Base):
     def test_index_absent_is_ok(self):
@@ -113,6 +118,12 @@ class IndexTests(Base):
         line = self.fails(entries=[e], files={"code-review.rhai": rhai("code-review")},
                           assets=["workflows/code-review.rhai"])
         self.assertIn("file must be code_review.rhai", line)
+
+    def test_index_refuses_non_kebab_name(self):
+        e = dict(ENTRY, name="Review-Changes", file="Review_Changes.rhai")
+        line = self.fails(entries=[e], files={"Review_Changes.rhai": rhai("Review-Changes")},
+                          assets=["workflows/Review_Changes.rhai"])
+        self.assertIn("lowercase words joined by hyphens", line)
 
     def test_index_missing_file(self):
         self.assertIn("does not exist", self.fails(files={}))
