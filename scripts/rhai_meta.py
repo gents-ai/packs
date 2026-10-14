@@ -141,6 +141,8 @@ def check_index(pack):
     if not isinstance(entries, list):
         return ["FAIL index.json must be an array"]
     fails, seen, listed = [], set(), set()
+    if "workflows/index.json" not in assets:
+        fails.append("FAIL workflows/index.json not in manifest assets")
     for i, e in enumerate(entries):
         if not isinstance(e, dict):
             fails.append("FAIL entry %d: must be an object" % i)

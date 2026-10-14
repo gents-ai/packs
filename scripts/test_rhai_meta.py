@@ -38,7 +38,7 @@ class Base(unittest.TestCase):
         """A valid one-workflow pack unless overridden."""
         entries = [ENTRY] if entries is None else entries
         files = {"code_review.rhai": rhai("code-review")} if files is None else files
-        assets = ["workflows/code_review.rhai"] if assets is None else assets
+        assets = ["workflows/index.json", "workflows/code_review.rhai"] if assets is None else assets
         self.write("manifest.json", json.dumps({"kind": "documents", "assets": assets}))
         self.write("workflows/index.json", json.dumps(entries))
         for name, text in files.items():
@@ -116,20 +116,24 @@ class IndexTests(Base):
     def test_index_wrong_file_name(self):
         e = dict(ENTRY, file="code-review.rhai")
         line = self.fails(entries=[e], files={"code-review.rhai": rhai("code-review")},
-                          assets=["workflows/code-review.rhai"])
+                          assets=["workflows/index.json", "workflows/code-review.rhai"])
         self.assertIn("file must be code_review.rhai", line)
 
     def test_index_refuses_non_kebab_name(self):
         e = dict(ENTRY, name="Review-Changes", file="Review_Changes.rhai")
         line = self.fails(entries=[e], files={"Review_Changes.rhai": rhai("Review-Changes")},
-                          assets=["workflows/Review_Changes.rhai"])
+                          assets=["workflows/index.json", "workflows/Review_Changes.rhai"])
         self.assertIn("lowercase words joined by hyphens", line)
 
     def test_index_missing_file(self):
         self.assertIn("does not exist", self.fails(files={}))
 
     def test_index_file_not_in_manifest_assets(self):
-        self.assertIn("not in manifest assets", self.fails(assets=[]))
+        self.assertIn("not in manifest assets", self.fails(assets=["workflows/index.json"]))
+
+    def test_index_json_not_in_manifest_assets(self):
+        self.assertIn("workflows/index.json not in manifest assets",
+                      self.fails(assets=["workflows/code_review.rhai"]))
 
     def test_index_meta_name_mismatch(self):
         self.assertIn("meta.name", self.fails(files={"code_review.rhai": rhai("other")}))
