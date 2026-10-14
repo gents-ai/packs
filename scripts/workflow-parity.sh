@@ -186,13 +186,13 @@ mid_run_edit() {
   ask_agent "$SESSION" "Run the workflow tool with: stop $KEY"
   if dry; then
     show jq -e ".head_sha == \"$H\"" "$out"
-    show jq -e '[.findings[]? | select(.path == "src/lib.rs" and .line == 12)] | length > 0' "$out"
+    show jq -e '[.findings[]? | select(.path == "src/lib.rs" and (.line | tostring) == "12")] | length > 0' "$out"
     show grep -q src/other.rs "$out"
     show git -C "$FIXTURE_DIR" show "$H:<path>"
     return 0
   fi
   jq -e --arg h "$H" '.head_sha == $h' "$out" >/dev/null || die "head_sha is not $H"
-  jq -e '[.findings[]? | select(.path == "src/lib.rs" and .line == 12)] | length > 0' "$out" >/dev/null || die "no finding at src/lib.rs:12"
+  jq -e '[.findings[]? | select(.path == "src/lib.rs" and (.line | tostring) == "12")] | length > 0' "$out" >/dev/null || die "no finding at src/lib.rs:12"
   ! grep -q 'src/other.rs' "$out" || die "result mentions src/other.rs"
   jq -j '.findings[]? | .path, "\u0000", (.evidence // ""), "\u0000"' "$out" | while IFS= read -r -d '' path && IFS= read -r -d '' excerpt; do
     check="$(git -C "$FIXTURE_DIR" show "$H:$path")"
