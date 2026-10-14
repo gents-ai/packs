@@ -157,7 +157,8 @@ wait_scan_active() {
 }
 
 # finish_workflow <out-file>: waits for the terminal state and leaves the JSON value the agent
-# replied for `workflow result` in out-file (the request output file wraps it in an envelope).
+# replied for `workflow result` in out-file (the request output file wraps it in an envelope),
+# and fails unless its status is complete (a blocked run is a completed job).
 finish_workflow() {
   local out=$1 watch=()
   [ -z "$GRAPHQL" ] || watch=(--graphql "$GRAPHQL")
@@ -166,6 +167,7 @@ finish_workflow() {
   dry && return 0
   jq '.output.presentation.body_markdown | fromjson' "$out" >"$out.value" || die "no JSON result in the agent reply ($out)"
   mv "$out.value" "$out"
+  jq -e '.status == "complete"' "$out" >/dev/null || die "workflow result is not complete ($out)"
 }
 
 # SUMMARY: the findings of a result document, as {confirmed, locations}; fails without .findings.
