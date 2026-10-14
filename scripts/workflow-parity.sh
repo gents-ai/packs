@@ -111,20 +111,22 @@ fixture() {
   echo "B=$B H=$H"
 }
 
-# ask_agent <session> <content> [extra submit args]: one request through an agent.
+# ask_agent <session> <content> [extra submit args]: one request through an agent,
+# with the fixture pinned as the request cwd (only the request input carries it).
 ask_agent() {
-  local session=$1 content=$2
+  local session=$1 content=$2 input
   shift 2
   scope_args
-  run "$GENTS" request submit "${SCOPE[@]+"${SCOPE[@]}"}" --session-id "$session" --content "$content" "$@"
+  input="$(jq -nc --arg cwd "$FIXTURE_DIR" '{cwd: $cwd}')"
+  run "$GENTS" request submit "${SCOPE[@]+"${SCOPE[@]}"}" --session-id "$session" --input "$input" --content "$content" "$@"
 }
 
 # start_workflow: sets SESSION and KEY (the JobView address) for review-changes over the fixture.
 start_workflow() {
   local args jobs
   SESSION="parity-$(date -u +%Y%m%dT%H%M%SZ)-$$"
-  args="{\"base\":\"$B\",\"head\":\"HEAD\"}"
-  ask_agent "$SESSION" "In the repository $FIXTURE_DIR, run the workflow tool with: run review-changes $args" --no-wait
+  args="{\"repository\":\".\",\"base\":\"$B\",\"head\":\"HEAD\"}"
+  ask_agent "$SESSION" "Run the workflow tool with: run review-changes $args" --no-wait
   scope_args
   KEY=""
   for _ in $(seq "$POLL_TRIES"); do
