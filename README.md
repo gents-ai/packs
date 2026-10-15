@@ -75,20 +75,21 @@ one artifact every language Afterburner compiles down to, since some of them
 form to ship instead, and only Afterburner's own runtime knows how to
 dispatch every one of those shapes.
 
-Today a plugin is called directly, by name (`gents plugin run`). Offering the
-same admitted plugin to a graph stage and to a model as an ordinary tool is
-the reason it is one definition rather than two, and neither of those call
-paths is wired yet. Its bytes sit in a content-addressed store separate from
-the per-name record, so installing a second version never disturbs the
-first; `gents pack remove` releases a digest's bytes once no installed record
-anywhere in the home references it any more, and keeps them otherwise. A
-plugin declares:
+An admitted plugin can be called directly (`gents plugin run`), by a graph
+stage, or by a model as an ordinary tool. Its bytes sit in a content-addressed
+store separate from the per-name record, so installing a second version never
+disturbs the first; `gents pack remove` releases a digest's bytes once no
+installed record anywhere in the home references it any more, and keeps them
+otherwise. A plugin declares:
 
 - `artifact`, the compiled `.afb` inside the pack, under `plugins/`. It must
   also appear in `assets`, so the pack's own digest covers it and nothing can
   be swapped underneath the name it was admitted under.
 - `source`, optionally, where the artifact is built from. `gents pack build`
-  compiles it through Afterburner, whatever language `language` names.
+  compiles it through Afterburner, whatever language `language` names. The
+  builder stages each declared source tree as a standalone plugin directory;
+  a shared Rust implementation can select its entrypoint at build time from
+  the generated package name.
 - `language`, the source language `source` is written in: `rust`, `go`,
   `c`, `cpp`, `python`, `ruby`, `js`, or `ts` (see
   `afterburner::cli::compile::lang::SourceLang` for the exact accepted
@@ -102,10 +103,11 @@ plugin declares:
 - `input_schema`, which is what a model is shown.
 - `manifold`, what the plugin asks the sandbox to allow. Absent means it asks
   for nothing, which is right for a pure transform. At admission the grant
-  is narrowed to what the plugin declared and to gents' fixed ceiling, which
-  is sealed today: an admitted plugin gets no filesystem, network or
-  environment access, whatever it declares. A plugin may not listen on a
-  port: a pack's plugins are called, never served.
+  is narrowed to what the plugin declared and to Gents' fixed ceiling. The
+  host can mediate outbound HTTP when a plugin declares `OutboundHttp`; plugins
+  do not receive guest sockets or arbitrary TCP access. Filesystem and
+  environment access are separately granted, and child processes are disabled.
+  A plugin may not listen on a port: a pack's plugins are called, never served.
 
 The call ABI is deliberately narrow: canonical JSON arguments arrive on
 standard input, one JSON value is written to standard output, and standard
@@ -366,4 +368,4 @@ builds.
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
 | [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |
 | [security_scan](packs/gents/security_scan/README.md) | Whole-codebase discovery and verification |
-| [web_deep_research](packs/gents/web_deep_research/README.md) | Reusable research graph |
+| [web](packs/gents/web/README.md) | A Web researcher agent with self-contained search, fetch and bounded crawl tools |
