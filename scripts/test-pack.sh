@@ -144,12 +144,15 @@ graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
 # A Rust plugin's own `cargo test` (unit tests ported alongside its source,
 # e.g. paging or bounds checks the golden/case files above cannot express)
-# runs here, once per plugin, under the repo's pinned rust-toolchain.
+# runs here, once per distinct source workspace, under the pinned toolchain.
 # Skipped, not failed, when cargo is not on PATH.
 if command -v cargo >/dev/null 2>&1; then
+  tested_sources=" "
   while read -r plugin source; do
     [[ -n "$source" && -f "$dir/$source/Cargo.toml" ]] || continue
-    if cargo test --manifest-path "$dir/$source/Cargo.toml" --quiet \
+    [[ "$tested_sources" != *" $source "* ]] || continue
+    tested_sources+="$source "
+    if cargo test --workspace --manifest-path "$dir/$source/Cargo.toml" --quiet \
       >"$work/cargo-test-$plugin.log" 2>&1; then
       pass "plugin $plugin: cargo test"
     else
