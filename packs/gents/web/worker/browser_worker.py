@@ -558,7 +558,7 @@ class Worker:
                 )
             target = None
             if op in ("exec", "read"):
-                if "target_id" in data and not existing:
+                if data.get("target_id") is not None and not existing:
                     raise ValueError(
                         "Session absent; start it before selecting a tab from tabs"
                     )
@@ -569,11 +569,11 @@ class Worker:
                         )
                     target = (
                         data["target_id"]
-                        if "target_id" in data
+                        if data.get("target_id") is not None
                         else existing.selected_target
                     )
                     if (
-                        "target_id" in data
+                        data.get("target_id") is not None
                         or target is not None
                         or existing.live_browser
                     ) and (

@@ -122,9 +122,15 @@ js("document.title='WRONG TAB'")
                 response["status"] == "completed"
                 and response["stdout"].strip() == "Untouched"
             ), response
-            response = call({"session": "owned", "code": "print(js('document.title'))"})
+            response = call(
+                {
+                    "session": "owned",
+                    "target_id": None,
+                    "code": "print(js('document.title'))",
+                }
+            )
             assert response["stdout"].strip() == "Untouched", response
-            for invalid in ("", 0, False, None):
+            for invalid in ("", 0, False):
                 try:
                     worker.call(
                         {
