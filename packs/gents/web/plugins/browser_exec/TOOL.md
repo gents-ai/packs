@@ -1,6 +1,6 @@
 Operate websites with Python browser helpers; use web_search/web_fetch/web_crawl for public HTTP research. Print observations. Reuse a task session: browser state and workspace files persist between calls, Python variables do not. Each independent task needs its own session.
 
-For the user's running browser:
+Connect to the user's running browser only when they ask to use it. For public browsing, use an isolated session. When live access is requested:
 1. Call discover. If setup_required, guide the user to chrome://inspect/#remote-debugging (Chrome 144+) and wait for confirmation. access_denied means OS privacy access is blocked.
 2. Tell the user Chrome may ask them to click Allow, then connect with the browser ID and session. Never automate approval. Only successful connect establishes access.
 3. Choose the requested target_id from the returned tabs; ask if ambiguous. Supply it with the first exec or read. Later calls stay pinned until you supply another target_id. Helper switch_tab affects only the current call. A closed target fails; inspect with tabs and select explicitly.
