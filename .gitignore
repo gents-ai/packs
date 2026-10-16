@@ -2,4 +2,5 @@
 runs/
 target/
 __pycache__/
+.venv/
 packs/gents/*/plugins/*.afb
