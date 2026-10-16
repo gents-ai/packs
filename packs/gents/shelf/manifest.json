@@ -1,0 +1,756 @@
+{
+  "manifest_version": 1,
+  "namespace": "gents",
+  "name": "shelf",
+  "version": "0.1.0",
+  "kind": "documents",
+  "description": "Digitize scanned books through visual ToC discovery, individual boundary verification, chapter hierarchy and narration decisions, then review and export readable EPUBs.",
+  "authors": [
+    "gents contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [],
+  "inference_slots": [
+    {
+      "name": "librarian",
+      "behaviors": [
+        "shelf",
+        "shelf-polish-secondary",
+        "shelf-research",
+        "shelf-toc-find",
+        "shelf-toc-extract",
+        "shelf-pattern",
+        "shelf-metadata",
+        "shelf-classify"
+      ],
+      "description": "Shelf book discovery and quality review"
+    },
+    {
+      "name": "reader",
+      "behaviors": [
+        "shelf-polish",
+        "shelf-entry-find",
+        "shelf-chapter-find",
+        "shelf-gap"
+      ],
+      "description": "Parallel entry location, discovery, and chapter text review"
+    },
+    {
+      "name": "page_vision",
+      "description": "Visual inspection of rendered book pages through host model calls.",
+      "optional": true
+    }
+  ],
+  "schemas": [
+    "schemas/shelf_book.graphql",
+    "schemas/shelf_chapter.graphql",
+    "schemas/shelf_chunk.graphql",
+    "schemas/shelf_edition.graphql",
+    "schemas/shelf_extract.graphql",
+    "schemas/shelf_figure.graphql",
+    "schemas/shelf_job.graphql",
+    "schemas/shelf_page.graphql",
+    "schemas/shelf_structure_report.graphql",
+    "schemas/shelf_export_job.graphql",
+    "schemas/shelf_prepare_job.graphql",
+    "schemas/shelf_edition_plan.graphql",
+    "schemas/shelf_polish_attempt.graphql",
+    "schemas/shelf_polish_proposal.graphql",
+    "schemas/shelf_polished_chunk.graphql",
+    "schemas/shelf_prepared_book.graphql",
+    "schemas/shelf_passage.graphql",
+    "schemas/shelf_edition_failure.graphql",
+    "schemas/shelf_library_passage.graphql",
+    "schemas/shelf_library_edition.graphql",
+    "schemas/shelf_finalize_job.graphql",
+    "schemas/shelf_read_request.graphql",
+    "schemas/shelf_index_job.graphql",
+    "schemas/shelf_toc_find_job.graphql",
+    "schemas/shelf_toc_find_finding.graphql",
+    "schemas/shelf_toc_extract_job.graphql",
+    "schemas/shelf_toc_extract_finding.graphql",
+    "schemas/shelf_entry_find_job.graphql",
+    "schemas/shelf_entry_find_finding.graphql",
+    "schemas/shelf_pattern_job.graphql",
+    "schemas/shelf_pattern_finding.graphql",
+    "schemas/shelf_chapter_find_job.graphql",
+    "schemas/shelf_chapter_find_finding.graphql",
+    "schemas/shelf_gap_job.graphql",
+    "schemas/shelf_gap_finding.graphql",
+    "schemas/shelf_metadata_job.graphql",
+    "schemas/shelf_metadata_finding.graphql",
+    "schemas/shelf_classify_job.graphql",
+    "schemas/shelf_classify_finding.graphql",
+    "schemas/shelf_source_ready.graphql",
+    "schemas/shelf_discovery_job.graphql",
+    "schemas/shelf_pattern_prepare_job.graphql",
+    "schemas/shelf_gap_plan_job.graphql",
+    "schemas/shelf_book_ready.graphql",
+    "schemas/shelf_classify_prepare_job.graphql",
+    "schemas/shelf_to_c.graphql",
+    "schemas/shelf_to_c_entry.graphql",
+    "schemas/shelf_structure_failure.graphql",
+    "schemas/shelf_finding_join_job.graphql"
+  ],
+  "plugins": [
+    {
+      "name": "shelf_export",
+      "language": "rust",
+      "source": "plugins/shelf_export",
+      "artifact": "plugins/shelf_export.afb",
+      "description": "Export a reviewed text manuscript as an EPUB 3 book.",
+      "instructions": "plugins/shelf_export/TOOL.md",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Folder holding the manuscript and receiving the EPUB edition",
+        "access": "read_write"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          },
+          "manuscript": {
+            "type": "string",
+            "default": "manuscript.json"
+          },
+          "output": {
+            "type": "string",
+            "description": "New EPUB file name in the folder."
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "edition_id": {
+            "type": "string"
+          },
+          "structured_file": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "output"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "shelf_structure",
+      "language": "rust",
+      "source": "plugins/shelf_structure",
+      "artifact": "plugins/shelf_structure.afb",
+      "description": "Validate chapter boundaries and assemble a page-complete structured book.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "sources_json": {
+            "type": "string"
+          },
+          "entries_json": {
+            "type": "string"
+          },
+          "review_notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "title",
+          "author",
+          "language",
+          "sources_json",
+          "entries_json",
+          "review_notes"
+        ],
+        "additionalProperties": false
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 4
+      }
+    },
+    {
+      "name": "shelf_prepare",
+      "language": "rust",
+      "source": "plugins/shelf_prepare",
+      "artifact": "plugins/shelf_prepare.afb",
+      "description": "Prepare source-mapped passages, apply exact polish edits, and assemble a reviewed edition. Invoked by document callbacks.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Edition folder containing source snapshot and immutable review artifacts",
+        "access": "read_write"
+      },
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "structured": {
+            "type": "string"
+          },
+          "modified": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "chunk_ref": {
+            "type": "string"
+          },
+          "edits_json": {
+            "type": "string"
+          },
+          "structured_file": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "run_id",
+          "book_id"
+        ]
+      },
+      "limits": {
+        "memory_mib": 256,
+        "wall_clock_secs": 60,
+        "max_output_mib": 4
+      }
+    },
+    {
+      "name": "shelf_toc",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/shelf_toc.afb",
+      "description": "Native Shelf discovery handoffs and boundary validation. Invoked by document callbacks.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "limits": {
+        "memory_mib": 256,
+        "wall_clock_secs": 60,
+        "max_output_mib": 4
+      },
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Immutable source-book evidence folder",
+        "access": "read_write"
+      }
+    },
+    {
+      "name": "shelf_toc_join",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/shelf_toc_join.afb",
+      "description": "Native Shelf discovery handoffs and boundary validation. Invoked by document callbacks.",
+      "input_schema": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      },
+      "limits": {
+        "memory_mib": 256,
+        "wall_clock_secs": 60,
+        "max_output_mib": 4
+      }
+    },
+    {
+      "name": "get_frontmatter_grep_report",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/get_frontmatter_grep_report.afb",
+      "description": "Find ToC keyword pages and structural clusters in the first 50 scan pages.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Book evidence folder",
+        "access": "read"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "book_file": {
+            "type": "string"
+          },
+          "book_hash": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "stage_job_id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path",
+          "book_file",
+          "book_hash",
+          "book_id",
+          "run_id",
+          "stage_job_id",
+          "command"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "grep_text",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/grep_text.afb",
+      "description": "Search this book with a case-insensitive regex; return scan pages, snippets, and running-header clusters. Optional start_page/end_page narrow results.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Book evidence folder",
+        "access": "read"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "book_file": {
+            "type": "string"
+          },
+          "book_hash": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "stage_job_id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "start_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path",
+          "book_file",
+          "book_hash",
+          "book_id",
+          "run_id",
+          "stage_job_id",
+          "command",
+          "query"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "get_heading_pages",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/get_heading_pages.afb",
+      "description": "Find first OCR heading on each page; exclude the known ToC pages. Candidates require opening verification.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Book evidence folder",
+        "access": "read"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "book_file": {
+            "type": "string"
+          },
+          "book_hash": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "stage_job_id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "start_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toc_start": {
+            "type": "string"
+          },
+          "toc_end": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path",
+          "book_file",
+          "book_hash",
+          "book_id",
+          "run_id",
+          "stage_job_id",
+          "command"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "get_page_ocr",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/get_page_ocr.afb",
+      "description": "Read the OCR Markdown for one physical scan page in this book.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Book evidence folder",
+        "access": "read"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "book_file": {
+            "type": "string"
+          },
+          "book_hash": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "stage_job_id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "page_num": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path",
+          "book_file",
+          "book_hash",
+          "book_id",
+          "run_id",
+          "stage_job_id",
+          "command",
+          "page_num"
+        ]
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 30,
+        "max_output_mib": 1
+      }
+    },
+    {
+      "name": "load_page_image",
+      "language": "rust",
+      "source": "plugins/shelf_toc",
+      "artifact": "plugins/load_page_image.afb",
+      "description": "Inspect one rendered source page using the bound vision model. Returns visual observations, not an image you can assume you saw. Before the next page, provide current_page_observations. question may focus the inspection.",
+      "bind_dir": {
+        "input_field": "path",
+        "original_field": "path_original",
+        "description": "Book evidence folder",
+        "access": "read_write"
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "book_file": {
+            "type": "string"
+          },
+          "book_hash": {
+            "type": "string"
+          },
+          "book_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "stage_job_id": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "page_num": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "current_page_observations": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "path_original": {
+            "type": "string",
+            "description": "Set by the host when binding the source folder."
+          }
+        },
+        "required": [
+          "path",
+          "book_file",
+          "book_hash",
+          "book_id",
+          "run_id",
+          "stage_job_id",
+          "command",
+          "page_num"
+        ]
+      },
+      "limits": {
+        "memory_mib": 2560,
+        "wall_clock_secs": 180,
+        "max_output_mib": 4
+      },
+      "model_slot": "page_vision"
+    }
+  ],
+  "tags": [
+    "books",
+    "ocr",
+    "epub",
+    "library"
+  ],
+  "assets": [
+    "README.md",
+    "agent_behaviors/shelf/system_prompt.md",
+    "notice.md",
+    "pack_config.json",
+    "plugins/shelf_export.afb",
+    "plugins/shelf_export/TOOL.md",
+    "plugins/shelf_structure.afb",
+    "schemas/shelf_book.graphql",
+    "schemas/shelf_chapter.graphql",
+    "schemas/shelf_chunk.graphql",
+    "schemas/shelf_edition.graphql",
+    "schemas/shelf_extract.graphql",
+    "schemas/shelf_figure.graphql",
+    "schemas/shelf_job.graphql",
+    "schemas/shelf_page.graphql",
+    "schemas/shelf_structure_report.graphql",
+    "tests/content.json",
+    "tests/install.json",
+    "schemas/shelf_export_job.graphql",
+    "tests/export.json",
+    "plugins/shelf_export/tests/fixtures/manuscript.json",
+    "schemas/shelf_prepare_job.graphql",
+    "schemas/shelf_edition_plan.graphql",
+    "schemas/shelf_polish_attempt.graphql",
+    "schemas/shelf_polish_proposal.graphql",
+    "schemas/shelf_polished_chunk.graphql",
+    "schemas/shelf_prepared_book.graphql",
+    "schemas/shelf_passage.graphql",
+    "plugins/shelf_prepare.afb",
+    "agent_behaviors/shelf_polish/system_prompt.md",
+    "tasks/shelf_polish/prompt.md",
+    "schemas/shelf_edition_failure.graphql",
+    "schemas/shelf_library_passage.graphql",
+    "schemas/shelf_library_edition.graphql",
+    "agent_behaviors/shelf_research/system_prompt.md",
+    "tests/index.json",
+    "plugins/shelf_prepare/tests/fixtures/reviewed_book.json",
+    "schemas/shelf_finalize_job.graphql",
+    "tests/finalize.json",
+    "plugins/shelf_prepare/tests/fixtures/finalize/plan.json",
+    "plugins/shelf_prepare/tests/fixtures/finalize/plan_c0000.json",
+    "schemas/shelf_read_request.graphql",
+    "schemas/shelf_index_job.graphql",
+    "tests/source_ready.json",
+    "agent_behaviors/shelf_toc_find/system_prompt.md",
+    "tasks/shelf_toc_find/prompt.md",
+    "agent_behaviors/shelf_toc_extract/system_prompt.md",
+    "tasks/shelf_toc_extract/prompt.md",
+    "agent_behaviors/shelf_entry_find/system_prompt.md",
+    "tasks/shelf_entry_find/prompt.md",
+    "agent_behaviors/shelf_pattern/system_prompt.md",
+    "tasks/shelf_pattern/prompt.md",
+    "agent_behaviors/shelf_chapter_find/system_prompt.md",
+    "tasks/shelf_chapter_find/prompt.md",
+    "agent_behaviors/shelf_gap/system_prompt.md",
+    "tasks/shelf_gap/prompt.md",
+    "agent_behaviors/shelf_metadata/system_prompt.md",
+    "tasks/shelf_metadata/prompt.md",
+    "agent_behaviors/shelf_classify/system_prompt.md",
+    "tasks/shelf_classify/prompt.md",
+    "plugins/shelf_toc.afb",
+    "plugins/shelf_toc_join.afb",
+    "plugins/get_frontmatter_grep_report.afb",
+    "plugins/grep_text.afb",
+    "plugins/get_heading_pages.afb",
+    "plugins/get_page_ocr.afb",
+    "plugins/load_page_image.afb",
+    "schemas/shelf_toc_find_job.graphql",
+    "schemas/shelf_toc_find_finding.graphql",
+    "schemas/shelf_toc_extract_job.graphql",
+    "schemas/shelf_toc_extract_finding.graphql",
+    "schemas/shelf_entry_find_job.graphql",
+    "schemas/shelf_entry_find_finding.graphql",
+    "schemas/shelf_pattern_job.graphql",
+    "schemas/shelf_pattern_finding.graphql",
+    "schemas/shelf_chapter_find_job.graphql",
+    "schemas/shelf_chapter_find_finding.graphql",
+    "schemas/shelf_gap_job.graphql",
+    "schemas/shelf_gap_finding.graphql",
+    "schemas/shelf_metadata_job.graphql",
+    "schemas/shelf_metadata_finding.graphql",
+    "schemas/shelf_classify_job.graphql",
+    "schemas/shelf_classify_finding.graphql",
+    "schemas/shelf_source_ready.graphql",
+    "schemas/shelf_discovery_job.graphql",
+    "schemas/shelf_pattern_prepare_job.graphql",
+    "schemas/shelf_gap_plan_job.graphql",
+    "schemas/shelf_book_ready.graphql",
+    "schemas/shelf_classify_prepare_job.graphql",
+    "schemas/shelf_to_c.graphql",
+    "schemas/shelf_to_c_entry.graphql",
+    "schemas/shelf_structure_failure.graphql",
+    "plugins/shelf_prepare/tests/fixtures/noise/source_book.json",
+    "plugins/shelf_prepare/tests/fixtures/noise/plan.json",
+    "plugins/shelf_prepare/tests/fixtures/noise/inspection.json",
+    "tests/non_text_ocr.json",
+    "tests/classification.json",
+    "tests/classification_repair.json",
+    "schemas/shelf_finding_join_job.graphql",
+    "tests/toc_find_repair.json",
+    "tests/matter_boundaries.json"
+  ]
+}

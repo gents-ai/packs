@@ -1,0 +1,124 @@
+{
+  "edition_id": "noise-fixture",
+  "book_id": "noise-book",
+  "title": "An illustrated book",
+  "author": "An Author",
+  "language": "en",
+  "modified": "2026-10-09T00:00:00Z",
+  "output": "book.epub",
+  "source": {
+    "book_id": "noise-book",
+    "title": "An illustrated book",
+    "author": "An Author",
+    "language": "en",
+    "page_count": 2,
+    "sources": [
+      {
+        "source": "a.pdf",
+        "page_count": 1
+      },
+      {
+        "source": "b.pdf",
+        "page_count": 1
+      }
+    ],
+    "source_evidence": {
+      "run_id": "noise-source",
+      "book_file": "source-book.json",
+      "book_hash": "15a37d3338fb35aca6028dc3af14c67abfbea8114fb6b034ecdc3513253f6d28"
+    },
+    "access": "open",
+    "license": "CC0-1.0",
+    "chapters": [
+      {
+        "title": "Front matter",
+        "level": 1,
+        "matter_type": "front_matter",
+        "audio_include": false,
+        "audio_include_reasoning": "Front matter is excluded from narration.",
+        "pages": [
+          {
+            "source": "a.pdf",
+            "page": 1,
+            "markdown": "q7g pattern artifact"
+          },
+          {
+            "source": "b.pdf",
+            "page": 1,
+            "markdown": "A genuine figure caption."
+          }
+        ]
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "id": "s-front",
+      "title": "Front matter",
+      "level": 1,
+      "matter_type": "front_matter",
+      "blocks": [
+        {
+          "id": "p-noise",
+          "markdown": "q7g pattern artifact",
+          "sources": [
+            {
+              "source": "a.pdf",
+              "page": 1,
+              "start_byte": 0,
+              "end_byte": 20
+            }
+          ]
+        },
+        {
+          "id": "p-caption",
+          "markdown": "A genuine figure caption.",
+          "sources": [
+            {
+              "source": "b.pdf",
+              "page": 1,
+              "start_byte": 0,
+              "end_byte": 25
+            }
+          ]
+        }
+      ],
+      "audio_include": false,
+      "audio_include_reasoning": "Front matter is excluded from narration."
+    }
+  ],
+  "chunks": [
+    {
+      "key": "c0000",
+      "title": "Front matter",
+      "blocks": [
+        {
+          "id": "p-noise",
+          "markdown": "q7g pattern artifact",
+          "sources": [
+            {
+              "source": "a.pdf",
+              "page": 1,
+              "start_byte": 0,
+              "end_byte": 20
+            }
+          ]
+        },
+        {
+          "id": "p-caption",
+          "markdown": "A genuine figure caption.",
+          "sources": [
+            {
+              "source": "b.pdf",
+              "page": 1,
+              "start_byte": 0,
+              "end_byte": 25
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "mechanical_edits": [],
+  "dispatch_window": 1
+}

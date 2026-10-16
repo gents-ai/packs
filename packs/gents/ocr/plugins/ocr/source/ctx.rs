@@ -263,6 +263,7 @@ impl Ctx {
             markdown: acc.md,
             figures: acc.figures,
             warnings,
+            unread_pages: acc.unread_pages,
             joint: from.map(Resume::joint_name),
             table_header: None,
             next,

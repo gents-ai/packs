@@ -1,0 +1,51 @@
+{
+  "edition": {
+    "identifier": "search-fixture",
+    "title": "Fixture History",
+    "author": "A Historian",
+    "language": "en",
+    "modified": "2026-10-08T00:00:00Z",
+    "chapters": [
+      {
+        "id": "s-one",
+        "title": "Harbours",
+        "level": 1,
+        "matter_type": "body",
+        "blocks": [
+          {
+            "id": "p-example",
+            "markdown": "Grain ships arrive at Ostia.",
+            "sources": [
+              {
+                "source": "book.pdf",
+                "page": 1,
+                "start_byte": 0,
+                "end_byte": 26
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "original": {
+    "book_id": "search-book",
+    "access": "open",
+    "license": "CC0-1.0"
+  },
+  "passages": [
+    {
+      "run_id": "search-fixture",
+      "book_id": "search-book",
+      "edition_id": "search-fixture",
+      "passage_id": "p-example",
+      "chapter_id": "s-one",
+      "chapter_title": "Harbours",
+      "markdown": "Grain ships arrive at Ostia.",
+      "source_spans_json": "[{\"source\": \"book.pdf\", \"page\": 1, \"start_byte\": 0, \"end_byte\": 26}]",
+      "epub_href": "OEBPS/s-one.xhtml#p-example"
+    }
+  ],
+  "mechanical_edits": [],
+  "polish_edits": []
+}

@@ -1,0 +1,46 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "source-book.json": "{\"run_id\":\"structure-fixture\",\"book_id\":\"hierarchy-book\",\"sources\":[{\"source\":\"part-1.pdf\",\"page_count\":8,\"asset\":\"source-0.pdf\",\"sha256\":\"a291a39c4e33a2714241a9321d413c46e4acd7e199f5e04f7f8e7a2b76166cbf\"},{\"source\":\"part-2.pdf\",\"page_count\":8,\"asset\":\"source-1.pdf\",\"sha256\":\"41ab74bf1ffa4b414dfad3686f46fc0ccabb2616200f7397444a873379689625\"}],\"pages\":[{\"scan_page\":1,\"source\":\"part-1.pdf\",\"page\":1,\"markdown\":\"Original source 1, page 1.\"},{\"scan_page\":2,\"source\":\"part-1.pdf\",\"page\":2,\"markdown\":\"Original source 1, page 2.\"},{\"scan_page\":3,\"source\":\"part-1.pdf\",\"page\":3,\"markdown\":\"Original source 1, page 3.\"},{\"scan_page\":4,\"source\":\"part-1.pdf\",\"page\":4,\"markdown\":\"Original source 1, page 4.\"},{\"scan_page\":5,\"source\":\"part-1.pdf\",\"page\":5,\"markdown\":\"Original source 1, page 5.\"},{\"scan_page\":6,\"source\":\"part-1.pdf\",\"page\":6,\"markdown\":\"Original source 1, page 6.\"},{\"scan_page\":7,\"source\":\"part-1.pdf\",\"page\":7,\"markdown\":\"Original source 1, page 7.\"},{\"scan_page\":8,\"source\":\"part-1.pdf\",\"page\":8,\"markdown\":\"Original source 1, page 8.\"},{\"scan_page\":9,\"source\":\"part-2.pdf\",\"page\":1,\"markdown\":\"Original source 2, page 1.\"},{\"scan_page\":10,\"source\":\"part-2.pdf\",\"page\":2,\"markdown\":\"Original source 2, page 2.\"},{\"scan_page\":11,\"source\":\"part-2.pdf\",\"page\":3,\"markdown\":\"Original source 2, page 3.\"},{\"scan_page\":12,\"source\":\"part-2.pdf\",\"page\":4,\"markdown\":\"Original source 2, page 4.\"},{\"scan_page\":13,\"source\":\"part-2.pdf\",\"page\":5,\"markdown\":\"Original source 2, page 5.\"},{\"scan_page\":14,\"source\":\"part-2.pdf\",\"page\":6,\"markdown\":\"Original source 2, page 6.\"},{\"scan_page\":15,\"source\":\"part-2.pdf\",\"page\":7,\"markdown\":\"Original source 2, page 7.\"},{\"scan_page\":16,\"source\":\"part-2.pdf\",\"page\":8,\"markdown\":\"Original source 2, page 8.\"}],\"access\":\"local_only\",\"license\":\"unknown\"}",
+        "job-${ATTEMPT}.json": "{\"run_id\":\"structure-fixture\",\"book_id\":\"hierarchy-book\",\"path\":\"${REPOSITORY}\",\"book_file\":\"source-book.json\",\"book_hash\":\"3840fab753487fb15767cfdf5a58c772398676284d274d2305eccb237c321964\",\"stage\":\"toc_find\",\"stage_job_id\":\"structure-fixture:toc_find:${ATTEMPT}\",\"total_pages\":16,\"finder_prompt\":\"Find and visually verify the complete contents.\"}"
+      },
+      "access": "read_write"
+    },
+    "seed": {
+      "collection": "ShelfTocFindFinding",
+      "fields": {
+        "run_id": "structure-fixture",
+        "book_id": "hierarchy-book",
+        "path": "${REPOSITORY}",
+        "book_file": "source-book.json",
+        "book_hash": "3840fab753487fb15767cfdf5a58c772398676284d274d2305eccb237c321964",
+        "stage": "toc_find",
+        "stage_job_id": "structure-fixture:toc_find:${ATTEMPT}",
+        "job_file": "job-${ATTEMPT}.json",
+        "toc_found": true,
+        "toc_page_range": "{\"start_page\":2,\"end_page\":3}",
+        "confidence": 0.9,
+        "search_strategy_used": "grep_report",
+        "reasoning": "Contents located but visual inspection omitted.",
+        "structure_summary": "{\"total_levels\":1,\"level_patterns\":{}}"
+      },
+      "file_hashes": {
+        "job_hash": "job-${ATTEMPT}.json"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfTocFindJob",
+        "fields": {
+          "book_id": "hierarchy-book",
+          "stage": "toc_find",
+          "retry_count": 1
+        }
+      }
+    ],
+    "prerequisites": [
+      "ocr"
+    ]
+  }
+}

@@ -23,7 +23,12 @@ use crate::layout::{FigBox, Item, Out, Span, layout, take_captions};
 use crate::model::{DocAcc, Document};
 use crate::pdflazy::Lazy;
 use crate::pdfocr::{ocr_items, ocr_lines, remote_jpeg};
-use crate::pix::{MAX_DECODE_PIXELS, Pix};
+use crate::pix::Pix;
+
+/// High-resolution book scans can exceed 64 megapixels. PDF color conversion
+/// holds component and floating-point buffers before downsampling; the plugin's
+/// 2560 MiB execution ceiling bounds those allocations separately from figures.
+const MAX_DECODE_PIXELS: u64 = 96_000_000;
 use crate::remote::{self, Read};
 use crate::resume::Resume;
 use crate::slicer::{self, Snap, Step, Steps, with_marker};
@@ -837,6 +842,7 @@ fn page<'a>(
         OcrMode::Auto => scanned,
     };
     if !want_ocr && !text_ok && visual && ctx.opts.ocr == OcrMode::Never {
+        acc.unread_pages.push(n);
         acc.warn(format!(
             "page {n}: no usable text layer and ocr is never, so the page was not read"
         ));
@@ -879,9 +885,12 @@ fn page<'a>(
             Err(why) if text_ok => acc.warn(format!(
                 "page {n}: OCR was not possible ({why}); the text layer was used"
             )),
-            Err(why) => acc.warn(format!(
-                "page {n}: no readable text layer and OCR was not possible: {why}"
-            )),
+            Err(why) => {
+                acc.unread_pages.push(n);
+                acc.warn(format!(
+                    "page {n}: no readable text layer and OCR was not possible: {why}"
+                ));
+            }
         }
     }
     if text_ok {

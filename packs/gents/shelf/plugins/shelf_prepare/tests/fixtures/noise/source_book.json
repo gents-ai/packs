@@ -1,0 +1,34 @@
+{
+  "run_id": "noise-source",
+  "book_id": "noise-book",
+  "sources": [
+    {
+      "source": "a.pdf",
+      "page_count": 1,
+      "asset": "a.pdf",
+      "sha256": "a7949e623819aa32baf4c32d0457e275b4eff130ec61f43cf284ffdef26efcf4"
+    },
+    {
+      "source": "b.pdf",
+      "page_count": 1,
+      "asset": "b.pdf",
+      "sha256": "9a3f96912c5f85bc082ca0bbeb28e72f588f4517c173982ccdc57a0e18a42663"
+    }
+  ],
+  "pages": [
+    {
+      "scan_page": 1,
+      "source": "a.pdf",
+      "page": 1,
+      "markdown": "q7g pattern artifact"
+    },
+    {
+      "scan_page": 2,
+      "source": "b.pdf",
+      "page": 1,
+      "markdown": "A genuine figure caption."
+    }
+  ],
+  "access": "open",
+  "license": "CC0-1.0"
+}

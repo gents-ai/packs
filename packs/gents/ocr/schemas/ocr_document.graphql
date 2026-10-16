@@ -9,4 +9,11 @@ type OcrDocument {
   cursor: String
   warnings: [String]
   error: String
+  chunk_id: String @index(unique: true) @immutable
+  expected_total: Int
+  sources_json: String
+  book_id: String
+  extraction_state: String
+  access: String
+  license: String
 }

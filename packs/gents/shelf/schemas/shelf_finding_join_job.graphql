@@ -1,0 +1,10 @@
+type ShelfFindingJoinJob {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  stage: String
+  stage_job_id: String @index(unique: true) @immutable
+  findings_json: String
+}

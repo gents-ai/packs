@@ -118,6 +118,7 @@ pub fn convert(
         markdown: acc.md,
         figures: acc.figures,
         warnings,
+        unread_pages: acc.unread_pages,
         joint: None,
         table_header: None,
         next: None,

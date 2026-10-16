@@ -1,0 +1,7 @@
+type ShelfEditionPlan {
+  run_id: String @index
+  book_id: String
+  path: String
+  plan: String
+  expected_total: Int
+}

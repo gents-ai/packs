@@ -13,7 +13,8 @@
     "schemas/ocr_page.graphql",
     "tests/graph_file.json",
     "tests/graph_folder.json",
-    "tests/install.json"
+    "tests/install.json",
+    "schemas/ocr_read_request.graphql"
   ],
   "authors": [
     "gents contributors"
@@ -139,11 +140,13 @@
           },
           "remote_ocr": {
             "default": "auto",
-            "description": "With a bound remote OCR backend, auto sends a scanned page or image there when the built-in OCR reads it poorly; force sends every page or image that needs OCR; off keeps the built-in OCR. Text-layer pages and other formats are never sent.",
+            "description": "With a bound vision profile: auto escalates poor built-in OCR; force uses the Chandra image prompt; transcribe uses faithful image-only transcription; refine uses the same contract plus an untrusted OCR draft; off stays local. Text-layer pages and other formats stay local.",
             "enum": [
               "auto",
               "off",
-              "force"
+              "force",
+              "refine",
+              "transcribe"
             ],
             "type": "string"
           }
@@ -154,7 +157,7 @@
       "language": "rust",
       "limits": {
         "max_output_mib": 4,
-        "memory_mib": 1536,
+        "memory_mib": 2560,
         "wall_clock_secs": 900
       },
       "model_slot": "remote_ocr",
@@ -167,7 +170,8 @@
     "schemas/ocr_chunk.graphql",
     "schemas/ocr_document.graphql",
     "schemas/ocr_page.graphql",
-    "schemas/ocr_figure.graphql"
+    "schemas/ocr_figure.graphql",
+    "schemas/ocr_read_request.graphql"
   ],
   "tags": [
     "ocr",

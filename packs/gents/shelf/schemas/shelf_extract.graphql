@@ -1,0 +1,19 @@
+type ShelfExtract {
+  run_id: String @index
+  chunk: Int
+  source: String
+  format: String
+  page_count: Int
+  markdown: String
+  complete: Boolean
+  cursor: String
+  warnings: [String]
+  error: String
+  chunk_id: String @index(unique: true) @immutable
+  expected_total: Int
+  sources_json: String
+  book_id: String
+  extraction_state: String
+  access: String
+  license: String
+}

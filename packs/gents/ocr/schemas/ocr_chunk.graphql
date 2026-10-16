@@ -11,4 +11,10 @@ type OcrChunk {
   figure_images: Boolean
   max_image_px: Int
   min_figure_px: Int
+  chunk_id: String @index(unique: true) @immutable
+  expected_total: Int
+  sources_json: String
+  book_id: String
+  access: String
+  license: String
 }

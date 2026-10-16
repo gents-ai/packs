@@ -1,0 +1,12 @@
+type ShelfTocExtractFinding {
+  run_id: String @index
+  book_id: String @index
+  path: String
+  book_file: String
+  book_hash: String
+  stage: String
+  stage_job_id: String @index(unique: true) @immutable
+  job_file: String
+  job_hash: String
+  extraction: String
+}

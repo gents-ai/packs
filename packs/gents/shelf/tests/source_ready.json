@@ -1,0 +1,32 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "seed": {
+      "collection": "ShelfExtract",
+      "fields": {
+        "run_id": "analysis-fixture-${ATTEMPT}",
+        "chunk_id": "analysis-fixture-${ATTEMPT}:0",
+        "book_id": "analysis-book",
+        "chunk": 0,
+        "expected_total": 1,
+        "format": "pdf",
+        "sources_json": "[{\"source\":\"fixture.pdf\",\"page_count\":20}]",
+        "extraction_state": "complete",
+        "access": "local_only",
+        "license": "unknown"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfSourceReady",
+        "fields": {
+          "book_id": "analysis-book",
+          "expected_total": 1,
+          "sources_json": "[{\"source\":\"fixture.pdf\",\"page_count\":20}]"
+        }
+      }
+    ]
+  }
+}

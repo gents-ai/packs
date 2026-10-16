@@ -1,0 +1,41 @@
+{
+  "runtime": {
+    "prerequisites": [
+      "ocr"
+    ],
+    "repository": {
+      "access": "read_write",
+      "files": {
+        "source-book.json": "{\"run_id\":\"structure-fixture\",\"book_id\":\"hierarchy-book\",\"sources\":[{\"source\":\"part-1.pdf\",\"page_count\":8,\"asset\":\"source-0.pdf\",\"sha256\":\"a291a39c4e33a2714241a9321d413c46e4acd7e199f5e04f7f8e7a2b76166cbf\"},{\"source\":\"part-2.pdf\",\"page_count\":8,\"asset\":\"source-1.pdf\",\"sha256\":\"41ab74bf1ffa4b414dfad3686f46fc0ccabb2616200f7397444a873379689625\"}],\"pages\":[{\"scan_page\":1,\"source\":\"part-1.pdf\",\"page\":1,\"markdown\":\"Original source 1, page 1.\"},{\"scan_page\":2,\"source\":\"part-1.pdf\",\"page\":2,\"markdown\":\"Original source 1, page 2.\"},{\"scan_page\":3,\"source\":\"part-1.pdf\",\"page\":3,\"markdown\":\"Original source 1, page 3.\"},{\"scan_page\":4,\"source\":\"part-1.pdf\",\"page\":4,\"markdown\":\"Original source 1, page 4.\"},{\"scan_page\":5,\"source\":\"part-1.pdf\",\"page\":5,\"markdown\":\"Original source 1, page 5.\"},{\"scan_page\":6,\"source\":\"part-1.pdf\",\"page\":6,\"markdown\":\"Original source 1, page 6.\"},{\"scan_page\":7,\"source\":\"part-1.pdf\",\"page\":7,\"markdown\":\"Original source 1, page 7.\"},{\"scan_page\":8,\"source\":\"part-1.pdf\",\"page\":8,\"markdown\":\"Original source 1, page 8.\"},{\"scan_page\":9,\"source\":\"part-2.pdf\",\"page\":1,\"markdown\":\"Original source 2, page 1.\"},{\"scan_page\":10,\"source\":\"part-2.pdf\",\"page\":2,\"markdown\":\"Original source 2, page 2.\"},{\"scan_page\":11,\"source\":\"part-2.pdf\",\"page\":3,\"markdown\":\"Original source 2, page 3.\"},{\"scan_page\":12,\"source\":\"part-2.pdf\",\"page\":4,\"markdown\":\"Original source 2, page 4.\"},{\"scan_page\":13,\"source\":\"part-2.pdf\",\"page\":5,\"markdown\":\"Original source 2, page 5.\"},{\"scan_page\":14,\"source\":\"part-2.pdf\",\"page\":6,\"markdown\":\"Original source 2, page 6.\"},{\"scan_page\":15,\"source\":\"part-2.pdf\",\"page\":7,\"markdown\":\"Original source 2, page 7.\"},{\"scan_page\":16,\"source\":\"part-2.pdf\",\"page\":8,\"markdown\":\"Original source 2, page 8.\"}],\"access\":\"local_only\",\"license\":\"unknown\"}",
+        "job-${ATTEMPT}.json": "{\"run_id\":\"structure-fixture\",\"book_id\":\"hierarchy-book\",\"path\":\"${REPOSITORY}\",\"book_file\":\"source-book.json\",\"book_hash\":\"3840fab753487fb15767cfdf5a58c772398676284d274d2305eccb237c321964\",\"stage\":\"classify\",\"stage_job_id\":\"structure-fixture:classify:${ATTEMPT}\",\"toc_start\":2,\"toc_end\":3,\"body_start\":4,\"body_end\":15,\"access\":\"local_only\",\"license\":\"unknown\",\"entries_json\":\"[{\\\"key\\\": \\\"structure-fixture:front\\\", \\\"title\\\": \\\"Front matter\\\", \\\"level\\\": 1, \\\"scan_page\\\": 1, \\\"entry_number\\\": null, \\\"level_name\\\": \\\"other\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"source\\\"}, {\\\"key\\\": \\\"structure-fixture:contents\\\", \\\"title\\\": \\\"Contents\\\", \\\"level\\\": 1, \\\"scan_page\\\": 2, \\\"entry_number\\\": null, \\\"level_name\\\": \\\"other\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"source\\\"}, {\\\"key\\\": \\\"structure-fixture:part\\\", \\\"title\\\": \\\"\\\", \\\"level\\\": 1, \\\"scan_page\\\": 4, \\\"entry_number\\\": \\\"I\\\", \\\"level_name\\\": \\\"part\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"toc\\\"}, {\\\"key\\\": \\\"structure-fixture:first\\\", \\\"title\\\": \\\"Beginnings\\\", \\\"level\\\": 2, \\\"scan_page\\\": 4, \\\"entry_number\\\": \\\"1\\\", \\\"level_name\\\": \\\"chapter\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"toc\\\"}, {\\\"key\\\": \\\"structure-fixture:second\\\", \\\"title\\\": \\\"Crossing the source file\\\", \\\"level\\\": 2, \\\"scan_page\\\": 10, \\\"entry_number\\\": \\\"2\\\", \\\"level_name\\\": \\\"chapter\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"toc\\\"}, {\\\"key\\\": \\\"structure-fixture:notes\\\", \\\"title\\\": \\\"Notes\\\", \\\"level\\\": 1, \\\"scan_page\\\": 15, \\\"entry_number\\\": null, \\\"level_name\\\": \\\"notes\\\", \\\"reasoning\\\": \\\"Opening checked against adjacent source pages.\\\", \\\"origin\\\": \\\"toc\\\"}]\",\"metadata_json\":\"{\\\"title\\\": \\\"An unfamiliar multipart book\\\", \\\"author\\\": \\\"A Writer\\\", \\\"language\\\": \\\"en\\\"}\",\"classification_prompt\":\"Classify these verified sections.\"}"
+      }
+    },
+    "seed": {
+      "collection": "ShelfClassifyFinding",
+      "fields": {
+        "run_id": "structure-fixture",
+        "book_id": "hierarchy-book",
+        "path": "${REPOSITORY}",
+        "book_file": "source-book.json",
+        "book_hash": "3840fab753487fb15767cfdf5a58c772398676284d274d2305eccb237c321964",
+        "stage": "classify",
+        "stage_job_id": "structure-fixture:classify:${ATTEMPT}",
+        "classification": "{\"classifications\": {\"structure-fixture:front\": \"front_matter\", \"structure-fixture:part\": \"body\", \"structure-fixture:first\": \"body\", \"structure-fixture:second\": \"body\", \"structure-fixture:notes\": \"back_matter\"}, \"content_types\": {\"structure-fixture:front\": \"other\", \"structure-fixture:part\": \"body\", \"structure-fixture:first\": \"body\", \"structure-fixture:second\": \"body\", \"structure-fixture:notes\": \"notes\"}, \"audio_include\": {\"structure-fixture:front\": false, \"structure-fixture:part\": true, \"structure-fixture:first\": true, \"structure-fixture:second\": true, \"structure-fixture:notes\": false}, \"reasoning\": {\"structure-fixture:front\": \"Reference material excluded from narration.\", \"structure-fixture:part\": \"Narrative section.\", \"structure-fixture:first\": \"Narrative section.\", \"structure-fixture:second\": \"Narrative section.\", \"structure-fixture:notes\": \"Reference material excluded from narration.\"}}",
+        "job_file": "job-${ATTEMPT}.json"
+      },
+      "file_hashes": {
+        "job_hash": "job-${ATTEMPT}.json"
+      }
+    },
+    "expect": [
+      {
+        "collection": "ShelfClassifyJob",
+        "fields": {
+          "book_id": "hierarchy-book",
+          "stage": "classify",
+          "retry_count": 1
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+type ShelfLibraryPassage {
+  record_id: String @index(unique: true) @immutable
+  run_id: String @index
+  book_id: String @index
+  edition_id: String @index
+  passage_id: String @index
+  chapter_id: String
+  chapter_title: String
+  title: String
+  author: String
+  language: String @index
+  access: String @index
+  license: String
+  source_type: String @index
+  source_hash: String
+  source_hash_scope: String
+  text_hash: String
+  record_hash: String
+  revision: String @index
+  status: String @index
+  analyzer: String
+  text: String @fulltext(language: "english")
+  preview: String
+  locator_summary: String
+  source_spans_json: String
+  epub_href: String
+}

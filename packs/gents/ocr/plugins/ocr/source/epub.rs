@@ -162,10 +162,9 @@ pub fn convert_epub(
         }
         let path = &chapters[(n - 1) as usize];
         let Some(size) = zip.size_of(path) else {
-            acc.warn(format!(
+            return Err(format!(
                 "section {n}: the file {path} listed in the spine is missing from the archive"
             ));
-            continue;
         };
         let marker = format!("<!-- section {n}: {} -->", path.replace('>', "&gt;"));
         let mut res = ZipResolver {
