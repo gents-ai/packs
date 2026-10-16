@@ -191,6 +191,13 @@ jobs:
           fi
           "$shell_bin" scripts/test-pack.sh packs/gents/${{ matrix.pack }}
 
+      - name: Test browser worker and eval oracles
+        if: matrix.pack == 'web'
+        run: |
+          python3 -m unittest discover -s packs/gents/web/worker/tests
+          python3 -m unittest discover -s packs/gents/web/evals -p 'test_*.py'
+          gents-bin/gents pack check packs/gents/web/evals packs/gents/web/evals/subject
+
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
       - name: Build the publishable ${{ matrix.pack }} .pack
