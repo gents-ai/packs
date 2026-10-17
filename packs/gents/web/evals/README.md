@@ -109,12 +109,12 @@ uv run --locked --project packs/gents/web/worker python packs/gents/web/evals/ru
 This launches 32 independent trials per endpoint (64 total), alternating the full
 six-task suite and a two-task help/post-submit recovery probe: 256 model tasks if
 all trials finish. The probe deliberately calls an undefined helper after Import;
-passing requires the actual exception, a subsequent successful receipt inspection (read or Python DOM output), and exactly
-one import recorded independently by the fixture. The form/tab task uses an independent CDP connection to compare the original
-tab ID, URL, page contents and navigation timestamp before and after the task;
+passing requires the actual exception, a subsequent successful receipt inspection
+(read or Python DOM output), and exactly one import recorded independently by the
+fixture. The form/tab task uses an independent CDP connection to compare the
+original tab ID, URL, page contents and navigation timestamp before and after the task;
 it also requires a distinct request tab and exactly one recorded submission.
-Finished suite sessions close
-before the next independent task to limit local browser memory use. The request
+Finished suite sessions close before the next independent task to limit local browser memory use. The request
 wait and provider idle deadlines both use `--timeout-secs` (default 900).
 
 Use a fresh output directory. `plan.json`, incremental `results.json`,
@@ -122,7 +122,6 @@ Use a fresh output directory. `plan.json`, incremental `results.json`,
 The plan records the base archive hash and live-runner comparability version,
 which is separate from the native definition version.
 Trials are not automatically rerun; any runtime/provider retries remain in the logs.
-The concurrency setting counts active trial
-processes; each trial issues sequential model requests and browser calls, so
+The concurrency setting counts active trial processes; each trial issues sequential model requests and browser calls, so
 inference requests in flight vary. This runner uses `gents chat`; it does not
 implement the native eval provisioning bridge described above.

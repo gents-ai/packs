@@ -339,8 +339,21 @@ if not _target_file.exists():
                 "failed": f"Python exited with code {self.process.returncode}; inspect stderr.",
             }[status]
             response["next"] = (
-                "Earlier actions may have completed before the error. Read the current page and inspect its receipt or saved state without clicking, submitting, or reloading. Do not rerun the whole code block: a later exception does not undo an earlier write. If the outcome remains unclear, report uncertainty instead of submitting again. Python variables are fresh on each call."
+                "Earlier actions may have completed before the error. Read the current page and inspect its receipt or saved state without navigating, clicking, submitting, or reloading. Keep the same tab and URL. Do not rerun the whole code block: a later exception does not undo an earlier write. If the outcome remains unclear, report uncertainty instead of submitting again. Python variables are fresh on each call."
             )
+            if (
+                status == "failed"
+                and response["stderr"]
+                .strip()
+                .startswith("browser-harness: connecting to ")
+                and "\n" not in response["stderr"].strip()
+            ):
+                response["error"] = (
+                    f"Browser harness exited with code {self.process.returncode}; its only diagnostic concerns the driver connection. Execution remains uncertain."
+                )
+                response["next"] += (
+                    " Use doctor to inspect browser availability; do not switch browsers or URLs to recover."
+                )
             if "NameError:" in response["stderr"]:
                 response["next"] += (
                     " After inspecting the page, call browser_exec with op=help, topic=overview for supported helper names; do not guess replacements."
