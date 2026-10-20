@@ -1,6 +1,13 @@
 name: Publish tested packs
 
+# Every successful push CI run on master publishes the packs it built whose
+# manifest version the registry does not have yet, so the registry follows
+# master. A version already published is skipped: bump it to publish changes.
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
   workflow_dispatch:
     inputs:
       ci_run_id:
@@ -8,10 +15,10 @@ on:
         required: true
         type: string
       packs:
-        description: Space-separated pack names to publish
-        required: true
+        description: Space-separated pack names to publish (empty publishes every pack the run built)
+        required: false
         type: string
-        default: 'ocr code_review defending_code eval_author grok_tui_port image_tools lsp_rust pipeline repo_maintenance security_scan web'
+        default: ''
 
 permissions:
   actions: read
@@ -21,34 +28,57 @@ concurrency:
   group: publish-packs
   cancel-in-progress: false
 
+env:
+  REGISTRY: https://registry.dev.gents.xyz
+
 jobs:
   publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      CI_RUN_ID: ${{ inputs.ci_run_id }}
+      CI_RUN_ID: ${{ inputs.ci_run_id || github.event.workflow_run.id }}
       PACK_NAMES: ${{ inputs.packs }}
     steps:
       - name: Check the source run
+        id: source
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF" == refs/heads/master ]] || { echo 'Run publishing from master.' >&2; exit 1; }
           [[ "$CI_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
           gh api "repos/$GH_REPO/actions/runs/$CI_RUN_ID" > run.json
-          master_sha="$(gh api "repos/$GH_REPO/commits/master" --jq .sha)"
-          jq -e --arg sha "$master_sha" --arg repo "$GH_REPO" '
+          jq -e --arg repo "$GH_REPO" '
             .conclusion == "success" and .head_branch == "master" and
-            .head_sha == $sha and .head_repository.full_name == $repo and
+            .head_repository.full_name == $repo and
             .path == ".github/workflows/ci.yml"
           ' run.json >/dev/null
-          [[ -n "$PACK_NAMES" ]] || exit 1
+          # A run master has moved past is left to the newer run's publish.
+          master_sha="$(gh api "repos/$GH_REPO/commits/master" --jq .sha)"
+          if [[ "$(jq -r .head_sha run.json)" != "$master_sha" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_run ]] || { echo 'The run is not on the current master commit.' >&2; exit 1; }
+            echo "::notice::Master moved past run $CI_RUN_ID; its successor publishes."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ -z "$PACK_NAMES" ]]; then
+            PACK_NAMES="$(gh api --paginate "repos/$GH_REPO/actions/runs/$CI_RUN_ID/artifacts" \
+              --jq '.artifacts[].name | select(test("^pack-.+-Linux$")) | sub("^pack-"; "") | sub("-Linux$"; "")' \
+              | sort -u | xargs)"
+          fi
+          [[ -n "$PACK_NAMES" ]] || { echo 'The run built no packs.' >&2; exit 1; }
           for pack in $PACK_NAMES; do
             [[ "$pack" =~ ^[a-z][a-z0-9_]*$ ]] || { echo 'Invalid pack name.' >&2; exit 1; }
           done
+          echo "PACK_NAMES=$PACK_NAMES" >> "$GITHUB_ENV"
 
       - name: Download and verify tested artifacts
+        if: steps.source.outputs.stale != 'true'
         run: |
           set -euo pipefail
           gh run download "$CI_RUN_ID" --name gents-cli-Linux-X64 --dir gents-bin
@@ -58,12 +88,20 @@ jobs:
             gents-bin/gents pack verify "dist/gents.$pack.pack"
           done
 
-      - name: Publish selected versions
+      - name: Publish unpublished versions
+        if: steps.source.outputs.stale != 'true'
         env:
           GENTS_REGISTRY_TOKEN: ${{ secrets.GENTS_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
           [[ -n "$GENTS_REGISTRY_TOKEN" ]] || { echo 'Configure the GENTS_REGISTRY_TOKEN repository secret with publishing access to the gents namespace.' >&2; exit 1; }
           for pack in $PACK_NAMES; do
-            gents-bin/gents pack publish "dist/gents.$pack.pack" --registry https://registry.dev.gents.xyz
+            file="dist/gents.$pack.pack"
+            version="$(tar -xzOf "$file" pack.json | jq -r .version)"
+            status="$(curl -sS -o /dev/null -w '%{http_code}' "$REGISTRY/api/v1/packs/gents/$pack/$version")"
+            case "$status" in
+              200) echo "gents/$pack@$version is already published; skipping." ;;
+              404) gents-bin/gents pack publish "$file" --registry "$REGISTRY" ;;
+              *) echo "Checking gents/$pack@$version on the registry returned HTTP $status." >&2; exit 1 ;;
+            esac
           done
