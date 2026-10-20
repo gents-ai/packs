@@ -1,0 +1,37 @@
+{
+  "defs": "def plug: .manifest.plugins[0]; def schema: plug.input_schema; def tool: .assets[\"plugins/d3_decision/TOOL.md\"]; def readme: .assets[\"README.md\"]; def origins: [\"http://100.74.68.88:8000\", \"http://100.86.62.91:8100\"];",
+  "jq": [
+    {
+      "name": "the pack ships exactly the d3_decision plugin, in rust, and no documents",
+      "expr": ".manifest.kind == \"plugins\" and [.manifest.plugins[] | {name, language, artifact, instructions}] == [{\"name\": \"d3_decision\", \"language\": \"rust\", \"artifact\": \"plugins/d3_decision.afb\", \"instructions\": \"plugins/d3_decision/TOOL.md\"}]"
+    },
+    {
+      "name": "the only authority is host-served HTTP to the two D3 origins",
+      "expr": "plug.manifold == {\"child_process\": false, \"crypto\": false, \"env\": \"None\", \"fs\": \"None\", \"http_timeout_ms\": 10000, \"net\": {\"OutboundHttp\": origins}} and (plug | has(\"bind_dir\") | not) and (plug | has(\"model_slot\") | not)"
+    },
+    {
+      "name": "limits stay inside the host ceilings and leave room past the HTTP timeout",
+      "expr": "plug.limits.memory_mib <= 4096 and plug.limits.max_output_mib <= 4 and plug.limits.wall_clock_secs * 1000 > plug.manifold.http_timeout_ms * 2"
+    },
+    {
+      "name": "the schema is closed, requires context and questions, and names servers, never URLs",
+      "expr": "schema.additionalProperties == false and schema.required == [\"context\", \"questions\"] and schema.properties.server.enum == [\"spark-1\", \"spark-2\"] and schema.properties.server.default == \"spark-1\" and (schema.properties | keys) == [\"context\", \"questions\", \"server\"]"
+    },
+    {
+      "name": "questions are the three typed kinds, 1 to 16 of them",
+      "expr": "schema.properties.questions.minProperties == 1 and schema.properties.questions.maxProperties == 16 and (schema.properties.questions.additionalProperties.properties.type.enum | sort) == [\"choice\", \"noul\", \"score\"]"
+    },
+    {
+      "name": "every field and question kind the schema names is explained in the tool instructions",
+      "expr": "tool as $t | [(schema.properties | keys[]), \"type\", \"instructions\", \"criteria\", \"noul\", \"choice\", \"score\", \"retryable\"] | all(. as $k | $t | contains(\"`\" + $k + \"`\"))"
+    },
+    {
+      "name": "the tool instructions and README name both origins, the timeout and the no-retry rule",
+      "expr": "tool as $t | readme as $r | all(origins[]; . as $o | ($t | contains($o)) and ($r | contains($o))) and ($t | contains(\"10 seconds\")) and ($t | contains(\"Nothing is retried\")) and ($r | contains(\"bearer\"))"
+    },
+    {
+      "name": "the tool instructions carry a wake-gate example that is a valid input",
+      "expr": "tool | contains(\"## Example: a wake gate\") and ([scan(\"```json\\n([\\\\s\\\\S]*?)\\n```\") | .[0] | fromjson] as $ex | ($ex | length) == 1 and ($ex[0] | (keys == [\"context\", \"questions\"]) and .questions.wake.type == \"noul\" and .questions.reason.type == \"choice\"))"
+    }
+  ]
+}

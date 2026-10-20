@@ -1,0 +1,1 @@
+{"input": {"context": "hello", "questions": {"q": {"type": "noul", "instructions": "Is this a greeting?"}}, "url": "http://100.74.68.88:8000/v1/systemone"}, "expect": {"ok": false, "error": "the field \"url\" is not known; the fields are context, questions and server", "retryable": false}}

@@ -170,7 +170,12 @@ fi
 show_document() {
   local doc="$work/show-document.json" names="$work/asset-names.txt" path
   [[ -f "$doc" ]] && { printf '%s' "$doc"; return; }
-  "$gents" pack show "$dir" --config --home "$work/show" >"$work/show-config.json"
+  # A plugins pack has no configuration to show; its document's config is null.
+  if [[ "$kind" == "plugins" ]]; then
+    echo '{}' >"$work/show-config.json"
+  else
+    "$gents" pack show "$dir" --config --home "$work/show" >"$work/show-config.json"
+  fi
   : >"$names"
   while read -r path; do
     [[ -f "$dir/$path" ]] && iconv -f UTF-8 -t UTF-8 "$dir/$path" >/dev/null 2>&1 && printf '%s\n' "$path" >>"$names"

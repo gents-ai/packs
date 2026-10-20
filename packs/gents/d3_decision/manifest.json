@@ -1,0 +1,127 @@
+{
+  "assets": [
+    "README.md",
+    "plugins/d3_decision.afb",
+    "plugins/d3_decision/TOOL.md",
+    "tests/content.json",
+    "tests/install.json"
+  ],
+  "authors": [
+    "gents contributors"
+  ],
+  "dependencies": [],
+  "description": "Asks the D3 decision model typed choice, yes/no and score questions about text or JSON on an operator-owned server and returns its probabilities, not prose.",
+  "kind": "plugins",
+  "manifest_version": 1,
+  "name": "d3_decision",
+  "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/d3_decision.afb",
+      "description": "Asks the D3 decision model choice, yes/no (noul) and score questions about text or JSON and returns a probability for every answer, not generated prose.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "description": "The text or JSON the questions are about, such as a message or a host's stats."
+          },
+          "questions": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "criteria": {
+                  "description": "choice: an object of 2 to 32 option names, each mapped to a description or null. score: an array of 2 to 32 labels, lowest first. noul: leave it out.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "maxProperties": 32,
+                      "minProperties": 2,
+                      "type": "object"
+                    },
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 32,
+                      "minItems": 2,
+                      "type": "array"
+                    }
+                  ]
+                },
+                "instructions": {
+                  "description": "The question, asked about the context.",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "choice",
+                    "noul",
+                    "score"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "instructions"
+              ],
+              "type": "object"
+            },
+            "description": "1 to 16 questions, each under a name of your choosing; the answers come back under the same names.",
+            "maxProperties": 16,
+            "minProperties": 1,
+            "type": "object"
+          },
+          "server": {
+            "default": "spark-1",
+            "description": "Which D3 server answers. Nothing is sent to the other one, even when this one fails.",
+            "enum": [
+              "spark-1",
+              "spark-2"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "context",
+          "questions"
+        ],
+        "type": "object"
+      },
+      "instructions": "plugins/d3_decision/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 1,
+        "memory_mib": 64,
+        "wall_clock_secs": 30
+      },
+      "manifold": {
+        "child_process": false,
+        "crypto": false,
+        "env": "None",
+        "fs": "None",
+        "http_timeout_ms": 10000,
+        "net": {
+          "OutboundHttp": [
+            "http://100.74.68.88:8000",
+            "http://100.86.62.91:8100"
+          ]
+        }
+      },
+      "name": "d3_decision",
+      "source": "plugins/d3_decision"
+    }
+  ],
+  "tags": [
+    "decision",
+    "classification",
+    "d3",
+    "plugin"
+  ],
+  "version": "0.1.0"
+}
