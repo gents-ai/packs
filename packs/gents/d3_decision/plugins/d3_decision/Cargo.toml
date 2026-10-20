@@ -1,0 +1,21 @@
+[workspace]
+
+[package]
+name = "d3_decision"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+
+[[bin]]
+name = "d3_decision"
+path = "source/main.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,0 +1,1 @@
+{"input": {"context": "hello", "questions": {"q": {"type": "noul", "instructions": "Is this a greeting?"}}, "server": "http://example.com"}, "expect": {"ok": false, "error": "server must be spark-1 or spark-2", "retryable": false}}

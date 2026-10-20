@@ -1,0 +1,1 @@
+{"input": {"context": "hello", "questions": {"greeting": {"type": "noul", "instructions": "Is this a greeting?", "criteria": ["no", "yes"]}}}, "expect": {"ok": false, "error": "question \"greeting\": a noul question takes no criteria", "retryable": false}}
