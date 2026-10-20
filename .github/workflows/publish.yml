@@ -66,15 +66,17 @@ jobs:
             echo "stale=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [[ -z "$PACK_NAMES" ]]; then
-            PACK_NAMES="$(gh api --paginate "repos/$GH_REPO/actions/runs/$CI_RUN_ID/artifacts" \
-              --jq '.artifacts[].name | select(test("^pack-.+-Linux$")) | sub("^pack-"; "") | sub("-Linux$"; "")' \
-              | sort -u | xargs)"
-          fi
-          [[ -n "$PACK_NAMES" ]] || { echo 'The run built no packs.' >&2; exit 1; }
-          for pack in $PACK_NAMES; do
+          # CI builds every pack on master, so a successful run's artifacts
+          # name exactly the packs that still exist.
+          BUILT_PACKS="$(gh api --paginate "repos/$GH_REPO/actions/runs/$CI_RUN_ID/artifacts" \
+            --jq '.artifacts[].name | select(test("^pack-.+-Linux$")) | sub("^pack-"; "") | sub("-Linux$"; "")' \
+            | sort -u | xargs)"
+          [[ -n "$BUILT_PACKS" ]] || { echo 'The run built no packs.' >&2; exit 1; }
+          PACK_NAMES="${PACK_NAMES:-$BUILT_PACKS}"
+          for pack in $BUILT_PACKS $PACK_NAMES; do
             [[ "$pack" =~ ^[a-z][a-z0-9_]*$ ]] || { echo 'Invalid pack name.' >&2; exit 1; }
           done
+          echo "BUILT_PACKS=$BUILT_PACKS" >> "$GITHUB_ENV"
           echo "PACK_NAMES=$PACK_NAMES" >> "$GITHUB_ENV"
 
       - name: Download and verify tested artifacts
@@ -104,4 +106,26 @@ jobs:
               404) gents-bin/gents pack publish "$file" --registry "$REGISTRY" ;;
               *) echo "Checking gents/$pack@$version on the registry returned HTTP $status." >&2; exit 1 ;;
             esac
+          done
+
+      # Every gents pack comes from this repo, so one the registry still
+      # offers but master no longer has is yanked (undo: gents pack yank --undo).
+      - name: Yank packs deleted from the repo
+        if: steps.source.outputs.stale != 'true'
+        env:
+          GENTS_REGISTRY_TOKEN: ${{ secrets.GENTS_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          page=1
+          while :; do
+            curl -fsS "$REGISTRY/api/v1/packs?q=&page=$page" > search.json
+            jq -r '.packs[] | select(.namespace == "gents") | .name' search.json >> registry-packs.txt
+            [[ "$(jq -r .has_more search.json)" == true ]] || break
+            page=$((page + 1))
+          done
+          for pack in $(sort -u registry-packs.txt); do
+            [[ " $BUILT_PACKS " == *" $pack "* ]] && continue
+            for version in $(curl -fsS "$REGISTRY/api/v1/packs/gents/$pack" | jq -r '.versions[] | select(.yanked | not) | .version'); do
+              gents-bin/gents pack yank "gents/$pack@$version" --registry "$REGISTRY"
+            done
           done
