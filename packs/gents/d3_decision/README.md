@@ -85,10 +85,20 @@ One call is one request to one server. D3 serves one request at a time and
 queues the rest, so a busy server shows up as a slow answer; the host gives up
 after 10 seconds (`http_timeout_ms`) and the call fails with `retryable: true`
 and a message that says D3 was busy, stalled or down (a server off the
-network times out the same way). A refused connection, HTTP
-429 or 503, and HTTP 5xx are also `retryable: true`; a rejected question (HTTP
-400 or 422, with D3's reason), a required token, a refused grant or a malformed
-response are `retryable: false`. Nothing is retried and nothing is sent to the
+network times out the same way). A refused connection, a connection D3
+dropped before answering (it restarted or was killed mid-request), HTTP 429 or
+503, and HTTP 5xx are also `retryable: true`; a rejected question (HTTP 400 or
+422, with D3's reason), a request too large to answer in time, a required
+token, a refused grant or a malformed response are `retryable: false`.
+
+D3 reads the whole context once for every question and keeps working on a
+request after the host has stopped waiting for it, so a request it cannot
+answer inside the timeout costs every other caller that time too. On spark-1
+it takes about 1 ms per input token per question (0.7 s for a 250-byte host
+snapshot with three questions, 6.8 s for 4 KiB with three, 34 s for 16 KiB
+with three). The plugin therefore refuses, before sending anything, a call
+whose context bytes plus question bytes, summed over its questions, pass
+12 KiB. Nothing is retried and nothing is sent to the
 other server: retrying, or asking `spark-2`, is the caller's explicit choice.
 There is no `auto` server for the same reason: no pack here fails over between
 endpoints implicitly, and a wake gate should see that its server is down.
@@ -115,6 +125,12 @@ gents plugin run gents/d3_decision --home <home> --input '{"context": "The custo
 ```
 
 ## Operational history
+
+0.1.1: a dropped connection is retryable, and the request size bound counts
+context once per question (12 KiB of work, replacing the 128 KiB body cap
+that D3 could not answer inside the timeout). Measured on spark-1 under
+gents 0.21.0-rc2: answers are deterministic for the same request, and a
+request abandoned by its client still runs to completion on D3.
 
 0.1.0: first release, ported from the gents 0.21.0-rc0 pack-authoring audit,
 where it answered choice, noul and score questions live on both servers.

@@ -17,7 +17,12 @@ const DEFAULT_SERVER: &str = "spark-1";
 const ROUTE: &str = "/v1/systemone";
 const REQUEST_ID: &str = "decision";
 const MAX_INPUT_BYTES: usize = 256 * 1024;
-const MAX_BODY_BYTES: usize = 128 * 1024;
+/// D3 reads the whole context once per question, at about 1 ms a token on
+/// spark-1, and finishes a request the host has given up on. The sum over
+/// questions of context bytes plus question bytes stays under this, which
+/// D3 answers in about 7 seconds alone; anything larger would time out and
+/// keep D3 busy for every other caller after the host stopped waiting.
+const MAX_WORK_BYTES: usize = 12 * 1024;
 const MAX_QUESTIONS: usize = 16;
 const MAX_CRITERIA: usize = 32;
 /// Characters of a refusal's body quoted back in the error.
@@ -72,13 +77,21 @@ fn run(input: &Value) -> Result<Value, Failure> {
             "the host offers this plugin no HTTP calls; install the pack with its network grant approved",
         ));
     }
-    let body = json!({"state": context, "questions": questions}).to_string();
-    if body.len() > MAX_BODY_BYTES {
+    let context_bytes = context.to_string().len();
+    let work: usize = questions
+        .values()
+        .map(|q| context_bytes + q.to_string().len())
+        .sum();
+    if work > MAX_WORK_BYTES {
+        let asked = match questions.len() {
+            1 => "1 question".to_owned(),
+            n => format!("{n} questions"),
+        };
         return Err(invalid(format!(
-            "the d3 request is {} bytes; it may be at most {MAX_BODY_BYTES}",
-            body.len()
+            "d3 reads the context once per question: {asked} over {context_bytes} bytes of context is {work} bytes of work, more than the {MAX_WORK_BYTES} it can answer before the timeout; shorten the context or ask fewer questions"
         )));
     }
+    let body = json!({"state": context, "questions": questions}).to_string();
     Ok(json!({"http_calls": {"requests": [{
         "id": REQUEST_ID,
         "method": "POST",
@@ -219,6 +232,12 @@ fn host_error(server: &str, error: &str) -> Failure {
     } else if error.contains("could not be reached") {
         transient(format!(
             "d3 on {server} could not be reached; the server is down or off the network. Not retried and not sent elsewhere"
+        ))
+    } else if (error.starts_with("the http request to ") && error.ends_with(" failed"))
+        || error.contains("response was cut off")
+    {
+        transient(format!(
+            "d3 on {server} dropped the connection before answering ({error}); it may be restarting. Not retried and not sent elsewhere"
         ))
     } else {
         invalid(format!(

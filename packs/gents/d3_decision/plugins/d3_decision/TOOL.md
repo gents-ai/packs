@@ -42,9 +42,11 @@ refused it and something must change first.
 
 ## Busy, timeouts and other servers
 
-D3 answers one request at a time and queues the rest. A text request takes
-well under a second, but when other callers fill the queue a request waits;
-after 10 seconds the host gives up and the call fails with `retryable: true`.
+D3 answers one request at a time and queues the rest. A short context takes
+about a quarter of a second per question, but when other callers fill the
+queue a request waits; after 10 seconds the host gives up and the call fails
+with `retryable: true`. D3 still finishes the abandoned request, so keep the
+context short and the questions few.
 A server that is down usually fails the same way, after the same wait.
 Nothing is retried, and nothing is sent to the other server: to try again or
 to try `spark-2`, make another call yourself.
@@ -97,5 +99,7 @@ The only network access is a host-served HTTP POST to
 private network. No files, environment, commands or sockets. Sending a context
 shows it to that server. No credential is sent: the servers are assumed to run
 without a bearer token, and one that requires it fails with `retryable:
-false`. Input is at most 256 KiB, the request to D3 at most 128 KiB, the call
-30 seconds. Text and JSON only; images and video are not supported.
+false`. Input is at most 256 KiB and the call 30 seconds. D3 reads the
+context once per question, so the context's bytes plus each question's bytes,
+summed over the questions, may be at most 12 KiB (three questions over about
+4 KiB); a larger call fails with `retryable: false` before anything is sent. Text and JSON only; images and video are not supported.
