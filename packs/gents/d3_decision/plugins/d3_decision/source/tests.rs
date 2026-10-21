@@ -53,7 +53,7 @@ fn spark_2_is_reached_only_when_named() {
     let out = run(&i).unwrap();
     assert_eq!(
         out["http_calls"]["requests"][0]["url"],
-        "http://100.86.62.91:8100/v1/systemone"
+        "http://100.86.62.91:8000/v1/systemone"
     );
 }
 

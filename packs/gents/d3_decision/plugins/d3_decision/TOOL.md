@@ -95,7 +95,7 @@ and the schedule's own policy decides what repeated failures mean.
 
 The only network access is a host-served HTTP POST to
 `http://100.74.68.88:8000/v1/systemone` (spark-1) or
-`http://100.86.62.91:8100/v1/systemone` (spark-2), both on the operator's
+`http://100.86.62.91:8000/v1/systemone` (spark-2), both on the operator's
 private network. No files, environment, commands or sockets. Sending a context
 shows it to that server. No credential is sent: the servers are assumed to run
 without a bearer token, and one that requires it fails with `retryable:

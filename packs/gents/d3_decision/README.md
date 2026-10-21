@@ -45,7 +45,7 @@ and reachable from the node over the operator's Tailscale network:
 | `server` | Origin | Route |
 | --- | --- | --- |
 | `spark-1` (default) | `http://100.74.68.88:8000` | `POST /v1/systemone` |
-| `spark-2` | `http://100.86.62.91:8100` | `POST /v1/systemone` |
+| `spark-2` | `http://100.86.62.91:8000` | `POST /v1/systemone` |
 
 `GET /health` on either reports `"status": "ready"` and whether it requires
 authentication.

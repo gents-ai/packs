@@ -11,7 +11,7 @@ use serde_json::{Map, Value, json};
 /// are the manifest's `OutboundHttp` grant: change both together.
 const SERVERS: [(&str, &str); 2] = [
     ("spark-1", "http://100.74.68.88:8000"),
-    ("spark-2", "http://100.86.62.91:8100"),
+    ("spark-2", "http://100.86.62.91:8000"),
 ];
 const DEFAULT_SERVER: &str = "spark-1";
 const ROUTE: &str = "/v1/systemone";

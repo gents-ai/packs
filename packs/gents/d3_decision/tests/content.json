@@ -1,5 +1,5 @@
 {
-  "defs": "def plug: .manifest.plugins[0]; def schema: plug.input_schema; def tool: .assets[\"plugins/d3_decision/TOOL.md\"]; def readme: .assets[\"README.md\"]; def origins: [\"http://100.74.68.88:8000\", \"http://100.86.62.91:8100\"];",
+  "defs": "def plug: .manifest.plugins[0]; def schema: plug.input_schema; def tool: .assets[\"plugins/d3_decision/TOOL.md\"]; def readme: .assets[\"README.md\"]; def origins: [\"http://100.74.68.88:8000\", \"http://100.86.62.91:8000\"];",
   "jq": [
     {
       "name": "the pack ships exactly the d3_decision plugin, in rust, and no documents",
