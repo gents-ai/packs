@@ -31,6 +31,17 @@
 #                            asset is an eval case gents accepts
 #        {"cli_flags": {"command": [...], "flags": [...]}}
 #                            `gents <command> --help` documents every flag
+#        {"replay": {"script": ..., "args": ..., "oracle": ..., "expect": [...],
+#                    "defs": "<jq defs>", "extra_args": [...]}}
+#                            the pack-relative workflow script run on the fake host
+#                            (packs/gents/rhai_workflows/plugins/workflow, example
+#                            fakehost --trace; RHAI_FAKEHOST_MANIFEST overrides its
+#                            Cargo.toml) with the pack-relative args and oracle
+#                            files and the extra_args; each expect {name, expr}
+#                            (after the optional defs) is a jq boolean true over
+#                            {"events": [{step, kind, value, id?}], "result",
+#                            "fail", "suspend"} built from its output lines.
+#                            Skipped with a note when cargo or that manifest is absent
 #        {"runtime": {"repository": {"files": {...}, "dirs": [...]},
 #                     "seed": {"collection": ..., "fields": {...}},
 #                     "taken": {"collection": ..., "filter": {...}},
@@ -369,32 +380,40 @@ install_assets() {
   fi
 }
 
-# Polls a GraphQL endpoint until the query's rows include one whose fields
-# match; prints the last response. Waits with a deadline and backoff, so a
-# fast machine finishes at once and a slow one still passes.
+# Polls the live runtime until one expectation's rows include one whose
+# fields match; prints the last response. The read goes through `gents query`
+# as the home's node: the GraphQL endpoint shows anonymous readers no
+# documents. Waits with a deadline and backoff, so a fast machine finishes at
+# once and a slow one still passes.
 await_rows() {
-  local url="$1" query="$2" want="$3" deadline=$((SECONDS + ${AWAIT_SECS:-120})) delay=0.1 response
+  local home="$1" url="$2" expect="$3" deadline=$((SECONDS + ${AWAIT_SECS:-120})) delay=0.1
+  local response want args=() arg
+  want="$(jq -c '.fields // {}' <<<"$expect")"
+  while read -r arg; do args+=("$arg"); done < <(expectation_args "$expect")
   while :; do
-    response="$(curl -fsS "$url" -H 'content-type: application/json' \
-      -d "$(jq -cn --arg q "$query" '{query: $q}')" 2>/dev/null || true)"
+    response="$("$gents" query find --home "$home" --graphql "$url" --limit 1000 "${args[@]}" 2>"$work/query.err" || true)"
     if jq -e --argjson want "$want" \
-      '[.data[]?[]? | select(. as $row | $want | to_entries | all(.value == $row[.key]))] | length > 0' \
+      '[.results[]? | select(. as $row | $want | to_entries | all(.value == $row[.key]))] | length > 0' \
       <<<"$response" >/dev/null 2>&1; then
-      printf '%s' "$response"
+      printf '%s' "$response" | jq -c .
       return 0
     fi
-    ((SECONDS < deadline)) || { printf '%s' "$response"; return 1; }
+    if ((SECONDS >= deadline)); then
+      printf '%s' "$response" | jq -c . 2>/dev/null || grep -v ' WARN ' "$work/query.err" | tail -1
+      return 1
+    fi
     sleep "$delay"
     delay="$(awk -v d="$delay" 'BEGIN { d *= 2; print (d > 2 ? 2 : d) }')"
   done
 }
 
-# The GraphQL read for one runtime expectation: its collection, filtered by
-# `filter`, selecting the fields it expects.
-expectation_query() {
-  jq -r '"{ \(.collection)(filter: {\(.filter // {} | to_entries
-      | map("\(.key): {_eq: \(.value | tostring | tojson)}") | join(", "))}) {
-      \(.fields // {} | keys | if length == 0 then ["_docID"] else . end | join(" ")) } }"' <<<"$1"
+# The `gents query find` arguments for one runtime expectation, one per line:
+# its collection, filtered by `filter`, selecting the fields it expects.
+expectation_args() {
+  jq -r '"--collection", .collection,
+    (.fields // {} | keys | if length == 0 then ["_docID"] else . end | .[] | ("--field", .)),
+    (.filter // {} | select(length > 0)
+      | ("--filter", (map_values({_eq: tostring}) | tojson)))' <<<"$1"
 }
 
 runtime_case() {
@@ -439,10 +458,9 @@ runtime_case() {
   pid=$!
   servers+=("$pid")
 
-  local collection fields attempt=0 deadline=$((SECONDS + 240)) first_query first_want seeded=""
+  local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded=""
   collection="$(jq -r '.runtime.seed.collection' "$case")"
-  first_query="$(expectation_query "$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")")"
-  first_want="$(jq -c '(.runtime.taken // .runtime.expect[0]).fields // {}' "$case")"
+  first="$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")"
   # The callback engine logs nothing when it picks up its bindings, and a
   # document created before that is history it never processes. So a fresh
   # seed (${ATTEMPT} makes it unique) is created until `taken` (any matching
@@ -464,18 +482,17 @@ runtime_case() {
       fail "$name: could not create the seed $collection: $(tail -1 "$work/$name-seed.err")"
       return
     fi
-    if [[ -n "$seeded" ]] && AWAIT_SECS=10 await_rows "$url" "$first_query" "$first_want" >/dev/null; then
+    if [[ -n "$seeded" ]] && AWAIT_SECS=10 await_rows "$home" "$url" "$first" >/dev/null; then
       break
     fi
     [[ -n "$seeded" ]] || sleep 1
   done
   [[ -n "$seeded" ]] || { fail "$name: could not create the seed $collection: $(tail -1 "$work/$name-seed.err" 2>/dev/null)"; return; }
 
-  local expect query want response
+  local expect want response
   while read -r expect; do
-    query="$(expectation_query "$expect")"
     want="$(jq -c '.fields' <<<"$expect")"
-    if response="$(await_rows "$url" "$query" "$want")"; then
+    if response="$(await_rows "$home" "$url" "$expect")"; then
       pass "$name: $(jq -r '.collection' <<<"$expect") reaches $want"
     else
       fail "$name: $(jq -r '.collection' <<<"$expect") never reached $want; last seen $response"
@@ -518,6 +535,60 @@ run_jq_case() {
       fail "$(basename "$case"): $name$(head -1 "$work/jq.err" | sed 's/^/ (/;s/$/)/')"
     fi
   done < <(jq -c '.jq[]' "$case")
+}
+
+# The fake host prints one line per fact (cli::render); this builds the one
+# document a replay case's expect expressions read.
+readonly REPLAY_DOC='[inputs | select(length > 0)
+ | (capture("^(step (?<step>[0-9]+) )?(?<kind>[a-z]+) (?<rest>.*)$")
+    // error("unparsed fake host line: \(.)"))
+ | {step: (.step | if . then tonumber else null end), kind}
+   + if .kind == "note"
+     then (.rest | capture("^(?<id>\"(?:[^\"\\\\]|\\\\.)*\") (?<v>.*)$")
+           // error("unparsed fake host note: \(.)"))
+          | {id: (.id | fromjson), value: (.v | fromjson)}
+     else {value: (.rest | fromjson)} end]
+| . as $ev
+| {events: $ev}
+  + (["result", "fail", "suspend"]
+     | map({key: ., value: (. as $k | $ev | map(select(.kind == $k)) | last | .value)})
+     | from_entries)'
+
+# Runs the script on the rhai_workflows fake host and checks each expect expression over its run.
+replay_case() {
+  local case="$1" label manifest defs row name expr raw out extra=()
+  label="$(basename "$case")"
+  jq -e '.replay.expect | type == "array" and length > 0' "$case" >/dev/null \
+    || { fail "$label: replay.expect must be a non-empty array"; return 0; }
+  manifest="${RHAI_FAKEHOST_MANIFEST:-$(dirname "$0")/../packs/gents/rhai_workflows/plugins/workflow/Cargo.toml}"
+  if ! command -v cargo >/dev/null 2>&1 || [[ ! -f "$manifest" ]]; then
+    echo "note: cargo or $manifest absent; skipping $pack $label" >&2
+    return 0
+  fi
+  while read -r name; do extra+=("$name"); done < <(jq -r '.replay.extra_args // [] | .[]' "$case")
+  raw="$work/replay-$label.out"
+  out="$work/replay-$label.json"
+  if ! cargo run --quiet --manifest-path "$manifest" --features fakehost --example fakehost -- \
+    --script "$dir/$(jq -r '.replay.script' "$case")" --args "$dir/$(jq -r '.replay.args' "$case")" \
+    --oracle "$dir/$(jq -r '.replay.oracle' "$case")" --trace ${extra[@]+"${extra[@]}"} \
+    >"$raw" 2>"$work/replay.err"; then
+    fail "$label: fake host failed: $(tail -3 "$work/replay.err" | tr '\n' ' ' | cut -c1-300)"
+    return 0
+  fi
+  if ! jq -n -R "$REPLAY_DOC" "$raw" >"$out" 2>"$work/replay.err"; then
+    fail "$label: fake host output not in its line format: $(head -1 "$work/replay.err")"
+    return 0
+  fi
+  defs="$(jq -r '.replay.defs // ""' "$case")"
+  while read -r row; do
+    name="$(jq -r '.name' <<<"$row")"
+    expr="$(jq -r '.expr' <<<"$row")"
+    if jq -e "$defs $expr" "$out" >/dev/null 2>"$work/jq.err"; then
+      pass "$label: $name"
+    else
+      fail "$label: $name$(head -1 "$work/jq.err" | sed 's/^/ (/;s/$/)/')"
+    fi
+  done < <(jq -c '.replay.expect[]' "$case")
 }
 
 # The first json fence after the heading line is an eval case gents accepts.
@@ -582,8 +653,10 @@ for case in "${cases[@]}"; do
     eval_case "$case"
   elif jq -e 'has("cli_flags")' "$case" >/dev/null; then
     cli_flags "$case"
+  elif jq -e 'has("replay")' "$case" >/dev/null; then
+    replay_case "$case"
   else
-    fail "$(basename "$case"): not a graphs, install, runtime, jq, eval_case or cli_flags case"
+    fail "$(basename "$case"): not a graphs, install, runtime, jq, eval_case, cli_flags or replay case"
   fi
 done
 

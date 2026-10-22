@@ -1,0 +1,12 @@
+{
+  "replay": {
+    "script": "workflows/hello_world.rhai",
+    "args": "tests/replay/args.json",
+    "oracle": "tests/replay/oracle.json",
+    "expect": [
+      {"name": "completes with the greeting", "expr": ".result.greeting == \"hello, world\""},
+      {"name": "no fail and no suspend", "expr": ".fail == null and .suspend == null"},
+      {"name": "spawns no agent", "expr": "[.events[] | select(.kind == \"spawn\")] | length == 0"}
+    ]
+  }
+}

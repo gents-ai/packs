@@ -10,7 +10,7 @@
 #       waits until phase Scan is active, then fixes src/lib.rs:12 uncommitted
 #       and commits H2 with a bug in src/other.rs. The result must still be about
 #       H: head_sha == H, a confirmed finding at src/lib.rs:12, no mention of
-#       src/other.rs, every evidence excerpt present in `git show H:<path>`.
+#       src/other.rs, every finding excerpt present in `git show H:<path>`.
 #       The job is addressed only by its session_id:tool_call_id address. The
 #       cleanup stop is issued in-session (`workflow stop <address>`) from an
 #       EXIT trap, so it also runs when an assertion fails; never `gents job
@@ -199,9 +199,9 @@ mid_run_edit() {
   jq -e --arg h "$H" '.head_sha == $h' "$out" >/dev/null || die "head_sha is not $H"
   jq -e '[.findings[]? | select(.path == "src/lib.rs" and (.line | tostring) == "12")] | length > 0' "$out" >/dev/null || die "no finding at src/lib.rs:12"
   ! grep -q 'src/other.rs' "$out" || die "result mentions src/other.rs"
-  jq -j '.findings[]? | .path, "\u0000", (.evidence // ""), "\u0000"' "$out" | while IFS= read -r -d '' path && IFS= read -r -d '' excerpt; do
+  jq -j '.findings[]? | .path, "\u0000", (.excerpt // ""), "\u0000"' "$out" | while IFS= read -r -d '' path && IFS= read -r -d '' excerpt; do
     check="$(git -C "$FIXTURE_DIR" show "$H:$path")"
-    case "$check" in *"$excerpt"*) ;; *) die "evidence for $path is not in git show $H:$path" ;; esac
+    case "$check" in *"$excerpt"*) ;; *) die "excerpt for $path is not in git show $H:$path" ;; esac
   done
   echo "mid-run-edit: ok ($KEY)"
 }
