@@ -140,6 +140,11 @@ canonical protocol; other packs copy or link it.
    watcher exit) is recorded as `blocked` with the code or state. Never
    resume: a Task cannot answer a question.
 
+Two packs run this protocol from a Task:
+[grok_tui_port](../grok_tui_port/README.md) in its final review and
+[repo_maintenance](../repo_maintenance/README.md) in its review and CI repair
+loop.
+
 ## Upgrading from 1.x
 
 2.0.0 changes the pack kind from graph to documents, so upgrade with

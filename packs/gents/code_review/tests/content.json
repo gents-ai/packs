@@ -6,8 +6,8 @@
       "expr": "[.assets[]] | all(length > 0)"
     },
     {
-      "name": "the manifest is a 2.0.0 documents pack with no graph, schema or plugin",
-      "expr": ".manifest | .version == \"2.0.0\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (has(\"plugins\") | not) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
+      "name": "the manifest is a 2.0.1 documents pack with no graph, schema or plugin",
+      "expr": ".manifest | .version == \"2.0.1\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (has(\"plugins\") | not) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
     },
     {
       "name": "no graph, datastore, stage task or review_evidence artifact remains",
