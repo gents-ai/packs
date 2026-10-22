@@ -1,0 +1,8 @@
+[
+  {
+    "name": "review-changes",
+    "file": "review_changes.rhai",
+    "description": "Review a git diff through four lenses, adversarially verify every candidate, and triage",
+    "when_to_use": "Before merging a branch or commit range. args: {base, head, repository, focus}"
+  }
+]
