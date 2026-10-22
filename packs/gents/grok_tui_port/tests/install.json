@@ -114,7 +114,8 @@
       "worker"
     ],
     "dependencies": [
-      "code_review"
+      "code_review",
+      "rhai_workflows"
     ]
   }
 }
