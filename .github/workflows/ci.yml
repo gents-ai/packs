@@ -215,3 +215,59 @@ jobs:
           name: pack-${{ matrix.pack }}-${{ runner.os }}
           path: dist/gents.${{ matrix.pack }}.pack
           retention-days: 30
+
+  rhai:
+    name: rhai ${{ matrix.rhai }} differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        rhai: ["1.25.1", "1.26.1"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run the differential under rhai ${{ matrix.rhai }}
+        working-directory: packs/gents/rhai_workflows/plugins/workflow
+        env:
+          WF_DIFF_OUT: ${{ github.workspace }}/wf-diff
+        run: |
+          set -euo pipefail
+          # rust-toolchain.toml at the repo root pins the compiler.
+          rustup show active-toolchain || rustup toolchain install
+          # The crate pins one rhai exactly; relax the pin so the lock can move.
+          sed -i -E 's/^(rhai = \{ version = ")=[0-9.]+"/\1=${{ matrix.rhai }}"/' Cargo.toml
+          cargo update -p rhai --precise ${{ matrix.rhai }}
+          cargo test --test differential
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wf-diff-${{ matrix.rhai }}
+          path: wf-diff/rhai-${{ matrix.rhai }}.txt
+          retention-days: 7
+
+  rhai-diff:
+    name: rhai transcripts agree
+    needs: rhai
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: wf-diff-*
+          path: wf-diff
+          merge-multiple: true
+
+      - name: Diff the transcripts
+        run: |
+          set -euo pipefail
+          if diff -u wf-diff/rhai-1.25.1.txt wf-diff/rhai-1.26.1.txt; then
+            echo "The transcripts are identical."
+          elif grep -q '^rhai = { version = "=1.25.1"' packs/gents/rhai_workflows/plugins/workflow/Cargo.toml; then
+            echo "::warning::The transcripts differ; the crate pins =1.25.1."
+          else
+            echo "::error::The transcripts differ and the crate does not pin =1.25.1."
+            exit 1
+          fi
