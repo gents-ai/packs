@@ -1,12 +1,17 @@
 //! The workflow engine: `invoke` takes one plugin input and returns one output.
 use serde_json::{Value, json};
 
+pub mod address;
+pub mod catalog;
+pub mod data;
 pub mod errors;
+pub mod export;
 #[cfg(any(test, feature = "fakehost"))]
 pub mod fakehost;
 pub mod helpers;
 pub mod host_api;
 pub mod journal;
+pub mod keep;
 pub mod options;
 pub mod origin;
 pub mod output_schema;
@@ -18,6 +23,7 @@ pub mod run;
 pub mod sandbox;
 pub mod scratch;
 pub mod smoke;
+pub mod tiers;
 pub mod validate;
 pub mod verbs;
 pub mod wire;
@@ -69,7 +75,16 @@ pub fn invoke(mut input: Value) -> Value {
         Shape::JobStep | Shape::Round if input["pin"].is_null() && resume::is_resume(&input) => {
             return resume::step0(&input);
         }
-        Shape::JobStep if input["pin"].is_null() => return run::step0(&input),
+        Shape::JobStep | Shape::Round if input["pin"].is_null() && verbs::is_control(&input) => {
+            return verbs::control(&input);
+        }
+        Shape::JobStep | Shape::Round if input["pin"].is_null() && keep::is_keep(&input) => {
+            return verbs::deferred(&input).unwrap_or_else(|| keep::serve(&input));
+        }
+        Shape::JobStep | Shape::Round if input["pin"].is_null() && export::is_export(&input) => {
+            return export::serve(&input);
+        }
+        Shape::JobStep | Shape::Round if input["pin"].is_null() => return run::step0(&input),
         Shape::JobStep | Shape::Round => match rounds::advance(&input) {
             Err(out) | Ok(rounds::Step::Ask(out)) => return out,
             Ok(rounds::Step::Replay(replay)) => return run::step(&input, replay),

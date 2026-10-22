@@ -7,10 +7,10 @@
 //!
 //! A replay step takes up to three invocations: notes and source (`data_calls`), child text
 //! (`job_calls.child_output`), then replay. [`advance`] decides which one the input is at.
+use crate::data::{self, PAGE};
 use crate::fail;
 use crate::wire::{
-    ChildOutputRequest, ChildOutputResponse, DataCall, DataQuery, DataQueryResponse, JobCall,
-    RoundResult, object,
+    ChildOutputRequest, ChildOutputResponse, DataQueryResponse, JobCall, RoundResult,
 };
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -21,8 +21,6 @@ use std::collections::BTreeMap;
 pub const MAX_ROUNDS: u32 = 64;
 /// The output cap a carried state must fit under (4 MiB).
 pub const MAX_OUTPUT_BYTES: usize = 4 * 1024 * 1024;
-/// Rows one `data_calls.query` page asks for (the host allows at most 256).
-const PAGE: u32 = 256;
 
 /// What a step carries between rounds. Child text is never part of it.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -171,36 +169,10 @@ pub fn advance(input: &Value) -> Result<Step, Value> {
         let mut requests = Vec::new();
         if !st.notes_done {
             // `_docID` is a total order, so pages never skip or repeat a P2P twin.
-            let offset = u32::try_from(st.notes.len()).unwrap_or(u32::MAX);
-            requests.push(json!(DataCall {
-                id: "notes".into(),
-                query: DataQuery {
-                    collection: "WfNote".into(),
-                    filter: object(json!({"chain_root_doc_id": {"_eq": chain}})),
-                    order: Some(object(json!({"_docID": "ASC"}))),
-                    limit: PAGE,
-                    offset: Some(offset).filter(|n| *n > 0),
-                    fields: ["_docID", "note_id", "value_json", "row"]
-                        .map(String::from)
-                        .into(),
-                },
-            }));
+            requests.push(json!(data::notes_page(chain, st.notes.len())));
         }
         if let (true, Some(script_id)) = (want_source, script_id) {
-            requests.push(json!(DataCall {
-                id: "source".into(),
-                query: DataQuery {
-                    collection: "WfScript".into(),
-                    filter: object(json!({"_and": [
-                        {"script_id": {"_eq": script_id}},
-                        {"node_did": {"_eq": "$caller.node_did"}},
-                    ]})),
-                    order: None,
-                    limit: 1,
-                    offset: None,
-                    fields: vec!["source".into()],
-                },
-            }));
+            requests.push(json!(data::script_source(script_id)));
         }
         return ask("data", requests, st);
     }

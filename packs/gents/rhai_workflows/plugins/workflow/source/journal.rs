@@ -1,6 +1,7 @@
 //! The journal view: the chain's WfNote rows plus the notes this replay creates (L2 section 4.6).
+use crate::data::WfNote;
 use crate::rounds::Replay;
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::collections::BTreeMap;
 
 pub fn run_id(row: &str) -> String {
@@ -90,8 +91,12 @@ impl Journal {
         self.pending
             .iter()
             .map(|(id, value)| {
-                json!({"op": "insert", "collection": "WfNote", "on_conflict": "ignore",
-                       "fields": {"note_id": id, "value_json": value.to_string()}})
+                let note = WfNote {
+                    note_id: id.clone(),
+                    value_json: value.to_string(),
+                    row: None,
+                };
+                note.write()
             })
             .collect()
     }

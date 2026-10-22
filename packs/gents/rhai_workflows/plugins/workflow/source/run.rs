@@ -1,9 +1,9 @@
 //! `run` on an inline script (L2 sections 4.6 and 4.10): step 0 validates, pins and replays to
 //! the first pending call; later steps replay with the stored notes and source.
+use crate::data::WfScript;
 use crate::errors::{
     WORKFLOW_DEPTH_EXCEEDED, WORKFLOW_INVALID_INPUT, WORKFLOW_LAUNCH_FAILED,
-    WORKFLOW_NOT_AVAILABLE, WORKFLOW_POLICY_DENIED, WORKFLOW_RESOLVE_FAILED,
-    WORKFLOW_VALIDATION_FAILED, message,
+    WORKFLOW_POLICY_DENIED, WORKFLOW_RESOLVE_FAILED, WORKFLOW_VALIDATION_FAILED, message,
 };
 use crate::fail;
 use crate::host_api::{self, Host};
@@ -13,8 +13,10 @@ use crate::progress::{self, Kind, pause_reason};
 use crate::resume;
 use crate::rounds::Replay;
 use crate::sandbox::{self, LogBuffer, Suspension, SuspensionCell};
+use crate::tiers::{self, Resolved};
 use crate::validate::{self, Meta};
-use crate::wire::{Child, JobPin};
+use crate::verbs;
+use crate::wire::{Child, JobPin, Origin};
 use rhai::Scope;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -26,6 +28,25 @@ use std::rc::Rc;
 /// The host API version a `script_id` is hashed with.
 pub(crate) const HOST_API_VERSION: &str = "gents-rhai/1";
 pub(crate) const DEFAULT_AGENT_BUDGET: u64 = 128;
+/// The bounds of `agent_budget` (root C9).
+pub(crate) const AGENT_BUDGET: std::ops::RangeInclusive<u64> = 1..=1024;
+
+/// The `agent_budget` of a `run`: the default when absent, else an integer within the bounds.
+fn agent_budget(input: &Value) -> Result<u64, Value> {
+    match &input["agent_budget"] {
+        Value::Null => Ok(DEFAULT_AGENT_BUDGET),
+        value => value
+            .as_u64()
+            .filter(|n| AGENT_BUDGET.contains(n))
+            .ok_or_else(|| {
+                let what = format!("agent_budget {value} is not an integer within 1..1024");
+                fail(
+                    WORKFLOW_INVALID_INPUT,
+                    &format!("{what}. Next: workflow help run"),
+                )
+            }),
+    }
+}
 
 pub(crate) fn sha256_hex(parts: &[&str]) -> String {
     let mut hash = Sha256::new();
@@ -95,14 +116,18 @@ pub(crate) struct Adopting {
     pub resume: Option<Value>,
 }
 
-/// Step 0 (no pin yet) of an inline script: the pin, the first spawn window and the notes.
+/// Step 0 (no pin yet): resolves the source (L2 section 4.13), then the pin, the first spawn
+/// window and the notes.
 pub fn step0(input: &Value) -> Value {
-    let Some(source) = input["script"].as_str() else {
-        return fail(
-            WORKFLOW_NOT_AVAILABLE,
-            "a run without an inline script is not built yet. Next: workflow help doctor",
-        );
-    };
+    if let Some(out) = verbs::deferred(input) {
+        return out;
+    }
+    if let Some(verb) = input["argv"][0].as_str().filter(|v| *v != "run") {
+        return match verb {
+            "help" | "check" | "list" | "show" => verbs::inline(input),
+            _ => verbs::not_run(verb),
+        };
+    }
     let Some(row) = input.pointer("/job/row_doc_id").and_then(Value::as_str) else {
         return fail(
             WORKFLOW_INVALID_INPUT,
@@ -112,6 +137,15 @@ pub fn step0(input: &Value) -> Value {
     if let Some(msg) = origin::nested(input) {
         return refused(WORKFLOW_DEPTH_EXCEEDED, msg);
     }
+    let agent_budget = match agent_budget(input) {
+        Ok(budget) => budget,
+        Err(out) => return out,
+    };
+    let Resolved { source, tier } = match tiers::resolve(input) {
+        Ok(resolved) => resolved,
+        Err(out) => return out,
+    };
+    let source = source.as_str();
     let meta = match validate::validate(source) {
         Ok(meta) => meta,
         Err(msg) => return refused(WORKFLOW_VALIDATION_FAILED, msg),
@@ -119,9 +153,7 @@ pub fn step0(input: &Value) -> Value {
     let pin = JobPin {
         script_id: sha256_hex(&[HOST_API_VERSION, source]),
         source_digest: sha256_digest(&[source]),
-        agent_budget: input["agent_budget"]
-            .as_u64()
-            .unwrap_or(DEFAULT_AGENT_BUDGET),
+        agent_budget,
         handle: handle(&meta.name, &input["jobs"]),
         host: Map::new(),
     };
@@ -138,15 +170,24 @@ pub fn step0(input: &Value) -> Value {
         run["path"] = path.clone();
     }
     journal.put(&run_id(row), run);
-    let script = json!({"op": "insert", "collection": "WfScript", "on_conflict": "ignore",
-        "fields": {"script_id": pin.script_id, "source": source, "origin_hint": "inline",
-                   "meta_json": json!({"name": meta.name, "description": meta.description}).to_string()}});
+    let script = WfScript::draft(
+        &pin.script_id,
+        source,
+        tier.hint(),
+        &meta.name,
+        &meta.description,
+    );
+    let predicted = match origin::of(input, source) {
+        Origin::Installed => "installed",
+        Origin::Dynamic => "dynamic",
+    };
     let last_event = format!(
-        "started from inline script (predicted origin dynamic, {})",
+        "started from {} (predicted origin {predicted}, {})",
+        tier.label(),
         pin.source_digest
     );
     let adopting = Adopting {
-        script: Some(script),
+        script: Some(script.write()),
         last_event,
         resume: None,
     };

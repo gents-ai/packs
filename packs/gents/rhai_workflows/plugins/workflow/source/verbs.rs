@@ -1,23 +1,34 @@
-//! The verbs of the raw-argument shape (L2 sections 4.3 and 4.14): `help`, `check` and `list`
-//! for a tool with no job block. Job verbs answer `workflow_not_available`. A raw output never
-//! carries a WfNote write.
+//! The verbs of the raw-argument shape (L2 sections 4.3 and 4.14): `help`, `check`, `list` and
+//! `show` for a tool with no job block. Job verbs answer `workflow_not_available`. A raw output
+//! never carries a WfNote write. The control and read verbs `stop`, `pause`, `status` and `result`
+//! of a tool with a job block are non-job outputs (section 4.10): the calling row is never
+//! adopted.
+use crate::address;
+use crate::catalog;
+use crate::data::WfScript;
 use crate::errors::{
-    WORKFLOW_INVALID_INPUT, WORKFLOW_NOT_AVAILABLE, WORKFLOW_RESOLVE_FAILED,
-    WORKFLOW_VALIDATION_FAILED, message,
+    WORKFLOW_CONTROL_NOT_APPLICABLE, WORKFLOW_INVALID_INPUT, WORKFLOW_NOT_AVAILABLE,
+    WORKFLOW_RESOLVE_FAILED, WORKFLOW_VALIDATION_FAILED, message,
 };
+use crate::export;
 use crate::fail;
+use crate::keep;
+use crate::rounds;
 use crate::run::{HOST_API_VERSION, refused, sha256_hex};
 use crate::smoke::{self, End};
+use crate::tiers;
 use crate::validate;
-use crate::wire::{Mount, RawInput};
+use crate::wire::{JobCall, JobResultRequest, JobResultResponse, RawInput};
 use serde_json::{Value, json};
 use std::fs;
-use std::path::{Component, Path, PathBuf};
 
 /// The verbs that need a job block.
 const JOB_VERBS: [&str; 7] = [
     "run", "resume", "answer", "stop", "pause", "status", "result",
 ];
+
+/// One page of `result`: 64 KiB.
+const RESULT_PAGE: u64 = 64 * 1024;
 
 /// Each verb with its one-line help. Full topics come with the help assets.
 const VERBS: [(&str, &str); 14] = [
@@ -36,7 +47,7 @@ const VERBS: [(&str, &str); 14] = [
     ),
     (
         "run",
-        "run (<name> | script | path) [args]: start a workflow in the background",
+        "run (<name> | script | path) [args] [--budget n]: start a workflow in the background",
     ),
     ("status", "status <key|handle>: where a run is"),
     ("result", "result <key|handle>: a finished run's result"),
@@ -61,16 +72,53 @@ const VERBS: [(&str, &str); 14] = [
     ("retire", "retire <name>: stop offering a kept workflow"),
 ];
 
-/// A workflow the pack tier lists.
-struct Listed {
-    pack: String,
-    name: String,
-    when_to_use: String,
-    file: PathBuf,
+/// `import` and `keep --from` answer `workflow_not_available` in every shape (U3).
+pub fn deferred(input: &Value) -> Option<Value> {
+    let argv: Vec<&str> = (input["argv"].as_array().into_iter().flatten())
+        .filter_map(Value::as_str)
+        .collect();
+    let what = match argv.as_slice() {
+        ["import", ..] => "import",
+        ["keep", rest @ ..] if rest.contains(&"--from") => "keep --from",
+        _ => return None,
+    };
+    Some(fail(
+        WORKFLOW_NOT_AVAILABLE,
+        &format!("{what} is deferred to v1.1. Next: workflow help"),
+    ))
+}
+
+/// A verb other than `run` on a step-0 job call: only `run` starts a job, so it never adopts the
+/// calling row.
+pub fn not_run(verb: &str) -> Value {
+    match VERBS.iter().any(|(name, _)| *name == verb) {
+        true => fail(
+            WORKFLOW_NOT_AVAILABLE,
+            &format!("the {verb} verb does not start a job. Next: workflow help {verb}"),
+        ),
+        false => fail(
+            WORKFLOW_INVALID_INPUT,
+            &format!("unknown verb {verb:?}. Next: workflow help"),
+        ),
+    }
+}
+
+/// `help`, `check`, `list` and `show` on a step-0 job call end inline, as on the raw shape. The
+/// job shape names the mounts `mounts`; the raw handlers read `asset_mounts`. The rest of the
+/// input, the ceiling included, rides along.
+pub fn inline(input: &Value) -> Value {
+    let mut shaped = input.clone();
+    if input["mounts"].is_array() {
+        shaped["asset_mounts"] = input["mounts"].clone();
+    }
+    raw(&shaped)
 }
 
 /// Serves one raw-argument call.
 pub fn raw(input: &Value) -> Value {
+    if let Some(out) = deferred(input) {
+        return out;
+    }
     let raw: RawInput = match serde_json::from_value(input.clone()) {
         Ok(raw) => raw,
         Err(e) => {
@@ -88,7 +136,10 @@ pub fn raw(input: &Value) -> Value {
     match verb {
         "help" => help(rest, &raw),
         "check" => check(input, rest, &raw),
-        "list" => list(rest, &raw),
+        "list" => catalog::list(input, rest, &raw),
+        "show" => catalog::show(input, rest, &raw),
+        "keep" | "retire" => keep::serve(input),
+        "export" => export::serve(input),
         v if JOB_VERBS.contains(&v) => fail(
             WORKFLOW_NOT_AVAILABLE,
             "this tool has no job settings here. Next: workflow help doctor",
@@ -132,97 +183,6 @@ fn help(rest: &[String], raw: &RawInput) -> Value {
     json!({"result": text})
 }
 
-/// An index `file` must stay in its mount: non-empty, with only plain parts, none starting with a
-/// dot (L2 section 4.14: asset paths have no dot parts).
-fn inside_mount(file: &str) -> bool {
-    !file.is_empty()
-        && (Path::new(file).components())
-            .all(|c| matches!(c, Component::Normal(p) if !p.to_string_lossy().starts_with('.')))
-}
-
-/// The pack tier: each `workflows` mount's `index.json`, then each listed file's meta. The file
-/// supplies the name, the index the listing fields.
-fn pack_tier(mounts: &[Mount]) -> Vec<Listed> {
-    let mut tier = Vec::new();
-    for mount in mounts.iter().filter(|m| m.class == "workflows") {
-        let dir = Path::new(&mount.path);
-        let index = fs::read_to_string(dir.join("index.json"))
-            .ok()
-            .and_then(|text| serde_json::from_str::<Value>(&text).ok());
-        for item in index.iter().flat_map(|i| i.as_array()).flatten() {
-            let Some(file) = item["file"].as_str().filter(|f| inside_mount(f)) else {
-                continue;
-            };
-            let file = dir.join(file);
-            let meta = fs::read_to_string(&file)
-                .ok()
-                .and_then(|source| validate::validate(&source).ok());
-            let name =
-                (meta.as_ref().map(|m| m.name.clone())).or(item["name"].as_str().map(String::from));
-            let when_to_use = (item["when_to_use"].as_str().map(String::from))
-                .or(meta.and_then(|m| m.when_to_use))
-                .unwrap_or_default();
-            if let Some(name) = name {
-                let pack = mount.pack.clone();
-                tier.push(Listed {
-                    pack,
-                    name,
-                    when_to_use,
-                    file,
-                });
-            }
-        }
-    }
-    tier.sort_by(|a, b| (&a.pack, &a.name).cmp(&(&b.pack, &b.name)));
-    tier
-}
-
-fn list(rest: &[String], raw: &RawInput) -> Value {
-    if !rest.is_empty() {
-        return fail(
-            WORKFLOW_NOT_AVAILABLE,
-            "list takes no options here yet. Next: workflow list",
-        );
-    }
-    let tier = pack_tier(&raw.asset_mounts);
-    let text = if tier.is_empty() {
-        "no workflows are installed in the pack tier".to_string()
-    } else {
-        (tier.iter())
-            .map(|e| format!("{}: {} [{}]", e.name, e.when_to_use, e.pack))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    json!({"result": text})
-}
-
-/// The source of the pack-tier workflow `name`.
-fn pack_source(name: &str, mounts: &[Mount]) -> Result<String, Value> {
-    let tier = pack_tier(mounts);
-    let mut hits = tier.iter().filter(|e| e.name == name);
-    let (Some(hit), second) = (hits.next(), hits.next()) else {
-        let what = format!("no workflow named '{name}' in the pack tier");
-        return Err(fail(
-            WORKFLOW_RESOLVE_FAILED,
-            &format!("{what}. Next: workflow list"),
-        ));
-    };
-    if let Some(other) = second {
-        let what = format!("'{name}' is in {} and {}", hit.pack, other.pack);
-        return Err(fail(
-            WORKFLOW_RESOLVE_FAILED,
-            &format!("{what}. Next: workflow list"),
-        ));
-    }
-    fs::read_to_string(&hit.file).map_err(|e| {
-        let what = format!("cannot read {} ({e})", hit.file.display());
-        fail(
-            WORKFLOW_RESOLVE_FAILED,
-            &format!("{what}. Next: workflow list"),
-        )
-    })
-}
-
 /// `check (--script | path | <name>)`: static validation, the smoke run, then the draft.
 fn check(input: &Value, rest: &[String], raw: &RawInput) -> Value {
     let (source, origin_hint) = match (
@@ -239,10 +199,16 @@ fn check(input: &Value, rest: &[String], raw: &RawInput) -> Value {
                 return fail(WORKFLOW_RESOLVE_FAILED, &format!("{what}. {next}"));
             }
         },
-        (Some(name), ..) if !name.starts_with("--") => match pack_source(name, &raw.asset_mounts) {
-            Ok(source) => (source, "pack"),
-            Err(out) => return out,
-        },
+        (Some(name), ..) if !name.starts_with("--") => {
+            // The tiers read `mounts`; the raw shape names them `asset_mounts`.
+            let resolving = json!({"argv": ["check", name], "mounts": raw.asset_mounts,
+                                   "data_calls": raw.data_calls,
+                                   "data_results": input["data_results"]});
+            match tiers::resolve(&resolving) {
+                Ok(found) => (found.source, found.tier.hint()),
+                Err(out) => return out,
+            }
+        }
         _ => {
             let what = "check needs a script, a path or a name";
             return fail(
@@ -284,8 +250,117 @@ fn check(input: &Value, rest: &[String], raw: &RawInput) -> Value {
         name = meta.name,
         calls = smoke.calls,
     );
-    let write = json!({"op": "insert", "collection": "WfScript", "on_conflict": "ignore",
-        "fields": {"script_id": script_id, "source": source, "origin_hint": origin_hint,
-                   "meta_json": json!({"name": meta.name, "description": meta.description}).to_string()}});
-    json!({"result": receipt, "writes": [write]})
+    let script = WfScript::draft(
+        &script_id,
+        &source,
+        origin_hint,
+        &meta.name,
+        &meta.description,
+    );
+    json!({"result": receipt, "writes": [script.write()]})
+}
+
+pub fn is_control(input: &Value) -> bool {
+    matches!(
+        input["argv"][0].as_str(),
+        Some("stop" | "pause" | "status" | "result")
+    )
+}
+
+/// `stop`, `pause`, `status` and `result <key|handle> [--offset n]`.
+pub fn control(input: &Value) -> Value {
+    let argv: Vec<&str> = (input["argv"].as_array().into_iter().flatten())
+        .filter_map(Value::as_str)
+        .collect();
+    let verb = argv[0];
+    let (target, offset) = match (verb, &argv[1..]) {
+        ("result", [target, "--offset", n]) => match n.parse::<u64>() {
+            Ok(n) => (*target, n),
+            Err(_) => return control_usage(verb),
+        },
+        (_, [target]) => (*target, 0),
+        _ => return control_usage(verb),
+    };
+    let job = match address::resolve(input, target) {
+        Ok(job) => job,
+        Err(out) => return out,
+    };
+    let row = job["row_doc_id"].as_str().unwrap_or_default();
+    let handle = job["handle"].as_str().unwrap_or(target);
+    let state = job["state"].as_str().unwrap_or("unknown");
+    let key = address::address(input, job);
+    let not_applicable = |what: String, next: String| {
+        fail(
+            WORKFLOW_CONTROL_NOT_APPLICABLE,
+            &format!("{what}. Next: {next}"),
+        )
+    };
+    match verb {
+        "status" => {
+            let next = next_call(state, &key);
+            json!({"result": format!("{handle} ({key}) is {state}. Next: {next}")})
+        }
+        "stop" | "pause" if state != "running" => not_applicable(
+            format!("{handle} is {state}, not running"),
+            format!("workflow status {key}"),
+        ),
+        "stop" => json!({
+            "result": format!("Stopping {handle} ({key}). The final message arrives as usual."),
+            "control": [{"row_doc_id": row, "kind": "stop"}]
+        }),
+        "pause" => json!({
+            "result": format!("Pausing {handle} ({key}). Resume it with: workflow resume {handle}"),
+            "control": [{"row_doc_id": row, "kind": "pause"}]
+        }),
+        _ => match rounds::answer::<JobResultResponse>(&input["job_results"], "result") {
+            Err(out) => out,
+            Ok(Some(page)) => {
+                let end = page.offset + page.result.len() as u64;
+                let mut text = page.result;
+                if page.truncated {
+                    text.push_str(&format!("\nNext: workflow result {key} --offset {end}"));
+                }
+                json!({"result": text})
+            }
+            Ok(None) if matches!(state, "running" | "paused" | "awaiting_user") => {
+                let what = match state {
+                    "running" => format!("{handle} is still running"),
+                    _ => format!("{handle} is {state}, not finished"),
+                };
+                not_applicable(what, next_call(state, &key))
+            }
+            Ok(None) => {
+                let request = JobCall::Result {
+                    id: "result".into(),
+                    result: JobResultRequest {
+                        row_doc_id: row.into(),
+                        offset,
+                        limit: RESULT_PAGE,
+                    },
+                };
+                json!({"job_calls": {"requests": [request], "state": {}}})
+            }
+        },
+    }
+}
+
+/// The call that moves a run in `state` forward.
+fn next_call(state: &str, key: &str) -> String {
+    match state {
+        "running" => "end your turn; the result arrives as a message".into(),
+        "paused" => format!("workflow resume {key}"),
+        "awaiting_user" => format!("workflow answer {key} <text>"),
+        _ => format!("workflow result {key}"),
+    }
+}
+
+fn control_usage(verb: &str) -> Value {
+    let what = match verb {
+        "result" => "result takes <key|handle> [--offset n]".to_string(),
+        _ => format!("{verb} takes <key|handle>"),
+    };
+    fail(
+        WORKFLOW_INVALID_INPUT,
+        &format!("{what}. Next: workflow help {verb}"),
+    )
 }

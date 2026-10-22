@@ -2,10 +2,11 @@
 //! [--answer t] [--budget n] [--engine current]` and of `answer <row|handle> <text>` reads the prior row's run note and the chain's notes, picks the slots to
 //! re-attempt and replays with the chain root's arguments; steps from 1 on replay with the
 //! host's `root_call` and fail closed when it differs from this row's run note.
+use crate::address;
+use crate::data;
 use crate::errors::{
-    WORKFLOW_CONTROL_NOT_APPLICABLE, WORKFLOW_CONTROL_UNKNOWN_RUN, WORKFLOW_DEPTH_EXCEEDED,
-    WORKFLOW_INVALID_INPUT, WORKFLOW_RESOLVE_FAILED, WORKFLOW_RESUME_UNKNOWN_RUN,
-    WORKFLOW_VALIDATION_FAILED,
+    WORKFLOW_CONTROL_NOT_APPLICABLE, WORKFLOW_DEPTH_EXCEEDED, WORKFLOW_INVALID_INPUT,
+    WORKFLOW_RESOLVE_FAILED, WORKFLOW_RESUME_UNKNOWN_RUN, WORKFLOW_VALIDATION_FAILED,
 };
 use crate::fail;
 use crate::journal::{Journal, need_id, reattempt_id, run_id};
@@ -13,7 +14,7 @@ use crate::origin;
 use crate::rounds::{self, Replay, Step};
 use crate::run::{self, Adopting, refused, sha256_digest};
 use crate::validate;
-use crate::wire::{Child, DataCall, DataQuery, DataQueryResponse, JobPin, object};
+use crate::wire::{Child, DataQueryResponse, JobPin};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::borrow::Cow;
@@ -64,7 +65,7 @@ pub(crate) fn budget_field(input: &mut Value) {
     }
 }
 
-/// `resume <row|handle> [--answer t] [--budget n] [--engine current]`, or `answer <row|handle>
+/// `resume <key|handle> [--answer t] [--budget n] [--engine current]`, or `answer <key|handle>
 /// <text>` with the same flags after the text.
 fn parse(input: &Value) -> Result<Request, Value> {
     let argv: Vec<&str> = (input["argv"].as_array().into_iter().flatten())
@@ -72,13 +73,11 @@ fn parse(input: &Value) -> Result<Request, Value> {
         .collect();
     let usage = || {
         let what = match argv[0] {
-            "answer" => "answer takes <row|handle> <text> [--budget n] [--engine current]",
-            _ => "resume takes <row|handle> [--answer text] [--budget n] [--engine current]",
+            "answer" => "answer takes <key|handle> <text> [--budget 1..1024] [--engine current]",
+            _ => "resume takes <key|handle> [--answer text] [--budget 1..1024] [--engine current]",
         };
-        fail(
-            WORKFLOW_INVALID_INPUT,
-            &format!("{what}. Next: workflow help"),
-        )
+        let next = format!("workflow help {}", argv[0]);
+        fail(WORKFLOW_INVALID_INPUT, &format!("{what}. Next: {next}"))
     };
     let (target, text, mut flags) = match &argv[1..] {
         [target, text, flags @ ..] if argv[0] == "answer" => (target, Some(text), flags),
@@ -93,7 +92,10 @@ fn parse(input: &Value) -> Result<Request, Value> {
     };
     while let [flag, value, tail @ ..] = flags {
         match *flag {
-            "--budget" => req.budget = Some(value.parse().map_err(|_| usage())?),
+            "--budget" => {
+                let budget = value.parse().ok().filter(|n| run::AGENT_BUDGET.contains(n));
+                req.budget = Some(budget.ok_or_else(usage)?);
+            }
             "--engine" if *value == "current" => req.engine_current = true,
             "--answer" if argv[0] == "resume" => req.answer = Some(value.to_string()),
             _ => return Err(usage()),
@@ -104,21 +106,6 @@ fn parse(input: &Value) -> Result<Request, Value> {
         true => Ok(req),
         false => Err(usage()),
     }
-}
-
-/// The `jobs[]` entry `target` names: a row, else the newest row of that handle's chain.
-/// ponytail: the newest row is the last `jobs[]` entry with the handle; add an order key if the
-/// host stops listing rows oldest first.
-fn prior<'a>(input: &'a Value, target: &str) -> Result<&'a Value, Value> {
-    let jobs = input["jobs"].as_array().map_or(&[][..], Vec::as_slice);
-    (jobs.iter().find(|j| j["row_doc_id"] == target))
-        .or_else(|| jobs.iter().rev().find(|j| j["handle"] == target))
-        .ok_or_else(|| {
-            let what = format!(
-                "{target} is not a run of this session. Next: workflow status <key> with the address from the run's receipt"
-            );
-            fail(WORKFLOW_CONTROL_UNKNOWN_RUN, &what)
-        })
 }
 
 /// Only a paused, awaiting_user, cancelled, failed or timed_out prior row is resumable.
@@ -154,25 +141,9 @@ fn applicable(job: &Value, target: &str) -> Result<(), Value> {
 /// The first round: the prior row's run note and, when it paused for budget, the budget the
 /// blocked step needs; each the lowest `_docID` among P2P twins.
 fn ask_run(prior_row: &str) -> Value {
-    let note = |id: &str, note_id: String| DataCall {
-        id: id.into(),
-        query: DataQuery {
-            collection: "WfNote".into(),
-            filter: object(json!({"_and": [
-                {"note_id": {"_eq": note_id}},
-                {"node_did": {"_eq": "$caller.node_did"}},
-            ]})),
-            order: Some(object(json!({"_docID": "ASC"}))),
-            limit: 1,
-            offset: None,
-            fields: ["_docID", "note_id", "value_json", "chain_root_doc_id"]
-                .map(String::from)
-                .into(),
-        },
-    };
     let requests = [
-        note("run", run_id(prior_row)),
-        note("need", need_id(prior_row)),
+        data::own_note("run", &run_id(prior_row)),
+        data::own_note("need", &need_id(prior_row)),
     ];
     json!({"data_calls": {"state": {"rounds": 1}, "requests": requests}})
 }
@@ -244,7 +215,8 @@ pub fn step0(input: &Value) -> Value {
         Err(out) => return out,
     };
     let target = req.target.as_str();
-    let job = match prior(input, target).and_then(|j| applicable(j, target).map(|()| j)) {
+    let job = match address::resolve(input, target).and_then(|j| applicable(j, target).map(|()| j))
+    {
         Ok(job) => job,
         Err(out) => return out,
     };

@@ -31,11 +31,12 @@ fn holds(dir: &Path, source: &[u8], depth: usize) -> bool {
     })
 }
 
-/// `installed` iff `source` is a file under a `mounts[]` entry with `trusted: true`; anything
-/// else (project, kept, inline, path, an untrusted pack) is `dynamic`.
+/// `installed` iff `source` is a file under a pack's `workflows` mount with `trusted: true`;
+/// anything else (project, kept, inline, path, an untrusted pack) is `dynamic`. An entry with no
+/// pack is never a pack, whatever it claims.
 pub fn predict(source: &str, mounts: &Value) -> Origin {
     let mut trusted = (mounts.as_array().into_iter().flatten())
-        .filter(|m| m["trusted"] == true)
+        .filter(|m| m["trusted"] == true && m["class"] == "workflows" && m["pack"] != "")
         .filter_map(|m| m["path"].as_str());
     match trusted.any(|path| holds(Path::new(path), source.as_bytes(), DEPTH)) {
         true => Origin::Installed,
