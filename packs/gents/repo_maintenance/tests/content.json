@@ -10,8 +10,44 @@
       "expr": "row(\"datastore_tool_surfaces\"; \"surface_id\"; \"maintenance-triage-writes\") | tostring | contains(\"MaintenanceWorkPackage\")"
     },
     {
-      "name": "publish opens one normal PR, bounds review rounds and uses the graph run flags",
-      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"one normal, non-draft PR\") and contains(\"Bound this at two full review rounds\") and (contains(\"make worktree BRANCH=\") | not) and (test(\"--repo[ =]\") | not) and contains(\"graph run code_review --field repository=\")"
+      "name": "publish opens one normal PR and bounds review rounds",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"one normal, non-draft PR\") and contains(\"Bound this at two full review rounds\") and (contains(\"make worktree BRANCH=\") | not) and (test(\"--repo[ =]\") | not)"
+    },
+    {
+      "name": "publish prompt runs review-changes",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"\\\"run\\\",\\\"review-changes\\\"\")"
+    },
+    {
+      "name": "publish prompt watches the job key to a terminal state",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents job watch\") and contains(\"--until-terminal\") and contains(\"wait_process\") and contains(\"session_id:tool_call_id\")"
+    },
+    {
+      "name": "watch command takes the whole job key, not an angle-bracket placeholder",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents job watch KEY \") and contains(\"gents job watch trigger-session:abc123:call456 \") and contains(\"workflow result KEY\") and (contains(\"gents job watch <key>\") | not) and (contains(\"workflow result <key>\") | not)"
+    },
+    {
+      "name": "publish prompt binds the watcher to the job's home and GraphQL endpoint",
+      "expr": "(.assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"--home <job.orchestrator_home> --graphql <job.orchestrator_graphql>\") and contains(\"`MaintenanceJob`\") and (contains(\"<home>\") | not) and (contains(\"<graphql>\") | not)) and (.scenario.seed.fields | has(\"orchestrator_home\") and has(\"orchestrator_graphql\")) and (.config.tools[] | select(.tools_id == \"maintenance-publish-tools\") | .datastore.defra_query_collections | index(\"MaintenanceJob\") != null) and (.scenario.expect.prompt_tool_contracts[] | select(.task_id == \"maintenance-publish-task\") | .required_query_collections | index(\"MaintenanceJob\") != null)"
+    },
+    {
+      "name": "publish prompt reads the stored result",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"workflow result\")"
+    },
+    {
+      "name": "no graph run",
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | test(\"graph run\") | not"
+    },
+    {
+      "name": "the publish Task has goal_objective_template and its Tools enable goal tools",
+      "expr": "(.config.tasks[] | select(.task_id == \"maintenance-publish-task\") | .goal_objective_template | length > 0) and (.config.tools[] | select(.tools_id == \"maintenance-publish-tools\") | .built_ins.enable_goal_tools == true)"
+    },
+    {
+      "name": "the job block meets C5.11",
+      "expr": ".config.tools[] | select(.tools_id == \"maintenance-publish-tools\") | .integrations.plugins[] | select(.plugin == \"gents/workflow\") | .job | (.agent_targets | length) == 4 and (.dynamic_targets == null) and .policy.dynamic == \"off\" and .policy.trusted_packs == [\"gents/code_review\"] and .policy.project_roots == [] and .max_spawns == 128 and .max_wall_secs == 7200"
+    },
+    {
+      "name": "agents.target_ids equals job.agent_targets with enabled false",
+      "expr": ".config.tools[] | select(.tools_id == \"maintenance-publish-tools\") | .agents.enabled == false and .agents.target_ids == (.integrations.plugins[] | select(.plugin == \"gents/workflow\") | .job.agent_targets)"
     },
     {
       "name": "the execute workspace callback is bound and the worker may not commit",
