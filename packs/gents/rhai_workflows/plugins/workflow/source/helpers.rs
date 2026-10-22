@@ -7,8 +7,18 @@ use rhai::{Dynamic, EvalAltResult, Map};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-/// Bundled templates, name to text. None ship yet.
-const TEMPLATES: &[(&str, &str)] = &[];
+/// Bundled templates, name to text.
+const TEMPLATES: &[(&str, &str)] = &[
+    ("report", include_str!("../templates/report.md")),
+    (
+        "research_brief",
+        include_str!("../templates/research_brief.md"),
+    ),
+    (
+        "review_findings",
+        include_str!("../templates/review_findings.md"),
+    ),
+];
 
 /// `hex(sha256(utf8))[..16]`.
 pub fn fingerprint(text: &str) -> String {

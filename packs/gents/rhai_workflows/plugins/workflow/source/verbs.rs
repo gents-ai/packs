@@ -12,6 +12,7 @@ use crate::errors::{
 };
 use crate::export;
 use crate::fail;
+use crate::help;
 use crate::keep;
 use crate::rounds;
 use crate::run::{HOST_API_VERSION, refused, sha256_hex};
@@ -23,7 +24,7 @@ use serde_json::{Value, json};
 use std::fs;
 
 /// The verbs that need a job block.
-const JOB_VERBS: [&str; 7] = [
+pub(crate) const JOB_VERBS: [&str; 7] = [
     "run", "resume", "answer", "stop", "pause", "status", "result",
 ];
 
@@ -31,8 +32,11 @@ const JOB_VERBS: [&str; 7] = [
 const RESULT_PAGE: u64 = 64 * 1024;
 
 /// Each verb with its one-line help. Full topics come with the help assets.
-const VERBS: [(&str, &str); 14] = [
-    ("help", "help [verb]: this index, or one verb"),
+pub const VERBS: [(&str, &str); 14] = [
+    (
+        "help",
+        "help [verb|topic]: this index, one verb, or a topic",
+    ),
     (
         "list",
         "list: the installed workflows, names first, with when to use each",
@@ -134,7 +138,7 @@ pub fn raw(input: &Value) -> Value {
         .split_first()
         .map_or(("help", &[][..]), |(v, r)| (v.as_str(), r));
     match verb {
-        "help" => help(rest, &raw),
+        "help" => help::serve(rest, &raw, input),
         "check" => check(input, rest, &raw),
         "list" => catalog::list(input, rest, &raw),
         "show" => catalog::show(input, rest, &raw),
@@ -153,34 +157,6 @@ pub fn raw(input: &Value) -> Value {
             &format!("unknown verb {v:?}. Next: workflow help"),
         ),
     }
-}
-
-fn help(rest: &[String], raw: &RawInput) -> Value {
-    let text = match rest.first().map(String::as_str) {
-        None => (VERBS.iter())
-            .map(|(_, line)| *line)
-            .collect::<Vec<_>>()
-            .join("\n"),
-        Some("doctor") => {
-            let mounts = raw.asset_mounts.iter().filter(|m| m.class == "workflows");
-            format!(
-                "this call has no job settings, so {} are unavailable here; {} workflow mount(s) are visible",
-                JOB_VERBS.join(", "),
-                mounts.count()
-            )
-        }
-        Some(verb) => match VERBS.iter().find(|(name, _)| *name == verb) {
-            Some((_, line)) => (*line).into(),
-            None => {
-                let what = format!("no help for {verb:?}");
-                return fail(
-                    WORKFLOW_INVALID_INPUT,
-                    &format!("{what}. Next: workflow help"),
-                );
-            }
-        },
-    };
-    json!({"result": text})
 }
 
 /// `check (--script | path | <name>)`: static validation, the smoke run, then the draft.

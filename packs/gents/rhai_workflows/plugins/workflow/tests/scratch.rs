@@ -217,7 +217,7 @@ complete(#{
     );
     assert_eq!(
         caught[1],
-        "workflow_invalid_input: unknown template nope; known: none. Next: workflow help host"
+        "workflow_invalid_input: unknown template nope; known: report, research_brief, review_findings. Next: workflow help host"
     );
 
     // A bundled template is plain {{key}} replacement.

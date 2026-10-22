@@ -67,7 +67,7 @@ pub(crate) struct Listed {
 
 /// An index `file` must stay in its mount: non-empty, with only plain parts, none starting with a
 /// dot (L2 section 4.14: asset paths have no dot parts).
-fn inside_mount(file: &str) -> bool {
+pub(crate) fn inside_mount(file: &str) -> bool {
     !file.is_empty()
         && (Path::new(file).components())
             .all(|c| matches!(c, Component::Normal(p) if !p.to_string_lossy().starts_with('.')))

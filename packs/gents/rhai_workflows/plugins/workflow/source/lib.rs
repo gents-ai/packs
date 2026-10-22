@@ -8,6 +8,7 @@ pub mod errors;
 pub mod export;
 #[cfg(any(test, feature = "fakehost"))]
 pub mod fakehost;
+pub mod help;
 pub mod helpers;
 pub mod host_api;
 pub mod journal;
