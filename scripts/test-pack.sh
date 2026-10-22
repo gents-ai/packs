@@ -53,6 +53,8 @@
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
+# Every pack, of any kind, that ships workflows/index.json or a
+# workflows/*.rhai also gets `scripts/rhai_meta.py check-index`.
 # Every documents or graph pack also gets the built-in checks: it declares
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
@@ -199,7 +201,15 @@ store_dependencies() {
 
 # Checks every pack of a configuration kind must pass; one jq pass.
 builtin_checks() {
-  local doc dep
+  local doc dep out line
+  if [[ -f "$dir/workflows/index.json" ]] || compgen -G "$dir/workflows/*.rhai" >/dev/null; then
+    if out="$(python3 "$(dirname "$0")/rhai_meta.py" check-index "$dir" 2>&1)"; then
+      pass "workflows/index.json"
+    else
+      [[ -n "$out" ]] || out="FAIL check-index failed"
+      while read -r line; do fail "workflows/index.json: ${line#FAIL }"; done <<<"$out"
+    fi
+  fi
   [[ "$kind" == "documents" || "$kind" == "graph" ]] || return 0
   doc="$(show_document)"
   jq -e '(.manifest.inference_slots // []) | length > 0' "$doc" >/dev/null \
@@ -248,6 +258,7 @@ install_documents() {
   home="$(fresh_home "$(basename "$case" .json)")"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
+  register_services "$home" || return 0
 
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
@@ -417,6 +428,7 @@ runtime_case() {
   "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
+  register_services "$home" || return 0
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
@@ -590,6 +602,7 @@ wasm_checks() {
     args=()
     while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
     store_dependencies "$home"
+    register_services "$home" || continue
     "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
     if GENTS="$gents" PACK_HOME="$home" python3 "$check" >"$work/$name.log" 2>&1; then
       pass "plugin $plugin: wasm checks ($(tail -n 2 "$work/$name.log" | head -n 1))"

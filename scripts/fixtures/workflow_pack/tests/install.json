@@ -1,0 +1,11 @@
+{
+  "install": {
+    "assets": [
+      "README.md",
+      "manifest.json",
+      "tests/install.json",
+      "workflows/hello_world.rhai",
+      "workflows/index.json"
+    ]
+  }
+}
