@@ -1,11 +1,5 @@
 {
   "install": {
-    "graph": "code-review",
-    "slots": [
-      "coordinator",
-      "verifier",
-      "worker"
-    ],
     "documents": [
       "Agent/review-recon",
       "Agent/review-scan",
@@ -15,23 +9,21 @@
       "AgentContext/review-scan-context",
       "AgentContext/review-triage-context",
       "AgentContext/review-verify-context",
+      "AgentTarget/code-review-recon",
+      "AgentTarget/code-review-scan",
+      "AgentTarget/code-review-triage",
+      "AgentTarget/code-review-verify",
       "CompactionConfig/review-compaction",
-      "DatastoreToolSurface/review-recon-writes",
-      "DatastoreToolSurface/review-scan-writes",
-      "DatastoreToolSurface/review-triage-writes",
-      "DatastoreToolSurface/review-verify-writes",
-      "EventSource/graph-trigger-*",
-      "GraphDefinition/code-review",
-      "GraphRevision/*",
-      "Task/review-recon-task",
-      "Task/review-scan-task",
-      "Task/review-triage-task",
-      "Task/review-verify-task",
-      "Tools/review-recon-tools",
-      "Tools/review-scan-tools",
-      "Tools/review-triage-tools",
-      "Tools/review-verify-tools",
-      "Trigger/graph-trigger-*"
-    ]
+      "Tools/review-recon",
+      "Tools/review-scan",
+      "Tools/review-triage",
+      "Tools/review-verify-tools"
+    ],
+    "slots": [
+      "coordinator",
+      "verifier",
+      "worker"
+    ],
+    "dependencies": []
   }
 }

@@ -1,57 +1,137 @@
 {
-  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agents[] | select(.agent_id == $t.agent_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def field($e; $n): $e.fields[] | select(.name == $n); def nohost: (.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and (.tools.integrations.lsp == null);",
+  "defs": "def tool($id): .config.tools[] | select(.tools_id == $id); def script: .assets[\"workflows/review_changes.rhai\"] // \"\"; def at($s): (script | index($s)) // -1; def once($s): (script | split($s) | length) == 2; def before($s; $t): at($t) as $y | $y < 0 or at($s) < $y;",
   "jq": [
     {
       "name": "every text asset is non-empty",
       "expr": "[.assets[]] | all(length > 0)"
     },
     {
-      "name": "the plan compiles to 4 nodes, 2 results and the review entry",
-      "expr": "(.assets[\"graphs/code_review.plan.json\"] | fromjson) | (.nodes | length) == 4 and (.results | length) == 2 and (.entries | map(.name)) == [\"review\"]"
+      "name": "the manifest is a 2.0.0 documents pack with no graph, schema or plugin",
+      "expr": ".manifest | .version == \"2.0.0\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (has(\"plugins\") | not) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
     },
     {
-      "name": "four stages, each with a goal objective and goal tools but no goal creation",
-      "expr": "stages | length == 4 and all((.task.goal_objective_template | gsub(\"\\\\s\"; \"\") | length) > 0 and .tools.built_ins.enable_goal_tools == true and .tools.built_ins.enable_goal_creation != true)"
+      "name": "no graph, datastore, stage task or review_evidence artifact remains",
+      "expr": "(.config | keys) as $k | ([\"graph_capabilities\", \"graph_intents\", \"graphs\", \"datastore_tool_surfaces\", \"tasks\"] | all(. as $x | $k | index($x) == null)) and ([.config.tools[] | has(\"datastore\")] | any | not) and ([.assets | keys[] | select(startswith(\"graphs/\") or startswith(\"schemas/\") or startswith(\"plugins/\"))] | length == 0)"
     },
     {
-      "name": "every stage prompt completes its goal explicitly",
-      "expr": "stages | all(.task.prompt_template | contains(\"`update_goal`\") and contains(\"`status=\\\"complete\\\"`\"))"
+      "name": "verify Tools exact",
+      "expr": "tool(\"review-verify-tools\") | (.host.files.mode // \"Off\") == \"Off\" and .host.bash.mode == \"ReadOnly\" and .host.bash.execution_mode == null and .host.bash.network_mode == \"disabled\" and .host.bash.background_enabled == null and ((.host.cli // []) | length == 0) and .integrations.lsp == null and .built_ins.enable_context_budget == true and .built_ins.enable_goal_tools == null"
     },
     {
-      "name": "recon and scan have no host tools and no context budget",
-      "expr": ". as $d | [\"review-recon\", \"review-scan\"] | all(. as $id | $d | stage($id) | nohost and (.tools.built_ins.enable_context_budget // false) == false)"
+      "name": "recon and scan have no file tools",
+      "expr": ". as $d | [\"review-recon\", \"review-scan\"] | all(. as $id | [$d | tool($id)] | length == 1 and (.[0] | (.host.files.mode // \"Off\") == \"Off\" and .host.bash.mode == \"ReadOnly\" and .built_ins.enable_goal_tools == null))"
     },
     {
-      "name": "verify reads files and runs offline bash that may write artifacts",
-      "expr": "stage(\"review-verify\") | .tools.host.files.mode == \"ReadOnly\" and .tools.host.bash.mode == \"Unrestricted\" and .tools.host.bash.execution_mode == \"artifact_write\" and .tools.host.bash.network_mode == \"disabled\" and .tools.host.bash.background_enabled == true and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and .tools.built_ins.enable_context_budget == true"
+      "name": "scan max_output_chars >= 64000",
+      "expr": "tool(\"review-scan\") | .host.bash.max_output_chars >= 64000"
     },
     {
-      "name": "scan writes take the area id from the trigger",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"write_candidate_finding\" or .tool_name == \"write_scan_result\")] | length == 2 and all(field(.; \"area_id\") | .required == false and .fill == {\"source_field\": \"area_id\"})"
+      "name": "triage has no tools and keeps the context budget",
+      "expr": "tool(\"review-triage\") | (.host == null) and (.integrations == null) and .built_ins.enable_context_budget == true and .built_ins.enable_goal_tools == null"
     },
     {
-      "name": "the recon area writer fills the repository and evidence ids and carries no evidence body",
-      "expr": "[entries(\"review-recon-writes\")][0] | (field(.; \"repository_path\") | .required == false and .fill == {\"source_field\": \"repository_path\"}) and (field(.; \"evidence_id\") | .required == false and .fill == {\"source_field\": \"evidence_id\"}) and (field(.; \"expected_total\") | .required == true and .fill == null) and all(.fields[]; .name != \"evidence\")"
+      "name": "every agent_targets row has target_id == name and names an existing agent",
+      "expr": ". as $d | $d.config.agent_targets | length == 4 and all(.target_id == .name and .name == \"code-review-\" + (.agent_id | ltrimstr(\"review-\")) and (.agent_id as $a | any($d.config.agents[]; .agent_id == $a)))"
     },
     {
-      "name": "recon reads only the evidence summary",
-      "expr": "(.config.tasks[] | select(.task_id == \"review-recon-task\") | .prompt_template) | contains(\"{{ doc.evidence_summary }}\") and (contains(\"{{ doc.evidence }}\") | not)"
+      "name": "no graph or datastore keys remain",
+      "expr": "[.config | .. | objects | keys[] | select(startswith(\"graph\") or startswith(\"datastore\"))] | length == 0"
     },
     {
-      "name": "scan pages the evidence by manifest, never inline",
-      "expr": "(.config.tasks[] | select(.task_id == \"review-scan-task\") | .prompt_template) | (contains(\"{{ doc.evidence }}\") | not) and contains(\"read_review_evidence_manifest\") and contains(\"read_review_evidence_page\") and contains(\"page_count - 1\") and contains(\"evidence_chunk_15\")"
+      "name": "step 0 pauses budget_exceeded below 22 before any agent()",
+      "expr": "at(\"if budget().total < 22 { pause(\\\"budget_exceeded\\\"\") as $g | $g >= 0 and $g < at(\"phase(\\\"Recon\\\")\") and $g < at(\"agent(\")"
     },
     {
-      "name": "the evidence manifest query is scoped to the run evidence id",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_manifest\")][0] | .collection == \"CodeReviewEvidenceManifest\" and (.filter_fields | length) == 1 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"}"
+      "name": "recon runs once on code-review-recon in the Recon phase",
+      "expr": "at(\"phase(\\\"Recon\\\")\") >= 0 and once(\"agent_type: \\\"code-review-recon\\\"\") and once(\"output_schema: RECON\") and at(\"phase(\\\"Recon\\\")\") < at(\"agent_type: \\\"code-review-recon\\\"\") and before(\"agent_type: \\\"code-review-recon\\\"\"; \"phase(\\\"Scan\\\")\")"
     },
     {
-      "name": "the evidence page query takes a page index and returns 16 chunks",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_page\")][0] | .collection == \"CodeReviewEvidencePage\" and (.filter_fields | length) == 2 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"} and .filter_fields[1].name == \"page_index\" and .filter_fields[1].required == true and .filter_fields[1].fill == null and ([range(0; 16) | \"evidence_chunk_\\(.)\"] - .fields | length) == 0"
+      "name": "recon fails closed with a blocked complete before the scan",
+      "expr": "at(\"complete(#{ status: \\\"blocked\\\"\") > at(\"agent_type: \\\"code-review-recon\\\"\") and before(\"complete(#{ status: \\\"blocked\\\"\"; \"phase(\\\"Scan\\\")\")"
     },
     {
-      "name": "the evidence schemas are immutable and paged",
-      "expr": "(.assets[\"schemas/evidence_manifest.graphql\"] | startswith(\"type CodeReviewEvidenceManifest {\")) and (.assets[\"schemas/evidence_page.graphql\"] | startswith(\"type CodeReviewEvidencePage {\") and contains(\"page_key: String @index(unique: true) @immutable\") and contains(\"evidence_chunk_15: String @immutable\"))"
+      "name": "the pin fingerprints the diff",
+      "expr": "once(\"let diff_id = fingerprint(json_encode([PIN, \") and at(\"let diff_id = fingerprint(\") > at(\"agent_type: \\\"code-review-recon\\\"\")"
+    },
+    {
+      "name": "an empty or non-empty listing must agree with the pinned trees before the empty-diff exit",
+      "expr": "once(\"if (paths.len() == 0) != (PIN.base_tree == PIN.head_tree) {\") and at(\"if (paths.len() == 0) != (PIN.base_tree == PIN.head_tree) {\") < at(\"if paths.len() == 0 {\") and at(\"if (paths.len() == 0) != (PIN.base_tree == PIN.head_tree) {\") > at(\"let paths = changed_paths(\")"
+    },
+    {
+      "name": "an empty diff writes review.md and completes before the scan",
+      "expr": "at(\"write_scratch_file(\\\"review.md\\\"\") > at(\"agent_type: \\\"code-review-recon\\\"\") and before(\"write_scratch_file(\\\"review.md\\\"\"; \"phase(\\\"Scan\\\")\")"
+    },
+    {
+      "name": "scan is one parallel() panel on code-review-scan in the Scan phase",
+      "expr": "at(\"phase(\\\"Scan\\\")\") > at(\"phase(\\\"Recon\\\")\") and once(\"agent_type: \\\"code-review-scan\\\"\") and once(\"output_schema: SCAN\") and at(\"phase(\\\"Scan\\\")\") < at(\"agent_type: \\\"code-review-scan\\\"\") and at(\"phase(\\\"Scan\\\")\") < at(\"parallel(\") and before(\"agent_type: \\\"code-review-scan\\\"\"; \"phase(\\\"Verify\\\")\") and before(\"parallel(\"; \"phase(\\\"Verify\\\")\")"
+    },
+    {
+      "name": "scan and verify prompts read by SHA, never the working tree, and name no bare HEAD",
+      "expr": "(script | contains(\"git show <H>:\") and contains(\"Never read working-tree files: they may change while you review.\")) and (script as $s | [\"fn scan_prompt(\",\"fn verify_prompt(\"] | all(. as $n | $s | split($n) | .[1] | split(\"\\n}\\n\") | .[0] | contains(\"t += rules\"))) and ([script | match(\"HEAD\"; \"g\")] | length) == 1 and once(\"\\\"HEAD\\\"\")"
+    },
+    {
+      "name": "the candidate limits are script constants",
+      "expr": "once(\"const MAX_CANDIDATES = 3;\") and once(\"const MIN_CONFIDENCE = 80;\") and once(\"const MAX_VERIFY = 16;\") and (script | contains(\">= MIN_CONFIDENCE\"))"
+    },
+    {
+      "name": "verify is one parallel() panel on code-review-verify in the Verify phase",
+      "expr": "at(\"phase(\\\"Verify\\\")\") > at(\"phase(\\\"Scan\\\")\") and once(\"agent_type: \\\"code-review-verify\\\"\") and once(\"output_schema: VERIFY\") and at(\"phase(\\\"Verify\\\")\") < at(\"agent_type: \\\"code-review-verify\\\"\") and before(\"agent_type: \\\"code-review-verify\\\"\"; \"phase(\\\"Triage\\\")\") and (script | split(\"parallel(\") | length) == 3"
+    },
+    {
+      "name": "triage runs once on code-review-triage in the Triage phase",
+      "expr": "at(\"phase(\\\"Triage\\\")\") > at(\"phase(\\\"Verify\\\")\") and once(\"agent_type: \\\"code-review-triage\\\"\") and once(\"output_schema: TRIAGE\") and at(\"phase(\\\"Triage\\\")\") < at(\"agent_type: \\\"code-review-triage\\\"\") and (script | split(\"agent(\") | length) == 3"
+    },
+    {
+      "name": "the verifier does not build and says so",
+      "expr": "script | contains(\"cannot build or run tests\") and (contains(\"git archive\") | not) and (contains(\"$TMPDIR\") | not)"
+    },
+    {
+      "name": "a verifier that could not build says so and the result discloses it",
+      "expr": "(script as $s | ($s | split(\"const VERIFY\") | .[1] | split(\"};\") | .[0] | contains(\"builds_not_run\")) and ($s | split(\"fn verify_prompt(\") | .[1] | split(\"\\n}\\n\") | .[0] | contains(\"builds_not_run\")) and ($s | contains(\"builds not run\")))"
+    },
+    {
+      "name": "a finding is confirmed only by verdict, confidence, evidence and the pinned trees",
+      "expr": "(script | contains(\"v.verdict == \\\"confirmed\\\" && v.confidence >= MIN_CONFIDENCE && evidence != \\\"\\\"\")) and (script as $s | ($s | split(\"fn verify_problem(\") | .[1] | split(\"\\n}\\n\") | .[0]) | contains(\".base_tree != pin.base_tree\") and contains(\".head_tree != pin.head_tree\"))"
+    },
+    {
+      "name": "scan returns no tree ids and its check does not compare trees with the pin",
+      "expr": "(script as $s | ($s | split(\"const SCAN = \") | .[1] | split(\"\\n};\") | .[0] | contains(\"_tree\") | not) and ($s | split(\"fn scan_problem(\") | .[1] | split(\"\\n}\\n\") | .[0] | contains(\"_tree\") | not) and ($s | split(\"fn scan_prompt(\") | .[1] | split(\"\\n}\\n\") | .[0] | contains(\"tree\") | not) and ($s | contains(\"const READ_RULES\") and (split(\"const READ_RULES\") | .[1] | split(\"\\n\") | .[0] | contains(\"^{tree}\") | not)))"
+    },
+    {
+      "name": "review.md is written in the same step as the final complete()",
+      "expr": "(script | split(\"agent_type: \\\"code-review-triage\\\"\") | length) == 2 and (script | split(\"agent_type: \\\"code-review-triage\\\"\") | last | split(\"write_scratch_file(\\\"review.md\\\"\") | length) == 2 and (script | split(\"write_scratch_file(\\\"review.md\\\"\") | last | contains(\"complete(\") and (test(\"agent\\\\(|parallel\\\\(\") | not))"
+    },
+    {
+      "name": "the final complete() returns the result contract keys",
+      "expr": "(script | split(\"agent_type: \\\"code-review-triage\\\"\") | length) == 2 and ((script | split(\"agent_type: \\\"code-review-triage\\\"\") | last | split(\"complete(\") | last) as $c | [\"status:\", \"base_sha:\", \"head_sha:\", \"diff_id:\", \"counts:\", \"candidate:\", \"confirmed:\", \"refuted:\", \"unverified:\", \"high_priority:\", \"findings:\", \"report:\", \"limitations:\", \"path:\"] | all(. as $k | $c | contains($k)))"
+    },
+    {
+      "name": "recon max_output_chars >= 1000000 so a large diff listing is not cut",
+      "expr": "tool(\"review-recon\") | .host.bash.max_output_chars >= 1000000"
+    },
+    {
+      "name": "recon_problem blocks a name_only and stat listing that disagree",
+      "expr": "(script | split(\"fn recon_problem(\") | .[1] | split(\"\\nfn \") | .[0]) as $f | [\"o.name_only\", \"o.stat\"] | all(. as $k | $f | contains($k))"
+    },
+    {
+      "name": "recon runs name-only and stat with the same --find-renames=50% so the file counts agree, and never a tab-separated listing",
+      "expr": "(script | split(\"fn recon_prompt(\") | .[1] | split(\"\\nfn \") | .[0]) as $f | ([\"git diff --name-only --find-renames=50% \", \"git diff --stat --find-renames=50% \"] | all(. as $k | $f | contains($k))) and ($f | contains(\"--name-status\") | not) and ($f | contains(\"--raw\") | not)"
+    },
+    {
+      "name": "every complete() carries report:",
+      "expr": "(script | split(\"complete(\") | .[1:] | map(split(\"});\") | .[0])) as $c | ($c | length) == 4 and ($c | all(contains(\"report: #{\")))"
+    },
+    {
+      "name": "no tasks/*/prompt.md remains in the manifest",
+      "expr": "[.manifest.assets[] | select(startswith(\"tasks/\"))] | length == 0"
+    },
+    {
+      "name": "README has the Use from a Task section",
+      "expr": ".assets[\"README.md\"] | contains(\"Use from a Task\")"
+    },
+    {
+      "name": "Use from a Task treats unverified candidates and blocked lenses as not clean",
+      "expr": "(.assets[\"README.md\"] // \"\" | split(\"## Use from a Task\") | .[1] // \"\" | split(\"\\n## \") | .[0]) as $s | [script | scan(\"#\\\\{ id: \\\"([a-z-]+)\\\"\") | .[0]] as $ids | ($ids | length) == 4 and ($s | contains(\"counts.unverified\")) and ($ids | all(. as $id | $s | contains(\"`\" + $id + \":`\")))"
     }
   ]
 }
