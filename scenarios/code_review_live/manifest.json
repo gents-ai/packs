@@ -1,0 +1,15 @@
+{
+  "assets": ["README.md", "experiment.json", "fixtures/base/src/lib.rs", "fixtures/counts_balance.sh", "fixtures/make_repos.sh", "pack_config.json", "schemas/code_review_live_job.graphql", "tasks/live_task/prompt.md"],
+  "authors": ["gents-ai contributors"],
+  "config": "pack_config.json",
+  "dependencies": ["code_review", "rhai_workflows"],
+  "description": "Live model run of the code_review review-changes workflow on a seeded-bug repository and a clean refactor.",
+  "inference_slots": [{"agents": ["review-live-driver"], "description": "Drives the two review-changes runs and reports their counts.", "name": "driver"}],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "code_review_live",
+  "namespace": "gents",
+  "schemas": ["schemas/code_review_live_job.graphql"],
+  "tags": ["scenario"],
+  "version": "0.1.0"
+}
