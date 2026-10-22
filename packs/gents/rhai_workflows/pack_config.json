@@ -1,0 +1,54 @@
+{
+  "agents": [
+    {
+      "agent_id": "wf-read-only",
+      "context_id": "wf-read-only-context",
+      "display_name": "Workflow read-only agent",
+      "inference_profile_id": "gents:inference-slot:wf_read_only"
+    }
+  ],
+  "node": {},
+  "agent_targets": [
+    {
+      "agent_id": "wf-read-only",
+      "description": "Reads files and runs read-only shell commands for a workflow step",
+      "name": "wf-read-only",
+      "target_id": "wf-read-only",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "wf-read-only-context",
+      "display_name": "Workflow read-only agent",
+      "system_prompt": "./agents/wf_read_only/system_prompt.md",
+      "tools_id": "wf-read-only-tools"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Workflow caller",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/workflow"
+          }
+        ]
+      },
+      "tools_id": "workflow-caller"
+    },
+    {
+      "display_name": "Workflow read-only agent tools",
+      "host": {
+        "bash": {
+          "mode": "ReadOnly",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        }
+      },
+      "tools_id": "wf-read-only-tools"
+    }
+  ]
+}
