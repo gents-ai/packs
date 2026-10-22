@@ -1,0 +1,17 @@
+{
+  "install": {
+    "documents": [
+      "Agent/wf-read-only",
+      "AgentContext/wf-read-only-context",
+      "AgentTarget/wf-read-only",
+      "Tools/wf-read-only-tools",
+      "Tools/workflow-caller"
+    ],
+    "plugins": [
+      "workflow"
+    ],
+    "slots": [
+      "wf_read_only"
+    ]
+  }
+}

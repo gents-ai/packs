@@ -1,0 +1,62 @@
+{
+  "assets": [
+    "README.md",
+    "agents/wf_read_only/system_prompt.md",
+    "pack_config.json",
+    "plugins/workflow.afb",
+    "plugins/workflow/TOOL.md",
+    "tests/install.json",
+    "workflows/index.json"
+  ],
+  "authors": ["gents contributors"],
+  "config": "pack_config.json",
+  "dependencies": [],
+  "description": "Runs Rhai workflow scripts that orchestrate background agents, as a plugin with a read-only worker persona.",
+  "inference_slots": [
+    {
+      "agents": ["wf-read-only"],
+      "description": "Runs the agent steps of a workflow with read-only files and shell. Any capable profile.",
+      "name": "wf_read_only"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "rhai_workflows",
+  "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/workflow.afb",
+      "asset_mounts": [{"class": "workflows"}],
+      "bind_dir": {
+        "access": "read",
+        "description": "A .rhai workflow file, or a folder of them, to check or run",
+        "input_field": "path"
+      },
+      "catalog": {"argv": ["list", "--format", "catalog"]},
+      "description": "Runs Rhai workflow scripts that orchestrate background agents.",
+      "input_schema": {
+        "properties": {
+          "agent_budget": {"description": "Most agents the run may start, 1 to 1024; on resume or answer it raises the budget. Leave out unless the user gives a number; `--budget <n>` in argv says the same.", "maximum": 1024, "minimum": 1, "type": "integer"},
+          "args": {"description": "The workflow's inputs, as an object.", "type": "object"},
+          "argv": {"description": "Verb and operands, for example [\"run\", \"<name>\", \"--budget\", \"3\"] or [\"resume\", \"<key|handle>\"]. Start with [\"help\"].", "items": {"type": "string"}, "type": "array"},
+          "path": {"description": "Absolute path of a .rhai file or folder to check or run. Leave out otherwise.", "type": "string"},
+          "script": {"description": "Source text of a new script, starting with `let meta = #{`. Never a name or a file: a saved workflow runs with argv [\"run\", \"<name>\"] and no script. Leave out otherwise.", "type": "string"}
+        },
+        "required": ["argv"],
+        "type": "object"
+      },
+      "instructions": "plugins/workflow/TOOL.md",
+      "job": true,
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 512,
+        "wall_clock_secs": 120
+      },
+      "name": "workflow",
+      "source": "plugins/workflow"
+    }
+  ],
+  "tags": ["workflow", "rhai", "agents", "plugin"],
+  "version": "1.0.0"
+}
