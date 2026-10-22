@@ -1,0 +1,2 @@
+{"seq": 1, "kind": "spawn_agent", "req_hash": "c1", "result": {"output": "I looked around and found nothing to list."}, "at_ms": 1}
+{"seq": 2, "kind": "spawn_agent", "req_hash": "c2", "result": {"output": "Here it is.\n```json\n{\"n\": 3}\n```\n"}, "at_ms": 2}

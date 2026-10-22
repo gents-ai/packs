@@ -1,0 +1,2 @@
+{"seq": 1, "kind": "spawn_agent", "req_hash": "e1", "result": {"output": "a long draft"}, "at_ms": 1}
+{"seq": 2, "kind": "spawn_agent", "req_hash": "e2", "result": {"output": "a short draft"}, "at_ms": 2}
