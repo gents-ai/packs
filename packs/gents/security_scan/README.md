@@ -110,11 +110,10 @@ Four triggers, all `event_kind: created`: `scan-plan` (on `ScanJob`),
 `scan-investigate` (on `InvestigationBatch`, `fire_mode: per_document`,
 parallel), `scan-revalidate` (on `InvestigationResult`, `fire_mode:
 per_group`, `correlation_field: run_id`, `expected_count_field:
-expected_total`), `scan-report` (on `RevalidationSummary`). This is the
-same trigger-edge shape `code_review` established: closed cardinality
-stamped at fan-out, a sentinel-gated barrier, a write-last summary
-contract, and an exact candidate-to-verdict bijection enforced by the
-runner.
+expected_total`), `scan-report` (on `RevalidationSummary`). The trigger
+edges form a fan-out and barrier shape: closed cardinality stamped at
+fan-out, a sentinel-gated barrier, a write-last summary contract, and an
+exact candidate-to-verdict bijection enforced by the runner.
 
 ## Completion and failure
 
@@ -166,10 +165,9 @@ copies stuffed into sentinels. `scan-revalidate` gets `query_candidate_finding`
 (bound to `FindingVerdict`). Each is bound to exactly the collection that
 stage needs, with `run_id` runtime-filled from correlation and hidden
 from model input - the model can call the tool but never sees or sets the
-run identity. Sentinels stay thin (`InvestigationResult`,
-`RevalidationSummary`) the same way `code_review` keeps `ScanResult`
-thin: they carry counts, not payload, and the next stage loads the real
-rows itself.
+run identity. Sentinels (`InvestigationResult`, `RevalidationSummary`)
+stay thin: they carry counts, not payload, and the next stage loads the
+real rows itself.
 
 Payload discipline throughout is **complete inventory, truncated
 evidence**: caps never silently drop items. A path+slug inventory line is

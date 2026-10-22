@@ -11,7 +11,7 @@ scenario, or reusable assets alone.
 gents pack list
 gents pack show code_review
 gents pack install code_review --home <initialized-home>
-gents graph run code_review --field base=origin/main --field head=HEAD
+gents pack wire gents/workflow --agent <agent> --targets-from gents/code_review
 gents pack install mailbox --home <home>
 gents pack remove mailbox --home <home>
 gents pack prune mailbox
@@ -354,7 +354,7 @@ builds.
 | --- | --- |
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
 | [charts](packs/gents/charts/README.md) | A Chart maker agent and a charts plugin that draws line, area, bar, scatter, bubble, histogram, box, pie, donut, heatmap and combo charts from rows or CSV and JSON files as SVG and PNG |
-| [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
+| [code_review](packs/gents/code_review/README.md) | The review-changes workflow: reviews a git diff through four lenses, adversarially verifies every candidate and triages |
 | [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and the data_tables plugin, which runs SQL over CSV, JSON, Parquet, XLSX and ODS files with exact types and saves results as CSV or Parquet |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
