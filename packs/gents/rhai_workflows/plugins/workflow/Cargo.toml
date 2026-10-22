@@ -1,0 +1,41 @@
+[workspace]
+
+[package]
+name = "workflow"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.92"
+
+[lib]
+name = "workflow"
+path = "source/lib.rs"
+
+[[bin]]
+name = "workflow"
+path = "source/main.rs"
+
+[[example]]
+name = "fakehost"
+required-features = ["fakehost"]
+
+[features]
+fakehost = []
+
+[dependencies]
+# Default features off: no http or file reference retrieval (a schema must be self-contained).
+jsonschema = { version = "=0.30.0", default-features = false }
+rhai = { version = "=1.26.1", default-features = false, features = ["std", "serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+# Turns the fake host on for the integration tests without a command-line flag.
+workflow = { path = ".", features = ["fakehost"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
