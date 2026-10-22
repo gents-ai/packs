@@ -1,0 +1,98 @@
+[
+  {
+    "name": "wf-live-args-echo",
+    "file": "wf_live_args_echo.rhai",
+    "description": "Pauses unless the budget is at least 2, then asks a question, then completes with its original args and the answer",
+    "when_to_use": "Row 20: resume and answer by key keep the handle and chain root, and the result reflects the original args"
+  },
+  {
+    "name": "wf-live-await",
+    "file": "wf_live_await.rhai",
+    "description": "Asks the operator one question and completes with the answer",
+    "when_to_use": "Row 6: workflow answer delivers the text once; a second question would suspend again"
+  },
+  {
+    "name": "wf-live-big-result",
+    "file": "wf_live_big_result.rhai",
+    "description": "Completes with a value of about 64 KiB, far over the completion message cap",
+    "when_to_use": "Row 19: the message is capped at 4,000 B and workflow result returns the whole value"
+  },
+  {
+    "name": "wf-live-budget-gate",
+    "file": "wf_live_budget_gate.rhai",
+    "description": "Pauses before its first agent unless the budget covers three agents",
+    "when_to_use": "Row 21: under a low agent_budget the run pauses with budget_exceeded before any child starts"
+  },
+  {
+    "name": "wf-live-budget-panel",
+    "file": "wf_live_budget_panel.rhai",
+    "description": "One agent, then a three-agent panel that a budget of 2 cannot admit",
+    "when_to_use": "Row 3: run with agent_budget 2; the panel admits none and the run pauses"
+  },
+  {
+    "name": "wf-live-engine-change",
+    "file": "wf_live_engine_change.rhai",
+    "description": "One agent, a user pause to swap the engine unless the budget is at least 3, then a second agent",
+    "when_to_use": "Row 9: install a rebuilt engine during the pause, run with agent_budget 2, then resume --budget 3 with and without --engine current"
+  },
+  {
+    "name": "wf-live-long-panel",
+    "file": "wf_live_long_panel.rhai",
+    "description": "A six-slot panel of slow read tasks that is still running when it is stopped or restarted",
+    "when_to_use": "Rows 7 and 8: stop with live children, and restart the runtime mid-panel"
+  },
+  {
+    "name": "wf-live-narrowing",
+    "file": "wf_live_narrowing.rhai",
+    "description": "Two panels of three workers; the operator narrows the job block between them",
+    "when_to_use": "Row 10: a lowered limit or removed target at the second panel is refused, and no child is left running"
+  },
+  {
+    "name": "wf-live-nested",
+    "file": "wf_live_nested.rhai",
+    "description": "One worker reads notes.txt and does what it says, then completes with its reply",
+    "when_to_use": "Row 11: the notes ask the worker to run a workflow, which a job child may not do"
+  },
+  {
+    "name": "wf-live-parallel-fail",
+    "file": "wf_live_parallel_fail.rhai",
+    "description": "A three-slot panel whose middle slot cannot satisfy its output schema",
+    "when_to_use": "Row 2: one failing slot comes back as a unit value in its place"
+  },
+  {
+    "name": "wf-live-pause",
+    "file": "wf_live_pause.rhai",
+    "description": "Two agents in sequence, then their results",
+    "when_to_use": "Row 5: workflow pause while it runs, then workflow resume replays the finished agent from the journal"
+  },
+  {
+    "name": "wf-live-research-first",
+    "file": "wf_live_research_first.rhai",
+    "description": "Spawns a wf-research agent first, a target outside the dynamic ceiling",
+    "when_to_use": "Row 13: run from an untrusted mount under dynamic check; the first spawn is refused"
+  },
+  {
+    "name": "wf-live-run",
+    "file": "wf_live_run.rhai",
+    "description": "Reads notes.txt with one worker agent and completes with its first line",
+    "when_to_use": "Row 1: the smallest trusted workflow, one agent step and a result"
+  },
+  {
+    "name": "wf-live-schema",
+    "file": "wf_live_schema.rhai",
+    "description": "One agent whose answer must match an output schema",
+    "when_to_use": "Row 4: the agent may answer in prose first; the engine corrects it once"
+  },
+  {
+    "name": "wf-live-scratch-complete",
+    "file": "wf_live_scratch_complete.rhai",
+    "description": "Writes a scratch file and completes in the same step right after one agent",
+    "when_to_use": "Row 18: the scratch write and the completion land in one terminal output"
+  },
+  {
+    "name": "wf-live-scratch-report",
+    "file": "wf_live_scratch_report.rhai",
+    "description": "Summarises notes.txt, writes report.md to the run's scratch directory and returns its path",
+    "when_to_use": "Row 16: the path in the result is the file the model then reads"
+  }
+]
