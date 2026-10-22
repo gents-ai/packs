@@ -1,22 +1,43 @@
 {
   "assets": [
     "README.md",
+    "agents/wf_all/system_prompt.md",
+    "agents/wf_execute/system_prompt.md",
     "agents/wf_read_only/system_prompt.md",
+    "agents/wf_read_write/system_prompt.md",
+    "notice.md",
     "pack_config.json",
     "plugins/workflow.afb",
     "plugins/workflow/TOOL.md",
     "schemas/wf_name.graphql",
     "schemas/wf_note.graphql",
     "schemas/wf_script.graphql",
+    "skills/create_workflow/SKILL.md",
     "tests/data.json",
     "tests/install.json",
+    "tests/personas.json",
     "workflows/index.json"
   ],
   "authors": ["gents contributors"],
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "Runs Rhai workflow scripts that orchestrate background agents, as a plugin with a read-only worker persona.",
+  "description": "Runs Rhai workflow scripts that orchestrate background agents, with four wf-* worker personas from read-only to all tools.",
   "inference_slots": [
+    {
+      "agents": ["wf-all"],
+      "description": "Runs the agent steps of a workflow with read-write files, an unrestricted shell with network, and any tool the operator wires. The operator opts in. Any capable profile.",
+      "name": "wf_all"
+    },
+    {
+      "agents": ["wf-execute"],
+      "description": "Runs the agent steps of a workflow with read-write files and an unrestricted shell with network. The operator opts in. Any capable profile.",
+      "name": "wf_execute"
+    },
+    {
+      "agents": ["wf-read-write"],
+      "description": "Runs the agent steps of a workflow with read-write files and an unrestricted shell without network. Any capable profile.",
+      "name": "wf_read_write"
+    },
     {
       "agents": ["wf-read-only"],
       "description": "Runs the agent steps of a workflow with read-only files and shell. Any capable profile.",

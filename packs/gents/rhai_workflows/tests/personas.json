@@ -1,0 +1,37 @@
+{
+  "defs": "def personas: [\"wf-read-only\", \"wf-read-write\", \"wf-execute\", \"wf-all\"]; def agent($n): first(.config.agents[] | select(.agent_id == $n)) // {}; def tools($n): . as $d | agent($n).context_id as $c | (first($d.config.contexts[] | select(.context_id == $c) | .tools_id) // null) as $t | first($d.config.tools[] | select(.tools_id == $t)) // {};",
+  "jq": [
+    {
+      "name": "four wf personas ship as agent targets with target_id equal to name",
+      "expr": "[.config.agent_targets[] | select(.name | startswith(\"wf-\"))] as $t | ($t | map(.name) | sort) == (personas | sort) and ($t | all(.target_id == .name and .agent_id == .name))"
+    },
+    {
+      "name": "each persona has its own inference slot",
+      "expr": ". as $d | personas | all(. as $n | ($n | gsub(\"-\"; \"_\")) as $slot | ($d | agent($n).inference_profile_id) == \"gents:inference-slot:\" + $slot and ([$d.manifest.inference_slots[] | select(.name == $slot and .agents == [$n])] | length) == 1)"
+    },
+    {
+      "name": "no persona tools list the gents/workflow plugin",
+      "expr": ". as $d | personas | all(. as $n | ($d | tools($n)) as $t | $t.tools_id != null and ([$t.integrations.plugins[]? | select(.plugin == \"gents/workflow\")] | length == 0))"
+    },
+    {
+      "name": "every persona system prompt carries the shared aliasing paragraph",
+      "expr": ". as $d | personas | all(. as $n | ($d.assets[\"agents/\" + ($n | gsub(\"-\"; \"_\")) + \"/system_prompt.md\"] // \"\") | contains(\"Workflow prompts may name Grok tools.\"))"
+    },
+    {
+      "name": "read-only keeps files and bash ReadOnly with network disabled",
+      "expr": "(tools(\"wf-read-only\").host) as $h | $h.files.mode == \"ReadOnly\" and $h.bash.mode == \"ReadOnly\" and $h.bash.network_mode == \"disabled\""
+    },
+    {
+      "name": "read-write, execute and all keep files ReadWrite and bash Unrestricted with the planned network modes",
+      "expr": ". as $d | [[\"wf-read-write\", \"disabled\"], [\"wf-execute\", \"enabled\"], [\"wf-all\", \"enabled\"]] | all(. as [$n, $net] | ($d | tools($n).host) as $h | $h.files.mode == \"ReadWrite\" and $h.bash.mode == \"Unrestricted\" and $h.bash.network_mode == $net)"
+    },
+    {
+      "name": "the pack has no dependency, declares no external service and references no plugin but its own",
+      "expr": ".manifest.dependencies == [] and (.manifest | has(\"external_dependencies\") | not) and ([.config.tools[] | select(.remote != null)] | length == 0) and ([.config.tools[].integrations.plugins[]?.plugin] | unique) == [\"gents/workflow\"]"
+    },
+    {
+      "name": "every persona prompt carries the web tool aliasing paragraph",
+      "expr": ". as $d | personas | all(. as $n | ($d.assets[\"agents/\" + ($n | gsub(\"-\"; \"_\")) + \"/system_prompt.md\"] // \"\") | contains(\"web_search and web_fetch are the same where you have them, and open_page means web_fetch, with focus or offset to read a part of the page;\") and (contains(\"web_collect_evidence\") | not))"
+    }
+  ]
+}

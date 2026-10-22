@@ -1,17 +1,33 @@
 {
   "install": {
     "documents": [
+      "Agent/wf-all",
+      "Agent/wf-execute",
       "Agent/wf-read-only",
+      "Agent/wf-read-write",
+      "AgentContext/wf-all-context",
+      "AgentContext/wf-execute-context",
       "AgentContext/wf-read-only-context",
+      "AgentContext/wf-read-write-context",
+      "AgentTarget/wf-all",
+      "AgentTarget/wf-execute",
       "AgentTarget/wf-read-only",
+      "AgentTarget/wf-read-write",
+      "Skill/create-workflow",
+      "Tools/wf-all-tools",
+      "Tools/wf-execute-tools",
       "Tools/wf-read-only-tools",
+      "Tools/wf-read-write-tools",
       "Tools/workflow-caller"
     ],
     "plugins": [
       "workflow"
     ],
     "slots": [
-      "wf_read_only"
+      "wf_all",
+      "wf_execute",
+      "wf_read_only",
+      "wf_read_write"
     ]
   }
 }

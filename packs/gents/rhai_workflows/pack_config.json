@@ -5,15 +5,63 @@
       "context_id": "wf-read-only-context",
       "display_name": "Workflow read-only agent",
       "inference_profile_id": "gents:inference-slot:wf_read_only"
+    },
+    {
+      "agent_id": "wf-read-write",
+      "context_id": "wf-read-write-context",
+      "display_name": "Workflow read-write agent",
+      "inference_profile_id": "gents:inference-slot:wf_read_write"
+    },
+    {
+      "agent_id": "wf-execute",
+      "context_id": "wf-execute-context",
+      "display_name": "Workflow execute agent",
+      "inference_profile_id": "gents:inference-slot:wf_execute"
+    },
+    {
+      "agent_id": "wf-all",
+      "context_id": "wf-all-context",
+      "display_name": "Workflow all-tools agent",
+      "inference_profile_id": "gents:inference-slot:wf_all"
     }
   ],
   "node": {},
+  "skills": [
+    {
+      "description": "Writes, checks, runs and keeps a Rhai workflow script with the workflow tool",
+      "display_name": "Create a workflow",
+      "instructions": "./skills/create_workflow/SKILL.md",
+      "name": "create-workflow",
+      "skill_id": "create-workflow"
+    }
+  ],
   "agent_targets": [
     {
       "agent_id": "wf-read-only",
       "description": "Reads files and runs read-only shell commands for a workflow step",
       "name": "wf-read-only",
       "target_id": "wf-read-only",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    },
+    {
+      "agent_id": "wf-read-write",
+      "description": "Reads and changes files and runs shell commands without network for a workflow step",
+      "name": "wf-read-write",
+      "target_id": "wf-read-write",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    },
+    {
+      "agent_id": "wf-execute",
+      "description": "Reads and changes files and runs shell commands with network for a workflow step; the operator opts in",
+      "name": "wf-execute",
+      "target_id": "wf-execute",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    },
+    {
+      "agent_id": "wf-all",
+      "description": "Uses every tool a workflow step may need, with files, shell and network; the operator opts in",
+      "name": "wf-all",
+      "target_id": "wf-all",
       "target_node_did": "${GENTS_PACK_NODE_DID}"
     }
   ],
@@ -23,6 +71,24 @@
       "display_name": "Workflow read-only agent",
       "system_prompt": "./agents/wf_read_only/system_prompt.md",
       "tools_id": "wf-read-only-tools"
+    },
+    {
+      "context_id": "wf-read-write-context",
+      "display_name": "Workflow read-write agent",
+      "system_prompt": "./agents/wf_read_write/system_prompt.md",
+      "tools_id": "wf-read-write-tools"
+    },
+    {
+      "context_id": "wf-execute-context",
+      "display_name": "Workflow execute agent",
+      "system_prompt": "./agents/wf_execute/system_prompt.md",
+      "tools_id": "wf-execute-tools"
+    },
+    {
+      "context_id": "wf-all-context",
+      "display_name": "Workflow all-tools agent",
+      "system_prompt": "./agents/wf_all/system_prompt.md",
+      "tools_id": "wf-all-tools"
     }
   ],
   "tools": [
@@ -49,6 +115,45 @@
         }
       },
       "tools_id": "wf-read-only-tools"
+    },
+    {
+      "display_name": "Workflow read-write agent tools",
+      "host": {
+        "bash": {
+          "mode": "Unrestricted",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        }
+      },
+      "tools_id": "wf-read-write-tools"
+    },
+    {
+      "display_name": "Workflow execute agent tools",
+      "host": {
+        "bash": {
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        }
+      },
+      "tools_id": "wf-execute-tools"
+    },
+    {
+      "display_name": "Workflow all-tools agent tools",
+      "host": {
+        "bash": {
+          "mode": "Unrestricted",
+          "network_mode": "enabled"
+        },
+        "files": {
+          "mode": "ReadWrite"
+        }
+      },
+      "tools_id": "wf-all-tools"
     }
   ]
 }
