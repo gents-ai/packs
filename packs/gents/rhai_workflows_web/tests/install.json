@@ -1,0 +1,22 @@
+{
+  "install": {
+    "dependencies": [
+      "rhai_workflows",
+      "web"
+    ],
+    "documents": [
+      "Agent/wf-read-only-web",
+      "Agent/wf-research",
+      "AgentContext/wf-read-only-web-context",
+      "AgentContext/wf-research-context",
+      "AgentTarget/wf-read-only-web",
+      "AgentTarget/wf-research",
+      "Tools/wf-read-only-web-tools",
+      "Tools/wf-research-tools"
+    ],
+    "slots": [
+      "wf_read_only_web",
+      "wf_research"
+    ]
+  }
+}

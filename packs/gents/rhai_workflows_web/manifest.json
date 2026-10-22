@@ -1,0 +1,32 @@
+{
+  "assets": [
+    "README.md",
+    "agents/wf_read_only_web/system_prompt.md",
+    "agents/wf_research/system_prompt.md",
+    "pack_config.json",
+    "tests/install.json",
+    "tests/personas.json"
+  ],
+  "authors": ["gents contributors"],
+  "config": "pack_config.json",
+  "dependencies": ["rhai_workflows", "web"],
+  "description": "Two wf-* worker personas for Rhai workflows that search and read the web with gents/web: wf-research and wf-read-only-web.",
+  "inference_slots": [
+    {
+      "agents": ["wf-read-only-web"],
+      "description": "Runs the agent steps of a workflow with read-only files and shell, and web search and fetch from gents/web. Any capable profile.",
+      "name": "wf_read_only_web"
+    },
+    {
+      "agents": ["wf-research"],
+      "description": "Runs the research steps of a workflow with no file or shell access, and web search and fetch from gents/web. Any capable profile.",
+      "name": "wf_research"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "rhai_workflows_web",
+  "namespace": "gents",
+  "tags": ["workflow", "rhai", "agents", "web"],
+  "version": "1.0.0"
+}

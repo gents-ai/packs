@@ -1,0 +1,94 @@
+{
+  "agents": [
+    {
+      "agent_id": "wf-research",
+      "context_id": "wf-research-context",
+      "display_name": "Workflow research agent",
+      "inference_profile_id": "gents:inference-slot:wf_research"
+    },
+    {
+      "agent_id": "wf-read-only-web",
+      "context_id": "wf-read-only-web-context",
+      "display_name": "Workflow read-only web agent",
+      "inference_profile_id": "gents:inference-slot:wf_read_only_web"
+    }
+  ],
+  "node": {},
+  "agent_targets": [
+    {
+      "agent_id": "wf-research",
+      "description": "Researches with no file or shell access for a workflow step",
+      "name": "wf-research",
+      "target_id": "wf-research",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    },
+    {
+      "agent_id": "wf-read-only-web",
+      "description": "Reads files, runs read-only shell commands and researches the web for a workflow step; the operator opts in",
+      "name": "wf-read-only-web",
+      "target_id": "wf-read-only-web",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "wf-research-context",
+      "display_name": "Workflow research agent",
+      "system_prompt": "./agents/wf_research/system_prompt.md",
+      "tools_id": "wf-research-tools"
+    },
+    {
+      "context_id": "wf-read-only-web-context",
+      "display_name": "Workflow read-only web agent",
+      "system_prompt": "./agents/wf_read_only_web/system_prompt.md",
+      "tools_id": "wf-read-only-web-tools"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Workflow research agent tools",
+      "host": {
+        "bash": {
+          "mode": "Off"
+        },
+        "files": {
+          "mode": "Off"
+        }
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/web_search"
+          },
+          {
+            "plugin": "gents/web_fetch"
+          }
+        ]
+      },
+      "tools_id": "wf-research-tools"
+    },
+    {
+      "display_name": "Workflow read-only web agent tools",
+      "host": {
+        "bash": {
+          "mode": "ReadOnly",
+          "network_mode": "disabled"
+        },
+        "files": {
+          "mode": "ReadOnly"
+        }
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/web_search"
+          },
+          {
+            "plugin": "gents/web_fetch"
+          }
+        ]
+      },
+      "tools_id": "wf-read-only-web-tools"
+    }
+  ]
+}
