@@ -1,0 +1,55 @@
+{
+  "name": "review_retarget_live",
+  "description": "code_review retarget: a Task waits on review-changes through a Goal and records a ProbeReport. The runner enforces the supported expect keys; manual_graphql_readback_not_enforced lists conditions to read back by hand and is ignored by the runner.",
+  "init": {
+    "inference_url": "${GENTS_LIVE_ENDPOINT:-http://workstation-1:8000/v1}",
+    "model_name": "${GENTS_LIVE_MODEL:-GLM-5.3-Flash-NVFP4}",
+    "backend_preset": "vllm",
+    "openai_wire_api": "chat-completions",
+    "tool_package": "yolo",
+    "tool_root": "${GENTS_LIVE_ROOT:-.}",
+    "tool_root_env_var": "GENTS_LIVE_ROOT"
+  },
+  "allowed_folders": [{"path": ".", "access": "read_write"}],
+  "seed": {
+    "collection": "ReviewRetargetLiveJob",
+    "job_id_field": "job_id",
+    "prompt_field": "prompt",
+    "fields": {
+      "handoff_id": "review-retarget-live",
+      "orchestrator_home": "${GENTS_LIVE_ORCHESTRATOR_HOME:-.gents/live-home}",
+      "orchestrator_graphql": "${GENTS_LIVE_ORCHESTRATOR_GRAPHQL:-http://127.0.0.1:19198/api/v0/graphql}"
+    }
+  },
+  "default_prompt": "Review the two-commit repository under ${GENTS_LIVE_ROOT:-.}: run `sh ${GENTS_LIVE_ROOT:-.}/make_repo.sh` in bash, then follow your task protocol for the repository probe_repo and record the ProbeReport.",
+  "expect": {
+    "trigger_ids": ["retarget-probe"],
+    "signed_provenance": true,
+    "projections": ["atif"],
+    "required_tool_call_trigger_ids": ["retarget-probe"],
+    "prompt_tool_contracts": [
+      {"task_id": "retarget-probe-task", "required_tool_names": ["write_probe_report"]}
+    ],
+    "collection_counts": {"ProbeReport": 1},
+    "result_documents": [
+      {"collection": "ProbeReport", "correlation_field": "job_id", "fields": ["head_sha", "confirmed_count"]}
+    ],
+    "tool_calls": [
+      {"trigger_id": "retarget-probe", "tool_name": "workflow", "result_contains": ["\"status\":\"complete\""]}
+    ],
+    "background_completion": {
+      "min_completed_caused_requests": 1,
+      "min_completed_wakes": 1,
+      "min_acknowledged_notifications": 1,
+      "max_pending_notifications": 0,
+      "max_stranded_notifications": 0
+    },
+    "manual_graphql_readback_not_enforced": [
+      {"id": 1, "kind": "AgentToolCall", "where": {"tool_name": "workflow"}, "expect": "terminal at T_job, the time the job reached its terminal state"},
+      {"id": 2, "kind": "FireOutcome", "where": {"created_at": ">= T_job"}, "expect": "terminal state complete"},
+      {"id": 3, "kind": "ProbeReport", "where": {"created_at": "> T_job"}, "expect": "head_sha and confirmed_count equal the workflow result"},
+      {"id": 4, "kind": "Request", "where": {"source": "goal_continuation", "between": "job start and T_job"}, "expect": "at most 3"}
+    ]
+  },
+  "await_timeout_secs": 3600
+}

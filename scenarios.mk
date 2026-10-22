@@ -108,6 +108,8 @@ maintain:
 	maintenance_branch="$(MAINTENANCE_BRANCH)"; \
 	if test -z "$$maintenance_branch"; then maintenance_branch="agent/$$maintenance_job_id"; fi; \
 	GENTS_MAINTENANCE_ROOT="$(abspath $(MAINTENANCE_ROOT))" \
+	GENTS_MAINTENANCE_ORCHESTRATOR_HOME="$(CURDIR)/packs/gents/repo_maintenance/runs/$$maintenance_job_id/home" \
+	GENTS_MAINTENANCE_ORCHESTRATOR_GRAPHQL="http://127.0.0.1:$(MAINTENANCE_PORT)/api/v0/graphql" \
 	GENTS_MAINTENANCE_BRANCH="$$maintenance_branch" \
 	GENTS_MAINTENANCE_HEAD_REF="$(MAINTENANCE_HEAD)" \
 	GENTS_MAINTENANCE_PR_BASE="$(MAINTENANCE_PR_BASE)" \
@@ -189,6 +191,7 @@ grok-port:
 	grok_port_dep="$$(mktemp -d)" || exit 2; \
 	trap 'rm -rf "$$grok_port_dep"' EXIT; \
 	"$(GENTS)" pack build "$(CURDIR)/packs/gents/code_review" --out "$$grok_port_dep/code_review.pack" >/dev/null || exit 2; \
+	"$(GENTS)" pack build "$(CURDIR)/packs/gents/rhai_workflows" --out "$$grok_port_dep/rhai_workflows.pack" >/dev/null || exit 2; \
 	grok_port_base_sha="$$(git -C "$(abspath $(GROK_PORT_GENTS_ROOT))" rev-parse --verify "$(GROK_PORT_BASE_SHA)^{commit}")" || exit 2; \
 	grok_port_models="$$(curl --fail --silent --show-error --max-time 10 "$(GROK_PORT_ENDPOINT_1)/models")" || { echo "GLM preflight failed: $(GROK_PORT_ENDPOINT_1)/models" >&2; exit 2; }; \
 	case "$$grok_port_models" in *'"id":"$(GROK_PORT_MODEL)"'*) ;; *) echo "GLM preflight did not advertise $(GROK_PORT_MODEL): $(GROK_PORT_ENDPOINT_1)" >&2; exit 2;; esac; \
@@ -232,6 +235,7 @@ grok-port:
 	GENTS_GROK_PORT_RETRY_MAX_RESAMPLE="$(GROK_PORT_RETRY_MAX_RESAMPLE)" \
 	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/grok_tui_port" \
 		--with-pack "$$grok_port_dep/code_review.pack" \
+		--with-pack "$$grok_port_dep/rhai_workflows.pack" \
 		--http-port "$(GROK_PORT_PORT)" \
 		--job-id "$$grok_port_job_id" \
 		$(if $(GROK_PORT_KEEP_HOME),--keep-home,)
@@ -294,6 +298,8 @@ live:
 	"$(GENTS)" pack build "$(LIVE_PACK_DIR)" --out "$$live_dep/$(LIVE_PACK).pack" >/dev/null || exit 2; \
 	$(foreach p,$(LIVE_WITH_PACKS),"$(GENTS)" pack build "$(CURDIR)/packs/gents/$(p)" --out "$$live_dep/$(p).pack" >/dev/null || exit 2;) \
 	GENTS_LIVE_ROOT="$$(cd "$$live_root" && pwd -P)" \
+	GENTS_LIVE_ORCHESTRATOR_HOME="$$live_run/home" \
+	GENTS_LIVE_ORCHESTRATOR_GRAPHQL="http://127.0.0.1:$(LIVE_PORT)/api/v0/graphql" \
 	GENTS_LIVE_ENDPOINT="$(LIVE_ENDPOINT)" \
 	GENTS_LIVE_MODEL="$(LIVE_MODEL)" \
 	$(if $(LIVE_AWAIT_TIMEOUT_SECS),GENTS_LIVE_AWAIT_TIMEOUT_SECS="$(LIVE_AWAIT_TIMEOUT_SECS)",) \

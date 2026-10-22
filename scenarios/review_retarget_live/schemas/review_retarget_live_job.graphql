@@ -1,0 +1,7 @@
+type ReviewRetargetLiveJob {
+  job_id: String
+  prompt: String
+  handoff_id: String @index @immutable
+  orchestrator_home: String @immutable
+  orchestrator_graphql: String @immutable
+}

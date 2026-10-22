@@ -1,0 +1,5 @@
+type ProbeReport {
+  job_id: String @index(unique: true) @immutable
+  head_sha: String
+  confirmed_count: String
+}
