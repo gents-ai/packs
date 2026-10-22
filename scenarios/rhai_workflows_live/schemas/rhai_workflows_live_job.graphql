@@ -1,0 +1,4 @@
+type RhaiWorkflowsLiveJob {
+  job_id: String
+  prompt: String
+}

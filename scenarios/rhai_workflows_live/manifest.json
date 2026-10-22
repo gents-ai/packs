@@ -1,0 +1,85 @@
+{
+  "assets": [
+    "README.md",
+    "experiment.json",
+    "fixtures/notes.txt",
+    "matrix.sh",
+    "pack_config.json",
+    "rows/r1.json",
+    "rows/r10.json",
+    "rows/r11.json",
+    "rows/r12.json",
+    "rows/r13.json",
+    "rows/r14.json",
+    "rows/r15.json",
+    "rows/r16.json",
+    "rows/r17.json",
+    "rows/r18.json",
+    "rows/r19.json",
+    "rows/r2.json",
+    "rows/r20.json",
+    "rows/r21.json",
+    "rows/r22.json",
+    "rows/r3.json",
+    "rows/r4.json",
+    "rows/r5.json",
+    "rows/r6.json",
+    "rows/r7.json",
+    "rows/r8.json",
+    "rows/r9.json",
+    "schemas/rhai_workflows_live_job.graphql",
+    "tasks/live_task/prompt.md",
+    "workflows/index.json",
+    "workflows/wf_live_args_echo.rhai",
+    "workflows/wf_live_await.rhai",
+    "workflows/wf_live_big_result.rhai",
+    "workflows/wf_live_budget_gate.rhai",
+    "workflows/wf_live_budget_panel.rhai",
+    "workflows/wf_live_engine_change.rhai",
+    "workflows/wf_live_long_panel.rhai",
+    "workflows/wf_live_narrowing.rhai",
+    "workflows/wf_live_nested.rhai",
+    "workflows/wf_live_parallel_fail.rhai",
+    "workflows/wf_live_pause.rhai",
+    "workflows/wf_live_research_first.rhai",
+    "workflows/wf_live_run.rhai",
+    "workflows/wf_live_schema.rhai",
+    "workflows/wf_live_scratch_complete.rhai",
+    "workflows/wf_live_scratch_report.rhai"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [
+    "rhai_workflows"
+  ],
+  "description": "Live model runs of the rhai_workflows pack: fixture workflows, a caller agent and a read-only worker target.",
+  "inference_slots": [
+    {
+      "agents": [
+        "wf-live-caller"
+      ],
+      "description": "Runs the workflow tool for the live scenario. Any capable profile.",
+      "name": "wf_live_caller"
+    },
+    {
+      "agents": [
+        "wf-live-worker"
+      ],
+      "description": "Runs the agent steps of the live scenario's workflows with read-only files. Any capable profile.",
+      "name": "wf_live_worker"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "rhai_workflows_live",
+  "namespace": "gents",
+  "schemas": [
+    "schemas/rhai_workflows_live_job.graphql"
+  ],
+  "tags": [
+    "scenario"
+  ],
+  "version": "0.1.0"
+}

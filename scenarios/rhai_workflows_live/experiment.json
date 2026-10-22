@@ -1,0 +1,29 @@
+{
+  "name": "rhai_workflows_live",
+  "description": "rhai_workflows: run the trusted wf-live-run workflow and report its result",
+  "init": {
+    "inference_url": "${GENTS_LIVE_ENDPOINT:-http://workstation-1:8000/v1}",
+    "model_name": "${GENTS_LIVE_MODEL:-GLM-5.3-Flash-NVFP4}",
+    "backend_preset": "vllm",
+    "openai_wire_api": "chat-completions",
+    "tool_root": "${GENTS_LIVE_ROOT:-.}",
+    "tool_root_env_var": "GENTS_LIVE_ROOT"
+  },
+  "allowed_folders": [{"path": ".", "access": "read_write"}],
+  "seed": {
+    "collection": "RhaiWorkflowsLiveJob",
+    "job_id_field": "job_id",
+    "prompt_field": "prompt"
+  },
+  "default_prompt": "Run the workflow named wf-live-run with the workflow tool (argv run wf-live-run). The workflow reads notes.txt in the folder ${GENTS_LIVE_ROOT:-.}. When the result arrives, tell me in one sentence what it says.",
+  "expect": {
+    "trigger_ids": ["rhai-workflows-live"],
+    "signed_provenance": true,
+    "projections": ["atif"],
+    "required_tool_call_trigger_ids": ["rhai-workflows-live"],
+    "tool_calls": [
+      {"trigger_id": "rhai-workflows-live", "tool_name": "workflow"}
+    ]
+  },
+  "await_timeout_secs": 1800
+}

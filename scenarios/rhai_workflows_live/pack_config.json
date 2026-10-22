@@ -1,0 +1,90 @@
+{
+  "node": {},
+  "event_sources": [
+    {
+      "display_name": "rhai-workflows-live",
+      "event_kind": "created",
+      "event_source_id": "rhai-workflows-live",
+      "source_collection": "RhaiWorkflowsLiveJob",
+      "correlation_field": "job_id"
+    }
+  ],
+  "tasks": [
+    {
+      "agent_id": "wf-live-caller",
+      "display_name": "rhai-workflows-live-task",
+      "prompt_template": "./tasks/live_task/prompt.md",
+      "task_id": "rhai-workflows-live-task"
+    },
+    {
+      "agent_id": "wf-live-caller",
+      "display_name": "rhai-workflows-live-follow",
+      "prompt_template": "{{ args.prompt }}",
+      "task_id": "rhai-workflows-live-follow"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "rhai-workflows-live",
+      "source": {
+        "event_source_id": "rhai-workflows-live",
+        "kind": "event"
+      },
+      "task_id": "rhai-workflows-live-task",
+      "trigger_id": "rhai-workflows-live"
+    }
+  ],
+  "agent_targets": [
+    {
+      "agent_id": "wf-live-worker",
+      "description": "Reads the scenario's fixture files for a workflow step",
+      "name": "wf-live-worker",
+      "target_id": "wf-live-worker",
+      "target_node_did": "${GENTS_PACK_NODE_DID}"
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "wf-live-caller",
+      "context_id": "wf-live-caller-context",
+      "display_name": "Workflow live caller",
+      "inference_profile_id": "gents:inference-slot:wf_live_caller"
+    },
+    {
+      "agent_id": "wf-live-worker",
+      "context_id": "wf-live-worker-context",
+      "display_name": "Workflow live worker",
+      "inference_profile_id": "gents:inference-slot:wf_live_worker"
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "wf-live-caller-context",
+      "display_name": "Workflow live caller",
+      "system_prompt": "You run the workflow the prompt names with the workflow tool and report its result.",
+      "tools_id": "wf-live-caller-tools"
+    },
+    {
+      "context_id": "wf-live-worker-context",
+      "display_name": "Workflow live worker",
+      "system_prompt": "You do one small step of a workflow, reading files when asked, and reply with exactly what the step asks for.",
+      "tools_id": "wf-live-worker-tools"
+    }
+  ],
+  "tools": [
+    {
+      "display_name": "Workflow live caller tools",
+      "tools_id": "wf-live-caller-tools"
+    },
+    {
+      "display_name": "Workflow live worker tools",
+      "host": {
+        "files": {
+          "mode": "ReadOnly"
+        }
+      },
+      "tools_id": "wf-live-worker-tools"
+    }
+  ]
+}
