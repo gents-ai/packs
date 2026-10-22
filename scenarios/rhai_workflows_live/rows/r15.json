@@ -1,0 +1,28 @@
+{
+  "row": 15,
+  "title": "export, install, trust and run",
+  "legs": [
+    "seed",
+    "check, keep and export",
+    "gents pack install --expect-digest",
+    "trusted_packs set by the operator",
+    "run by name, dynamic left at check",
+    "client list, show and query"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Use the workflow tool for these calls, one after another. 1. argv [\"check\"] with this script: let meta = #{ name: \"wf-live-exported\", description: \"Exported by the live matrix\" }; let r = agent(\"Reply with the word exported.\", #{ label: \"exported\", agent_type: \"wf-live-worker\" }); complete(r.output); It returns a script_id. 2. argv [\"keep\",\"<script_id>\"]. 3. argv [\"export\",\"wf-live-exported\"]. Then end your turn.",
+  "expect": {
+    "calls": 3,
+    "run": {
+      "watch_exit": 0,
+      "state": "completed"
+    },
+    "origin": "installed",
+    "target": "wf-live-worker"
+  }
+}

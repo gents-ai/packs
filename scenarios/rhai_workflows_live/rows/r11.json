@@ -1,0 +1,21 @@
+{
+  "row": 11,
+  "title": "nested refused",
+  "legs": [
+    "Tools document gives the worker the tool",
+    "seed",
+    "watch --until-terminal"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-nested with the workflow tool (argv [\"run\",\"wf-live-nested\"]). When the result arrives, tell me in one sentence what it says.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed",
+    "code": "workflow_depth_exceeded"
+  }
+}

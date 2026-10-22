@@ -1,0 +1,24 @@
+{
+  "row": 22,
+  "title": "dynamic script runs",
+  "legs": [
+    "dynamic edit to run",
+    "seed",
+    "watch --until-terminal",
+    "one wf-read-only child and dynamic origin",
+    "result marker in the completion notice",
+    "client list, show and query"
+  ],
+  "wire_from": [],
+  "targets": [
+    "wf-read-only"
+  ],
+  "prompt": "Call the workflow tool once with argv [\"run\"] and this script: let meta = #{ name: \"wf-live-inline-read\", description: \"Reads the notes\" }; let r = agent(\"Read notes.txt and reply with the colour named on its last line, in one word.\", #{ label: \"read\", agent_type: \"wf-read-only\" }); complete(r.output); Then end your turn.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed",
+    "origin": "dynamic",
+    "target": "wf-read-only",
+    "marker": "teal"
+  }
+}

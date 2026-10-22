@@ -1,0 +1,30 @@
+{
+  "row": 14,
+  "title": "keep, rename and replace",
+  "legs": [
+    "seed",
+    "keep",
+    "keep again (refused)",
+    "keep --replace",
+    "keep --name",
+    "run the kept name",
+    "client list, show and query"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Use the workflow tool for these calls, one after another, and tell me each result in one sentence. 1. argv [\"check\"] with this script: let meta = #{ name: \"wf-live-kept\", description: \"Kept by the live matrix\" }; let r = agent(\"Reply with the word kept.\", #{ label: \"kept\", agent_type: \"wf-live-worker\" }); complete(r.output); It returns a script_id. 2. argv [\"keep\",\"<script_id>\"]. 3. The same keep again without --replace, which the engine refuses. 4. argv [\"keep\",\"<script_id>\",\"--replace\"]. 5. argv [\"keep\",\"<script_id>\",\"--name\",\"wf-live-kept-renamed\"]. 6. argv [\"run\",\"wf-live-kept-renamed\"]. Then end your turn.",
+  "expect": {
+    "calls": 6,
+    "refused": "workflow_invalid_input: 'wf-live-kept' is kept (v1)",
+    "replaced": "Kept wf-live-kept (v2,",
+    "renamed": "Kept wf-live-kept-renamed (v1,",
+    "run": {
+      "watch_exit": 0,
+      "state": "completed"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "row": 4,
+  "title": "output_schema correction",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "job show"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-schema with the workflow tool (argv [\"run\",\"wf-live-schema\"]). When the result arrives, tell me the colour and the word count it reports.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed"
+  }
+}

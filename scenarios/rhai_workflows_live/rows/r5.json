@@ -1,0 +1,22 @@
+{
+  "row": 5,
+  "title": "pause then resume",
+  "legs": [
+    "seed",
+    "workflow pause",
+    "watch paused",
+    "workflow resume",
+    "watch completed"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-pause with the workflow tool (argv [\"run\",\"wf-live-pause\"]). As soon as it returns its key and handle, call the workflow tool again with argv [\"pause\",\"<its handle>\"], then end your turn.",
+  "expect": {
+    "watch_exit": 3,
+    "state": "paused"
+  }
+}

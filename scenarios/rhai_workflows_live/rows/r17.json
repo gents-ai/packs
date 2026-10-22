@@ -1,0 +1,17 @@
+{
+  "row": 17,
+  "title": "job tool not composable",
+  "legs": [
+    "reference only, no packs leg"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Not run by matrix.sh: row 17 cites the gents end-to-end test that refuses composing a job tool with job_tool_not_composable, because no packs plugin composes.",
+  "expect": {
+    "reference": "the gents end-to-end test that refuses composing a job tool with job_tool_not_composable covers it; no packs plugin composes, so matrix.sh has no leg"
+  }
+}

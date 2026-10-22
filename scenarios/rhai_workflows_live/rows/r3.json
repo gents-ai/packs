@@ -1,0 +1,23 @@
+{
+  "row": 3,
+  "title": "budget exceeded",
+  "legs": [
+    "seed",
+    "watch paused",
+    "job show pause_reason",
+    "workflow resume --budget 4",
+    "watch completed"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-budget-panel with the workflow tool: argv [\"run\",\"wf-live-budget-panel\"] and agent_budget 2. If the run pauses, tell me its handle and end your turn.",
+  "expect": {
+    "watch_exit": 3,
+    "state": "paused",
+    "pause_reason": "budget_exceeded"
+  }
+}

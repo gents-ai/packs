@@ -1,0 +1,23 @@
+{
+  "row": 19,
+  "title": "result beyond the message cap",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "completion notice shows at most 4000 B",
+    "workflow result returns the whole value",
+    "client list, show and query"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-big-result with the workflow tool (argv [\"run\",\"wf-live-big-result\"]). When the result arrives, tell me its size field, then end your turn.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed",
+    "result_bytes": 64000
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "row": 21,
+  "title": "budget pause before the first agent",
+  "legs": [
+    "seed",
+    "watch paused",
+    "job list --state paused",
+    "job show pause_reason",
+    "workflow resume --budget 3",
+    "watch completed"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-budget-gate with the workflow tool: argv [\"run\",\"wf-live-budget-gate\"] and agent_budget 1. If the run pauses, tell me its address and end your turn.",
+  "expect": {
+    "watch_exit": 3,
+    "state": "paused",
+    "pause_reason": "budget_exceeded"
+  }
+}

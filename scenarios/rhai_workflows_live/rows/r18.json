@@ -1,0 +1,21 @@
+{
+  "row": 18,
+  "title": "scratch then complete",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "scratch file and completion together",
+    "client list, show and query"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-scratch-complete with the workflow tool (argv [\"run\",\"wf-live-scratch-complete\"]). When the result arrives, tell me what it says.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed"
+  }
+}

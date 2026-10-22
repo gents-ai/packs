@@ -1,0 +1,20 @@
+{
+  "row": 1,
+  "title": "run",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "completion"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-run with the workflow tool (argv [\"run\",\"wf-live-run\"]). The workflow reads notes.txt in the working folder. When the result arrives, tell me in one sentence what it says.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed"
+  }
+}

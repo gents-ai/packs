@@ -1,0 +1,24 @@
+{
+  "row": 9,
+  "title": "engine change",
+  "legs": [
+    "seed",
+    "watch paused",
+    "install a rebuilt engine",
+    "workflow resume (refused)",
+    "workflow resume --engine current",
+    "watch completed"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-engine-change with the workflow tool: argv [\"run\",\"wf-live-engine-change\"] and agent_budget 2. If the run pauses, tell me its handle and end your turn.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed",
+    "code": "plugin_job_policy_denied"
+  }
+}

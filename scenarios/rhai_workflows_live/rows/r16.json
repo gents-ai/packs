@@ -1,0 +1,21 @@
+{
+  "row": 16,
+  "title": "scratch readable",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "report.md under the run scratch path",
+    "client list, show and query"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-scratch-report with the workflow tool (argv [\"run\",\"wf-live-scratch-report\"]). When the result arrives, tell me the report path it returned, then end your turn.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed"
+  }
+}

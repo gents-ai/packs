@@ -1,0 +1,21 @@
+{
+  "row": 6,
+  "title": "await_user then answer",
+  "legs": [
+    "seed",
+    "watch awaiting_user",
+    "workflow answer",
+    "watch completed"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-await with the workflow tool (argv [\"run\",\"wf-live-await\"]). If it asks a question, tell me the question and end your turn.",
+  "expect": {
+    "watch_exit": 3,
+    "state": "awaiting_user"
+  }
+}

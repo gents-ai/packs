@@ -1,0 +1,21 @@
+{
+  "row": 8,
+  "title": "restart mid-panel",
+  "legs": [
+    "seed",
+    "wait for live children",
+    "restart the server on the same home",
+    "watch --until-terminal"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-long-panel with the workflow tool (argv [\"run\",\"wf-live-long-panel\"]), then end your turn without waiting for the result.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "row": 20,
+  "title": "resume and answer keep the handle",
+  "legs": [
+    "seed",
+    "watch paused",
+    "workflow resume --budget 2",
+    "watch awaiting_user",
+    "workflow answer",
+    "watch completed",
+    "same handle and chain root"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-args-echo with the workflow tool: argv [\"run\",\"wf-live-args-echo\",\"--budget\",\"1\"] and args {\"tag\":\"orig-args-20\"}. If the run pauses, tell me its handle and end your turn. Do not resume or answer it yourself, and make no other workflow call.",
+  "expect": {
+    "watch_exit": 3,
+    "state": "paused",
+    "marker": "orig-args-20"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "row": 7,
+  "title": "stop with live children",
+  "legs": [
+    "seed",
+    "workflow stop in-session",
+    "watch cancelled",
+    "job stop --home with the server stopped"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-long-panel with the workflow tool (argv [\"run\",\"wf-live-long-panel\"]), then end your turn without waiting for the result.",
+  "expect": {
+    "watch_exit": 1,
+    "state": "cancelled"
+  }
+}

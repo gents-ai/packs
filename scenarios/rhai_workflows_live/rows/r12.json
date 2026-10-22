@@ -1,0 +1,19 @@
+{
+  "row": 12,
+  "title": "dynamic capped to wf-read-only",
+  "legs": [
+    "dynamic edit to run",
+    "seed",
+    "refusal code in the workflow call",
+    "client list, show and query"
+  ],
+  "wire_from": [],
+  "targets": [
+    "wf-read-only",
+    "wf-read-write"
+  ],
+  "prompt": "Call the workflow tool once with argv [\"run\"] and this script: let meta = #{ name: \"wf-live-inline-write\", description: \"Asks for the read-write target\" }; let r = agent(\"Reply with the word write.\", #{ label: \"write\", agent_type: \"wf-read-write\" }); complete(r.output); Tell me exactly what the tool returns, including any error code. Then end your turn.",
+  "expect": {
+    "code": "workflow_capability_unavailable"
+  }
+}

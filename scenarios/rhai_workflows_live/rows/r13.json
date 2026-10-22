@@ -1,0 +1,20 @@
+{
+  "row": 13,
+  "title": "model-installed pack is dynamic",
+  "legs": [
+    "seed",
+    "watch --until-terminal",
+    "refusal code in the job or the workflow call"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_web"
+  ],
+  "targets": [
+    "wf-read-only",
+    "wf-research"
+  ],
+  "prompt": "Run the workflow named wf-live-research-first with the workflow tool (argv [\"run\",\"wf-live-research-first\"]). When the result arrives, tell me exactly what it says, including any error code.",
+  "expect": {
+    "code": "workflow_policy_denied"
+  }
+}

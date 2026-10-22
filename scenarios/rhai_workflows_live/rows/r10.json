@@ -1,0 +1,22 @@
+{
+  "row": 10,
+  "title": "operator narrows job.*",
+  "legs": [
+    "seed",
+    "edit the Tools document mid-run",
+    "watch --until-terminal",
+    "no child left live"
+  ],
+  "wire_from": [
+    "gents/rhai_workflows_live"
+  ],
+  "targets": [
+    "wf-live-worker"
+  ],
+  "prompt": "Run the workflow named wf-live-narrowing with the workflow tool (argv [\"run\",\"wf-live-narrowing\"]). When the result arrives, tell me what it says.",
+  "expect": {
+    "watch_exit": 0,
+    "state": "completed",
+    "code": "workflow_policy_denied|plugin_job_policy_denied"
+  }
+}
