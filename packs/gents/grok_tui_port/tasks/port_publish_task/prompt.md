@@ -31,7 +31,7 @@ Otherwise:
 4. Open one normal, non-draft PR: `gh pr create --base <pr_base> --head <branch>`.
 5. Confirm the PR head equals both live `final_review_head` and the final
    review report's `head_sha`; copy its exact review-round and
-   confirmed-finding counts into the PR result. The full code-review graph
+   confirmed-finding counts into the PR result. The full review-changes workflow
    already passed before live probes and must not be invalidated here.
 6. Wait on required GitHub checks (`gh pr checks`). Do not make a code-changing
    repair after immutable review/live evidence; report `needs_attention` and

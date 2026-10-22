@@ -29,18 +29,44 @@ independently rerun all three convergence gates, including
 As in convergence, command exit status is authoritative and failures cannot be
 waived as environmental.
 
-The `code_review` graph, this pack's dependency, is installed in the orchestration home. For each full review
-round:
+The `review-changes` workflow (code_review >=2.0, this pack's dependency) is
+installed. Each full review round requires the exact HEAD to equal the first
+round's converged head (or the focused fix head on round two). Resolve it, then
+run the round:
 
-1. Resolve exact HEAD and require it to equal the first round's converged head
-   (or the focused fix head on round two).
-2. Run
-   `gents graph run code_review --field repository=. --field base=<job.base_sha> --field head=<head-sha> --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`
-   and capture its run id.
-3. Watch that exact run to terminal state and call `gents graph result` with
-   the same home/GraphQL endpoint. Inspect durable findings and the
-   CodeReviewTriageReport; process exit alone is not review evidence.
-4. If round one has confirmed findings, inspect each against current source,
+1. Call `workflow` with `argv ["run","review-changes"]`, the `args`
+   (`base` = `<job.base_sha>`, `head` = `<head-sha>`, `repository` = `.`,
+   `focus`) and `agent_budget` 32. Take the job key `session_id:tool_call_id`
+   from the receipt, pass it whole (readers split it at the last `:`) and never
+   address the job by a handle. If the tool result is itself a pause or a
+   terminal rather than a receipt, skip to step 5.
+2. Call `spawn_process` exactly as
+   `{"tool_name":"bash_unrestricted","args":{"command":"gents job watch KEY --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json"}}`.
+   Replace KEY with the whole job key the workflow run receipt printed (`session_id:tool_call_id`). For example, with the key `trigger-session:abc123:call456` the command is `gents job watch trigger-session:abc123:call456 --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`. The command must not contain KEY or `<key>`.
+3. Call `wait_process` on that process with `timeout_secs` 600. A timeout
+   while it runs is the Goal's deferral: end the turn, and when the Goal wakes
+   you call `wait_process` again on the same `tool_call_id`; never spawn a
+   second watcher.
+4. On exit 0, call `workflow result KEY`, with KEY replaced the same way. If `workflow result` answers
+   `workflow_control_not_applicable` because the run is still running, that is
+   not an outcome: go back to step 3. Require `status` to be
+   `complete` and `head_sha` to equal the exact HEAD you passed. The review
+   is clean only when, in addition, `counts.unverified` is 0 and no
+   `limitations` entry starts with a lens id (`correctness:`,
+   `architecture-reuse:`, `security-concurrency:` or
+   `workflow-invariants:`). Unverified candidates are candidates no
+   verifier confirmed or refuted, and a lens entry is a scan that failed,
+   was blocked or read other trees, so a review with either is not clean:
+   record it as `blocked` with those `limitations` entries, never as a
+   pass. The other entries (`verify-<n>: builds not run`,
+   `triage did not succeed`) are disclosures and do not by themselves make
+   the review not clean. Process exit alone is not evidence, and the
+   completion notification is not the result.
+5. Any other outcome (a `workflow_*` code other than the still-running case
+   above, a `plugin_job_*` code, a paused, `awaiting_user`, `failed`, `cancelled` or `timed_out` state, or a non-zero
+   watcher exit) is recorded as `blocked` with the code or state. Never
+   resume: a Task cannot answer a question.
+6. If round one has confirmed findings, inspect each against current source,
    make focused fixes, run affected tests and `cargo fmt --all --check`, stage
    only explicit fix paths, create focused commits, and start one fresh full
    review against the new exact HEAD.
