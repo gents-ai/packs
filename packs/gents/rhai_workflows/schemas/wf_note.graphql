@@ -1,0 +1,8 @@
+type WfNote @index(fields: ["chain_root_doc_id", "note_id"], unique: true) {
+  note_id: String @index
+  value_json: String
+  row: String
+  chain_root_doc_id: String @index
+  job_row_doc_id: String
+  node_did: String
+}

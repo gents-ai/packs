@@ -1,0 +1,12 @@
+{
+  "jq": [
+    {
+      "name": "the workflow plugin declares the three collections, four ops and five self-mapped stamps",
+      "expr": ".manifest.plugins[0].data | (.collections // [] | sort) == [\"WfName\", \"WfNote\", \"WfScript\"] and (.ops // [] | sort) == [\"delete\", \"insert\", \"query\", \"update\"] and (.stamped // {} | keys) == [\"chain_root_doc_id\", \"job_row_doc_id\", \"node_did\", \"session_id\", \"tool_call_doc_id\"] and (.stamped // {} | to_entries | all(.key == .value))"
+    },
+    {
+      "name": "the manifest lists the three schema files",
+      "expr": "[\"schemas/wf_name.graphql\", \"schemas/wf_note.graphql\", \"schemas/wf_script.graphql\"] - (.manifest.schemas // []) == []"
+    }
+  ]
+}

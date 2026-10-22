@@ -5,6 +5,10 @@
     "pack_config.json",
     "plugins/workflow.afb",
     "plugins/workflow/TOOL.md",
+    "schemas/wf_name.graphql",
+    "schemas/wf_note.graphql",
+    "schemas/wf_script.graphql",
+    "tests/data.json",
     "tests/install.json",
     "workflows/index.json"
   ],
@@ -33,6 +37,17 @@
         "input_field": "path"
       },
       "catalog": {"argv": ["list", "--format", "catalog"]},
+      "data": {
+        "collections": ["WfScript", "WfName", "WfNote"],
+        "ops": ["query", "insert", "update", "delete"],
+        "stamped": {
+          "chain_root_doc_id": "chain_root_doc_id",
+          "job_row_doc_id": "job_row_doc_id",
+          "node_did": "node_did",
+          "session_id": "session_id",
+          "tool_call_doc_id": "tool_call_doc_id"
+        }
+      },
       "description": "Runs Rhai workflow scripts that orchestrate background agents.",
       "input_schema": {
         "properties": {
@@ -56,6 +71,11 @@
       "name": "workflow",
       "source": "plugins/workflow"
     }
+  ],
+  "schemas": [
+    "schemas/wf_script.graphql",
+    "schemas/wf_name.graphql",
+    "schemas/wf_note.graphql"
   ],
   "tags": ["workflow", "rhai", "agents", "plugin"],
   "version": "1.0.0"

@@ -1,0 +1,11 @@
+type WfScript @index(fields: ["node_did", "script_id"], unique: true) {
+  script_id: String @index @immutable
+  source: String @immutable
+  meta_json: String @immutable
+  origin_hint: String
+  license: String
+  created_at: String
+  node_did: String @index
+  session_id: String
+  tool_call_doc_id: String
+}

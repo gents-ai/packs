@@ -1,0 +1,9 @@
+type WfName @index(fields: ["node_did", "name", "version"], unique: true) {
+  name: String @index
+  version: Int
+  script_id: String
+  description: String
+  when_to_use: String
+  state: String
+  node_did: String @index
+}
