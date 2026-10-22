@@ -14,6 +14,7 @@
     "schemas/wf_script.graphql",
     "skills/create_workflow/SKILL.md",
     "tests/data.json",
+    "tests/caller.json",
     "tests/install.json",
     "tests/personas.json",
     "workflows/index.json"

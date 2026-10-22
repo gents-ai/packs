@@ -1,0 +1,17 @@
+{
+  "defs": "def caller: first(.config.tools[] | select(.tools_id == \"workflow-caller\")); def targets: [\"wf-read-only\", \"wf-read-write\"];",
+  "jq": [
+    {
+      "name": "workflow-caller carries the reviewed job block on its gents/workflow plugin ref",
+      "expr": "[caller.integrations.plugins[] | select(.plugin == \"gents/workflow\")] == [{\"plugin\": \"gents/workflow\", \"job\": {\"agent_targets\": targets, \"max_live\": 8, \"max_spawns\": 128, \"max_messages_per_slot\": 4, \"result_bytes\": 65536, \"max_wall_secs\": 7200, \"policy\": {\"dynamic\": \"check\", \"dynamic_targets\": [\"wf-read-only\"], \"trusted_packs\": [], \"project_roots\": []}}}]"
+    },
+    {
+      "name": "workflow-caller lists the job targets in agents.target_ids with enabled false",
+      "expr": "caller.agents == {\"target_ids\": targets, \"enabled\": false}"
+    },
+    {
+      "name": "no other Tools document carries a job block",
+      "expr": "[.config.tools[] | select(.tools_id != \"workflow-caller\") | .integrations.plugins[]? | select(has(\"job\"))] | length == 0"
+    }
+  ]
+}
