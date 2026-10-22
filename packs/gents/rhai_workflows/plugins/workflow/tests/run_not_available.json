@@ -1,0 +1,4 @@
+{
+  "input": {"argv": ["run", "demo"]},
+  "expect": {"fail": {"code": "workflow_not_available", "message": "workflow_not_available: this tool has no job settings here. Next: workflow help doctor"}}
+}

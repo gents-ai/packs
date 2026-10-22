@@ -1,0 +1,25 @@
+{
+  "input": {
+    "argv": [
+      "check",
+      "--script"
+    ],
+    "script": "let meta = #{ name: \"demo\", description: \"ask once\" };\nlet r = agent(\"say hi\");\ncomplete(#{ said: r.output });\n"
+  },
+  "expect": {
+    "result": "The smoke check passed for demo: the script ran against canned agent replies and reached complete() after 1 host calls. Draft stored as script_id 02cc17fd76b6645ac0e4873fd8be394a7c4a3fdfe1be99ed390a754d8d9d14f6. Not covered: real agent output, branching on real replies, the budget, targets and policy, and anything after the run stopped.",
+    "writes": [
+      {
+        "collection": "WfScript",
+        "fields": {
+          "meta_json": "{\"description\":\"ask once\",\"name\":\"demo\"}",
+          "origin_hint": "inline",
+          "script_id": "02cc17fd76b6645ac0e4873fd8be394a7c4a3fdfe1be99ed390a754d8d9d14f6",
+          "source": "let meta = #{ name: \"demo\", description: \"ask once\" };\nlet r = agent(\"say hi\");\ncomplete(#{ said: r.output });\n"
+        },
+        "on_conflict": "ignore",
+        "op": "insert"
+      }
+    ]
+  }
+}

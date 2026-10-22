@@ -1,0 +1,3 @@
+{"seq": 1, "kind": "spawn_agent", "req_hash": "d1", "result": {"output": "no fence at all"}, "at_ms": 1}
+{"seq": 2, "kind": "spawn_agent", "req_hash": "d2", "result": {"output": "```json\n{\"n\": \"three\"}\n```"}, "at_ms": 2}
+{"seq": 3, "kind": "spawn_agent", "req_hash": "d3", "result": {"output": "```json\n{\"n\": 4}\n```"}, "at_ms": 3}

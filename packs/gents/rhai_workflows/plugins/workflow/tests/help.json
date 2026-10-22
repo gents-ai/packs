@@ -1,0 +1,4 @@
+{
+  "input": {"argv": ["help", "run"]},
+  "expect": {"result": "run (<name> | script | path) [args]: start a workflow in the background"}
+}
