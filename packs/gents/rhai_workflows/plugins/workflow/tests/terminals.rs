@@ -85,24 +85,24 @@ complete(r.output);
 #[test]
 fn step0_budget_message_keeps_the_pinned_text_and_tags_after_it() {
     let script = r##"let meta = #{ name: "same", description: "an agent past the budget" };
-agent("x");
+parallel([#{ prompt: "x" }, #{ prompt: "y" }]);
 "##;
-    let s0 = FakeHost::default().step0(&call(script, 0), invoke).unwrap();
+    let s0 = FakeHost::default().step0(&call(script, 1), invoke).unwrap();
     assert_eq!(
         s0.output["suspend"]["message"],
-        "0/0. Next: workflow resume cli:t1 --budget <n> (run cli:t1, handle same)"
+        "0/1. Next: workflow resume cli:t1 --budget <n> (run cli:t1, handle same)"
     );
 }
 
 #[test]
 fn budget_exceeded_and_the_script_kind_give_the_same_suspend() {
     let past = r##"let meta = #{ name: "same", description: "an agent past the budget" };
-agent("x");
+parallel([#{ prompt: "x" }, #{ prompt: "y" }]);
 "##;
     let said = r##"let meta = #{ name: "same", description: "an agent past the budget" };
-pause("budget_exceeded", "0/0");
+pause("budget_exceeded", "0/1");
 "##;
-    let step0 = |script: &str| FakeHost::default().step0(&call(script, 0), invoke).unwrap();
+    let step0 = |script: &str| FakeHost::default().step0(&call(script, 1), invoke).unwrap();
     let (a, b) = (step0(past).output, step0(said).output);
     assert_eq!(a["suspend"]["kind"], b["suspend"]["kind"]);
     assert_eq!(a["suspend"]["reason"], b["suspend"]["reason"]);

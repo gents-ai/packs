@@ -95,6 +95,32 @@ fn check_reads_a_path_and_a_pack_name() {
 }
 
 #[test]
+fn check_resolves_a_name_through_every_tier_form_run_does() {
+    let root = scratch("check_tiers");
+    let mut mounts = Vec::new();
+    for (pack, class, sub) in [("acme/a", "workflows", "a"), ("", "project", "p")] {
+        let dir = root.join(sub);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("x.rhai"), workflow_file("x", None)).unwrap();
+        let index = json!([{"name": "x", "file": "x.rhai", "description": "d"}]);
+        std::fs::write(dir.join("index.json"), index.to_string()).unwrap();
+        mounts.push(mount(pack, class, &dir));
+    }
+    let only_project = json!([mounts[1]]);
+    for (name, mounts, hint) in [
+        ("x", &only_project, "project"),
+        ("project:x", &json!(mounts), "project"),
+        ("pack:acme/a/x", &json!(mounts), "pack"),
+    ] {
+        let out = invoke(json!({"argv": ["check", name], "asset_mounts": mounts}));
+        assert_eq!(
+            out["writes"][0]["fields"]["origin_hint"], hint,
+            "{name}: {out}"
+        );
+    }
+}
+
+#[test]
 fn smoke_run_stops_at_first_terminal_or_64_calls() {
     let args = json!({});
     // The first terminal ends the run: the second agent call is never reached.
@@ -149,7 +175,7 @@ fn list_reads_index_and_meta_from_asset_mounts() {
         mount("acme/tools", "workflows", &dir),
         mount("", "project", &other)
     ]);
-    let out = invoke(json!({"argv": ["list"], "asset_mounts": mounts, "data_calls": true}));
+    let out = invoke(json!({"argv": ["list"], "asset_mounts": mounts}));
     let text = out["result"].as_str().expect(&out.to_string());
     let (alpha, beta) = (
         text.find("alpha").expect(text),
@@ -186,12 +212,11 @@ fn list_skips_index_files_outside_their_mount() {
     ]);
     std::fs::write(dir.join("index.json"), index.to_string()).unwrap();
     let mounts = json!([mount("acme/tools", "workflows", &dir)]);
-    let out = invoke(json!({"argv": ["list"], "asset_mounts": mounts, "data_calls": true}));
+    let out = invoke(json!({"argv": ["list"], "asset_mounts": mounts}));
     let text = out["result"].as_str().expect(&out.to_string());
     assert!(!text.contains("escaped"), "outside the mount: {text}");
     assert_eq!(text.matches("inside").count(), 1, "dot parts: {text}");
-    let out =
-        invoke(json!({"argv": ["check", "escaped"], "asset_mounts": mounts, "data_calls": true}));
+    let out = invoke(json!({"argv": ["check", "escaped"], "asset_mounts": mounts}));
     assert_eq!(code_of(&out), "workflow_resolve_failed", "{out}");
 }
 
@@ -207,11 +232,12 @@ fn a_name_in_two_packs_is_refused_naming_both() {
         std::fs::write(dir.join("index.json"), index.to_string()).unwrap();
         mounts.push(mount(pack, "workflows", &dir));
     }
-    let out = invoke(json!({"argv": ["check", "x"], "asset_mounts": mounts, "data_calls": true}));
-    assert_eq!(
-        out["fail"]["message"],
-        "workflow_resolve_failed: 'x' is in acme/a and gents/b. Next: workflow list",
-        "{out}"
+    let out = invoke(json!({"argv": ["check", "x"], "asset_mounts": mounts}));
+    assert_eq!(code_of(&out), "workflow_resolve_failed", "{out}");
+    let message = out["fail"]["message"].as_str().unwrap();
+    assert!(
+        message.contains("'x' is in acme/a and gents/b"),
+        "{message}"
     );
 }
 

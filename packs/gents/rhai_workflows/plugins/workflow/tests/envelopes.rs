@@ -187,11 +187,11 @@ fn invoke_routes_each_input_shape() {
     let inputs = [
         (json!({"protocol": 1, "argv": ["run"]}), Shape::JobStep),
         (
-            json!({"protocol": 1, "argv": ["run"], "data_results": [], "state": {}}),
+            json!({"protocol": 1, "pin": {"script_id": "s"}, "data_results": [], "state": {}}),
             Shape::Round,
         ),
         (
-            json!({"protocol": 1, "job_results": [], "state": {}}),
+            json!({"protocol": 1, "pin": {"script_id": "s"}, "job_results": [], "state": {}}),
             Shape::Round,
         ),
         // A job verb on the raw shape: help, check and list are served, so only this refuses.
@@ -205,7 +205,13 @@ fn invoke_routes_each_input_shape() {
     for (input, shape) in inputs {
         assert_eq!(classify(&input), shape);
         let fail = &invoke(input)["fail"];
-        assert_eq!(fail["code"], "workflow_not_available");
+        // Step 0 serves `run` now: with no job row and nothing to resolve, it is invalid input.
+        // A pinned round continuation reaches the round client, which offers no service here.
+        let code = match shape {
+            Shape::JobStep => "workflow_invalid_input",
+            _ => "workflow_not_available",
+        };
+        assert_eq!(fail["code"], code);
         messages.push(fail["message"].as_str().unwrap().to_string());
     }
     assert!(messages.iter().all(|m| m.contains(". Next: ")));

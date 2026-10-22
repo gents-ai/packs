@@ -1,0 +1,9 @@
+{
+  "digest": "sha256:eab84aa05d97f4432606eef26bba9dca9e688d97d0f5394613a9fdd518b17e32",
+  "files": {
+    "README.md": "# review_changes\n\nThe `review-changes` workflow, exported as a pack.\n\n## Usage\n\nInstall the pack, add it to `trusted_packs`, then run `workflow run review-changes`.\n",
+    "manifest.json": "{\n  \"assets\": [\n    \"README.md\",\n    \"workflows/index.json\",\n    \"workflows/review_changes.rhai\"\n  ],\n  \"authors\": [\n    \"local\"\n  ],\n  \"dependencies\": [],\n  \"description\": \"Review the changes of a branch\",\n  \"kind\": \"assets\",\n  \"manifest_version\": 1,\n  \"name\": \"review_changes\",\n  \"namespace\": \"local\",\n  \"tags\": [\n    \"workflow\"\n  ],\n  \"version\": \"0.1.0\"\n}\n",
+    "workflows/index.json": "[\n  {\n    \"description\": \"Review the changes of a branch\",\n    \"file\": \"review_changes.rhai\",\n    \"name\": \"review-changes\",\n    \"when_to_use\": \"before a merge\"\n  }\n]\n",
+    "workflows/review_changes.rhai": "let meta = #{ name: \"review-changes\", description: \"Review the changes of a branch\", when_to_use: \"before a merge\" };\nlet r = agent(\"review the diff\");\ncomplete(r.output);\n"
+  }
+}
