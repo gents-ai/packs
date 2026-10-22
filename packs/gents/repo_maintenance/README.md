@@ -1,6 +1,6 @@
 # Repository maintenance pack
 
-This self-contained pack performs a whole-repository, behavior-preserving cleanup round. It follows the code-review pack's durable graph, but scans the current tree and recent history, plans focused work units, and executes them as an ordered commit series rather than stopping at recommendations:
+This pack performs a whole-repository, behavior-preserving cleanup round. It follows the code-review pack's review-changes workflow, but scans the current tree and recent history, plans focused work units, and executes them as an ordered commit series rather than stopping at recommendations:
 
 Runtime configuration is authored once in `pack_config.json`. The distribution
 `manifest.json` points to that canonical bundle and lists it with the schema and
@@ -25,8 +25,8 @@ Recon, scanning, verification, and commit planning are read-only. The runtime pr
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id>
-gents pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id>   # once published to the registry
+gents pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>
+gents pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>   # once published to the registry
 ```
 
 ## Bindings and prerequisites
@@ -35,6 +35,11 @@ The pack declares two inference slots, bound at install time:
 
 - `coordinator`: repository inventory, triage, integration, and publication (`maintenance-execute-skip`, `maintenance-integrate`, `maintenance-publish`, `maintenance-recon`, `maintenance-triage`, `maintenance-verify`).
 - `scanner`: bounded parallel concern scans and work-package execution (`maintenance-execute`, `maintenance-scan`).
+
+The `code_review` and `rhai_workflows` dependency packs declare three more required slots, bound in the same install command (a name shared with this pack, such as `coordinator`, binds both):
+
+- `worker` and `verifier` (`code_review`): the review workflow's parallel scans and adversarial verification.
+- `wf_read_only` (`rhai_workflows`): the workflow engine's read-only agent steps.
 
 The one prerequisite is a target repository checkout, provided per run through `MAINTENANCE_ROOT` (see Inputs and outputs below); there is no default, so a run cannot start without it.
 

@@ -40,7 +40,10 @@
     "gents-ai contributors"
   ],
   "config": "pack_config.json",
-  "dependencies": [],
+  "dependencies": [
+    "code_review",
+    "rhai_workflows"
+  ],
   "description": "Six-stage repository maintenance round: inventory -> concern swarm -> verification -> commit planning -> serial execution -> one reviewed PR",
   "inference_slots": [
     {
@@ -71,5 +74,5 @@
   "tags": [
     "example"
   ],
-  "version": "1.0.2"
+  "version": "1.1.0"
 }

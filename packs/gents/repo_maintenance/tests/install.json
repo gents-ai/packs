@@ -64,6 +64,10 @@
     "slots": [
       "coordinator",
       "scanner"
+    ],
+    "dependencies": [
+      "code_review",
+      "rhai_workflows"
     ]
   }
 }
