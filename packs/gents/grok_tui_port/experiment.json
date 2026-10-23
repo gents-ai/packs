@@ -257,11 +257,5 @@
       }
     ]
   },
-  "await_timeout_secs": ${GENTS_GROK_PORT_AWAIT_TIMEOUT_SECS:-86400},
-  "graph_dependency_environment": {
-    "code_review": {
-      "GENTS_REVIEW_ENDPOINT": "${GENTS_GROK_PORT_ENDPOINT_1:-http://127.0.0.1:8000/v1}",
-      "GENTS_REVIEW_MODEL": "${GENTS_GROK_PORT_MODEL:-GLM-5.3-Flash-NVFP4}"
-    }
-  }
+  "await_timeout_secs": ${GENTS_GROK_PORT_AWAIT_TIMEOUT_SECS:-86400}
 }

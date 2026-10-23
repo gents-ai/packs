@@ -15,7 +15,7 @@ does not write runtime configuration. Incorporate the surface into a document
 pack's canonical `pack_config.json`, bind its `node_did` to the consuming
 pack's owning node, then reference `mailbox-writes` from the
 intended context's `Tools.datastore` configuration after reviewing its declared
-fields. There is no graph or seed in this asset pack.
+fields. There is no configuration or seed in this asset pack.
 
 ## Bindings and prerequisites
 

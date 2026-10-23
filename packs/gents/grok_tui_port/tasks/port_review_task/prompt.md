@@ -45,7 +45,7 @@ base, so missing cross-slice imports and the implementation receipt's explicit
 Judge internal Rust coherence, protocol fidelity, safety/lifecycle invariants,
 test quality, and compatibility with the shared contract. The convergence
 agent will compile and reconcile interfaces only after all accepted diffs are
-serially applied; the later code-review graph reviews the combined commit.
+serially applied; the later review-changes workflow reviews the combined commit.
 
 Apply the slice-specific criteria from the implementation task. In particular,
 the server must hold the sibling extension-swapped lock for the actual spawned

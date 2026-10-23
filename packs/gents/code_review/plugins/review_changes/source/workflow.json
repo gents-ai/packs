@@ -1,0 +1,7 @@
+{
+  "name": "review-changes",
+  "description": "Review a git diff through four lenses, adversarially verify every candidate, and triage",
+  "when_to_use": "Before merging a branch or commit range. args: {base, head, repository, focus}",
+  "phases": ["Recon", "Scan", "Verify", "Triage"],
+  "version": 1
+}

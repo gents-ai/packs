@@ -22,7 +22,7 @@
       "expr": "(.config.tools | length) == 1 and (.config.tools[0].integrations.plugins | map(.plugin)) == [\"gents/image_tools\"] and (.config.agents | map(.agent_id)) == [\"image-helper\"]"
     },
     {
-      "name": "the graph nodes run the plugin and every output collection has a schema",
+      "name": "the callback nodes run the plugin and every output collection has a schema",
       "expr": "(.config.callbacks | all(.handler.plugin == \"gents/image_tools\")) and ([.config.callbacks[].handler.outputs[].collection] | sort) == [\"ImageChunk\", \"ImageOutput\", \"ImageResult\"] and (.manifest.schemas | length) == 4"
     },
     {

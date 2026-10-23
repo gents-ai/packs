@@ -1,0 +1,203 @@
+{
+  "expect": {
+    "effects": {
+      "progress": {
+        "active": [],
+        "budget": {
+          "remaining": 31,
+          "spent": 1,
+          "total": 32
+        },
+        "last_event": "spawned scan-correctness, scan-architecture-reuse, scan-security-concurrency, scan-workflow-invariants",
+        "last_event_at": null,
+        "observed_terminal_children": 1,
+        "phases": [
+          {
+            "state": "done",
+            "title": "Recon"
+          },
+          {
+            "state": "active",
+            "title": "Scan"
+          },
+          {
+            "state": "pending",
+            "title": "Verify"
+          },
+          {
+            "state": "pending",
+            "title": "Triage"
+          }
+        ],
+        "revision": 0,
+        "spawned": 1,
+        "state": "running",
+        "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
+      },
+      "spawn": [
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Review this change through the lens `correctness`. Review functional behavior, state transitions, compatibility, and tests.\nOperator focus: \"Review the diff for material correctness, safety, durability, and maintainability defects.\"\n\nIn the rules below, <B> is aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and <H> is cccccccccccccccccccccccccccccccccccccccc.\nRead the change only with `git diff --find-renames=50% --unified=12 <B> <H> -- <path>` and source only with `git show <H>:<path>` or `git grep -n <pattern> <H>`. Never read working-tree files: they may change while you review.\n\nChanged paths (JSON): [\"src/lib.rs\"]\n\nReview progressively. Incomplete, truncated, or inconsistent evidence is a blocker, not a completed scan: set blocked to true and describe it in blocker. Report at most 3 distinct actionable defects introduced by the change as candidates, or none. Each candidate needs a short slug and title, an exact changed path and line, a supporting excerpt copied verbatim from `git show <H>:<path>` without diff markers, the concrete impact, and a confidence of at least 80. Severity: Critical for security or data loss, Major for incorrect behavior or liveness, Cleanup for concrete duplication or unnecessary complexity.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"blocked\":{\"type\":\"boolean\"},\"blocker\":{\"type\":\"string\"},\"candidates\":{\"items\":{\"properties\":{\"confidence\":{\"type\":\"integer\"},\"excerpt\":{\"type\":\"string\"},\"impact\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\"},\"path\":{\"type\":\"string\"},\"severity\":{\"enum\":[\"Critical\",\"Major\",\"Cleanup\"],\"type\":\"string\"},\"slug\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"slug\",\"title\",\"path\",\"line\",\"severity\",\"excerpt\",\"impact\",\"confidence\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"blocked\",\"blocker\",\"candidates\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "scan-correctness",
+          "target": "code-review-scan",
+          "title": "scan-correctness"
+        },
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Review this change through the lens `architecture-reuse`. Review duplication, ownership boundaries, and reuse of existing abstractions.\nOperator focus: \"Review the diff for material correctness, safety, durability, and maintainability defects.\"\n\nIn the rules below, <B> is aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and <H> is cccccccccccccccccccccccccccccccccccccccc.\nRead the change only with `git diff --find-renames=50% --unified=12 <B> <H> -- <path>` and source only with `git show <H>:<path>` or `git grep -n <pattern> <H>`. Never read working-tree files: they may change while you review.\n\nChanged paths (JSON): [\"src/lib.rs\"]\n\nReview progressively. Incomplete, truncated, or inconsistent evidence is a blocker, not a completed scan: set blocked to true and describe it in blocker. Report at most 3 distinct actionable defects introduced by the change as candidates, or none. Each candidate needs a short slug and title, an exact changed path and line, a supporting excerpt copied verbatim from `git show <H>:<path>` without diff markers, the concrete impact, and a confidence of at least 80. Severity: Critical for security or data loss, Major for incorrect behavior or liveness, Cleanup for concrete duplication or unnecessary complexity.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"blocked\":{\"type\":\"boolean\"},\"blocker\":{\"type\":\"string\"},\"candidates\":{\"items\":{\"properties\":{\"confidence\":{\"type\":\"integer\"},\"excerpt\":{\"type\":\"string\"},\"impact\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\"},\"path\":{\"type\":\"string\"},\"severity\":{\"enum\":[\"Critical\",\"Major\",\"Cleanup\"],\"type\":\"string\"},\"slug\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"slug\",\"title\",\"path\",\"line\",\"severity\",\"excerpt\",\"impact\",\"confidence\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"blocked\",\"blocker\",\"candidates\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "scan-architecture-reuse",
+          "target": "code-review-scan",
+          "title": "scan-architecture-reuse"
+        },
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Review this change through the lens `security-concurrency`. Review authorization, identity, filesystem safety, concurrency, and recovery.\nOperator focus: \"Review the diff for material correctness, safety, durability, and maintainability defects.\"\n\nIn the rules below, <B> is aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and <H> is cccccccccccccccccccccccccccccccccccccccc.\nRead the change only with `git diff --find-renames=50% --unified=12 <B> <H> -- <path>` and source only with `git show <H>:<path>` or `git grep -n <pattern> <H>`. Never read working-tree files: they may change while you review.\n\nChanged paths (JSON): [\"src/lib.rs\"]\n\nReview progressively. Incomplete, truncated, or inconsistent evidence is a blocker, not a completed scan: set blocked to true and describe it in blocker. Report at most 3 distinct actionable defects introduced by the change as candidates, or none. Each candidate needs a short slug and title, an exact changed path and line, a supporting excerpt copied verbatim from `git show <H>:<path>` without diff markers, the concrete impact, and a confidence of at least 80. Severity: Critical for security or data loss, Major for incorrect behavior or liveness, Cleanup for concrete duplication or unnecessary complexity.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"blocked\":{\"type\":\"boolean\"},\"blocker\":{\"type\":\"string\"},\"candidates\":{\"items\":{\"properties\":{\"confidence\":{\"type\":\"integer\"},\"excerpt\":{\"type\":\"string\"},\"impact\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\"},\"path\":{\"type\":\"string\"},\"severity\":{\"enum\":[\"Critical\",\"Major\",\"Cleanup\"],\"type\":\"string\"},\"slug\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"slug\",\"title\",\"path\",\"line\",\"severity\",\"excerpt\",\"impact\",\"confidence\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"blocked\",\"blocker\",\"candidates\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "scan-security-concurrency",
+          "target": "code-review-scan",
+          "title": "scan-security-concurrency"
+        },
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Review this change through the lens `workflow-invariants`. Review repository-specific workflow, evidence, workspace, and integration invariants.\nOperator focus: \"Review the diff for material correctness, safety, durability, and maintainability defects.\"\n\nIn the rules below, <B> is aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and <H> is cccccccccccccccccccccccccccccccccccccccc.\nRead the change only with `git diff --find-renames=50% --unified=12 <B> <H> -- <path>` and source only with `git show <H>:<path>` or `git grep -n <pattern> <H>`. Never read working-tree files: they may change while you review.\n\nChanged paths (JSON): [\"src/lib.rs\"]\n\nReview progressively. Incomplete, truncated, or inconsistent evidence is a blocker, not a completed scan: set blocked to true and describe it in blocker. Report at most 3 distinct actionable defects introduced by the change as candidates, or none. Each candidate needs a short slug and title, an exact changed path and line, a supporting excerpt copied verbatim from `git show <H>:<path>` without diff markers, the concrete impact, and a confidence of at least 80. Severity: Critical for security or data loss, Major for incorrect behavior or liveness, Cleanup for concrete duplication or unnecessary complexity.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"blocked\":{\"type\":\"boolean\"},\"blocker\":{\"type\":\"string\"},\"candidates\":{\"items\":{\"properties\":{\"confidence\":{\"type\":\"integer\"},\"excerpt\":{\"type\":\"string\"},\"impact\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\"},\"path\":{\"type\":\"string\"},\"severity\":{\"enum\":[\"Critical\",\"Major\",\"Cleanup\"],\"type\":\"string\"},\"slug\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"slug\",\"title\",\"path\",\"line\",\"severity\",\"excerpt\",\"impact\",\"confidence\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"blocked\",\"blocker\",\"candidates\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "scan-workflow-invariants",
+          "target": "code-review-scan",
+          "title": "scan-workflow-invariants"
+        }
+      ],
+      "state": {
+        "corrections": {},
+        "judged": {
+          "recon": {
+            "ok": {
+              "output": {
+                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
+                "name_only": "src/lib.rs\n",
+                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "agent_budget": 32,
+    "args": {
+      "base": "HEAD~1",
+      "head": "HEAD"
+    },
+    "argv": [],
+    "caller": {
+      "agent_id": "default",
+      "correlation": null,
+      "cwd": "/work/repo",
+      "node_did": "did:key:z6Mk",
+      "request_doc_id": "bae-req",
+      "request_hop": 1,
+      "request_id": "req-1",
+      "session_id": "sess-1",
+      "started_by_job": false,
+      "tool_call_id": "call_1"
+    },
+    "ceiling": {
+      "dynamic": "check",
+      "dynamic_targets": [],
+      "max_live": 8,
+      "max_messages_per_slot": 4,
+      "remaining_spawns": 32,
+      "result_bytes": 65536,
+      "targets": [
+        "code-review-recon",
+        "code-review-scan",
+        "code-review-verify",
+        "code-review-triage"
+      ]
+    },
+    "children": {
+      "recon": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-recon-1",
+        "session_id": "job-session:recon",
+        "state": "completed",
+        "title": "recon",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      }
+    },
+    "control": null,
+    "job": {
+      "chain": [
+        "bae-row"
+      ],
+      "chain_root_doc_id": "bae-row",
+      "handle": "review-changes",
+      "row_doc_id": "bae-row"
+    },
+    "job_calls": true,
+    "job_results": {
+      "text": {
+        "result": {
+          "slots": {
+            "recon": {
+              "text": "Done.\n\n```json\n{\n \"base_sha\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n \"head_sha\": \"cccccccccccccccccccccccccccccccccccccccc\",\n \"base_tree\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n \"head_tree\": \"dddddddddddddddddddddddddddddddddddddddd\",\n \"name_only\": \"src/lib.rs\\n\",\n \"stat\": \" src/lib.rs | 2 +-\\n 1 file changed, 1 insertion(+), 1 deletion(-)\\n\"\n}\n```\n"
+            }
+          }
+        }
+      }
+    },
+    "jobs": [
+      {
+        "adopted_at": 1761000000000,
+        "handle": "review-changes",
+        "resume_of": null,
+        "row_doc_id": "bae-row",
+        "state": "running",
+        "tool_call_id": "call_1"
+      }
+    ],
+    "mounts": [],
+    "origin": "installed",
+    "pin": {
+      "adopted_at": 1761000000000,
+      "agent_budget": 32,
+      "args_digest": "sha256:args",
+      "ceiling_at_pin": {
+        "dynamic": "check",
+        "dynamic_targets": [],
+        "max_live": 8,
+        "max_messages_per_slot": 4,
+        "remaining_spawns": 32,
+        "result_bytes": 65536,
+        "targets": [
+          "code-review-recon",
+          "code-review-scan",
+          "code-review-verify",
+          "code-review-triage"
+        ]
+      },
+      "chain_root_doc_id": "bae-row",
+      "cwd": "/work/repo",
+      "engine_digest": "sha256:engine",
+      "handle": "review-changes",
+      "origin": "installed",
+      "plugin_ref": "gents/review_changes",
+      "script_id": "e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f",
+      "source_digest": "sha256:e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f"
+    },
+    "protocol": 1,
+    "scratch": {}
+  }
+}

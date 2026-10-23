@@ -3,7 +3,6 @@
 #   1. gents pack build, then the built .pack verified against its digest;
 #   2. gents pack test: the install-time check and every plugin's cases;
 #   3. every case in <pack>/tests/*.json, each holding one expectation:
-#        {"graphs": [...]}   graph ids the pack's graph compiles to
 #        {"install": {"documents": [...], "slots": [...], "dependencies": [...]}}
 #                            a documents pack installed from its directory
 #                            into a fresh home creates exactly these
@@ -16,11 +15,6 @@
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
 #                            remove releases them
-#        {"install": {"graph": "<graph_id>", "slots": [...], "documents": [...]}}
-#                            a graph pack installed from its directory
-#                            activates this graph and binds these inference
-#                            slots; a reinstall keeps the revision digest, and
-#                            a remove deletes exactly these documents
 #        {"defs": "<jq defs>", "jq": [{"name": "...", "expr": "<jq boolean>"}]}
 #                            each expression (after the optional defs) is
 #                            true over one document built
@@ -47,13 +41,13 @@
 #                            registers exactly these plugins, a reinstall
 #                            keeps the same set, and a remove releases them;
 #                            next to "documents" it also checks the plugins
-#                            a documents or graph pack ships
+#                            a documents pack ships
 #        runtime "repository" may also hold "copy": {"<repo path>": "<file
 #                            path inside the pack>"} for binary files, which
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
-# Every documents or graph pack also gets the built-in checks: it declares
+# Every documents pack also gets the built-in checks: it declares
 # inference slots and authors no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
 # and is pre-stored in the install's home.
@@ -84,6 +78,7 @@ trap cleanup EXIT
 namespace="$(jq -r '.namespace // "gents"' "$dir/manifest.json")"
 name="$(jq -r '.name' "$dir/manifest.json")"
 kind="$(jq -r '.kind' "$dir/manifest.json")"
+[[ "$kind" =~ ^(documents|assets|plugins)$ ]] || fail "kind is $kind, not documents, assets or plugins"
 pack="$namespace/$name"
 failures=0
 
@@ -115,7 +110,7 @@ expect_set() {
 
 [[ "$namespace" == "gents" ]] || fail "namespace is $namespace, not gents"
 
-# Built first: pack check refuses a documents or graph pack whose plugins
+# Built first: pack check refuses a documents pack whose plugins
 # are not compiled yet.
 "$gents" pack build "$dir" --out "$work/built.pack" >"$work/build.json"
 built="$(jq -r '.digest' "$work/build.json")"
@@ -140,7 +135,6 @@ while read -r plugin passed failed; do
   fi
 done < <(jq -r '.plugins // [] | .[] | "\(.plugin) \(.passed) \(.failures | length)"' "$work/test.json")
 jq -r '.plugins // [] | .[].failures[]' "$work/test.json" >&2
-graphs="$(jq -c '.graphs // []' "$work/test.json")"
 
 # A Rust plugin's own `cargo test` (unit tests ported alongside its source,
 # e.g. paging or bounds checks the golden/case files above cannot express)
@@ -205,7 +199,7 @@ store_dependencies() {
 # Checks every pack of a configuration kind must pass; one jq pass.
 builtin_checks() {
   local doc dep
-  [[ "$kind" == "documents" || "$kind" == "graph" ]] || return 0
+  [[ "$kind" == "documents" ]] || return 0
   doc="$(show_document)"
   jq -e '(.manifest.inference_slots // []) | length > 0' "$doc" >/dev/null \
     && pass "declares inference slots" || fail "declares no inference slots"
@@ -313,38 +307,6 @@ register_services() {
   mv "$root/config-next.json" "$root/pack_config.json"
   "$gents" config apply --home "$home" --root "$root" >"$work/register.json" 2>"$work/register.err" \
     || { fail "install: could not register services: $(tail -1 "$work/register.err")"; return 1; }
-}
-
-install_graph() {
-  local case="$1" home args=() arg want
-  home="$(fresh_home "$(basename "$case" .json)")"
-  while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
-  store_dependencies "$home"
-  register_services "$home" || return 0
-
-  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
-  expect_set "$(basename "$case"): inference slots" \
-    "$(jq -c '.install.slots // []' "$case")" \
-    "$(jq -c '.bindings.inference_slots | keys' "$work/install.json")"
-  if [[ "$(jq -r '.install.graph_id' "$work/install.json")" == "$(jq -r '.install.graph' "$case")" ]]; then
-    pass "$(basename "$case"): installs graph $(jq -r '.install.graph' "$case")"
-  else
-    fail "$(basename "$case"): installed graph $(jq -r '.install.graph_id' "$work/install.json"), want $(jq -r '.install.graph' "$case")"
-  fi
-
-  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
-  if [[ "$(jq -r '.install.revision_digest' "$work/install.json")" == "$(jq -r '.install.revision_digest' "$work/reinstall.json")" ]]; then
-    pass "$(basename "$case"): reinstall keeps the revision digest"
-  else
-    fail "$(basename "$case"): reinstall changed the revision digest"
-  fi
-
-  want="$(jq -c '.install.documents' "$case")"
-  "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
-  # Graph trigger, event source and revision ids derive from the graph's
-  # digest, so they are compared with the digest elided.
-  expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed
-    | map(gsub("graph-trigger-[0-9a-f]{64}-[0-9a-f]{16}"; "graph-trigger-*") | gsub("^GraphRevision/.*"; "GraphRevision/*")) | unique' "$work/remove.json")"
 }
 
 install_assets() {
@@ -559,13 +521,8 @@ shopt -s nullglob
 cases=("$dir"/tests/*.json)
 [[ ${#cases[@]} -gt 0 ]] || fail "has no tests/*.json cases"
 for case in "${cases[@]}"; do
-  if jq -e 'has("graphs")' "$case" >/dev/null; then
-    expect_set "$(basename "$case"): graphs" "$(jq -c '.graphs' "$case")" "$graphs"
-  elif jq -e '.install | has("graph")' "$case" >/dev/null 2>&1; then
-    [[ "$kind" == "graph" ]] || fail "$(basename "$case"): graph case in a $kind pack"
-    install_graph "$case"
-  elif jq -e '.install | has("documents")' "$case" >/dev/null 2>&1; then
-    [[ "$kind" == "documents" || "$kind" == "graph" ]] || fail "$(basename "$case"): documents case in a $kind pack"
+  if jq -e '.install | has("documents")' "$case" >/dev/null 2>&1; then
+    [[ "$kind" == "documents" ]] || fail "$(basename "$case"): documents case in a $kind pack"
     install_documents "$case"
   elif jq -e '.install | has("assets")' "$case" >/dev/null 2>&1; then
     [[ "$kind" == "assets" ]] || fail "$(basename "$case"): assets case in a $kind pack"
@@ -582,7 +539,7 @@ for case in "${cases[@]}"; do
   elif jq -e 'has("cli_flags")' "$case" >/dev/null; then
     cli_flags "$case"
   else
-    fail "$(basename "$case"): not a graphs, install, runtime, jq, eval_case or cli_flags case"
+    fail "$(basename "$case"): not an install, runtime, jq, eval_case or cli_flags case"
   fi
 done
 

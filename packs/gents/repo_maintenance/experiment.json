@@ -25,7 +25,9 @@
       "area_min": "${GENTS_MAINTENANCE_MIN_AREAS:-5}",
       "area_max": "${GENTS_MAINTENANCE_MAX_AREAS:-10}",
       "history_depth": "${GENTS_MAINTENANCE_HISTORY_DEPTH:-250}",
-      "pr_base": "${GENTS_MAINTENANCE_PR_BASE:-main}"
+      "pr_base": "${GENTS_MAINTENANCE_PR_BASE:-main}",
+      "orchestrator_home": "${GENTS_MAINTENANCE_ORCHESTRATOR_HOME:-.gents/maintenance-home}",
+      "orchestrator_graphql": "${GENTS_MAINTENANCE_ORCHESTRATOR_GRAPHQL:-http://127.0.0.1:19192/api/v0/graphql}"
     }
   },
   "default_prompt": "${GENTS_MAINTENANCE_PROMPT:-Find the next small, behavior-preserving repository cleanup wave and package the strongest work into focused 1-3 finding commits on one shared branch and worktree.}",
@@ -91,7 +93,7 @@
       {
         "task_id": "maintenance-publish-task",
         "required_tool_names": ["query", "write_maintenance_pull_request"],
-        "required_query_collections": ["MaintenanceExecutionSummary", "MaintenanceExecutionResult", "MaintenanceWorkPackage"]
+        "required_query_collections": ["MaintenanceExecutionSummary", "MaintenanceExecutionResult", "MaintenanceWorkPackage", "MaintenanceJob"]
       }
     ],
     "source_edges": [],

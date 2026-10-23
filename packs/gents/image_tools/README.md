@@ -67,10 +67,10 @@ the `warnings` that say what was scaled or recompressed to fit. A result with
 `next.cursor` is continued by calling again with that `cursor` and every other
 field unchanged. `plugins/image_tools/TOOL.md` is what the model reads.
 
-## Use it as a graph node
+## Use it as a callback node
 
 Installing the pack also installs two plugin nodes, `image-plan` and
-`image-run`, wired as plain callbacks, so no model and no graph pack is
+`image-run`, wired as plain callbacks, so no model is
 needed: create an `ImageJob` document and the records below appear.
 
 ```sh
@@ -106,7 +106,7 @@ is the path the host bound for the job, so the chunk can bind it again.
 A chunk returns up to 3 MB of images. A tile chunk with more tiles than fit
 says `complete: false` with a `cursor`; create the chunk again with that
 `cursor` and the next tiles follow, nothing repeated. A job plans at most
-1000 chunks and says so when it would exceed them. Graph nodes read and never
+1000 chunks and says so when it would exceed them. Callback nodes read and never
 write files; use the CLI or the model tool to write.
 
 ## Use it from the CLI
@@ -140,7 +140,7 @@ paged plugin: send the same input plus `"cursor"` until `next` is absent.
   `ocr`; the two tools share the working folder.
 - A picture another tool produced (a chart from a charts pack, a figure from
   `ocr` with `figure_images`) is passed as `data_base64` and `name`, or as an
-  `ImageJob` with `data_base64` in a graph; every step then works on it like a
+  `ImageJob` with `data_base64` in a callback chain; every step then works on it like a
   file. Chain `view` after `crop` or `tile` to look at part of it.
 - A document pack that embeds pictures can take the files `image_tools`
   wrote, or the `image_base64` of an `ImageOutput`; `strip_metadata` first when
@@ -191,7 +191,7 @@ one that accepts images also looks at the pictures.
 - An attached image is at most 8000 pixels on a side and a call attaches at
   most 20, the limits Anthropic Messages puts on one request; a larger result
   is listed `not_attached` and the rest page through the cursor.
-- Not done: graph nodes that write files, arbitrary-angle rotation, writing animations, text outside ASCII on annotations, a measured
+- Not done: callback nodes that write files, arbitrary-angle rotation, writing animations, text outside ASCII on annotations, a measured
   performance table (only that a 24 megapixel JPEG view and a 36 megapixel PNG
   view finish well inside the limits; everything else is not measured).
 
@@ -203,11 +203,11 @@ plugin's own `cargo test` runs the native ones.
 | Kind | What |
 | --- | --- |
 | Unit tests, colocated in each module | Every Exif orientation pixel by pixel on a 3x2 picture, crop offsets, fit and fill arithmetic, tile coverage and overlap, diff boxes, annotate geometry, hashing, palette, encoders, the cursor, name and path checks |
-| End-to-end tests (`run_tests`, `step_tests`, `io_tests`, `graph_tests`) | Each operation through the same entry point the host uses, expected values from independent knowledge (the image crate's own transforms, counted pixels, known payloads); files, overwrite rules, names that leave the folder, symbolic links, hostile and oversized inputs, paging across images and tiles, the graph records |
+| End-to-end tests (`run_tests`, `step_tests`, `io_tests`, `graph_tests`) | Each operation through the same entry point the host uses, expected values from independent knowledge (the image crate's own transforms, counted pixels, known payloads); files, overwrite rules, names that leave the folder, symbolic links, hostile and oversized inputs, paging across images and tiles, the callback records |
 | Property tests (`prop_tests`, proptest, fixed seed) | Four quarter turns and two flips are the identity; every orientation is undone by its inverse; crop gives the asked size; fit never exceeds its box and keeps the aspect within a pixel; PNG to lossless WebP to PNG is pixel-identical; `diff(a, a)` is zero and diff is symmetric; tiles reassemble to the source; perceptual hashes survive a resize and separate unrelated pictures; accepted names never leave the folder; drawing with any coordinates never panics; arbitrary requests never panic |
 | Mutation fuzz (`fuzz_tests`) | Every committed fixture is corrupted 150 times with a fixed seed and run through the pixel steps; damaged code pictures and noise go through the code reader. `IMAGE_TOOLS_FUZZ_SCALE=8` digs deeper |
 | Plugin cases (`plugins/image_tools/tests/*.json`) | Exact output through the real WebAssembly host for every operation, every input format, bind folder, inline data, cursor paging, warnings and hostile files |
-| Pack cases (`tests/*.json`) | Install (agent, Tools, the plugin; reinstall keeps; remove releases), content assertions, and graph runs through a real server for a folder and a single file |
+| Pack cases (`tests/*.json`) | Install (agent, Tools, the plugin; reinstall keeps; remove releases), content assertions, and callback runs through a real server for a folder and a single file |
 
 Fixtures are small and committed, written by
 `plugins/image_tools/tools/gen_fixtures.rs` (`cargo run --example gen_fixtures`)

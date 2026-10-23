@@ -1,0 +1,17 @@
+{
+  "node": {},
+  "agents": [{"agent_id": "review-live-driver", "context_id": "review-live-driver-context", "display_name": "Review live driver", "inference_profile_id": "gents:inference-slot:driver"}],
+  "contexts": [{"context_id": "review-live-driver-context", "display_name": "Review live driver", "tools_id": "review-live-driver-tools"}],
+  "tools": [
+    {
+      "agents": {"enabled": false, "target_ids": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"]},
+      "display_name": "Run review-changes and check its counts",
+      "host": {"bash": {"mode": "Unrestricted"}, "files": {"mode": "ReadOnly"}},
+      "integrations": {"plugins": [{"plugin": "gents/review_changes", "job": {"agent_targets": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"], "max_spawns": 128, "max_wall_secs": 7200, "policy": {"dynamic": "off", "trusted_packs": ["gents/code_review"]}}}]},
+      "tools_id": "review-live-driver-tools"
+    }
+  ],
+  "event_sources": [{"correlation_field": "job_id", "display_name": "code-review-live", "event_kind": "created", "event_source_id": "code-review-live", "source_collection": "CodeReviewLiveJob"}],
+  "tasks": [{"agent_id": "review-live-driver", "display_name": "code-review-live-task", "prompt_template": "./tasks/live_task/prompt.md", "task_id": "code-review-live-task"}],
+  "triggers": [{"concurrency": "serial", "display_name": "code-review-live", "source": {"event_source_id": "code-review-live", "kind": "event"}, "task_id": "code-review-live-task", "trigger_id": "code-review-live"}]
+}
