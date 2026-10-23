@@ -89,26 +89,31 @@ module.exports = (input) => {
 ## Promoting a workflow to a pack
 
 When asked to promote a workflow you ran, make it an installed plugin that no
-longer needs this tool or the dynamic policy. You need a bash tool that may
-write under the packs checkout; if yours is read-only, say so and stop. Steps:
+longer needs this tool or the dynamic policy. Steps:
 
-1. In `packs/gents` of the checkout run
-   `gents pack new <name> --template workflow --language js`. It writes
-   `plugins/<name>/source/main.js` (a `module.exports` step function),
+1. Scaffold with the `config` tool, one call, options as a JSON object:
+   `{"argv":["pack","scaffold","<name>"],"options":{"template":"workflow","language":"js"}}`.
+   `<name>` is snake_case. The pack lands at `<name>` under your tool root
+   with `plugins/<name>/source/main.js` (a `module.exports` step function),
    `TOOL.md`, a step-0 fixture under `plugins/<name>/tests/`, a worker persona
    and target named `<name-with-dashes>-worker`, and the caller Tools template.
+   Scaffolding needs your files tool in ReadWrite mode; if it is read-only, say
+   so and stop.
 2. Put your step function into `source/main.js` in place of the skeleton's
    `step0` and `advance`. Keep `module.exports = (input) => ...`. Keep the
    step-0 `pin` object (`script_id`, `source_digest`, `agent_budget`,
    `handle`): the host stamps it for a dynamic run, an installed plugin writes
    it. Spawn on the pack's `TARGET`, not on `wf-read-only`. Nothing in the
    file may read stdin or write stdout; `gents pack build` wraps it.
-3. Rewrite the fixture's `expect` to what your step 0 returns, then run
-   `gents pack build packs/gents/<name>`, `gents pack test packs/gents/<name>`
-   and `gents pack check packs/gents/<name>` until all pass.
+3. Rewrite the fixture's `expect` to what your step 0 returns. Then, with
+   your bash tool from the tool root, run `gents pack build <name>`,
+   `gents pack test <name>` and `gents pack check <name>` until all pass
+   (`config` runs `["pack","check","<name>"]` but refuses build and test).
+   Without a bash tool that may run `gents`, stop after the fixture and say
+   the operator has to build.
 4. Stop and ask the operator to finish; you cannot grant the pack job
    authority yourself. Give them these two commands, filled in:
-   `gents pack install packs/gents/<name> --home <home> --node-did <did> --grant-authority --inference-slot worker=<profile>`
+   `gents pack install <tool-root>/<name> --home <home> --node-did <did> --grant-authority --inference-slot worker=<profile>`
    and `gents pack wire gents/<name> --agent <agent> --targets-from gents/<name> --home <home> --node-did <did>`.
    After that the workflow is the tool `<name>`, called with `args` and
    `agent_budget` only.
