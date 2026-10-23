@@ -85,3 +85,30 @@ module.exports = (input) => {
   `job_calls` and read `job_results` on the next call, as above.
 - A worker whose prompt needs files or tools it lacks answers that it cannot;
   prompts that ask for reasoning or prose are fine.
+
+## Promoting a workflow to a pack
+
+When asked to promote a workflow you ran, make it an installed plugin that no
+longer needs this tool or the dynamic policy. You need a bash tool that may
+write under the packs checkout; if yours is read-only, say so and stop. Steps:
+
+1. In `packs/gents` of the checkout run
+   `gents pack new <name> --template workflow --language js`. It writes
+   `plugins/<name>/source/main.js` (a `module.exports` step function),
+   `TOOL.md`, a step-0 fixture under `plugins/<name>/tests/`, a worker persona
+   and target named `<name-with-dashes>-worker`, and the caller Tools template.
+2. Put your step function into `source/main.js` in place of the skeleton's
+   `step0` and `advance`. Keep `module.exports = (input) => ...`. Keep the
+   step-0 `pin` object (`script_id`, `source_digest`, `agent_budget`,
+   `handle`): the host stamps it for a dynamic run, an installed plugin writes
+   it. Spawn on the pack's `TARGET`, not on `wf-read-only`. Nothing in the
+   file may read stdin or write stdout; `gents pack build` wraps it.
+3. Rewrite the fixture's `expect` to what your step 0 returns, then run
+   `gents pack build packs/gents/<name>`, `gents pack test packs/gents/<name>`
+   and `gents pack check packs/gents/<name>` until all pass.
+4. Stop and ask the operator to finish; you cannot grant the pack job
+   authority yourself. Give them these two commands, filled in:
+   `gents pack install packs/gents/<name> --home <home> --node-did <did> --grant-authority --inference-slot worker=<profile>`
+   and `gents pack wire gents/<name> --agent <agent> --targets-from gents/<name> --home <home> --node-did <did>`.
+   After that the workflow is the tool `<name>`, called with `args` and
+   `agent_budget` only.
