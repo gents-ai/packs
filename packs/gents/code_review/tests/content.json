@@ -1,57 +1,77 @@
 {
-  "defs": "def stages: . as $d | [.config.graph_capabilities[] as $c | ($d.config.tasks[] | select(.task_id == $c.target.task_id)) as $t | ($d.config.agents[] | select(.agent_id == $t.agent_id)) as $b | ($d.config.contexts[] | select(.context_id == $b.context_id)) as $x | {capability: $c, task: $t, tools: ($d.config.tools[] | select(.tools_id == $x.tools_id))}]; def stage($id): stages | map(select(.capability.capability_id == $id))[0]; def entries($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | .entries.entries[]; def field($e; $n): $e.fields[] | select(.name == $n); def nohost: (.tools.host.files.mode // \"Off\") == \"Off\" and (.tools.host.bash.mode // \"Off\") == \"Off\" and ((.tools.host.cli // []) | length == 0) and (.tools.integrations.lsp == null);",
+  "defs": "def tool($id): .config.tools[] | select(.tools_id == $id); def plugin: .manifest.plugins[0]; def targets: [.config.agent_targets[].target_id] | sort;",
   "jq": [
     {
       "name": "every text asset is non-empty",
       "expr": "[.assets[]] | all(length > 0)"
     },
     {
-      "name": "the plan compiles to 4 nodes, 2 results and the review entry",
-      "expr": "(.assets[\"graphs/code_review.plan.json\"] | fromjson) | (.nodes | length) == 4 and (.results | length) == 2 and (.entries | map(.name)) == [\"review\"]"
+      "name": "the manifest is a 2.0.0 documents pack with no graph or schema and exactly one plugin",
+      "expr": ".manifest | .version == \"2.0.0\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (.plugins | length == 1) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
     },
     {
-      "name": "four stages, each with a goal objective and goal tools but no goal creation",
-      "expr": "stages | length == 4 and all((.task.goal_objective_template | gsub(\"\\\\s\"; \"\") | length) > 0 and .tools.built_ins.enable_goal_tools == true and .tools.built_ins.enable_goal_creation != true)"
+      "name": "no graph, datastore, stage task, schema, .rhai or workflows asset remains",
+      "expr": "(.config | keys) as $k | ([\"graph_capabilities\", \"graph_intents\", \"graphs\", \"datastore_tool_surfaces\", \"tasks\"] | all(. as $x | $k | index($x) == null)) and ([.config.tools[] | has(\"datastore\")] | any | not) and ([.assets | keys[] | select(startswith(\"graphs/\") or startswith(\"schemas/\") or endswith(\".rhai\") or startswith(\"workflows/\"))] | length == 0)"
     },
     {
-      "name": "every stage prompt completes its goal explicitly",
-      "expr": "stages | all(.task.prompt_template | contains(\"`update_goal`\") and contains(\"`status=\\\"complete\\\"`\"))"
+      "name": "review_changes is a Rust job plugin with no asset mount, with TOOL.md and bounded limits",
+      "expr": "plugin | .name == \"review_changes\" and .language == \"rust\" and .job == true and (has(\"asset_mounts\") | not) and .artifact == \"plugins/review_changes.afb\" and .instructions == \"plugins/review_changes/TOOL.md\" and .input_schema.properties.agent_budget.maximum == 1024 and (.input_schema.properties.args.properties | keys) == [\"base\", \"focus\", \"head\", \"repository\"] and .limits.wall_clock_secs <= 900 and (has(\"data\") | not) and (has(\"catalog\") | not) and (has(\"bind_dir\") | not)"
     },
     {
-      "name": "recon and scan have no host tools and no context budget",
-      "expr": ". as $d | [\"review-recon\", \"review-scan\"] | all(. as $id | $d | stage($id) | nohost and (.tools.built_ins.enable_context_budget // false) == false)"
+      "name": "the artifact, TOOL.md and every fixture are declared assets",
+      "expr": ".manifest.assets as $a | ([\"plugins/review_changes.afb\", \"plugins/review_changes/TOOL.md\"] | all(. as $x | $a | index($x) != null)) and ([$a[] | select(startswith(\"plugins/review_changes/tests/\"))] | length >= 13)"
     },
     {
-      "name": "verify reads files and runs offline bash that may write artifacts",
-      "expr": "stage(\"review-verify\") | .tools.host.files.mode == \"ReadOnly\" and .tools.host.bash.mode == \"Unrestricted\" and .tools.host.bash.execution_mode == \"artifact_write\" and .tools.host.bash.network_mode == \"disabled\" and .tools.host.bash.background_enabled == true and ((.tools.host.cli // []) | length == 0) and .tools.integrations.lsp == null and .tools.built_ins.enable_context_budget == true"
+      "name": "the caller Tools template wires the plugin as a job over exactly the four review targets",
+      "expr": ". as $d | tool(\"review-changes-caller\") | .integrations.plugins | length == 1 and (.[0] | .plugin == \"gents/review_changes\" and (.job.agent_targets | sort) == ($d | targets) and .job.max_live >= 4 and .job.max_spawns >= 22 and .job.max_messages_per_slot >= 2)"
     },
     {
-      "name": "scan writes take the area id from the trigger",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"write_candidate_finding\" or .tool_name == \"write_scan_result\")] | length == 2 and all(field(.; \"area_id\") | .required == false and .fill == {\"source_field\": \"area_id\"})"
+      "name": "the caller Tools template grants the caller nothing else",
+      "expr": "tool(\"review-changes-caller\") | (.host == null) and (.built_ins == null) and (.integrations | keys) == [\"plugins\"]"
     },
     {
-      "name": "the recon area writer fills the repository and evidence ids and carries no evidence body",
-      "expr": "[entries(\"review-recon-writes\")][0] | (field(.; \"repository_path\") | .required == false and .fill == {\"source_field\": \"repository_path\"}) and (field(.; \"evidence_id\") | .required == false and .fill == {\"source_field\": \"evidence_id\"}) and (field(.; \"expected_total\") | .required == true and .fill == null) and all(.fields[]; .name != \"evidence\")"
+      "name": "verify Tools exact",
+      "expr": "tool(\"review-verify-tools\") | (.host.files.mode // \"Off\") == \"Off\" and .host.bash.mode == \"ReadOnly\" and .host.bash.execution_mode == null and .host.bash.network_mode == \"disabled\" and .host.bash.background_enabled == null and ((.host.cli // []) | length == 0) and .integrations.lsp == null and .built_ins.enable_context_budget == true and .built_ins.enable_goal_tools == null"
     },
     {
-      "name": "recon reads only the evidence summary",
-      "expr": "(.config.tasks[] | select(.task_id == \"review-recon-task\") | .prompt_template) | contains(\"{{ doc.evidence_summary }}\") and (contains(\"{{ doc.evidence }}\") | not)"
+      "name": "recon and scan have no file tools",
+      "expr": ". as $d | [\"review-recon\", \"review-scan\"] | all(. as $id | [$d | tool($id)] | length == 1 and (.[0] | (.host.files.mode // \"Off\") == \"Off\" and .host.bash.mode == \"ReadOnly\" and .built_ins.enable_goal_tools == null))"
     },
     {
-      "name": "scan pages the evidence by manifest, never inline",
-      "expr": "(.config.tasks[] | select(.task_id == \"review-scan-task\") | .prompt_template) | (contains(\"{{ doc.evidence }}\") | not) and contains(\"read_review_evidence_manifest\") and contains(\"read_review_evidence_page\") and contains(\"page_count - 1\") and contains(\"evidence_chunk_15\")"
+      "name": "scan max_output_chars >= 64000",
+      "expr": "tool(\"review-scan\") | .host.bash.max_output_chars >= 64000"
     },
     {
-      "name": "the evidence manifest query is scoped to the run evidence id",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_manifest\")][0] | .collection == \"CodeReviewEvidenceManifest\" and (.filter_fields | length) == 1 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"}"
+      "name": "triage has no tools and keeps the context budget",
+      "expr": "tool(\"review-triage\") | (.host == null) and (.integrations == null) and .built_ins.enable_context_budget == true and .built_ins.enable_goal_tools == null"
     },
     {
-      "name": "the evidence page query takes a page index and returns 16 chunks",
-      "expr": "[entries(\"review-scan-writes\") | select(.tool_name == \"read_review_evidence_page\")][0] | .collection == \"CodeReviewEvidencePage\" and (.filter_fields | length) == 2 and .filter_fields[0].name == \"evidence_id\" and .filter_fields[0].fill == {\"source_field\": \"evidence_id\"} and .filter_fields[1].name == \"page_index\" and .filter_fields[1].required == true and .filter_fields[1].fill == null and ([range(0; 16) | \"evidence_chunk_\\(.)\"] - .fields | length) == 0"
+      "name": "every agent_targets row has target_id == name and names an existing agent",
+      "expr": ". as $d | $d.config.agent_targets | length == 4 and all(.target_id == .name and .name == \"code-review-\" + (.agent_id | ltrimstr(\"review-\")) and (.agent_id as $a | any($d.config.agents[]; .agent_id == $a)))"
     },
     {
-      "name": "the evidence schemas are immutable and paged",
-      "expr": "(.assets[\"schemas/evidence_manifest.graphql\"] | startswith(\"type CodeReviewEvidenceManifest {\")) and (.assets[\"schemas/evidence_page.graphql\"] | startswith(\"type CodeReviewEvidencePage {\") and contains(\"page_key: String @index(unique: true) @immutable\") and contains(\"evidence_chunk_15: String @immutable\"))"
+      "name": "no graph or datastore keys remain",
+      "expr": "[.config | .. | objects | keys[] | select(startswith(\"graph\") or startswith(\"datastore\"))] | length == 0"
+    },
+    {
+      "name": "recon max_output_chars >= 1000000 so a large diff listing is not cut",
+      "expr": "tool(\"review-recon\") | .host.bash.max_output_chars >= 1000000"
+    },
+    {
+      "name": "no tasks/*/prompt.md remains in the manifest",
+      "expr": "[.manifest.assets[] | select(startswith(\"tasks/\"))] | length == 0"
+    },
+    {
+      "name": "README has the Use from a Task section",
+      "expr": ".assets[\"README.md\"] | contains(\"Use from a Task\")"
+    },
+    {
+      "name": "Use from a Task treats unverified candidates and blocked lenses as not clean",
+      "expr": "(.assets[\"README.md\"] // \"\" | split(\"## Use from a Task\") | .[1] // \"\" | split(\"\\n## \") | .[0]) as $s | ($s | contains(\"counts.unverified\")) and ([\"correctness:\", \"architecture-reuse:\", \"security-concurrency:\", \"workflow-invariants:\"] | all(. as $id | $s | contains(\"`\" + $id + \"`\")))"
+    },
+    {
+      "name": "no review persona has the sessions history tool (a child must answer from its own work, never by reading transcripts)",
+      "expr": ". as $d | [\"review-recon\", \"review-scan\", \"review-verify-tools\", \"review-triage\"] | all(. as $id | $d | tool($id) | .built_ins.enable_session_history_tool == false)"
     }
   ]
 }

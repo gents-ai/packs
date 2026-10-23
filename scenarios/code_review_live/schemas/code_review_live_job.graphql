@@ -1,0 +1,4 @@
+type CodeReviewLiveJob {
+  job_id: String
+  prompt: String
+}

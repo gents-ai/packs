@@ -1,0 +1,109 @@
+{
+  "expect": {
+    "effects": {
+      "pin": {
+        "agent_budget": 32,
+        "handle": "review-changes",
+        "script_id": "e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f",
+        "source_digest": "sha256:e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f"
+      },
+      "progress": {
+        "active": [],
+        "budget": {
+          "remaining": 32,
+          "spent": 0,
+          "total": 32
+        },
+        "last_event": "spawned recon",
+        "last_event_at": null,
+        "observed_terminal_children": 0,
+        "phases": [
+          {
+            "state": "active",
+            "title": "Recon"
+          },
+          {
+            "state": "pending",
+            "title": "Scan"
+          },
+          {
+            "state": "pending",
+            "title": "Verify"
+          },
+          {
+            "state": "pending",
+            "title": "Triage"
+          }
+        ],
+        "revision": 0,
+        "spawned": 0,
+        "state": "running",
+        "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
+      },
+      "spawn": [
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Pin the git change to review. Use only read-only git commands, one at a time, in the repository root. Do not read or edit working-tree files.\n\nBase ref: \"HEAD~1\"\nHead ref: \"HEAD\"\n\n1. Run `git rev-parse --verify --end-of-options <ref>^{commit}` for the base ref and for the head ref. These are base_sha and head_sha.\n2. Run `git rev-parse <sha>^{tree}` for both. These are base_tree and head_tree.\n3. Run `git diff --name-only --find-renames=50% <base_sha> <head_sha> --`. This is name_only.\n4. Run `git diff --stat --find-renames=50% <base_sha> <head_sha> --`. This is stat.\n\nReturn the ids and the exact command outputs, unedited and untruncated; inside a JSON string write each line break as \\n. If a command fails, return its error text in the matching field.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"base_sha\":{\"type\":\"string\"},\"base_tree\":{\"type\":\"string\"},\"head_sha\":{\"type\":\"string\"},\"head_tree\":{\"type\":\"string\"},\"name_only\":{\"type\":\"string\"},\"stat\":{\"type\":\"string\"}},\"required\":[\"base_sha\",\"head_sha\",\"base_tree\",\"head_tree\",\"name_only\",\"stat\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "recon",
+          "target": "code-review-recon",
+          "title": "recon"
+        }
+      ],
+      "state": {
+        "corrections": {},
+        "judged": {}
+      }
+    }
+  },
+  "input": {
+    "agent_budget": 32,
+    "args": {
+      "base": "HEAD~1",
+      "head": "HEAD"
+    },
+    "argv": [],
+    "caller": {
+      "agent_id": "default",
+      "correlation": null,
+      "cwd": "/work/repo",
+      "node_did": "did:key:z6Mk",
+      "request_doc_id": "bae-req",
+      "request_hop": 1,
+      "request_id": "req-1",
+      "session_id": "sess-1",
+      "started_by_job": false,
+      "tool_call_id": "call_1"
+    },
+    "ceiling": {
+      "dynamic": "check",
+      "dynamic_targets": [],
+      "max_live": 8,
+      "max_messages_per_slot": 4,
+      "remaining_spawns": 32,
+      "result_bytes": 65536,
+      "targets": [
+        "code-review-recon",
+        "code-review-scan",
+        "code-review-verify",
+        "code-review-triage"
+      ]
+    },
+    "children": {},
+    "control": null,
+    "job": {
+      "chain": [
+        "bae-row"
+      ],
+      "chain_root_doc_id": "bae-row",
+      "handle": "review-changes",
+      "row_doc_id": "bae-row"
+    },
+    "jobs": [],
+    "mounts": [],
+    "origin": null,
+    "pin": null,
+    "protocol": 1,
+    "scratch": {}
+  }
+}

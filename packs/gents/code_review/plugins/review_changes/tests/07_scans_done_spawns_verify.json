@@ -1,0 +1,291 @@
+{
+  "expect": {
+    "effects": {
+      "progress": {
+        "active": [],
+        "budget": {
+          "remaining": 27,
+          "spent": 5,
+          "total": 32
+        },
+        "last_event": "spawned verify-0",
+        "last_event_at": null,
+        "observed_terminal_children": 5,
+        "phases": [
+          {
+            "state": "done",
+            "title": "Recon"
+          },
+          {
+            "state": "done",
+            "title": "Scan"
+          },
+          {
+            "state": "active",
+            "title": "Verify"
+          },
+          {
+            "state": "pending",
+            "title": "Triage"
+          }
+        ],
+        "revision": 0,
+        "spawned": 5,
+        "state": "running",
+        "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
+      },
+      "spawn": [
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Independently verify the review candidates reported at \"src/lib.rs:3\". Try to refute each claim by examining its context, callers, tests, and existing abstractions. Confirm only actionable defects introduced by the change, and distinguish uncertainty from evidence.\n\nIn the rules below, <B> is aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa and <H> is cccccccccccccccccccccccccccccccccccccccc.\nRead the change only with `git diff --find-renames=50% --unified=12 <B> <H> -- <path>` and source only with `git show <H>:<path>` or `git grep -n <pattern> <H>`. Never read working-tree files: they may change while you review. First run `git rev-parse <B>^{tree}` and `git rev-parse <H>^{tree}` and return both as base_tree and head_tree.\n\nYou cannot build or run tests here. Verify by reading the pinned code only and set builds_not_run to true.\n\nCandidates (JSON): [{\"confidence\":92,\"excerpt\":\"for i in 0..n - 1 {\",\"finding_id\":\"correctness:off-by-one\",\"impact\":\"The last item is never processed.\",\"lens\":\"correctness\",\"line\":3,\"path\":\"src/lib.rs\",\"severity\":\"Major\",\"slug\":\"off-by-one\",\"title\":\"Loop bound skips the last element\"}]\n\nReturn one verdict per candidate, keyed by its finding_id: `confirmed` or `refuted`, a confidence from 0 through 100, the evidence you observed, and your reasoning. Confirm only with a confidence of at least 80 and non-empty evidence.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"base_tree\":{\"type\":\"string\"},\"builds_not_run\":{\"type\":\"boolean\"},\"head_tree\":{\"type\":\"string\"},\"verdicts\":{\"items\":{\"properties\":{\"confidence\":{\"type\":\"integer\"},\"evidence\":{\"type\":\"string\"},\"finding_id\":{\"type\":\"string\"},\"reasoning\":{\"type\":\"string\"},\"verdict\":{\"enum\":[\"confirmed\",\"refuted\"],\"type\":\"string\"}},\"required\":[\"finding_id\",\"verdict\",\"confidence\",\"evidence\",\"reasoning\"],\"type\":\"object\"},\"type\":\"array\"}},\"required\":[\"base_tree\",\"head_tree\",\"verdicts\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "verify-0",
+          "target": "code-review-verify",
+          "title": "verify-0"
+        }
+      ],
+      "state": {
+        "corrections": {},
+        "judged": {
+          "recon": {
+            "ok": {
+              "output": {
+                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
+                "name_only": "src/lib.rs\n",
+                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
+              }
+            }
+          },
+          "scan-architecture-reuse": {
+            "ok": {
+              "output": {
+                "blocked": false,
+                "blocker": "",
+                "candidates": []
+              }
+            }
+          },
+          "scan-correctness": {
+            "ok": {
+              "output": {
+                "blocked": false,
+                "blocker": "",
+                "candidates": [
+                  {
+                    "confidence": 92,
+                    "excerpt": "for i in 0..n - 1 {",
+                    "impact": "The last item is never processed.",
+                    "line": 3,
+                    "path": "src/lib.rs",
+                    "severity": "Major",
+                    "slug": "off-by-one",
+                    "title": "Loop bound skips the last element"
+                  }
+                ]
+              }
+            }
+          },
+          "scan-security-concurrency": {
+            "failed": {
+              "why": "the scan did not succeed"
+            }
+          },
+          "scan-workflow-invariants": {
+            "ok": {
+              "output": {
+                "blocked": true,
+                "blocker": "the diff listing was truncated",
+                "candidates": []
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "agent_budget": 32,
+    "args": {
+      "base": "HEAD~1",
+      "head": "HEAD"
+    },
+    "argv": [],
+    "caller": {
+      "agent_id": "default",
+      "correlation": null,
+      "cwd": "/work/repo",
+      "node_did": "did:key:z6Mk",
+      "request_doc_id": "bae-req",
+      "request_hop": 1,
+      "request_id": "req-1",
+      "session_id": "sess-1",
+      "started_by_job": false,
+      "tool_call_id": "call_1"
+    },
+    "ceiling": {
+      "dynamic": "check",
+      "dynamic_targets": [],
+      "max_live": 8,
+      "max_messages_per_slot": 4,
+      "remaining_spawns": 32,
+      "result_bytes": 65536,
+      "targets": [
+        "code-review-recon",
+        "code-review-scan",
+        "code-review-verify",
+        "code-review-triage"
+      ]
+    },
+    "children": {
+      "recon": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-recon-1",
+        "session_id": "job-session:recon",
+        "state": "completed",
+        "title": "recon",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-architecture-reuse": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-architecture-reuse-1",
+        "session_id": "job-session:scan-architecture-reuse",
+        "state": "completed",
+        "title": "scan-architecture-reuse",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-correctness": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-correctness-1",
+        "session_id": "job-session:scan-correctness",
+        "state": "completed",
+        "title": "scan-correctness",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-security-concurrency": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-security-concurrency-1",
+        "session_id": "job-session:scan-security-concurrency",
+        "state": "failed",
+        "title": "scan-security-concurrency",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-workflow-invariants": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-workflow-invariants-1",
+        "session_id": "job-session:scan-workflow-invariants",
+        "state": "completed",
+        "title": "scan-workflow-invariants",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      }
+    },
+    "control": null,
+    "job": {
+      "chain": [
+        "bae-row"
+      ],
+      "chain_root_doc_id": "bae-row",
+      "handle": "review-changes",
+      "row_doc_id": "bae-row"
+    },
+    "job_calls": true,
+    "job_results": {
+      "text": {
+        "result": {
+          "slots": {
+            "recon": {
+              "text": "Done.\n\n```json\n{\n \"base_sha\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n \"head_sha\": \"cccccccccccccccccccccccccccccccccccccccc\",\n \"base_tree\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n \"head_tree\": \"dddddddddddddddddddddddddddddddddddddddd\",\n \"name_only\": \"src/lib.rs\\n\",\n \"stat\": \" src/lib.rs | 2 +-\\n 1 file changed, 1 insertion(+), 1 deletion(-)\\n\"\n}\n```\n"
+            },
+            "scan-architecture-reuse": {
+              "text": "Nothing material.\n{\"blocked\": false, \"blocker\": \"\", \"candidates\": []}"
+            },
+            "scan-correctness": {
+              "text": "Done.\n\n```json\n{\n \"blocked\": false,\n \"blocker\": \"\",\n \"candidates\": [\n  {\n   \"slug\": \"off-by-one\",\n   \"title\": \"Loop bound skips the last element\",\n   \"path\": \"src/lib.rs\",\n   \"line\": 3,\n   \"severity\": \"Major\",\n   \"excerpt\": \"for i in 0..n - 1 {\",\n   \"impact\": \"The last item is never processed.\",\n   \"confidence\": 92\n  }\n ]\n}\n```\n"
+            },
+            "scan-workflow-invariants": {
+              "text": "Done.\n\n```json\n{\n \"blocked\": true,\n \"blocker\": \"the diff listing was truncated\",\n \"candidates\": []\n}\n```\n"
+            }
+          }
+        }
+      }
+    },
+    "jobs": [
+      {
+        "adopted_at": 1761000000000,
+        "handle": "review-changes",
+        "resume_of": null,
+        "row_doc_id": "bae-row",
+        "state": "running",
+        "tool_call_id": "call_1"
+      }
+    ],
+    "mounts": [],
+    "origin": "installed",
+    "pin": {
+      "adopted_at": 1761000000000,
+      "agent_budget": 32,
+      "args_digest": "sha256:args",
+      "ceiling_at_pin": {
+        "dynamic": "check",
+        "dynamic_targets": [],
+        "max_live": 8,
+        "max_messages_per_slot": 4,
+        "remaining_spawns": 32,
+        "result_bytes": 65536,
+        "targets": [
+          "code-review-recon",
+          "code-review-scan",
+          "code-review-verify",
+          "code-review-triage"
+        ]
+      },
+      "chain_root_doc_id": "bae-row",
+      "cwd": "/work/repo",
+      "engine_digest": "sha256:engine",
+      "handle": "review-changes",
+      "origin": "installed",
+      "plugin_ref": "gents/review_changes",
+      "script_id": "e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f",
+      "source_digest": "sha256:e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f"
+    },
+    "protocol": 1,
+    "scratch": {}
+  }
+}
