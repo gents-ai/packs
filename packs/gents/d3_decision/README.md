@@ -4,7 +4,7 @@ Asks the D3 decision model (`vllm-sr/d3`) typed questions about a text or
 JSON context and returns a probability for every answer: pick one of several
 options (`choice`), yes or no (`noul`), or a rating on a scale (`score`). D3
 generates no prose and answers a text request in well under a second, which
-makes it a decision primitive for graphs, schedules and agents rather than a
+makes it a decision primitive for workflows, schedules and agents rather than a
 chat model. The motivating use is a
 fleet wake gate: a frequent schedule sends a host's stats and asks whether the
 host's agent needs to wake (see the example in `plugins/d3_decision/TOOL.md`).

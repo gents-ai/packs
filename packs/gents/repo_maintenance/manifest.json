@@ -41,8 +41,7 @@
   ],
   "config": "pack_config.json",
   "dependencies": [
-    "code_review",
-    "rhai_workflows"
+    "code_review"
   ],
   "description": "Six-stage repository maintenance round: inventory -> concern swarm -> verification -> commit planning -> serial execution -> one reviewed PR",
   "inference_slots": [

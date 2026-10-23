@@ -146,7 +146,7 @@ entry of `parts` into an image you can see, in order; `figures[].part` is the
 index of that figure's image. A caller that reads the JSON directly gets the
 same object.
 
-## Graph mode
+## Callback mode
 
 The pack's `ocr-plan` and `ocr-extract` callbacks run this plugin as two
 nodes. A request that carries a `run_id` is a node's; nothing else sends one.

@@ -36,10 +36,9 @@ The pack declares two inference slots, bound at install time:
 - `coordinator`: repository inventory, triage, integration, and publication (`maintenance-execute-skip`, `maintenance-integrate`, `maintenance-publish`, `maintenance-recon`, `maintenance-triage`, `maintenance-verify`).
 - `scanner`: bounded parallel concern scans and work-package execution (`maintenance-execute`, `maintenance-scan`).
 
-The `code_review` and `rhai_workflows` dependency packs declare three more required slots, bound in the same install command (a name shared with this pack, such as `coordinator`, binds both):
+The `code_review` dependency pack declares two more required slots, bound in the same install command (a name shared with this pack, such as `coordinator`, binds both):
 
 - `worker` and `verifier` (`code_review`): the review workflow's parallel scans and adversarial verification.
-- `wf_read_only` (`rhai_workflows`): the workflow engine's read-only agent steps.
 
 The one prerequisite is a target repository checkout, provided per run through `MAINTENANCE_ROOT` (see Inputs and outputs below); there is no default, so a run cannot start without it.
 

@@ -90,10 +90,10 @@ as already-seen and never fires.
 Surfaces name a **collection already on the node** (string). Pack apply
 registers `schemas/` first so that name resolves.
 
-The stage-1 Task also demonstrates the graph composition boundary: a Task may
+The stage-1 Task also demonstrates the composition boundary: a Task may
 declare a goal objective template and optional token budget, while its Tools
-document grants only lifecycle access to that controller-owned goal. The
-graph DSL still supplies the event topology; it does not own goal creation.
+document grants only lifecycle access to that controller-owned goal. Event
+sources and triggers still supply the event topology; they do not own goal creation.
 
 ## Inputs and outputs
 

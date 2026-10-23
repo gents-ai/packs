@@ -1282,15 +1282,14 @@
       "integrations": {
         "plugins": [
           {
-            "plugin": "gents/workflow",
+            "plugin": "gents/review_changes",
             "job": {
               "agent_targets": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"],
               "max_spawns": 128,
               "max_wall_secs": 7200,
               "policy": {
                 "dynamic": "off",
-                "trusted_packs": ["gents/code_review"],
-                "project_roots": []
+                "trusted_packs": ["gents/code_review"]
               }
             }
           }

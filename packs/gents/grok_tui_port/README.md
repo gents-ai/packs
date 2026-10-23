@@ -38,14 +38,12 @@ The manifest declares three inference slots; bind all three on install:
 - `reviewer`: `port-recon-audit`, `port-review`, `port-final-review`,
   `port-live-review`
 
-(from `manifest.json`'s `inference_slots`). The dependency packs add two more
-required slots, bound in the same command: `verifier` (`code_review`) and
-`wf_read_only` (`rhai_workflows`). The pack also declares a
-dependency on the `code_review` pack for the full-review workflow, and on
-`rhai_workflows` for the engine that runs it; it resolves
-like any pack (the home's store, else the registry), and `make grok-port`
-builds the sibling `code_review` and `rhai_workflows` and admits them to the run's home so the run
-needs no registry.
+(from `manifest.json`'s `inference_slots`). The dependency pack adds one more
+required slot, bound in the same command: `verifier` (`code_review`). The pack
+also declares a dependency on the `code_review` pack for the review-changes
+workflow; it resolves like any pack (the home's store, else the registry), and
+`make grok-port` builds the sibling `code_review` and admits it to the run's
+home so the run needs no registry.
 
 Run `make grok-port` from the root of this repository. `GROK_PORT_GENTS_ROOT`
 is the gents checkout the port lands in and `GROK_PORT_CEILING` the operator
@@ -136,7 +134,7 @@ tool surface exposes only `get_goal` and `update_goal` - never model-side goal
 creation - and the stage prompt completes that goal only after its required
 output documents exist. If a provider turn ends early, `GoalSource` resumes the
 same stage instead of allowing an apparently successful request to strand the
-graph edge. Budgets are stage-specific: implementation, convergence, and final
+stage. Budgets are stage-specific: implementation, convergence, and final
 review receive the largest continuation envelopes.
 
 A healthy run therefore has one durable Goal per fired Task invocation. The
@@ -181,7 +179,7 @@ Run `make test-grok_tui_port` from the repository root.
 
 See [the worked-run case study](run_history.md) for the merged output, known
 interventions, lessons and issue links. This package records supervised runs;
-it does not claim an intervention-free completion of the whole graph.
+it does not claim an intervention-free completion of the whole pipeline.
 
 1.1.0 renames `PortWorkUnit.owned_paths` to `owned_files` and passes it to the
 implement workspace callback, which refused every work unit without it

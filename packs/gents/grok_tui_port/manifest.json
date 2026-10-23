@@ -68,8 +68,7 @@
   ],
   "config": "pack_config.json",
   "dependencies": [
-    "code_review",
-    "rhai_workflows"
+    "code_review"
   ],
   "description": "Map the Grok TUI wire, fan out eight path-disjoint GLM writers, retry rejected seals in fresh workspaces, record host-confirmed serial integration, semantically converge, full-review, live-prove, then open a PR",
   "inference_slots": [
