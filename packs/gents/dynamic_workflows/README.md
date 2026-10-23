@@ -11,8 +11,15 @@ compile: a workflow is text in the call.
 
 The pack ships one read-only worker persona, `wf-read-only`, and a caller
 Tools template whose job block lets the tool spawn only that persona under
-`policy.dynamic: run`. A workflow that outgrows this becomes a pack of its own:
-the same step function, compiled by `gents pack build` (see `code_review`).
+`policy.dynamic: run`. A workflow that outgrows this becomes a pack of its own,
+in any language `gents pack build` compiles. For JavaScript the step function
+is copied unchanged: `pack build` wraps `module.exports = (input) => output` in
+its own stdin/stdout harness, so `plugins/<name>/source/main.js` is the script
+plus a step-0 `effects.pin` (`script_id`, `source_digest`, `agent_budget`,
+`handle`), which the host stamps for a dynamic run but an installed plugin
+writes itself. The pack adds the personas the steps spawn, their
+AgentTargets, a caller Tools template with the job block, and per-phase
+fixtures under `plugins/<name>/tests`; `code_review` is the Rust example.
 
 ## Operator steps
 
