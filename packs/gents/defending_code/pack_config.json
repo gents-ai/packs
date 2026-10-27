@@ -3830,7 +3830,7 @@
     },
     {
       "agent_id": "defend-verification-plan",
-      "description": "Writes graph-native assignments that trigger verifier requests.",
+      "description": "Writes typed assignments that trigger verifier requests.",
       "display_name": "Materialize the closed candidate verification work set",
       "prompt_template": "./tasks/defend_verification_plan_task/prompt.md",
       "task_id": "defend-verification-plan-task"
@@ -3941,7 +3941,7 @@
           "defend-patch-security-review-io"
         ]
       },
-      "display_name": "Security re-attack: bounded graph reads, shell, LSP, one write",
+      "display_name": "Security re-attack: bounded document reads, shell, LSP, one write",
       "host": {
         "bash": {
           "background_enabled": true,
@@ -4069,7 +4069,7 @@
           "defend-remediation-plan-io"
         ]
       },
-      "display_name": "Remediation planner: bounded graph IO only",
+      "display_name": "Remediation planner: bounded document IO only",
       "tools_id": "defend-remediation-plan-tools"
     },
     {
@@ -4081,7 +4081,7 @@
           "defend-report-io"
         ]
       },
-      "display_name": "Report: bounded graph reads and one report write",
+      "display_name": "Report: bounded document reads and one report write",
       "tools_id": "defend-report-tools"
     },
     {
@@ -4151,7 +4151,7 @@
           "defend-triage-io"
         ]
       },
-      "display_name": "Final triage reducer: typed graph IO only",
+      "display_name": "Final triage reducer: typed document IO only",
       "tools_id": "defend-triage-tools"
     },
     {
@@ -4163,7 +4163,7 @@
           "defend-verification-plan-io"
         ]
       },
-      "display_name": "Verification planner: typed graph IO only",
+      "display_name": "Verification planner: typed document IO only",
       "tools_id": "defend-verification-plan-tools"
     },
     {
@@ -4175,7 +4175,7 @@
           "defend-verifier-io"
         ]
       },
-      "display_name": "Independent verifier: bounded graph IO, read-only source, shell, and LSP",
+      "display_name": "Independent verifier: bounded document IO, read-only source, shell, and LSP",
       "host": {
         "bash": {
           "background_enabled": true,

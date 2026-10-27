@@ -1,5 +1,5 @@
 //! The review-changes workflow's content: lenses, schemas, prompts, parsers and the result
-//! shapes. A port of `workflows/review_changes.rhai` (code_review 2.0); the result objects
+//! shapes. The review-changes step function (code_review 2.0); the result objects
 //! keep that script's `complete()` shapes verbatim.
 use serde_json::{json, Map, Value};
 

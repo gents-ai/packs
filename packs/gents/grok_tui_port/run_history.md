@@ -13,7 +13,7 @@ GLM-5.3 and GLM-5.3-Flash powered repeated implementation runs with isolated
 workspaces, sealed review, serial integration, convergence, live probes and PR
 review. These were supervised development runs. The merged result also
 included human-directed and Codex fixes; it is not evidence of an entirely
-unattended graph completing without intervention.
+unattended pipeline completing without intervention.
 
 ## Lessons retained
 

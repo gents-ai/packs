@@ -11,7 +11,7 @@ Live model run of the code_review `review-changes` workflow on two small reposit
 
 ## What the run asserts
 
-`experiment.json` checks the driver's tool results: the seeded review confirms a finding at `src/lib.rs` line 12, the clean review completes with 0 confirmed findings (the script confirms only at confidence 80 or more), and `fixtures/counts_balance.sh` accepts a review's counts, labelled `seeded` or `clean` so each review is checked on its own (candidate = confirmed + refuted + unverified). The `review_changes` needles assume the compact JSON of the code_review result contract, read from the job's tool-call output once it completes.
+`experiment.json` checks the driver's tool results: the seeded review confirms a finding at `src/lib.rs` line 12, the clean review completes with 0 confirmed findings (the plugin confirms only at confidence 80 or more), and `fixtures/counts_balance.sh` accepts a review's counts, labelled `seeded` or `clean` so each review is checked on its own (candidate = confirmed + refuted + unverified). The `review_changes` needles assume the compact JSON of the code_review result contract, read from the job's tool-call output once it completes.
 
 ## Configuration
 

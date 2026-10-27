@@ -6,9 +6,9 @@ directly review every sealed slice in parallel, serial-apply accepted diffs
 onto the operator checkout, retry rejected attempts in fresh workspaces, and
 give a dedicated convergence agent ownership
 of the semantic merge and compile/test commit. The pack then runs the
-full **code-review** graph (its dependency pack), proves that exact reviewed head with live GLM turns,
+full **review-changes** workflow (its dependency pack), proves that exact reviewed head with live GLM turns,
 and opens one GitHub PR. Small sealed slices use one direct reviewer; the final
-combined edge starts the full multi-stage graph.
+combined edge starts the full multi-stage workflow.
 
 Gents is the leader-socket server in this port. It binds the Unix socket and
 stock `grok --leader --leader-socket <path>` connects as the pager client. The
@@ -18,15 +18,15 @@ ACP traffic onto Gents documents; it does not launch Grok's own leader process.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id>
-gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id>   # once published to the registry
+gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>
+gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>   # once published to the registry
 ```
 
 Runtime configuration is authored once in `pack_config.json`. The distribution
 `manifest.json` points to that canonical bundle and lists it with the schema and
 prompt sidecars needed to install the pack; there are no per-collection JSON
-document fragments. The code-review dependency is configured through
-the scenario's dependency environment instead of copied configuration rows.
+document fragments. The review-changes workflow comes from the `code_review` dependency, and
+`port-final-review-tools` carries the job block that lets the final review run it.
 
 ## Bindings and prerequisites
 
@@ -38,11 +38,12 @@ The manifest declares three inference slots; bind all three on install:
 - `reviewer`: `port-recon-audit`, `port-review`, `port-final-review`,
   `port-live-review`
 
-(from `manifest.json`'s `inference_slots`). The pack also declares a
-dependency on the `code_review` pack for the full-review graph; it resolves
-like any pack (the home's store, else the registry), and `make grok-port`
-builds the sibling `code_review` and admits it to the run's home so the run
-needs no registry.
+(from `manifest.json`'s `inference_slots`). The dependency pack adds one more
+required slot, bound in the same command: `verifier` (`code_review`). The pack
+also declares a dependency on the `code_review` pack for the review-changes
+workflow; it resolves like any pack (the home's store, else the registry), and
+`make grok-port` builds the sibling `code_review` and admits it to the run's
+home so the run needs no registry.
 
 Run `make grok-port` from the root of this repository. `GROK_PORT_GENTS_ROOT`
 is the gents checkout the port lands in and `GROK_PORT_CEILING` the operator
@@ -60,7 +61,7 @@ also need `GENTS_GROK_PORT_GENTS_ROOT`, set from `GROK_PORT_GENTS_ROOT`. Pin the
 The portable default inference endpoint is
 `http://127.0.0.1:8000/v1`, with one shared 16-request concurrency cap
 across coordinators, the eight concurrent implementers, the eight concurrent
-sealed reviewers, convergence, and the final review graph.
+sealed reviewers, convergence, and the final review workflow.
 
 `make grok-port` verifies its `/models` endpoint advertises
 `GLM-5.3-Flash-NVFP4` with at least 524288 context tokens before it seeds any
@@ -120,7 +121,7 @@ export GROK_PORT_REASONING_EFFORT=high
 ```
 
 `high` is the pack default for GLM-5.3-Flash stages; override the environment
-variable only for an intentional experiment. The code-review graph
+variable only for an intentional experiment. The review-changes workflow
 uses `GROK_PORT_CODE_REVIEW_REASONING_EFFORT`, which inherits the same value by
 default.
 
@@ -133,7 +134,7 @@ tool surface exposes only `get_goal` and `update_goal` - never model-side goal
 creation - and the stage prompt completes that goal only after its required
 output documents exist. If a provider turn ends early, `GoalSource` resumes the
 same stage instead of allowing an apparently successful request to strand the
-graph edge. Budgets are stage-specific: implementation, convergence, and final
+stage. Budgets are stage-specific: implementation, convergence, and final
 review receive the largest continuation envelopes.
 
 A healthy run therefore has one durable Goal per fired Task invocation. The
@@ -178,7 +179,7 @@ Run `make test-grok_tui_port` from the repository root.
 
 See [the worked-run case study](run_history.md) for the merged output, known
 interventions, lessons and issue links. This package records supervised runs;
-it does not claim an intervention-free completion of the whole graph.
+it does not claim an intervention-free completion of the whole pipeline.
 
 1.1.0 renames `PortWorkUnit.owned_paths` to `owned_files` and passes it to the
 implement workspace callback, which refused every work unit without it
@@ -209,7 +210,7 @@ GrokPortJob
        only that durable receipt -> PortIntegrateResult applied
   -> convergence agent on all 8 applied slices
        reconcile interfaces; fmt; focused test/check; commit exact green HEAD
-  -> full code-review graph on the convergence commit
+  -> full review-changes workflow on the convergence commit
        focused repair commits; pin exact green HEAD
   -> build that exact HEAD in a separate run-owned live home
   -> stock grok --leader live GLM probes with exact surface-ID coverage

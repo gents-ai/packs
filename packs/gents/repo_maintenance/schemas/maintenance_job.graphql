@@ -11,4 +11,6 @@ type MaintenanceJob {
   history_depth: String
   pr_base: String
   focus: String
+  orchestrator_home: String @immutable
+  orchestrator_graphql: String @immutable
 }
