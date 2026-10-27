@@ -1,33 +1,88 @@
 {
   "expect": {
-    "job_calls": {
-      "requests": [
+    "progress": {
+      "active": [],
+      "budget": {
+        "remaining": 25,
+        "spent": 7,
+        "total": 32
+      },
+      "last_event": "completed",
+      "last_event_at": null,
+      "observed_terminal_children": 7,
+      "phases": [
         {
-          "child_output": {
-            "limit": 65536,
-            "offset": 0,
-            "slots": [
-              "recon",
-              "scan-architecture-reuse",
-              "scan-correctness",
-              "scan-workflow-invariants",
-              "verify-0"
-            ]
-          },
-          "id": "text"
+          "state": "done",
+          "title": "Recon"
+        },
+        {
+          "state": "done",
+          "title": "Scan"
+        },
+        {
+          "state": "done",
+          "title": "Verify"
+        },
+        {
+          "state": "done",
+          "title": "Triage"
         }
       ],
-      "state": {
-        "corrections": {},
-        "judged": {
-          "scan-security-concurrency": {
-            "failed": {
-              "why": "the scan did not succeed"
-            }
-          }
+      "revision": 0,
+      "spawned": 7,
+      "state": "completed",
+      "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
+    },
+    "result": {
+      "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "counts": {
+        "candidate": 1,
+        "confirmed": 1,
+        "high_priority": 1,
+        "refuted": 0,
+        "unverified": 0
+      },
+      "diff_id": "dd14b6ac5ca627cf",
+      "findings": [
+        {
+          "area_id": "correctness",
+          "confidence": 95,
+          "detail": "The last item is never processed.",
+          "evidence": "src/lib.rs:3 iterates 0..n - 1 while the slice has n items",
+          "excerpt": "for i in 0..n - 1 {",
+          "finding_id": "correctness:off-by-one",
+          "impact": "The last item is never processed.",
+          "lens": "correctness",
+          "line": 3,
+          "path": "src/lib.rs",
+          "reasoning": "The exclusive range already excludes n.",
+          "severity": "Major",
+          "slug": "off-by-one",
+          "title": "Loop bound skips the last element",
+          "verdict": "confirmed",
+          "verification": "The exclusive range already excludes n."
         }
+      ],
+      "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+      "limitations": [
+        "security-concurrency: the scan did not succeed",
+        "workflow-invariants: the scan was blocked: the diff listing was truncated",
+        "verify-0: builds not run",
+        "triage did not succeed"
+      ],
+      "path": "/work/repo/.gents/workflows/runs/call_1/review.md",
+      "report": {
+        "merge_recommendation": "none",
+        "report": "Triage did not succeed; the confirmed findings below stand on their own."
+      },
+      "status": "complete"
+    },
+    "scratch": [
+      {
+        "content": "# Review\n\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..cccccccccccccccccccccccccccccccccccccccc\n\n1 candidates: 1 confirmed, 0 refuted, 0 unverified; 1 confirmed Critical or Major.\n\nMerge recommendation: none\n\nTriage did not succeed; the confirmed findings below stand on their own.\n\n## Confirmed findings\n\n- [Major] src/lib.rs:3 Loop bound skips the last element: The last item is never processed.\n\n## Limitations\n\n- security-concurrency: the scan did not succeed\n\n- workflow-invariants: the scan was blocked: the diff listing was truncated\n\n- verify-0: builds not run\n\n- triage did not succeed\n",
+        "name": "review.md"
       }
-    }
+    ]
   },
   "input": {
     "agent_budget": 32,
@@ -179,6 +234,29 @@
       "row_doc_id": "bae-row"
     },
     "job_calls": true,
+    "job_results": {
+      "text": {
+        "result": {
+          "slots": {
+            "recon": {
+              "text": "Done.\n\n```json\n{\n \"base_sha\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n \"head_sha\": \"cccccccccccccccccccccccccccccccccccccccc\",\n \"base_tree\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n \"head_tree\": \"dddddddddddddddddddddddddddddddddddddddd\",\n \"name_only\": \"src/lib.rs\\n\",\n \"stat\": \" src/lib.rs | 2 +-\\n 1 file changed, 1 insertion(+), 1 deletion(-)\\n\"\n}\n```\n"
+            },
+            "scan-architecture-reuse": {
+              "text": "Nothing material.\n{\"blocked\": false, \"blocker\": \"\", \"candidates\": []}"
+            },
+            "scan-correctness": {
+              "text": "Done.\n\n```json\n{\n \"blocked\": false,\n \"blocker\": \"\",\n \"candidates\": [\n  {\n   \"slug\": \"off-by-one\",\n   \"title\": \"Loop bound skips the last element\",\n   \"path\": \"src/lib.rs\",\n   \"line\": 3,\n   \"severity\": \"Major\",\n   \"excerpt\": \"for i in 0..n - 1 {\",\n   \"impact\": \"The last item is never processed.\",\n   \"confidence\": 92\n  }\n ]\n}\n```\n"
+            },
+            "scan-workflow-invariants": {
+              "text": "Done.\n\n```json\n{\n \"blocked\": true,\n \"blocker\": \"the diff listing was truncated\",\n \"candidates\": []\n}\n```\n"
+            },
+            "verify-0": {
+              "text": "Done.\n\n```json\n{\n \"base_tree\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n \"head_tree\": \"dddddddddddddddddddddddddddddddddddddddd\",\n \"builds_not_run\": true,\n \"verdicts\": [\n  {\n   \"finding_id\": \"correctness:off-by-one\",\n   \"verdict\": \"confirmed\",\n   \"confidence\": 95,\n   \"evidence\": \"src/lib.rs:3 iterates 0..n - 1 while the slice has n items\",\n   \"reasoning\": \"The exclusive range already excludes n.\"\n  }\n ]\n}\n```\n"
+            }
+          }
+        }
+      }
+    },
     "jobs": [
       {
         "adopted_at": 1761000000000,
@@ -221,78 +299,11 @@
     "protocol": 1,
     "scratch": {},
     "state": {
+      "corrections": {},
       "judged": {
-        "recon": {
-          "ok": {
-            "output": {
-              "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
-              "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-              "name_only": "src/lib.rs\n",
-              "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
-            }
-          }
-        },
-        "scan-architecture-reuse": {
-          "ok": {
-            "output": {
-              "blocked": false,
-              "blocker": "",
-              "candidates": []
-            }
-          }
-        },
-        "scan-correctness": {
-          "ok": {
-            "output": {
-              "blocked": false,
-              "blocker": "",
-              "candidates": [
-                {
-                  "confidence": 92,
-                  "excerpt": "for i in 0..n - 1 {",
-                  "impact": "The last item is never processed.",
-                  "line": 3,
-                  "path": "src/lib.rs",
-                  "severity": "Major",
-                  "slug": "off-by-one",
-                  "title": "Loop bound skips the last element"
-                }
-              ]
-            }
-          }
-        },
         "scan-security-concurrency": {
           "failed": {
             "why": "the scan did not succeed"
-          }
-        },
-        "scan-workflow-invariants": {
-          "ok": {
-            "output": {
-              "blocked": true,
-              "blocker": "the diff listing was truncated",
-              "candidates": []
-            }
-          }
-        },
-        "verify-0": {
-          "ok": {
-            "output": {
-              "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "builds_not_run": true,
-              "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-              "verdicts": [
-                {
-                  "confidence": 95,
-                  "evidence": "src/lib.rs:3 iterates 0..n - 1 while the slice has n items",
-                  "finding_id": "correctness:off-by-one",
-                  "reasoning": "The exclusive range already excludes n.",
-                  "verdict": "confirmed"
-                }
-              ]
-            }
           }
         }
       }
