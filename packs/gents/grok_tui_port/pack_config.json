@@ -2438,7 +2438,10 @@
             "plugin": "gents/review_changes",
             "job": {
               "agent_targets": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"],
+              "max_live": 8,
               "max_spawns": 128,
+              "max_messages_per_slot": 4,
+              "result_bytes": 65536,
               "max_wall_secs": 7200,
               "policy": {
                 "dynamic": "off",
