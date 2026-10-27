@@ -68,9 +68,24 @@ dir="$(cd "$1" && pwd)"
 gents="${GENTS:-gents}"
 work="$(mktemp -d)"
 servers=()
+stop_server() {
+  local pid="$1" candidate status=0
+  local remaining=()
+  kill "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || status=$?
+  if [[ "$status" == 127 ]]; then
+    printf 'Unable to reap server %s; preserving %s\n' "$pid" "$work" >&2
+    return 1
+  fi
+  for candidate in ${servers[@]+"${servers[@]}"}; do
+    [[ "$candidate" == "$pid" ]] || remaining+=("$candidate")
+  done
+  servers=(${remaining[@]+"${remaining[@]}"})
+}
 cleanup() {
   local pid
   for pid in ${servers[@]+"${servers[@]}"}; do kill "$pid" 2>/dev/null || true; done
+  for pid in ${servers[@]+"${servers[@]}"}; do stop_server "$pid"; done
   rm -rf "$work"
 }
 trap cleanup EXIT
@@ -443,7 +458,7 @@ runtime_case() {
       grep -E ' (WARN|ERROR) ' "$log" | tail -5 >&2 || true
     fi
   done < <(jq -c '.runtime.expect[]' "$case")
-  kill "$pid" 2>/dev/null || true
+  stop_server "$pid"
   export_required "$work"
 }
 
