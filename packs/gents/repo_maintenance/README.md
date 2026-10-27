@@ -25,8 +25,8 @@ Recon, scanning, verification, and commit planning are read-only. The runtime pr
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>
-gents pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>   # once published to the registry
+gents pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
+gents pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
 ## Bindings and prerequisites

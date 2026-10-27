@@ -18,8 +18,8 @@ ACP traffic onto Gents documents; it does not launch Grok's own leader process.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>
-gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id> --inference-slot wf_read_only=<profile_id>   # once published to the registry
+gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>
+gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
 Runtime configuration is authored once in `pack_config.json`. The distribution
