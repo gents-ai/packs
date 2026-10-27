@@ -47,7 +47,7 @@ run the round:
    while it runs is the Goal's deferral: end the turn, and when the Goal wakes
    you call `wait_process` again on the same `tool_call_id`; never spawn a
    second watcher.
-4. On exit 0, run `gents job show KEY --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json` the same way, with KEY replaced the same way, and read its `result`. If its state is still `running`, that is not an outcome: go back to step 3. Require `status` to be
+4. On exit 0, run `gents job show KEY --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json` the same way, with KEY replaced the same way, and read its `result`. Require `status` to be
    `complete` and `head_sha` to equal the exact HEAD you passed. The review
    is clean only when, in addition, `counts.unverified` is 0 and no
    `limitations` entry starts with a lens id (`correctness:`,
