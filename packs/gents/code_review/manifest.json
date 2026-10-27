@@ -26,7 +26,7 @@
     "plugins/review_changes/tests/11_bad_recon_reply_is_corrected.json",
     "plugins/review_changes/tests/12_second_bad_recon_reply_blocks.json",
     "plugins/review_changes/tests/13_triage_failed_still_completes.json",
-    "plugins/review_changes/tests/14_judged_recon_spawns_scans_without_a_text_round.json",
+    "plugins/review_changes/tests/14_old_success_state_requests_latest_text.json",
     "tests/content.json",
     "tests/install.json"
   ],

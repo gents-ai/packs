@@ -47,59 +47,9 @@
       "state": {
         "corrections": {},
         "judged": {
-          "recon": {
-            "ok": {
-              "output": {
-                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
-                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-                "name_only": "src/lib.rs\n",
-                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
-              }
-            }
-          },
-          "scan-architecture-reuse": {
-            "ok": {
-              "output": {
-                "blocked": false,
-                "blocker": "",
-                "candidates": []
-              }
-            }
-          },
-          "scan-correctness": {
-            "ok": {
-              "output": {
-                "blocked": false,
-                "blocker": "",
-                "candidates": [
-                  {
-                    "confidence": 92,
-                    "excerpt": "for i in 0..n - 1 {",
-                    "impact": "The last item is never processed.",
-                    "line": 3,
-                    "path": "src/lib.rs",
-                    "severity": "Major",
-                    "slug": "off-by-one",
-                    "title": "Loop bound skips the last element"
-                  }
-                ]
-              }
-            }
-          },
           "scan-security-concurrency": {
             "failed": {
               "why": "the scan did not succeed"
-            }
-          },
-          "scan-workflow-invariants": {
-            "ok": {
-              "output": {
-                "blocked": true,
-                "blocker": "the diff listing was truncated",
-                "candidates": []
-              }
             }
           }
         }

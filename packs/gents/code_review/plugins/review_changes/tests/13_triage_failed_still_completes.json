@@ -1,88 +1,33 @@
 {
   "expect": {
-    "progress": {
-      "active": [],
-      "budget": {
-        "remaining": 25,
-        "spent": 7,
-        "total": 32
-      },
-      "last_event": "completed",
-      "last_event_at": null,
-      "observed_terminal_children": 7,
-      "phases": [
+    "job_calls": {
+      "requests": [
         {
-          "state": "done",
-          "title": "Recon"
-        },
-        {
-          "state": "done",
-          "title": "Scan"
-        },
-        {
-          "state": "done",
-          "title": "Verify"
-        },
-        {
-          "state": "done",
-          "title": "Triage"
+          "child_output": {
+            "limit": 65536,
+            "offset": 0,
+            "slots": [
+              "recon",
+              "scan-architecture-reuse",
+              "scan-correctness",
+              "scan-workflow-invariants",
+              "verify-0"
+            ]
+          },
+          "id": "text"
         }
       ],
-      "revision": 0,
-      "spawned": 7,
-      "state": "completed",
-      "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
-    },
-    "result": {
-      "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "counts": {
-        "candidate": 1,
-        "confirmed": 1,
-        "high_priority": 1,
-        "refuted": 0,
-        "unverified": 0
-      },
-      "diff_id": "dd14b6ac5ca627cf",
-      "findings": [
-        {
-          "area_id": "correctness",
-          "confidence": 95,
-          "detail": "The last item is never processed.",
-          "evidence": "src/lib.rs:3 iterates 0..n - 1 while the slice has n items",
-          "excerpt": "for i in 0..n - 1 {",
-          "finding_id": "correctness:off-by-one",
-          "impact": "The last item is never processed.",
-          "lens": "correctness",
-          "line": 3,
-          "path": "src/lib.rs",
-          "reasoning": "The exclusive range already excludes n.",
-          "severity": "Major",
-          "slug": "off-by-one",
-          "title": "Loop bound skips the last element",
-          "verdict": "confirmed",
-          "verification": "The exclusive range already excludes n."
+      "state": {
+        "corrections": {},
+        "judged": {
+          "scan-security-concurrency": {
+            "failed": {
+              "why": "the scan did not succeed"
+            }
+          }
         }
-      ],
-      "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
-      "limitations": [
-        "security-concurrency: the scan did not succeed",
-        "workflow-invariants: the scan was blocked: the diff listing was truncated",
-        "verify-0: builds not run",
-        "triage did not succeed"
-      ],
-      "path": "/work/repo/.gents/workflows/runs/call_1/review.md",
-      "report": {
-        "merge_recommendation": "none",
-        "report": "Triage did not succeed; the confirmed findings below stand on their own."
-      },
-      "status": "complete"
-    },
-    "scratch": [
-      {
-        "content": "# Review\n\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..cccccccccccccccccccccccccccccccccccccccc\n\n1 candidates: 1 confirmed, 0 refuted, 0 unverified; 1 confirmed Critical or Major.\n\nMerge recommendation: none\n\nTriage did not succeed; the confirmed findings below stand on their own.\n\n## Confirmed findings\n\n- [Major] src/lib.rs:3 Loop bound skips the last element: The last item is never processed.\n\n## Limitations\n\n- security-concurrency: the scan did not succeed\n\n- workflow-invariants: the scan was blocked: the diff listing was truncated\n\n- verify-0: builds not run\n\n- triage did not succeed\n",
-        "name": "review.md"
       }
-    ]
+    }
   },
   "input": {
     "agent_budget": 32,

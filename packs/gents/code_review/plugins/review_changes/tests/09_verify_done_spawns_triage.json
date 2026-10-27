@@ -1,123 +1,27 @@
 {
   "expect": {
-    "effects": {
-      "progress": {
-        "active": [],
-        "budget": {
-          "remaining": 26,
-          "spent": 6,
-          "total": 32
-        },
-        "last_event": "spawned triage",
-        "last_event_at": null,
-        "observed_terminal_children": 6,
-        "phases": [
-          {
-            "state": "done",
-            "title": "Recon"
-          },
-          {
-            "state": "done",
-            "title": "Scan"
-          },
-          {
-            "state": "done",
-            "title": "Verify"
-          },
-          {
-            "state": "active",
-            "title": "Triage"
-          }
-        ],
-        "revision": 0,
-        "spawned": 6,
-        "state": "running",
-        "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
-      },
-      "spawn": [
+    "job_calls": {
+      "requests": [
         {
-          "attempt": 0,
-          "cwd": ".",
-          "prompt": "Write the operator-facing review report for the change aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..cccccccccccccccccccccccccccccccccccccccc.\nLedger: 1 candidates: 1 confirmed, 0 refuted, 0 unverified; 1 confirmed Critical or Major. Use these counts as given.\nConfirmed findings (JSON): [{\"area_id\":\"correctness\",\"confidence\":95,\"detail\":\"The last item is never processed.\",\"evidence\":\"src/lib.rs:3 iterates 0..n - 1 while the slice has n items\",\"excerpt\":\"for i in 0..n - 1 {\",\"finding_id\":\"correctness:off-by-one\",\"impact\":\"The last item is never processed.\",\"lens\":\"correctness\",\"line\":3,\"path\":\"src/lib.rs\",\"reasoning\":\"The exclusive range already excludes n.\",\"severity\":\"Major\",\"slug\":\"off-by-one\",\"title\":\"Loop bound skips the last element\",\"verdict\":\"confirmed\",\"verification\":\"The exclusive range already excludes n.\"}]\nReview limitations (JSON): [\"security-concurrency: the scan did not succeed\",\"workflow-invariants: the scan was blocked: the diff listing was truncated\",\"verify-0: builds not run\"]\n\nSummarize the confirmed defects by severity and practical impact, report zero findings when there are none, disclose every limitation, and give a supported merge recommendation. The report does not authorize merging.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"merge_recommendation\":{\"type\":\"string\"},\"report\":{\"type\":\"string\"}},\"required\":[\"report\",\"merge_recommendation\"],\"type\":\"object\"}\n</output-contract>",
-          "slot": "triage",
-          "target": "code-review-triage",
-          "title": "triage"
+          "child_output": {
+            "limit": 65536,
+            "offset": 0,
+            "slots": [
+              "recon",
+              "scan-architecture-reuse",
+              "scan-correctness",
+              "scan-workflow-invariants"
+            ]
+          },
+          "id": "text"
         }
       ],
       "state": {
         "corrections": {},
         "judged": {
-          "recon": {
-            "ok": {
-              "output": {
-                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
-                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-                "name_only": "src/lib.rs\n",
-                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
-              }
-            }
-          },
-          "scan-architecture-reuse": {
-            "ok": {
-              "output": {
-                "blocked": false,
-                "blocker": "",
-                "candidates": []
-              }
-            }
-          },
-          "scan-correctness": {
-            "ok": {
-              "output": {
-                "blocked": false,
-                "blocker": "",
-                "candidates": [
-                  {
-                    "confidence": 92,
-                    "excerpt": "for i in 0..n - 1 {",
-                    "impact": "The last item is never processed.",
-                    "line": 3,
-                    "path": "src/lib.rs",
-                    "severity": "Major",
-                    "slug": "off-by-one",
-                    "title": "Loop bound skips the last element"
-                  }
-                ]
-              }
-            }
-          },
           "scan-security-concurrency": {
             "failed": {
               "why": "the scan did not succeed"
-            }
-          },
-          "scan-workflow-invariants": {
-            "ok": {
-              "output": {
-                "blocked": true,
-                "blocker": "the diff listing was truncated",
-                "candidates": []
-              }
-            }
-          },
-          "verify-0": {
-            "ok": {
-              "output": {
-                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                "builds_not_run": true,
-                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-                "verdicts": [
-                  {
-                    "confidence": 95,
-                    "evidence": "src/lib.rs:3 iterates 0..n - 1 while the slice has n items",
-                    "finding_id": "correctness:off-by-one",
-                    "reasoning": "The exclusive range already excludes n.",
-                    "verdict": "confirmed"
-                  }
-                ]
-              }
             }
           }
         }

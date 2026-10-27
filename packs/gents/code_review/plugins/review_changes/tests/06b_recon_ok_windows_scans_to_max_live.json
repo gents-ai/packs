@@ -54,20 +54,7 @@
       ],
       "state": {
         "corrections": {},
-        "judged": {
-          "recon": {
-            "ok": {
-              "output": {
-                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
-                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
-                "name_only": "src/lib.rs\n",
-                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
-              }
-            }
-          }
-        }
+        "judged": {}
       }
     }
   },

@@ -72,11 +72,16 @@ fn run(raw: Value) -> Result<Value, Value> {
         .map(|p| p.agent_budget)
         .or(input.agent_budget)
         .unwrap_or(DEFAULT_BUDGET);
-    let carried = input
+    let mut carried: Carried = input
         .state
         .as_ref()
         .and_then(|state| serde_json::from_value(state.clone()).ok())
         .unwrap_or_default();
+    // Older workflow versions carried parsed successful replies here. They are
+    // still readable, but must be fetched again rather than echoed into state.
+    carried
+        .judged
+        .retain(|_, judgement| matches!(judgement, Judgement::Failed { .. }));
     let ctx = Ctx {
         args: Args::from(input.args.as_ref()),
         input,
@@ -116,9 +121,9 @@ enum Judged {
     Correct(Message),
 }
 
-/// What this plugin carries between steps in the host's opaque `state`: the slots it has
-/// judged (their parsed reply, or why they failed) and the corrections sent per slot. A judged
-/// slot's text is never fetched again. A state another version wrote parses as empty.
+/// What this plugin carries between steps in the host's opaque `state`: terminal failures and
+/// the corrections sent per slot. Successful replies are fetched together through `job_calls`
+/// on each step rather than retained here, keeping arbitrary model text out of bounded state.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 struct Carried {
@@ -129,6 +134,7 @@ struct Carried {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Judgement {
+    /// Read only for state written by older versions; successful values are never retained.
     Ok { output: Value },
     Failed { why: String },
 }
@@ -330,21 +336,16 @@ impl Ctx {
         Ok(judged)
     }
 
-    /// One terminal slot's reply against `schema`: the carried judgement when the slot has
-    /// one, else this input's text, judged and carried forward.
+    /// One terminal slot's reply against `schema`: terminal failures are carried; successful
+    /// output is returned for this step and fetched again on a later step if needed.
     fn judge(&self, slot: &str, schema: &Value, what: &str) -> Judged {
-        if let Some(prior) = self.carried.borrow().judged.get(slot) {
-            return match prior {
-                Judgement::Ok { output } => Judged::Ok(output.clone()),
-                Judgement::Failed { why } => Judged::Failed(why.clone()),
-            };
+        if let Some(Judgement::Failed { why }) = self.carried.borrow().judged.get(slot) {
+            return Judged::Failed(why.clone());
         }
         let judged = self.judge_fresh(slot, schema, what);
         let mut carried = self.carried.borrow_mut();
         match &judged {
-            Judged::Ok(output) => {
-                carried.judged.insert(slot.into(), Judgement::Ok { output: output.clone() });
-            }
+            Judged::Ok(_) => {}
             Judged::Failed(why) => {
                 carried.judged.insert(slot.into(), Judgement::Failed { why: why.clone() });
             }
@@ -546,6 +547,60 @@ impl Ctx {
             observed_terminal_children: kids.values().filter(|c| !c.live()).count() as u64,
             revision: 0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn large_successful_replies_stay_out_of_state_and_advance() {
+        let sha = |ch: char| std::iter::repeat(ch).take(40).collect::<String>();
+        let recon = json!({
+            "base_sha": sha('a'), "head_sha": sha('c'),
+            "base_tree": sha('b'), "head_tree": sha('d'),
+            "name_only": "src/lib.rs\n",
+            "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
+        });
+        let huge = "x".repeat(25_000);
+        let impact = "y".repeat(25_000);
+        let mut children = serde_json::Map::new();
+        let mut slots = serde_json::Map::new();
+        let mut put = |slot: &str, value: Value| {
+            children.insert(slot.into(), json!({"state": "completed", "truncated": false}));
+            slots.insert(slot.into(), json!({
+                "text": format!("```json\n{}\n```", value), "truncated": false
+            }));
+        };
+        put("recon", recon);
+        for (i, lens) in LENSES.iter().enumerate() {
+            put(&scan_slot(lens), json!({
+                "blocked": false,
+                "blocker": "",
+                "candidates": [{
+                    "slug": format!("finding-{i}"), "title": "Large finding",
+                    "path": "src/lib.rs", "line": 17, "severity": "Major",
+                    "excerpt": huge, "impact": impact, "confidence": 90
+                }]
+            }));
+        }
+        let input = json!({
+            "args": {"base": "base", "head": "head", "repository": "/repo"},
+            "caller": {"cwd": "/repo", "tool_call_id": "call_large"},
+            "pin": {"script_id": "script", "source_digest": "digest", "agent_budget": 22,
+                    "handle": HANDLE, "cwd": "/repo"},
+            "ceiling": {"max_live": 8, "remaining_spawns": 22, "result_bytes": 65_536,
+                        "targets": [RECON_TARGET, SCAN_TARGET, VERIFY_TARGET, TRIAGE_TARGET]},
+            "children": children,
+            "job_results": {"text": {"result": {"slots": slots}}}
+        });
+
+        let output = step(input);
+        assert_eq!(output["effects"]["spawn"][0]["slot"], "verify-0");
+        let state = &output["effects"]["state"];
+        assert!(state.to_string().len() < 64 * 1024, "state exceeded host cap: {} bytes", state.to_string().len());
+        assert_eq!(state["judged"], json!({}));
     }
 }
 
