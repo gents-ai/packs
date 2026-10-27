@@ -107,10 +107,15 @@ maintain:
 	if test -z "$$maintenance_job_id"; then maintenance_job_id="maintenance-$$(date -u +%Y%m%dT%H%M%SZ)-$$$$"; fi; \
 	maintenance_branch="$(MAINTENANCE_BRANCH)"; \
 	if test -z "$$maintenance_branch"; then maintenance_branch="agent/$$maintenance_job_id"; fi; \
+	maintenance_dep="$$(mktemp -d)" || exit 2; \
+	trap 'rm -rf "$$maintenance_dep"' EXIT; \
+	"$(GENTS)" pack build "$(CURDIR)/packs/gents/code_review" --out "$$maintenance_dep/code_review.pack" >/dev/null || exit 2; \
 	GENTS_MAINTENANCE_ROOT="$(abspath $(MAINTENANCE_ROOT))" \
 	GENTS_MAINTENANCE_BRANCH="$$maintenance_branch" \
 	GENTS_MAINTENANCE_HEAD_REF="$(MAINTENANCE_HEAD)" \
 	GENTS_MAINTENANCE_PR_BASE="$(MAINTENANCE_PR_BASE)" \
+	GENTS_MAINTENANCE_ORCHESTRATOR_HOME="$(CURDIR)/packs/gents/repo_maintenance/runs/$$maintenance_job_id/home" \
+	GENTS_MAINTENANCE_ORCHESTRATOR_GRAPHQL="http://127.0.0.1:$(MAINTENANCE_PORT)/api/v0/graphql" \
 	GENTS_MAINTENANCE_PROMPT="$(MAINTENANCE_PROMPT)" \
 	GENTS_MAINTENANCE_AREA_COUNT="$(MAINTENANCE_AREAS)" \
 	GENTS_MAINTENANCE_MIN_AREAS="$(MAINTENANCE_MIN_AREAS)" \
@@ -129,6 +134,7 @@ maintain:
 	GENTS_MAINTENANCE_RETRY_MAX_TRANSPORT="$(MAINTENANCE_RETRY_MAX_TRANSPORT)" \
 	GENTS_MAINTENANCE_RETRY_MAX_RESAMPLE="$(MAINTENANCE_RETRY_MAX_RESAMPLE)" \
 	"$(GENTS)" pack scenario run "$(CURDIR)/packs/gents/repo_maintenance" \
+		--with-pack "$$maintenance_dep/code_review.pack" \
 		--http-port "$(MAINTENANCE_PORT)" \
 		--job-id "$$maintenance_job_id" \
 		$(if $(MAINTENANCE_KEEP_HOME),--keep-home,)

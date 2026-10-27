@@ -135,7 +135,7 @@ an absolute path or a path through a symbolic link is refused with one
 sentence. A `path` that is one file cannot be written beside: bind the folder
 and name the image in `files`.
 
-## Graph mode
+## Callback mode
 
 The pack's `image-plan` and `image-run` callbacks run this plugin as two
 nodes. A request with a `run_id` is a node's. An `ImageJob` (`run_id`, `path`,

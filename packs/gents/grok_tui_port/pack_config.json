@@ -10,7 +10,7 @@
     {
       "agent_id": "port-final-review",
       "context_id": "port-final-review-context",
-      "description": "Run the bundled four-stage review graph after the combined convergence commit and repair confirmed findings.",
+      "description": "Run the bundled review-changes workflow after the combined convergence commit and repair confirmed findings.",
       "display_name": "Full review of the combined Grok port trunk",
       "inference_profile_id": "gents:inference-slot:reviewer"
     },
@@ -1939,7 +1939,7 @@
       "surface_id": "port-retry-io"
     },
     {
-      "display_name": "Review: sealed-tree code-review then close the unit",
+      "display_name": "Review: sealed-tree review-changes workflow then close the unit",
       "entries": [
         {
           "collection": "PortWorkUnit",
@@ -2009,7 +2009,7 @@
         },
         {
           "collection": "PortReview",
-          "description": "Accept or reject the sealed unit after the code-review graph.",
+          "description": "Accept or reject the sealed unit after the review-changes workflow.",
           "fields": [
             {
               "fill": "correlation",
@@ -2403,6 +2403,10 @@
       "tools_id": "port-converge-tools"
     },
     {
+      "agents": {
+        "enabled": false,
+        "target_ids": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"]
+      },
       "built_ins": {
         "enable_context_budget": true,
         "enable_goal_tools": true
@@ -2412,7 +2416,7 @@
           "port-final-review-io"
         ]
       },
-      "display_name": "Final review: full graph plus focused trunk repair",
+      "display_name": "Final review: full review-changes workflow plus focused trunk repair",
       "host": {
         "bash": {
           "background_enabled": true,
@@ -2428,7 +2432,24 @@
       "integrations": {
         "lsp": {
           "config": "{\"servers\":{\"rust-analyzer\":{\"warmup_timeout_ms\":60000,\"workspace_ready_timings\":{\"initial\":45000},\"settings\":{\"rust-analyzer\":{\"checkOnSave\":false}}}}}"
-        }
+        },
+        "plugins": [
+          {
+            "plugin": "gents/review_changes",
+            "job": {
+              "agent_targets": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"],
+              "max_live": 8,
+              "max_spawns": 128,
+              "max_messages_per_slot": 4,
+              "result_bytes": 65536,
+              "max_wall_secs": 7200,
+              "policy": {
+                "dynamic": "off",
+                "trusted_packs": ["gents/code_review"]
+              }
+            }
+          }
+        ]
       },
       "tools_id": "port-final-review-tools"
     },

@@ -64,6 +64,9 @@
     "slots": [
       "coordinator",
       "scanner"
+    ],
+    "dependencies": [
+      "code_review"
     ]
   }
 }

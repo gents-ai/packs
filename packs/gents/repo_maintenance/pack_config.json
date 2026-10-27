@@ -1150,6 +1150,7 @@
     {
       "agent_id": "maintenance-publish",
       "display_name": "Review and publish the maintenance PR",
+      "goal_objective_template": "Review, publish, and report the maintenance PR for run {{ event.correlation }} and persist its pull request result.",
       "prompt_template": "./tasks/maintenance_publish_task/prompt.md",
       "task_id": "maintenance-publish-task"
     },
@@ -1245,8 +1246,13 @@
       "tools_id": "maintenance-integrate-tools"
     },
     {
+      "agents": {
+        "enabled": false,
+        "target_ids": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"]
+      },
       "built_ins": {
-        "enable_context_budget": true
+        "enable_context_budget": true,
+        "enable_goal_tools": true
       },
       "datastore": {
         "datastore_tool_surface_ids": [
@@ -1255,7 +1261,8 @@
         "defra_query_collections": [
           "MaintenanceExecutionSummary",
           "MaintenanceExecutionResult",
-          "MaintenanceWorkPackage"
+          "MaintenanceWorkPackage",
+          "MaintenanceJob"
         ],
         "enable_defra_query": true
       },
@@ -1271,6 +1278,25 @@
           "mode": "ReadWrite"
         },
         "root": "${GENTS_MAINTENANCE_ROOT:-.}"
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/review_changes",
+            "job": {
+              "agent_targets": ["code-review-recon", "code-review-scan", "code-review-verify", "code-review-triage"],
+              "max_live": 8,
+              "max_spawns": 128,
+              "max_messages_per_slot": 4,
+              "result_bytes": 65536,
+              "max_wall_secs": 7200,
+              "policy": {
+                "dynamic": "off",
+                "trusted_packs": ["gents/code_review"]
+              }
+            }
+          }
+        ]
       },
       "tools_id": "maintenance-publish-tools"
     },

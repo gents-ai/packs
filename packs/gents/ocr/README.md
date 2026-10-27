@@ -48,10 +48,10 @@ The model calls `ocr` with `{"path": "reports/q3.pdf", "pages": "1-3"}`; a
 result with `next.cursor` is continued by calling again with that `cursor`
 and every other field unchanged. `plugins/ocr/TOOL.md` is what the model reads.
 
-## Use it as a graph node
+## Use it as a callback node
 
 Installing the pack also installs two plugin nodes, `ocr-plan` and
-`ocr-extract`, wired as plain callbacks, so no model and no graph pack is
+`ocr-extract`, wired as plain callbacks, so no model is
 needed: create an `OcrJob` document and the records below appear.
 
 ```sh
@@ -63,7 +63,7 @@ gql '{ OcrPage(filter: {run_id: {_eq: "r1"}}) { source page markdown } }'
 
 `path` names a folder, or one file; a relative path starts at the server's
 working folder, which is readable without asking. A path elsewhere must be in
-the allowed folders (`gents plugin dirs add <folder>`): a graph node asks nobody
+the allowed folders (`gents plugin dirs add <folder>`): a callback node asks nobody
 and is refused with that command otherwise. A request is recognized as a node's
 by the `run_id` every such document carries. A folder job can name the files to
 read in `files` (a list of names).
@@ -88,10 +88,8 @@ Markdown and images. When more remains, `OcrDocument.complete` is `false` and
 `cursor` continues it with the CLI loop below, so nothing is dropped silently.
 A job plans at most 1000 chunks and says so when it would exceed them.
 
-A graph pack of your own can use the same plugin as a node: name
-`gents/ocr` in its capability, pinned to the digest `gents plugin list` shows
-(gents installs only graph packs compiled into its binary today, which is why
-this pack wires the nodes as callbacks instead of shipping a graph).
+A pack of your own can call the same plugin from a callback or from a
+workflow plugin, pinned to the digest `gents plugin list` shows.
 
 ## Use it from a scenario
 
@@ -245,7 +243,7 @@ folder, but only a specific folder: never `/`, your home folder or a folder
 holding it or the gents home. Allowed once you listed them: Allowed folders in
 the settings, or `gents plugin dirs add <folder or file>` (read-only unless
 `--access read_write`). Anything else asks first in a chat (Allow once, Always
-allow this file, Always allow this folder, Deny), and in a graph or a headless
+allow this file, Always allow this folder, Deny), and in a callback or a headless
 run is refused with the command that allows it. A chat connected to a server on
 another machine cannot answer; the call then fails at once with that command.
 The allowed list and the questions are files in the gents home that the agent's

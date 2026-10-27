@@ -4,14 +4,14 @@ The official Gents packs. Every pack here publishes under the `gents`
 namespace and lives at `packs/gents/<name>/`, with its tests inside it.
 
 A pack distributes behaviors, tasks, datastore tools, schemas, prompts and
-supporting assets. It may contain a compiled graph, a document-driven worked
-scenario, or reusable assets alone.
+supporting assets. It may contain a workflow (a job plugin), a document-driven
+worked scenario, or reusable assets alone.
 
 ```sh
 gents pack list
 gents pack show code_review
 gents pack install code_review --home <initialized-home>
-gents graph run code_review --field base=origin/main --field head=HEAD
+gents pack wire gents/review_changes --agent <agent> --targets-from gents/code_review --home <home>
 gents pack install mailbox --home <home>
 gents pack remove mailbox --home <home>
 gents pack prune mailbox
@@ -60,7 +60,7 @@ refused, naming both packs, and only that pack's own reinstall or update
 replaces its record. `gents pack remove` releases only what its own
 coordinate owns.
 
-`kind` is `documents`, `graph`, `assets`, or `plugins`. A `plugins` pack
+`kind` is `documents`, `assets`, or `plugins`. A `plugins` pack
 installs no documents of its own: it exists to ship capabilities. Its plugins
 land in the same store `gents plugin install` uses, one store per home, so
 they are callable by name whichever pack put them there and one pack can
@@ -75,8 +75,8 @@ one artifact every language Afterburner compiles down to, since some of them
 form to ship instead, and only Afterburner's own runtime knows how to
 dispatch every one of those shapes.
 
-An admitted plugin can be called directly (`gents plugin run`), by a graph
-stage, or by a model as an ordinary tool. Its bytes sit in a content-addressed
+An admitted plugin can be called directly (`gents plugin run`), as a job
+(a workflow the host drives step by step), or by a model as an ordinary tool. Its bytes sit in a content-addressed
 store separate from the per-name record, so installing a second version never
 disturbs the first; `gents pack remove` releases a digest's bytes once no
 installed record anywhere in the home references it any more, and keeps them
@@ -137,9 +137,9 @@ gents plugin remove acme/format_check
 
 Installing a pack of any kind installs the plugins it declares into the same
 store `gents plugin install` uses, so a plugin that arrived inside a pack is
-runnable by name exactly like one installed alone. `documents` and `graph`
-packs install their plugins the same way `assets` and `plugins` packs do,
-before writing their own documents or graph. If that later write fails, the
+runnable by name exactly like one installed alone. `documents` packs
+install their plugins the same way `assets` and `plugins` packs do, before
+writing their own documents. If that later write fails, the
 plugin records this install just wrote are restored to what they were
 before it, so the pack install is all-or-nothing from the operator's view.
 
@@ -173,21 +173,19 @@ in the home; the home's pack store (works offline); then the registry, whose
 download is kept in the store. `NAME` means `gents/NAME`, and `NS/NAME@VERSION`
 pins a version (`pack update` installs the registry's latest this way).
 `pack fetch SPEC --store` fills the store without installing, from a
-directory, a `.pack` or the registry, and `pack list` lists it. Graph packs
-install from any of these sources, exactly like document packs: graph packs
-use the runtime graph installer; document packs use schema-first desired-state
-application. Neither submits scenario seed documents nor prunes
-unrelated configuration. Enabled schedules and triggers can execute when their
+directory, a `.pack` or the registry, and `pack list` lists it. Document packs
+use schema-first desired-state application; installation neither submits
+scenario seed documents nor prunes unrelated configuration. Enabled schedules and triggers can execute when their
 configuration is applied to a serving node; installation is not a dry run.
 Asset-only packs are materialized beneath `<home>/packs/`.
 Dependencies are coordinates (`name` or `ns/name`, never a pinned version).
-Declared graph dependencies are installed before the document pack, resolved
+Declared dependencies are installed before the document pack, resolved
 like any other pack; pre-store them with `pack fetch --store` to install
 offline. This is not an atomic multi-package transaction. Failures remain visible and installs
 can be retried through the existing owners.
 Only document packs currently declare package dependencies, and those must be
-graph packs. Graph/asset dependency lists are rejected; recursive installation
-is not silently implied. Installing a document pack adds its coordinate to
+document packs. Asset and plugins dependency lists are rejected; recursive
+installation is not silently implied. Installing a document pack adds its coordinate to
 each dependency's `required_by`; an install that is already a dependency and
 is now also requested directly marks it explicit.
 
@@ -197,21 +195,16 @@ checks for that record before ever resolving an owner or opening a node, and
 needs only `--home`. Removal releases the cache version (a version carrying
 `runs/`, or one this pack never marked, is kept and reported under
 `retained`), the plugin records this coordinate still owns, and plugin bytes
-and imported archives nothing else references. A graph pack is recorded in
-the same `PackInstallation` a document pack uses and removed in one
-transaction: every revision the package has ever produced (including a
-retired one) and its derived triggers are deleted along with the package's
-own documents; removal is refused while any of the package's graphs has a
-run that has not reached a terminal status, naming the graph and the run.
+and imported archives nothing else references. A document pack is recorded in
+a `PackInstallation` and removed in one transaction with its own documents.
 Package SDL schemas cannot be dropped by DefraDB and are reported under
-`retained`, never silently kept without saying so; `GraphRun` history stays,
-though its result view needs the graph reinstalled to show again. Removing a
+`retained`, never silently kept without saying so. Removing a
 document pack releases the last non-explicit claim on each of its
 dependencies; removing a pack directly while another installed pack still
 depends on it is refused, naming the dependents. `pack outdated` and `pack
 update` list both node-recorded and file-recorded installs.
 
-Graph and document packs declare named inference slots in `manifest.json`.
+Document packs declare named inference slots in `manifest.json`.
 Inspect them with `pack show`, then use `pack install --preview` to see the
 principal's existing profiles and the effective slot map without writing.
 Bind ambiguous installs explicitly with repeated
@@ -226,7 +219,7 @@ never automatically executed.
 `pack scenario run`, `init`, and `seed` operate `experiment.json` scenarios. A
 source directory can be used while authoring; a name resolves as `pack install`
 resolves one. `pack scenario run --with-pack DIR_OR_PACK` admits a directory
-or `.pack` to the run's store first, so a graph dependency resolves offline.
+or `.pack` to the run's store first, so a dependency resolves offline.
 Run artifacts are under the resolved pack's `runs/<job_id>/`.
 Repository-specific scenarios still need their documented checkout, tools and
 bindings; a pack does not provision a compiler or an external model endpoint.
@@ -234,15 +227,13 @@ A scenario's `prepare` steps run a pack plugin (optionally with one
 operator-bound read-only directory) and map its output to seed fields.
 
 `manifest.json` is the sole package dependency declaration, including for
-scenario runs. `experiment.json` may configure scenario-specific graph model
-bindings, but cannot declare another dependency list.
+scenario runs. `experiment.json` cannot declare another dependency list.
 
 The scenario asset cache of a name-resolved pack is separate from the runtime
 home selected with `pack scenario run --home`: it lives under the default Gents
 home's `packs/` tree.
-The distribution digest covers all declared assets, including documentation;
-the graph execution digest covers only the graph's referenced inputs. Both use
-the existing graph asset hashing routine. Filesystem cache names use the hex
+The distribution digest covers all declared assets, including documentation.
+Filesystem cache names use the hex
 portion of the shared `sha256:` digest format. `pack prune <name> [--home <home>]`
 removes superseded generated versions with no `runs/`. It takes the exclusive
 per-pack cache lock; scenario operations retain a shared lock for their full
@@ -252,9 +243,9 @@ Omit `--home` to prune the same default cache used by named scenario runs; pass
 the same explicit `--home` used to install an asset pack when pruning that
 cache.
 
-`gents graph run/watch/result/cancel/enable/disable` remain graph operations.
-The former `graph install/catalog` and `demo` pack subcommands are removed.
-`gents demo` is removed; there is no alternate demo shell or compatibility command.
+A workflow is a job plugin: `gents pack wire <ns>/<plugin> --agent <agent>
+--targets-from <pack>` gives an agent the tool, the agent calls it with its
+`args` and `agent_budget`, and `gents job list|show|watch|stop` follow the run.
 
 ## Authoring standard
 
@@ -262,11 +253,12 @@ Each `packs/gents/<snake_case_name>/manifest.json` declares:
 
 - `manifest_version`, `name`, `"namespace": "gents"`, semantic `version`, and
   `description`;
-- `authors`, `tags`, and `kind` (`graph`, `documents`, or `assets`);
+- `authors`, `tags`, and `kind` (`documents`, `assets`, or `plugins`);
 - explicit `assets` and package-name `dependencies`;
 - `inference_slots`, with a stable name, description, and the behavior IDs
   assigned to each slot, for every pack that installs behaviors;
-- for graph packs, compiler version, roles, schemas, intent and capabilities.
+- `plugins`, with `job: true` for a workflow plugin, and the caller Tools
+  template `pack wire --targets-from` copies.
 
 Use snake_case directories and filenames, except conventional ecosystem names
 such as `README.md` and `Cargo.toml`. No old-name aliases are provided. Changing
@@ -285,20 +277,16 @@ and backends referenced by slot bindings are never stamped.
 
 A README must explain purpose, installation, bindings/prerequisites, tool and
 workspace authority, inputs/outputs, completion/failure semantics, validation,
-and operational history. Graphs must include a Mermaid diagram. Refresh a
-graph pack's generated topology section, and check a pack the way an install
-would, with:
+and operational history. A workflow's phases must be described in prose.
+Check a pack the way an install would, with:
 
 ```sh
-gents pack graph packs/gents/<name> --write-readme
 gents pack check packs/gents/<name>
 ```
 
-`gents pack check` reports missing and undeclared files, configuration and
-graph errors, event-source filters the schemas reject, and a stale README
-diagram, each by name, and writes nothing. The diagram reflects compiled
-capability edges; document writes and callbacks must additionally be explained
-in prose. A diagram is not proof of runtime completion behavior.
+`gents pack check` reports missing and undeclared files, configuration
+errors and event-source filters the schemas reject, each by name, and
+writes nothing.
 
 Keep concise run summaries, reviewed outputs and issue links. Never bundle
 `runs/`, node homes, credentials, build caches or raw logs. Package embedding
@@ -317,17 +305,15 @@ any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 
 | Case | Asserts |
 | --- | --- |
-| `{"graphs": [...]}` | the graph ids the pack compiles to |
 | `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
 | `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents pack remove` releases them |
-| `{"install": {"graph": "<graph_id>", "slots": [...], "documents": [...]}}` | a graph pack installed from its directory into a fresh home (its dependencies pre-stored, its declared external services registered) activates this graph and binds these inference slots; a reinstall keeps the revision digest; `gents pack remove` deletes exactly these documents (ids derived from the graph digest are compared with the digest elided) |
 | `{"defs": "...", "jq": [{"name": "...", "expr": "..."}]}` | each jq expression is true over one document built once per pack from a single `gents pack show --config`: `{manifest, config, scenario, assets}`, `assets` mapping every UTF-8 declared asset path to its text; `defs` is a shared prelude of jq definitions |
 | `{"eval_case": {"asset": "...", "after": "..."}}` | the first json fence after that heading line of the asset is an eval case `gents eval checks --validate-case -` accepts |
 | `{"cli_flags": {"command": [...], "flags": [...]}}` | `gents <command> --help` documents every flag |
 | `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
 | `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents plugin list` agrees); a reinstall keeps the same set; `gents pack remove` releases them |
 
-Every documents or graph pack also passes the built-in checks: it declares
+Every documents pack also passes the built-in checks: it declares
 inference slots and authors no inference backend, profile, sampling, execution
 or retry documents; no task sets `goal_token_budget`; and every dependency is a
 sibling pack directory with that coordinate, which is built and pre-stored in
@@ -354,12 +340,12 @@ builds.
 | --- | --- |
 | [background_continuation](packs/gents/background_continuation/README.md) | Child completion and parent wake |
 | [charts](packs/gents/charts/README.md) | A Chart maker agent and a charts plugin that draws line, area, bar, scatter, bubble, histogram, box, pie, donut, heatmap and combo charts from rows or CSV and JSON files as SVG and PNG |
-| [code_review](packs/gents/code_review/README.md) | Reusable reviewed-evidence graph |
+| [code_review](packs/gents/code_review/README.md) | The review-changes workflow: recon, lens scans, verification and triage of a diff as one job |
 | [d3_decision](packs/gents/d3_decision/README.md) | The d3_decision plugin, which asks the D3 decision model typed choice, yes/no and score questions about text or JSON on an operator-owned server and returns its probabilities |
 | [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and the data_tables plugin, which runs SQL over CSV, JSON, Parquet, XLSX and ODS files with exact types and saves results as CSV or Parquet |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
-| [graph_pipeline](packs/gents/graph_pipeline/README.md) | Compiler evaluation fixtures |
+| [dynamic_workflows](packs/gents/dynamic_workflows/README.md) | The `workflow` tool that runs an in-session step function as a dynamic job |
 | [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
 | [image_tools](packs/gents/image_tools/README.md) | An Image helper agent and image_tools plugins that show, cut, compare and measure PNG, JPEG, GIF, BMP, TIFF and WebP images: upright model-ready views, tiles, diffs, QR and barcode reading, hashes |
 | [lsp_rust](packs/gents/lsp_rust/README.md) | Rust language-server integration |

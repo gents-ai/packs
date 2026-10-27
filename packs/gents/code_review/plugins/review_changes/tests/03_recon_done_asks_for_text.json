@@ -1,0 +1,124 @@
+{
+  "expect": {
+    "job_calls": {
+      "requests": [
+        {
+          "child_output": {
+            "limit": 65536,
+            "offset": 0,
+            "slots": [
+              "recon"
+            ]
+          },
+          "id": "text"
+        }
+      ],
+      "state": {
+        "corrections": {},
+        "judged": {}
+      }
+    }
+  },
+  "input": {
+    "agent_budget": 32,
+    "args": {
+      "base": "HEAD~1",
+      "head": "HEAD"
+    },
+    "argv": [],
+    "caller": {
+      "agent_id": "default",
+      "correlation": null,
+      "cwd": "/work/repo",
+      "node_did": "did:key:z6Mk",
+      "request_doc_id": "bae-req",
+      "request_hop": 1,
+      "request_id": "req-1",
+      "session_id": "sess-1",
+      "started_by_job": false,
+      "tool_call_id": "call_1"
+    },
+    "ceiling": {
+      "dynamic": "check",
+      "dynamic_targets": [],
+      "max_live": 8,
+      "max_messages_per_slot": 4,
+      "remaining_spawns": 32,
+      "result_bytes": 65536,
+      "targets": [
+        "code-review-recon",
+        "code-review-scan",
+        "code-review-verify",
+        "code-review-triage"
+      ]
+    },
+    "children": {
+      "recon": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-recon-1",
+        "session_id": "job-session:recon",
+        "state": "completed",
+        "title": "recon",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      }
+    },
+    "control": null,
+    "job": {
+      "chain": [
+        "bae-row"
+      ],
+      "chain_root_doc_id": "bae-row",
+      "handle": "review-changes",
+      "row_doc_id": "bae-row"
+    },
+    "job_calls": true,
+    "jobs": [
+      {
+        "adopted_at": 1761000000000,
+        "handle": "review-changes",
+        "resume_of": null,
+        "row_doc_id": "bae-row",
+        "state": "running",
+        "tool_call_id": "call_1"
+      }
+    ],
+    "mounts": [],
+    "origin": "installed",
+    "pin": {
+      "adopted_at": 1761000000000,
+      "agent_budget": 32,
+      "args_digest": "sha256:args",
+      "ceiling_at_pin": {
+        "dynamic": "check",
+        "dynamic_targets": [],
+        "max_live": 8,
+        "max_messages_per_slot": 4,
+        "remaining_spawns": 32,
+        "result_bytes": 65536,
+        "targets": [
+          "code-review-recon",
+          "code-review-scan",
+          "code-review-verify",
+          "code-review-triage"
+        ]
+      },
+      "chain_root_doc_id": "bae-row",
+      "cwd": "/work/repo",
+      "engine_digest": "sha256:engine",
+      "handle": "review-changes",
+      "origin": "installed",
+      "plugin_ref": "gents/review_changes",
+      "script_id": "e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f",
+      "source_digest": "sha256:e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f"
+    },
+    "protocol": 1,
+    "scratch": {}
+  }
+}
