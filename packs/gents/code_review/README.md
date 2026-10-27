@@ -106,9 +106,11 @@ the same trees as recon. Zero findings is distinct from a blocked review.
 Each child must end its reply with one `json` fence (a bare JSON object is
 accepted too) that conforms to its output schema. A reply that does not is
 corrected at most twice through a follow-up message, then the slot is given
-up as a limitation. The plugin carries its judgements and correction counts
-between steps in the host's opaque job state (`state` on its effects, echoed
-on the next step's input), so a judged child's text is read once.
+up as a limitation. The plugin carries only failed judgements and correction
+counts between steps in the host's opaque job state (`state` on its effects,
+echoed on the next step's input), keeping model text out of bounded state.
+A successful child's text is not carried: each step that judges it reads it
+again, with every other completed child's text, in one `job_calls` round.
 
 ## Scratch report
 
