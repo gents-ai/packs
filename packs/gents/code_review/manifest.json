@@ -5,34 +5,37 @@
     "agent_behaviors/review_scan/system_prompt.md",
     "agent_behaviors/review_triage/system_prompt.md",
     "agent_behaviors/review_verify/system_prompt.md",
-    "graphs/code_review.plan.json",
     "pack_config.json",
-    "plugins/review_evidence.afb",
-    "schemas/candidate_finding.graphql",
-    "schemas/evidence_manifest.graphql",
-    "schemas/evidence_page.graphql",
-    "schemas/finding.graphql",
-    "schemas/finding_verdict.graphql",
-    "schemas/review_area.graphql",
-    "schemas/review_job.graphql",
-    "schemas/scan_result.graphql",
-    "schemas/triage_report.graphql",
-    "schemas/verification_summary.graphql",
-    "tasks/review_recon_task/prompt.md",
-    "tasks/review_scan_task/prompt.md",
-    "tasks/review_triage_task/prompt.md",
-    "tasks/review_verify_task/prompt.md",
+    "plugins/review_changes.afb",
+    "plugins/review_changes/TOOL.md",
+    "plugins/review_changes/tests/00_step0_budget_pause.json",
+    "plugins/review_changes/tests/00b_step0_spawn_ceiling_pause.json",
+    "plugins/review_changes/tests/01_step0_spawn_recon.json",
+    "plugins/review_changes/tests/02_recon_live_waits.json",
+    "plugins/review_changes/tests/03_recon_done_asks_for_text.json",
+    "plugins/review_changes/tests/03b_round_request_carries_corrections.json",
+    "plugins/review_changes/tests/04_recon_error_text_blocks.json",
+    "plugins/review_changes/tests/05_empty_diff_completes.json",
+    "plugins/review_changes/tests/06_recon_ok_spawns_scans.json",
+    "plugins/review_changes/tests/06b_recon_ok_windows_scans_to_max_live.json",
+    "plugins/review_changes/tests/06c_scans_live_waits.json",
+    "plugins/review_changes/tests/07_scans_done_spawns_verify.json",
+    "plugins/review_changes/tests/08_no_candidates_spawns_triage.json",
+    "plugins/review_changes/tests/09_verify_done_spawns_triage.json",
+    "plugins/review_changes/tests/10_triage_done_completes.json",
+    "plugins/review_changes/tests/11_bad_recon_reply_is_corrected.json",
+    "plugins/review_changes/tests/12_second_bad_recon_reply_blocks.json",
+    "plugins/review_changes/tests/13_triage_failed_still_completes.json",
+    "plugins/review_changes/tests/14_judged_recon_spawns_scans_without_a_text_round.json",
     "tests/content.json",
-    "tests/graphs.json",
     "tests/install.json"
   ],
   "authors": [
     "gents-ai contributors"
   ],
-  "compiler_version": "graph-intent-v4",
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "Host-evidenced four-stage review: deterministic dispatch, immutable paged evidence, bounded lens swarm, verification, and triage.",
+  "description": "Four-stage code review personas (recon, scan, verify, triage) and the review_changes job plugin that drives them.",
   "inference_slots": [
     {
       "agents": [
@@ -57,59 +60,57 @@
       "name": "verifier"
     }
   ],
-  "kind": "graph",
+  "kind": "documents",
   "manifest_version": 1,
   "name": "code_review",
   "namespace": "gents",
   "plugins": [
     {
-      "artifact": "plugins/review_evidence.afb",
-      "description": "Turns the review entry's collected git_diff and read_only_workspace host facts into the immutable paged evidence documents and the review job's actual input. Runs only as this entry's declared prepare step, never as a direct model tool.",
+      "artifact": "plugins/review_changes.afb",
+      "description": "Review a git change through four lenses, adversarially verify every candidate and triage; runs as a background job.",
       "input_schema": {
-        "type": "object",
-        "description": "The host prepare envelope: the admitted entry input, a per-run nonce, and the collected git_diff and read_only_workspace host facts.",
         "properties": {
-          "input": {
-            "type": "object"
+          "agent_budget": {
+            "maximum": 1024,
+            "minimum": 1,
+            "type": "integer"
           },
-          "nonce": {
-            "type": "string"
-          },
-          "host": {
+          "args": {
+            "description": "base, head, repository, focus",
+            "properties": {
+              "base": {
+                "type": "string"
+              },
+              "focus": {
+                "type": "string"
+              },
+              "head": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string"
+              }
+            },
             "type": "object"
           }
         },
-        "required": [
-          "input",
-          "nonce",
-          "host"
-        ],
-        "additionalProperties": false
+        "type": "object"
       },
+      "instructions": "plugins/review_changes/TOOL.md",
+      "job": true,
       "language": "rust",
       "limits": {
-        "memory_mib": 1024,
-        "wall_clock_secs": 120,
-        "max_output_mib": 4
+        "max_output_mib": 4,
+        "memory_mib": 256,
+        "wall_clock_secs": 120
       },
-      "name": "review_evidence",
-      "source": "plugins/review_evidence"
+      "name": "review_changes",
+      "source": "plugins/review_changes"
     }
   ],
-  "schemas": [
-    "schemas/review_job.graphql",
-    "schemas/evidence_manifest.graphql",
-    "schemas/evidence_page.graphql",
-    "schemas/review_area.graphql",
-    "schemas/candidate_finding.graphql",
-    "schemas/scan_result.graphql",
-    "schemas/finding_verdict.graphql",
-    "schemas/finding.graphql",
-    "schemas/verification_summary.graphql",
-    "schemas/triage_report.graphql"
-  ],
   "tags": [
-    "graph"
+    "review",
+    "workflow"
   ],
-  "version": "1.7.0"
+  "version": "2.0.0"
 }

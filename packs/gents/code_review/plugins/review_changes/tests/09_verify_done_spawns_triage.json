@@ -1,0 +1,374 @@
+{
+  "expect": {
+    "effects": {
+      "progress": {
+        "active": [],
+        "budget": {
+          "remaining": 26,
+          "spent": 6,
+          "total": 32
+        },
+        "last_event": "spawned triage",
+        "last_event_at": null,
+        "observed_terminal_children": 6,
+        "phases": [
+          {
+            "state": "done",
+            "title": "Recon"
+          },
+          {
+            "state": "done",
+            "title": "Scan"
+          },
+          {
+            "state": "done",
+            "title": "Verify"
+          },
+          {
+            "state": "active",
+            "title": "Triage"
+          }
+        ],
+        "revision": 0,
+        "spawned": 6,
+        "state": "running",
+        "title": "Review a git diff through four lenses, adversarially verify every candidate, and triage"
+      },
+      "spawn": [
+        {
+          "attempt": 0,
+          "cwd": ".",
+          "prompt": "Write the operator-facing review report for the change aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..cccccccccccccccccccccccccccccccccccccccc.\nLedger: 1 candidates: 1 confirmed, 0 refuted, 0 unverified; 1 confirmed Critical or Major. Use these counts as given.\nConfirmed findings (JSON): [{\"area_id\":\"correctness\",\"confidence\":95,\"detail\":\"The last item is never processed.\",\"evidence\":\"src/lib.rs:3 iterates 0..n - 1 while the slice has n items\",\"excerpt\":\"for i in 0..n - 1 {\",\"finding_id\":\"correctness:off-by-one\",\"impact\":\"The last item is never processed.\",\"lens\":\"correctness\",\"line\":3,\"path\":\"src/lib.rs\",\"reasoning\":\"The exclusive range already excludes n.\",\"severity\":\"Major\",\"slug\":\"off-by-one\",\"title\":\"Loop bound skips the last element\",\"verdict\":\"confirmed\",\"verification\":\"The exclusive range already excludes n.\"}]\nReview limitations (JSON): [\"security-concurrency: the scan did not succeed\",\"workflow-invariants: the scan was blocked: the diff listing was truncated\",\"verify-0: builds not run\"]\n\nSummarize the confirmed defects by severity and practical impact, report zero findings when there are none, disclose every limitation, and give a supported merge recommendation. The report does not authorize merging.\n\n<output-contract>\nDo the work above with your tools first. When you are done, end your final message with exactly one fenced block tagged json. The block holds one JSON value that conforms to the schema below, and nothing else: no prose inside the fence.\nSchema:\n{\"properties\":{\"merge_recommendation\":{\"type\":\"string\"},\"report\":{\"type\":\"string\"}},\"required\":[\"report\",\"merge_recommendation\"],\"type\":\"object\"}\n</output-contract>",
+          "slot": "triage",
+          "target": "code-review-triage",
+          "title": "triage"
+        }
+      ],
+      "state": {
+        "corrections": {},
+        "judged": {
+          "recon": {
+            "ok": {
+              "output": {
+                "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
+                "name_only": "src/lib.rs\n",
+                "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
+              }
+            }
+          },
+          "scan-architecture-reuse": {
+            "ok": {
+              "output": {
+                "blocked": false,
+                "blocker": "",
+                "candidates": []
+              }
+            }
+          },
+          "scan-correctness": {
+            "ok": {
+              "output": {
+                "blocked": false,
+                "blocker": "",
+                "candidates": [
+                  {
+                    "confidence": 92,
+                    "excerpt": "for i in 0..n - 1 {",
+                    "impact": "The last item is never processed.",
+                    "line": 3,
+                    "path": "src/lib.rs",
+                    "severity": "Major",
+                    "slug": "off-by-one",
+                    "title": "Loop bound skips the last element"
+                  }
+                ]
+              }
+            }
+          },
+          "scan-security-concurrency": {
+            "failed": {
+              "why": "the scan did not succeed"
+            }
+          },
+          "scan-workflow-invariants": {
+            "ok": {
+              "output": {
+                "blocked": true,
+                "blocker": "the diff listing was truncated",
+                "candidates": []
+              }
+            }
+          },
+          "verify-0": {
+            "ok": {
+              "output": {
+                "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "builds_not_run": true,
+                "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
+                "verdicts": [
+                  {
+                    "confidence": 95,
+                    "evidence": "src/lib.rs:3 iterates 0..n - 1 while the slice has n items",
+                    "finding_id": "correctness:off-by-one",
+                    "reasoning": "The exclusive range already excludes n.",
+                    "verdict": "confirmed"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "agent_budget": 32,
+    "args": {
+      "base": "HEAD~1",
+      "head": "HEAD"
+    },
+    "argv": [],
+    "caller": {
+      "agent_id": "default",
+      "correlation": null,
+      "cwd": "/work/repo",
+      "node_did": "did:key:z6Mk",
+      "request_doc_id": "bae-req",
+      "request_hop": 1,
+      "request_id": "req-1",
+      "session_id": "sess-1",
+      "started_by_job": false,
+      "tool_call_id": "call_1"
+    },
+    "ceiling": {
+      "dynamic": "check",
+      "dynamic_targets": [],
+      "max_live": 8,
+      "max_messages_per_slot": 4,
+      "remaining_spawns": 32,
+      "result_bytes": 65536,
+      "targets": [
+        "code-review-recon",
+        "code-review-scan",
+        "code-review-verify",
+        "code-review-triage"
+      ]
+    },
+    "children": {
+      "recon": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-recon-1",
+        "session_id": "job-session:recon",
+        "state": "completed",
+        "title": "recon",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-architecture-reuse": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-architecture-reuse-1",
+        "session_id": "job-session:scan-architecture-reuse",
+        "state": "completed",
+        "title": "scan-architecture-reuse",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-correctness": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-correctness-1",
+        "session_id": "job-session:scan-correctness",
+        "state": "completed",
+        "title": "scan-correctness",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-security-concurrency": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-security-concurrency-1",
+        "session_id": "job-session:scan-security-concurrency",
+        "state": "failed",
+        "title": "scan-security-concurrency",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "scan-workflow-invariants": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-scan-workflow-invariants-1",
+        "session_id": "job-session:scan-workflow-invariants",
+        "state": "completed",
+        "title": "scan-workflow-invariants",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      },
+      "verify-0": {
+        "attempt": 0,
+        "duration_ms": 4000,
+        "output_bytes": 100,
+        "request_id": "req-verify-0-1",
+        "session_id": "job-session:verify-0",
+        "state": "completed",
+        "title": "verify-0",
+        "truncated": false,
+        "usage": {
+          "input": 1000,
+          "output": 200,
+          "total": 1200
+        }
+      }
+    },
+    "control": null,
+    "job": {
+      "chain": [
+        "bae-row"
+      ],
+      "chain_root_doc_id": "bae-row",
+      "handle": "review-changes",
+      "row_doc_id": "bae-row"
+    },
+    "job_calls": true,
+    "job_results": {
+      "text": {
+        "result": {
+          "slots": {
+            "verify-0": {
+              "text": "Done.\n\n```json\n{\n \"base_tree\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n \"head_tree\": \"dddddddddddddddddddddddddddddddddddddddd\",\n \"builds_not_run\": true,\n \"verdicts\": [\n  {\n   \"finding_id\": \"correctness:off-by-one\",\n   \"verdict\": \"confirmed\",\n   \"confidence\": 95,\n   \"evidence\": \"src/lib.rs:3 iterates 0..n - 1 while the slice has n items\",\n   \"reasoning\": \"The exclusive range already excludes n.\"\n  }\n ]\n}\n```\n"
+            }
+          }
+        }
+      }
+    },
+    "jobs": [
+      {
+        "adopted_at": 1761000000000,
+        "handle": "review-changes",
+        "resume_of": null,
+        "row_doc_id": "bae-row",
+        "state": "running",
+        "tool_call_id": "call_1"
+      }
+    ],
+    "mounts": [],
+    "origin": "installed",
+    "pin": {
+      "adopted_at": 1761000000000,
+      "agent_budget": 32,
+      "args_digest": "sha256:args",
+      "ceiling_at_pin": {
+        "dynamic": "check",
+        "dynamic_targets": [],
+        "max_live": 8,
+        "max_messages_per_slot": 4,
+        "remaining_spawns": 32,
+        "result_bytes": 65536,
+        "targets": [
+          "code-review-recon",
+          "code-review-scan",
+          "code-review-verify",
+          "code-review-triage"
+        ]
+      },
+      "chain_root_doc_id": "bae-row",
+      "cwd": "/work/repo",
+      "engine_digest": "sha256:engine",
+      "handle": "review-changes",
+      "origin": "installed",
+      "plugin_ref": "gents/review_changes",
+      "script_id": "e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f",
+      "source_digest": "sha256:e478525471eec9b0ebe6397dd955610702bf0b4fda99615798820316c7f0691f"
+    },
+    "protocol": 1,
+    "scratch": {},
+    "state": {
+      "judged": {
+        "recon": {
+          "ok": {
+            "output": {
+              "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "base_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+              "head_tree": "dddddddddddddddddddddddddddddddddddddddd",
+              "name_only": "src/lib.rs\n",
+              "stat": " src/lib.rs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n"
+            }
+          }
+        },
+        "scan-architecture-reuse": {
+          "ok": {
+            "output": {
+              "blocked": false,
+              "blocker": "",
+              "candidates": []
+            }
+          }
+        },
+        "scan-correctness": {
+          "ok": {
+            "output": {
+              "blocked": false,
+              "blocker": "",
+              "candidates": [
+                {
+                  "confidence": 92,
+                  "excerpt": "for i in 0..n - 1 {",
+                  "impact": "The last item is never processed.",
+                  "line": 3,
+                  "path": "src/lib.rs",
+                  "severity": "Major",
+                  "slug": "off-by-one",
+                  "title": "Loop bound skips the last element"
+                }
+              ]
+            }
+          }
+        },
+        "scan-security-concurrency": {
+          "failed": {
+            "why": "the scan did not succeed"
+          }
+        },
+        "scan-workflow-invariants": {
+          "ok": {
+            "output": {
+              "blocked": true,
+              "blocker": "the diff listing was truncated",
+              "candidates": []
+            }
+          }
+        }
+      }
+    }
+  }
+}
