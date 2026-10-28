@@ -1,0 +1,274 @@
+{
+  "node": {},
+  "datastore_tool_surfaces": [
+    {
+      "surface_id": "pr_explorer",
+      "display_name": "PR Explorer",
+      "tags": [
+        "pr_explorer"
+      ],
+      "entries": [
+        {
+          "kind": "query",
+          "tool_name": "pr_list_analyses",
+          "collection": "PrExplorerAnalysis",
+          "description": "Completed PR Explorer analyses: which repository and range each covers, its base and head commits, its file and unit counts, and when it was recorded.",
+          "fields": [
+            "analysis_id",
+            "repository",
+            "pr_ref",
+            "base_ref",
+            "head_ref",
+            "base_sha",
+            "head_sha",
+            "file_count",
+            "unit_count",
+            "created_at"
+          ],
+          "filter_fields": [
+            {
+              "name": "analysis_id",
+              "required": false
+            },
+            {
+              "name": "repository",
+              "required": false
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "pr_list_units",
+          "collection": "PrExplorerUnit",
+          "description": "The logical units of an analysis: id, order, title, summary, and its files as a JSON array of paths.",
+          "fields": [
+            "analysis_id",
+            "unit_id",
+            "ordinal",
+            "title",
+            "summary",
+            "files"
+          ],
+          "filter_fields": [
+            {
+              "name": "analysis_id",
+              "required": true
+            }
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "pr_list_files",
+          "collection": "PrExplorerDiff",
+          "description": "The changed files of an analysis in patch order, with change kind and line counts; filter by path to read one file's unified diff (bounded, `truncated` when cut).",
+          "fields": [
+            "file_key",
+            "analysis_id",
+            "ordinal",
+            "path",
+            "old_path",
+            "change",
+            "binary",
+            "additions",
+            "deletions",
+            "diff",
+            "diff_bytes",
+            "truncated"
+          ],
+          "filter_fields": [
+            {
+              "name": "analysis_id",
+              "required": true
+            },
+            {
+              "name": "path",
+              "required": false
+            }
+          ]
+        },
+        {
+          "tool_name": "pr_record_unit",
+          "collection": "PrExplorerUnit",
+          "description": "Record one logical unit of an analysis. `unit_id` is a short slug unique in the analysis; `ordinal` its 0-based display order; `summary` one to three sentences; `files` a JSON array of the unit's paths as a string, e.g. \"[\\\"src/a.rs\\\",\\\"src/b.rs\\\"]\", in reading order.",
+          "fields": [
+            {
+              "name": "analysis_id",
+              "required": true
+            },
+            {
+              "name": "unit_id",
+              "required": true
+            },
+            {
+              "name": "ordinal",
+              "required": true
+            },
+            {
+              "name": "title",
+              "required": true
+            },
+            {
+              "name": "summary",
+              "required": true
+            },
+            {
+              "name": "files",
+              "required": true
+            }
+          ]
+        },
+        {
+          "tool_name": "pr_record_analysis",
+          "collection": "PrExplorerAnalysis",
+          "description": "Record an analysis as complete, after all its files and units are written. `repository` is the repo path relative to the PR Explorer root; `pr_ref` how the user named the change (e.g. main...feature); `created_at` an RFC 3339 UTC time.",
+          "fields": [
+            {
+              "name": "analysis_id",
+              "required": true
+            },
+            {
+              "name": "repository",
+              "required": true
+            },
+            {
+              "name": "pr_ref",
+              "required": true
+            },
+            {
+              "name": "base_ref",
+              "required": true
+            },
+            {
+              "name": "head_ref",
+              "required": true
+            },
+            {
+              "name": "base_sha",
+              "required": true
+            },
+            {
+              "name": "head_sha",
+              "required": true
+            },
+            {
+              "name": "file_count",
+              "required": true
+            },
+            {
+              "name": "unit_count",
+              "required": true
+            },
+            {
+              "name": "created_at",
+              "required": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "tools_id": "pr-explorer-tools",
+      "display_name": "Diff a local range or a GitHub PR and record a PR Explorer analysis",
+      "built_ins": {
+        "enable_context_budget": true
+      },
+      "host": {
+        "root": "${GENTS_PR_EXPLORER_ROOT:-}",
+        "bash": {
+          "mode": "Unrestricted",
+          "execution_mode": "workspace_write",
+          "network_mode": "enabled",
+          "allowed_argv_prefixes": [
+            [
+              "git",
+              "rev-parse"
+            ],
+            [
+              "git",
+              "merge-base"
+            ],
+            [
+              "git",
+              "diff"
+            ],
+            [
+              "git",
+              "log"
+            ],
+            [
+              "git",
+              "show"
+            ],
+            [
+              "git",
+              "ls-files"
+            ],
+            [
+              "git",
+              "remote",
+              "get-url"
+            ],
+            [
+              "git",
+              "worktree",
+              "list"
+            ],
+            [
+              "git",
+              "fetch",
+              "--no-tags",
+              "origin"
+            ],
+            [
+              "gh",
+              "pr",
+              "view"
+            ],
+            [
+              "date",
+              "-u"
+            ],
+            [
+              "mkdir",
+              "-p"
+            ]
+          ]
+        },
+        "files": {
+          "mode": "ReadOnly"
+        }
+      },
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "pr_explorer"
+        ]
+      },
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/pr_diff_split"
+          }
+        ]
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "pr-explorer-context",
+      "display_name": "PR Explorer",
+      "system_prompt": "./agent_behaviors/pr_explorer/system_prompt.md",
+      "tools_id": "pr-explorer-tools"
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "pr-explorer",
+      "context_id": "pr-explorer-context",
+      "display_name": "PR Explorer",
+      "description": "Groups a local branch range's or a GitHub pull request's changed files into logical units for the PR Explorer page.",
+      "inference_profile_id": "gents:inference-slot:analyzer"
+    }
+  ]
+}

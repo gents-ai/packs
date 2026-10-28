@@ -1,0 +1,21 @@
+# PrExplorerDiff (0.2.0; replaces the 0.1.x PrExplorerFile, which had no
+# unique key and so refused every plugin write). One changed file of one analysis: written by the pr_diff_split plugin from
+# the range's patch, never by the model. `diff` is the file's unified diff
+# (from its `diff --git` line), cut at a line boundary when it exceeds the
+# per-file bound; `truncated` says so and `diff_bytes` keeps the full size.
+# `file_key` is `<analysis_id>:<ordinal>`: the one unique key, so a repeated
+# plugin call (on_conflict: ignore) leaves the stored row as is.
+type PrExplorerDiff {
+  file_key: String @index(unique: true)
+  analysis_id: String @index
+  ordinal: Int
+  path: String
+  old_path: String
+  change: String
+  binary: Boolean
+  additions: Int
+  deletions: Int
+  diff: String
+  diff_bytes: Int
+  truncated: Boolean
+}
