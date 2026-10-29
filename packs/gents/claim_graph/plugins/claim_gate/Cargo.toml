@@ -2,7 +2,7 @@
 
 [package]
 name = "claim_gate"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.92"
 
@@ -13,6 +13,8 @@ path = "source/main.rs"
 [dependencies]
 # preserve_order keeps a claim's `sources` objects in their written key order.
 serde_json = { version = "1", features = ["preserve_order"] }
+# The profile's claim_id_pattern; the small engine, without Unicode tables.
+regex-lite = "0.1"
 
 [profile.release]
 opt-level = "s"

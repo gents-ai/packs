@@ -13,6 +13,7 @@ use serde_json::{Value, json};
 
 mod batch;
 mod clock;
+mod profile;
 mod quotes;
 mod rows;
 mod rules;
@@ -21,6 +22,7 @@ mod store;
 mod tests;
 
 use batch::Batch;
+use profile::Profile;
 use store::{Found, State};
 
 fn main() {
@@ -60,15 +62,36 @@ pub fn run(raw: &str) -> Result<Value, String> {
         Some(_) => return Err("gate_now must be a string".into()),
     };
     let batch = batch::read(input)?;
-    let finish = |verdict| Ok(rows::result(&batch_id, &batch, verdict, &checked_at));
+    // The host resends the same input every round, so the inline profile is
+    // parsed again rather than carried in `state`.
+    let inline = batch.profile.as_deref().map(profile::parse_inline);
+    let inline_ok = match &inline {
+        Some(Ok(profile)) => Some(profile),
+        _ => None,
+    };
+    let finish = |verdict, admitted: Option<&Profile>| {
+        Ok(rows::result(&batch_id, &batch, verdict, admitted, &checked_at))
+    };
 
-    let plan = store::plan(&batch);
+    let resolvers: Vec<String> = inline_ok
+        .map(|p| p.list("resolver_perspectives").map(str::to_owned).collect())
+        .unwrap_or_default();
+    let plan = store::plan(&batch, &resolvers);
     let mut state = match input.get("data_results") {
         None | Some(Value::Null) => {
             // First round: the rules and files that need no store. A failure
             // here is final and reports the quotes too; a quote alone waits for
             // the store, whose supersedes and retracts edges may exempt it.
-            let mut errors = rules::check(&batch, None);
+            // Without an inline profile the vocabulary rules wait for the
+            // stored one.
+            let mut errors = Vec::new();
+            if batch.graph_id.is_none() {
+                errors.push("ERROR: the batch names no graph_id".to_owned());
+            }
+            if let Some(Err(profile_errors)) = &inline {
+                errors.extend(profile_errors.iter().cloned());
+            }
+            errors.extend(rules::check(&batch, inline_ok, None));
             if batch.is_empty() {
                 errors.push(
                     "ERROR: the batch carries no claims, edges, entities or perspectives"
@@ -87,11 +110,12 @@ pub fn run(raw: &str) -> Result<Value, String> {
                 .as_deref()
                 .is_some_and(|root| !quotes::missing_files(Path::new(root), &batch.claims).is_empty());
             if !errors.is_empty() || files_missing {
-                return finish(local_verdict(&batch, errors, &Found::default()));
+                let verdict = local_verdict(&batch, errors, &Found::default(), inline_ok, None);
+                return finish(verdict, None);
             }
             if input.get("data_calls") != Some(&Value::Bool(true)) {
                 return Err(
-                    "the host offers this plugin no data_calls; declare data with query on Claim, Edge, Entity and Perspective in the manifest"
+                    "the host offers this plugin no data_calls; declare data with query on ClaimGraph, Claim, Edge, Entity and Perspective in the manifest"
                         .into(),
                 );
             }
@@ -101,28 +125,79 @@ pub fn run(raw: &str) -> Result<Value, String> {
             let mut state = State::from_json(input.get("state"))?;
             let failures = state.absorb(&plan, results)?;
             if !failures.is_empty() {
-                return finish(local_verdict(&batch, failures, &state.found));
+                let verdict = local_verdict(&batch, failures, &state.found, None, None);
+                return finish(verdict, None);
             }
             state
         }
     };
-    if let Some(requests) = state.next_requests(&plan) {
+    let graph_id = batch
+        .graph_id
+        .as_deref()
+        .ok_or("the batch names no graph_id but the round went on")?;
+    if let Some(requests) = state.next_requests(graph_id, &plan) {
         return Ok(json!({"data_calls": {"requests": requests, "state": state.to_json()}}));
     }
-    let errors = rules::check(&batch, Some(&state.found));
-    finish(local_verdict(&batch, errors, &state.found))
+
+    // Last round: the graph's profile, then every rule against the store.
+    let mut errors = Vec::new();
+    let stored;
+    let (profile, version) = match inline_ok {
+        Some(profile) => (Some(profile), Some(state.found.latest_version() + 1)),
+        None => match &state.found.profile {
+            None => {
+                errors.push(format!(
+                    "ERROR: unknown graph {graph_id}: the first batch must carry a profile"
+                ));
+                (None, None)
+            }
+            Some(row) => match profile::parse_stored(graph_id, row) {
+                Ok((profile, version)) => {
+                    stored = profile;
+                    (Some(&stored), Some(version))
+                }
+                Err(row_errors) => {
+                    errors.extend(row_errors);
+                    (None, None)
+                }
+            },
+        },
+    };
+    if let Some(profile) = inline_ok {
+        errors.extend(rules::check_resolvers(&batch, profile, &state.found));
+    }
+    errors.extend(rules::check(&batch, profile, Some(&state.found)));
+    let verdict = local_verdict(&batch, errors, &state.found, profile, version);
+    finish(verdict, inline_ok)
 }
 
-/// `errors` plus the file and quote checks when the batch names a source root.
-fn local_verdict(batch: &Batch, mut errors: Vec<String>, found: &Found) -> rows::Verdict {
+/// `errors` plus the file and quote checks when the batch names a source
+/// root. Quotes are checked only under a resolved profile, whose
+/// `questions_from_prefix` exempts question files.
+fn local_verdict(
+    batch: &Batch,
+    mut errors: Vec<String>,
+    found: &Found,
+    profile: Option<&Profile>,
+    profile_version: Option<i64>,
+) -> rows::Verdict {
     let Some(root) = batch.source_root.as_deref().map(Path::new) else {
         return rows::Verdict {
+            profile_version,
             errors,
             quotes_checked: 0,
             quotes_skipped: batch.claims.len() as u64,
         };
     };
     errors.extend(quotes::missing_files(root, &batch.claims));
+    let Some(profile) = profile else {
+        return rows::Verdict {
+            profile_version,
+            errors,
+            quotes_checked: 0,
+            quotes_skipped: batch.claims.len() as u64,
+        };
+    };
     let mut historical = found.historical.clone();
     for edge in &batch.edges {
         if matches!(edge.str("type"), Some("supersedes" | "retracts")) {
@@ -131,12 +206,13 @@ fn local_verdict(batch: &Batch, mut errors: Vec<String>, found: &Found) -> rows:
             }
         }
     }
-    let report = quotes::check_quotes(root, &batch.claims, &historical);
+    let prefix = profile.text("questions_from_prefix").filter(|p| !p.is_empty());
+    let report = quotes::check_quotes(root, &batch.claims, &historical, prefix);
     errors.extend(report.errors);
     rows::Verdict {
+        profile_version,
         errors,
         quotes_checked: report.checked,
         quotes_skipped: report.skipped,
     }
 }
-

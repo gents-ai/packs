@@ -1,0 +1,21 @@
+{
+  "input": {
+    "request_id": "req-nograph",
+    "view": "status",
+    "out_dir": "",
+    "dry_run": true,
+    "view_now": "2026-10-29T12:00:00Z",
+    "data_calls": true
+  },
+  "expect": {
+    "receipt_id": "view-req-nograph",
+    "graph_id": "",
+    "view": "status",
+    "ok": false,
+    "error": "graph_id is required: the graph to view",
+    "rows": 0,
+    "markdown": "",
+    "file": "",
+    "generated_at": "2026-10-29T12:00:00Z"
+  }
+}

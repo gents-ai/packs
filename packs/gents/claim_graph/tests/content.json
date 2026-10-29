@@ -1,57 +1,81 @@
 {
-  "defs": "def sdl: [.assets | to_entries[] | select(.key | startswith(\"schemas/\")) | .value] | join(\"\\n\"); def fields($type): sdl | [capture(\"type \" + $type + \" \\\\{(?<b>[^}]*)\\\\}\").b | split(\"\\n\")[] | select(test(\"^\\\\s*[a-z_]+:\")) ] ; def gate: .config.callbacks[] | select(.callback_id == \"claim-gate\");",
+  "defs": "def sdl: [.assets | to_entries[] | select(.key | startswith(\"schemas/\")) | .value] | join(\"\\n\"); def fields($type): sdl | [capture(\"type \" + $type + \"(\\\\s[^{]*)?\\\\{(?<b>[^}]*)\\\\}\").b | split(\"\\n\")[] | select(test(\"^\\\\s*[a-z_]+:\")) ]; def names($type): fields($type) | map(capture(\"^\\\\s*(?<n>[a-z_]+):\").n); def header($type): sdl | capture(\"(?<h>type \" + $type + \"(\\\\s[^{]*)?)\\\\{\").h; def gate: .config.callbacks[] | select(.callback_id == \"claim-gate\"); def surface: .config.datastore_tool_surfaces[] | select(.surface_id == \"claim-graph-writes\") | (.entries | if type == \"object\" then .entries else . end); def entry($t): surface[] | select(.tool_name == $t); def required: [.fields[] | select(.required == true) | .name] | sort; def profile: .assets[\"profiles/research.json\"] | fromjson;",
   "jq": [
     {
       "name": "every scalar schema field is immutable (DefraDB refuses @immutable on a list)",
-      "expr": ". as $d | [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimBatch\", \"GateReceipt\", \"ExportRequest\", \"ExportReceipt\"] | all(. as $t | ($d | fields($t)) as $f | ($f | length) > 0 and ($f | all(test(\": \\\\[\") or test(\"@immutable\")))) and ([$d | fields(\"Claim\"), fields(\"Entity\") | map(select(test(\": \\\\[\"))) | length] == [1, 1])"
+      "expr": ". as $d | [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimGraph\", \"ClaimBatch\", \"GateReceipt\", \"ExportRequest\", \"ExportReceipt\", \"ViewRequest\", \"ViewReceipt\"] | all(. as $t | ($d | fields($t)) as $f | ($f | length) > 0 and ($f | all(test(\": \\\\[\") or test(\"@immutable\")))) and ([$d | fields(\"Claim\"), fields(\"Entity\"), fields(\"ClaimGraph\") | map(select(test(\": \\\\[\"))) | length] == [1, 1, 7])"
     },
     {
-      "name": "the manifest declares exactly the eight schema files",
-      "expr": ".manifest.schemas | sort == [\"schemas/claim.graphql\", \"schemas/claim_batch.graphql\", \"schemas/edge.graphql\", \"schemas/entity.graphql\", \"schemas/export_receipt.graphql\", \"schemas/export_request.graphql\", \"schemas/gate_receipt.graphql\", \"schemas/perspective.graphql\"]"
+      "name": "the manifest declares exactly the eleven schema files",
+      "expr": ".manifest.schemas | sort == [\"schemas/claim.graphql\", \"schemas/claim_batch.graphql\", \"schemas/claim_graph.graphql\", \"schemas/edge.graphql\", \"schemas/entity.graphql\", \"schemas/export_receipt.graphql\", \"schemas/export_request.graphql\", \"schemas/gate_receipt.graphql\", \"schemas/perspective.graphql\", \"schemas/view_receipt.graphql\", \"schemas/view_request.graphql\"]"
     },
     {
-      "name": "the gate callback emits one receipt and four row ports correlated by batch_id",
-      "expr": "gate | .handler | (.plugin | IN(\"claim_gate\", \"gents/claim_gate\")) and .correlation_field == \"batch_id\" and (.outputs | map({name, collection, cardinality, required: (.required // false)}) == [{name: \"receipt\", collection: \"GateReceipt\", cardinality: \"one\", required: true}, {name: \"claims\", collection: \"Claim\", cardinality: \"many\", required: false}, {name: \"edges\", collection: \"Edge\", cardinality: \"many\", required: false}, {name: \"entities\", collection: \"Entity\", cardinality: \"many\", required: false}, {name: \"perspectives\", collection: \"Perspective\", cardinality: \"many\", required: false}]) and (.outputs | all(.correlation_field == \"batch_id\" and .schema == (.collection + \"/v1\")))"
+      "name": "every schema carries an indexed immutable graph_id",
+      "expr": ". as $d | [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimGraph\", \"ClaimBatch\", \"GateReceipt\", \"ExportRequest\", \"ExportReceipt\", \"ViewRequest\", \"ViewReceipt\"] | all(. as $t | $d | fields($t) | any(test(\"^\\\\s*graph_id: String @index @immutable$\")))"
     },
     {
-      "name": "every callback output collection has a schema with a batch_id field",
+      "name": "graph rows and profile versions are unique per graph, not globally",
+      "expr": ". as $d | [[\"Claim\", \"claim_id\"], [\"Edge\", \"edge_key\"], [\"Entity\", \"entity_id\"], [\"Perspective\", \"perspective_id\"], [\"ClaimGraph\", \"version\"]] | all(. as [$t, $k] | ($d | header($t) | contains(\"@index(fields: [\\\"graph_id\\\", \\\"\" + $k + \"\\\"], unique: true)\")) and ($d | fields($t) | map(select(test(\"^\\\\s*\" + $k + \":\"))) | length == 1 and all(test(\"unique\") | not)))"
+    },
+    {
+      "name": "the gate callback emits one receipt, four row ports and the profile port, correlated by batch_id",
+      "expr": "gate | .handler | (.plugin | IN(\"claim_gate\", \"gents/claim_gate\")) and .correlation_field == \"batch_id\" and (.outputs | map({name, collection, cardinality, required: (.required // false)}) == [{name: \"receipt\", collection: \"GateReceipt\", cardinality: \"one\", required: true}, {name: \"claims\", collection: \"Claim\", cardinality: \"many\", required: false}, {name: \"edges\", collection: \"Edge\", cardinality: \"many\", required: false}, {name: \"entities\", collection: \"Entity\", cardinality: \"many\", required: false}, {name: \"perspectives\", collection: \"Perspective\", cardinality: \"many\", required: false}, {name: \"profile\", collection: \"ClaimGraph\", cardinality: \"one\", required: false}]) and (.outputs | all(.correlation_field == \"batch_id\" and .schema == (.collection + \"/v1\")))"
+    },
+    {
+      "name": "every gate output collection has a schema with a batch_id field",
       "expr": ". as $d | gate | .handler.outputs | all(.collection as $c | $d | fields($c) | any(test(\"^\\\\s*batch_id:\")))"
     },
     {
       "name": "the gate fires on created ClaimBatch documents and is bound to every ClaimBatch field",
-      "expr": ". as $d | (.config.event_sources[] | select(.event_source_id == \"claim-batch\") | .source_collection == \"ClaimBatch\" and .event_kind == \"created\" and .correlation_field == \"batch_id\") and (.config.callback_bindings[] | select(.binding_id == \"claim-gate\") | .event_source_id == \"claim-batch\" and (.input_fields | sort) == ($d | fields(\"ClaimBatch\") | map(capture(\"^\\\\s*(?<n>[a-z_]+):\").n) | sort))"
+      "expr": ". as $d | (.config.event_sources[] | select(.event_source_id == \"claim-batch\") | .source_collection == \"ClaimBatch\" and .event_kind == \"created\" and .correlation_field == \"batch_id\") and (.config.callback_bindings[] | select(.binding_id == \"claim-gate\") | .event_source_id == \"claim-batch\" and (.input_fields | sort) == ($d | names(\"ClaimBatch\") | sort))"
     },
     {
-      "name": "the gate may only query the four graph collections and reads source_root",
-      "expr": ".manifest.plugins[] | select(.name == \"claim_gate\") | .data == {collections: [\"Claim\", \"Edge\", \"Entity\", \"Perspective\"], ops: [\"query\"]} and .bind_dir.input_field == \"source_root\" and .bind_dir.access == \"read\""
+      "name": "the gate, export and views plugins may only query the graph collections and profiles",
+      "expr": "[.manifest.plugins[] | {key: .name, value: .data}] | from_entries == {claim_gate: {collections: [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimGraph\"], ops: [\"query\"]}, claim_export: {collections: [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimGraph\"], ops: [\"query\"]}, claim_views: {collections: [\"Claim\", \"Edge\", \"Entity\", \"Perspective\", \"ClaimGraph\"], ops: [\"query\"]}}"
     },
     {
-      "name": "the export plugin may only query the four graph collections",
-      "expr": ".manifest.plugins[] | select(.name == \"claim_export\") | .data == {collections: [\"Claim\", \"Edge\", \"Entity\", \"Perspective\"], ops: [\"query\"]} and .bind_dir.input_field == \"out_dir\""
+      "name": "the gate reads source_root; export and views write out_dir",
+      "expr": ".manifest.plugins | (map(select(.name == \"claim_gate\"))[0].bind_dir | .input_field == \"source_root\" and .access == \"read\") and (map(select(.name == \"claim_export\" or .name == \"claim_views\")) | length == 2 and all(.bind_dir | .input_field == \"out_dir\" and .access == \"read_write\" and .original_field == \"out_dir_original\"))"
     },
     {
-      "name": "the SME queries the graph and receipts, writes only through file_question, and may export",
-      "expr": ".config.tools[] | select(.tools_id == \"claim-sme-tools\") | .datastore.enable_defra_query == true and (.datastore.defra_query_collections | sort) == [\"Claim\", \"Edge\", \"Entity\", \"ExportReceipt\", \"GateReceipt\", \"Perspective\"] and .datastore.datastore_tool_surface_ids == [\"claim-question-writes\"] and (.datastore.write_collections // [] | length == 0) and (.integrations.plugins | map(.plugin)) == [\"gents/claim_export\"]"
+      "name": "every plugin input names the graph, and a view is one of the three",
+      "expr": ".manifest.plugins | all(.input_schema.properties.graph_id.type == \"string\") and (map(select(.name == \"claim_views\"))[0].input_schema | .properties.view.enum == [\"status\", \"disputes\", \"reputation\"] and (.required | sort) == [\"graph_id\", \"request_id\", \"view\"] and (.properties | keys | sort) == [\"dry_run\", \"graph_id\", \"out_dir\", \"out_dir_original\", \"request_id\", \"view\"])"
     },
     {
-      "name": "the question surface creates ClaimBatch with batch_id, section and claims required",
-      "expr": ".config.datastore_tool_surfaces[] | select(.surface_id == \"claim-question-writes\") | (.entries | if type == \"object\" then .entries else . end) | length == 1 and .[0].collection == \"ClaimBatch\" and .[0].tool_name == \"file_question\" and ([.[0].fields[] | select(.required == true) | .name] | sort) == [\"batch_id\", \"claims\", \"section\"] and ([.[0].fields[].name] | index(\"source_root\") == null)"
+      "name": "the SME queries the graph, profiles and receipts, writes only through its surface, and may export",
+      "expr": ".config.tools[] | select(.tools_id == \"claim-sme-tools\") | .datastore.enable_defra_query == true and (.datastore.defra_query_collections | sort) == [\"Claim\", \"ClaimGraph\", \"Edge\", \"Entity\", \"ExportReceipt\", \"GateReceipt\", \"Perspective\", \"ViewReceipt\"] and .datastore.datastore_tool_surface_ids == [\"claim-graph-writes\"] and (.datastore.write_collections // [] | length == 0) and (.integrations.plugins | map(.plugin)) == [\"gents/claim_export\"]"
+    },
+    {
+      "name": "file_claims creates a ClaimBatch for one graph with optional edges and no source_root or profile",
+      "expr": "([surface[].tool_name] | sort) == [\"file_claims\", \"request_view\"] and (entry(\"file_claims\") | .collection == \"ClaimBatch\" and required == [\"batch_id\", \"claims\", \"graph_id\", \"section\"] and ([.fields[].name] | index(\"edges\") != null and index(\"source_root\") == null and index(\"profile\") == null and index(\"entities\") == null and index(\"perspectives\") == null))"
+    },
+    {
+      "name": "request_view creates a ViewRequest for one graph without a folder",
+      "expr": "entry(\"request_view\") | .collection == \"ViewRequest\" and required == [\"graph_id\", \"request_id\", \"view\"] and ([.fields[].name] | index(\"out_dir\") == null)"
     },
     {
       "name": "the agent uses the sme slot and its context",
       "expr": "(.config.agents | map({agent_id, context_id, inference_profile_id})) == [{agent_id: \"claim-sme\", context_id: \"claim-sme-context\", inference_profile_id: \"gents:inference-slot:sme\"}] and (.manifest.inference_slots | map({name, agents})) == [{name: \"sme\", agents: [\"claim-sme\"]}] and (.config.contexts[] | select(.context_id == \"claim-sme-context\") | .tools_id == \"claim-sme-tools\")"
     },
     {
-      "name": "the prompt names the tools and edge types it relies on",
-      "expr": ".assets[\"agent_behaviors/claim_sme/system_prompt.md\"] | contains(\"file_question\") and contains(\"retracts\") and contains(\"supersedes\") and contains(\"contradicts\") and contains(\"entity_text\")"
+      "name": "the prompt names the tools, the graph scope and the status rule's edge types",
+      "expr": ".assets[\"agent_behaviors/claim_sme/system_prompt.md\"] as $d0 | ($d0 | contains(\"file_question\") | not) and ([\"file_claims\", \"request_view\", \"ClaimGraph\", \"graph_id\", \"retracts\", \"supersedes\", \"contradicts\", \"challenges\", \"answers\", \"resolves\", \"reviews\", \"challenged\", \"entity_text\", \"ViewReceipt\"] | all(. as $w | $d0 | contains($w)))"
     },
     {
-      "name": "the import tool and the README carry no em or en dash",
+      "name": "the research profile holds exactly the profile fields and the dispute vocabulary",
+      "expr": ". as $d | profile | (keys | sort) == ($d | names(\"ClaimGraph\") - [\"graph_id\", \"version\", \"batch_id\", \"created_at\"] | sort) and ([\"question\", \"challenge\", \"review\"] - .kinds == []) and ([\"answers\", \"challenges\", \"reviews\", \"resolves\", \"supersedes\", \"retracts\", \"contradicts\"] - .edge_types == []) and .review_verdicts == [\"sustains\", \"weakens\", \"unclear\"] and .resolver_perspectives == [\"p:mike\"] and .mapping_targets == [\"defradb\", \"fefra\"] and .question_entity == \"e:open-question\" and .questions_from_prefix == \"graph/claims/questions.jsonl\" and .claim_id_pattern == \"^c:[a-z0-9-]+:[0-9]{3}$\" and .text_max_words == 40 and ([.kinds, .confidence_classes, .edge_types, .mapping_targets, .mapping_fits, .review_verdicts] | all(length > 0 and (unique | length) == length))"
+    },
+    {
+      "name": "the import tool, prompt and README carry no em or en dash",
       "expr": "[.assets[\"README.md\"], .assets[\"tools/import_jsonl.sh\"], .assets[\"agent_behaviors/claim_sme/system_prompt.md\"]] | all(test(\"\\u2014|\\u2013\") | not)"
     },
     {
       "name": "an ExportRequest runs claim_export as a callback with one required ExportReceipt port",
-      "expr": ". as $d | (.config.callbacks[] | select(.callback_id == \"claim-export\") | .handler | (.plugin | IN(\"claim_export\", \"gents/claim_export\")) and .correlation_field == \"request_id\" and (.outputs | map({name, collection, cardinality, required, correlation_field}) == [{name: \"receipt\", collection: \"ExportReceipt\", cardinality: \"one\", required: true, correlation_field: \"request_id\"}])) and (.config.event_sources[] | select(.event_source_id == \"export-request\") | .source_collection == \"ExportRequest\" and .event_kind == \"created\" and .correlation_field == \"request_id\") and (.config.callback_bindings[] | select(.binding_id == \"claim-export\") | .callback_id == \"claim-export\" and .event_source_id == \"export-request\" and .input_fields == [\"request_id\", \"out_dir\", \"sections\", \"dry_run\"]) and ($d | fields(\"ExportReceipt\") | any(test(\"^\\\\s*request_id:\")))"
+      "expr": ". as $d | (.config.callbacks[] | select(.callback_id == \"claim-export\") | .handler | (.plugin | IN(\"claim_export\", \"gents/claim_export\")) and .correlation_field == \"request_id\" and (.outputs | map({name, collection, cardinality, required, correlation_field}) == [{name: \"receipt\", collection: \"ExportReceipt\", cardinality: \"one\", required: true, correlation_field: \"request_id\"}])) and (.config.event_sources[] | select(.event_source_id == \"export-request\") | .source_collection == \"ExportRequest\" and .event_kind == \"created\" and .correlation_field == \"request_id\") and (.config.callback_bindings[] | select(.binding_id == \"claim-export\") | .callback_id == \"claim-export\" and .event_source_id == \"export-request\" and .input_fields == [\"request_id\", \"graph_id\", \"out_dir\", \"sections\", \"dry_run\"]) and ($d | names(\"ExportReceipt\") | index(\"request_id\") != null)"
+    },
+    {
+      "name": "a ViewRequest runs claim_views as a callback with one required ViewReceipt port",
+      "expr": ". as $d | (.config.callbacks[] | select(.callback_id == \"claim-views\") | .handler | (.plugin | IN(\"claim_views\", \"gents/claim_views\")) and .correlation_field == \"request_id\" and (.outputs | map({name, collection, cardinality, required, correlation_field, schema}) == [{name: \"receipt\", collection: \"ViewReceipt\", cardinality: \"one\", required: true, correlation_field: \"request_id\", schema: \"ViewReceipt/v1\"}])) and (.config.event_sources[] | select(.event_source_id == \"view-request\") | .source_collection == \"ViewRequest\" and .event_kind == \"created\" and .correlation_field == \"request_id\") and (.config.callback_bindings[] | select(.binding_id == \"claim-views\") | .callback_id == \"claim-views\" and .event_source_id == \"view-request\" and .input_fields == [\"request_id\", \"graph_id\", \"view\", \"out_dir\", \"dry_run\"]) and ($d | names(\"ViewReceipt\") | index(\"request_id\") != null) and ($d | names(\"ViewRequest\") | sort) == ([\"request_id\", \"graph_id\", \"view\", \"out_dir\", \"dry_run\", \"note\", \"submitted_at\"] | sort)"
     }
   ]
 }

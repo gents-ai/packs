@@ -1,5 +1,6 @@
 {
   "input": {
+    "graph_id": "government-attestation",
     "dry_run": true,
     "data_calls": true,
     "state": {
@@ -20,6 +21,11 @@
           "short": false
         },
         "perspectives": {
+          "next": 0,
+          "done": true,
+          "short": false
+        },
+        "claim_graph": {
           "next": 0,
           "done": true,
           "short": false
@@ -68,7 +74,8 @@
         ],
         "edges": [],
         "entities": [],
-        "perspectives": []
+        "perspectives": [],
+        "claim_graph": []
       }
     },
     "data_results": {

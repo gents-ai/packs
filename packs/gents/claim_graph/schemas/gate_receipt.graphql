@@ -1,6 +1,7 @@
 type GateReceipt {
   receipt_id: String @index(unique: true) @immutable
   batch_id: String @index @immutable
+  graph_id: String @index @immutable
   verdict: String @index @immutable
   errors: String @immutable
   claims_admitted: Int @immutable
@@ -9,6 +10,7 @@ type GateReceipt {
   perspectives_admitted: Int @immutable
   quotes_checked: Int @immutable
   quotes_skipped: Int @immutable
+  profile_version: Int @immutable
   gate_version: String @immutable
   checked_at: String @immutable
 }

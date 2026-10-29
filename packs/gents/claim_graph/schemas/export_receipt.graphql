@@ -1,6 +1,7 @@
 type ExportReceipt {
   receipt_id: String @index(unique: true) @immutable
   request_id: String @index @immutable
+  graph_id: String @index @immutable
   ok: Boolean @immutable
   error: String @immutable
   claims_written: Int @immutable

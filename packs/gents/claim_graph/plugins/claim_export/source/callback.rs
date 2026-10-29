@@ -1,5 +1,6 @@
-//! Callback mode: the same export, driven by an `ExportRequest` document
-//! row (the whole output object, as the callback has one port), because an operator's `plugin run` binds folders
+//! Callback mode: the same export, driven by an `ExportRequest` document,
+//! answered with one flat `ExportReceipt` row (the whole output object, as
+//! the callback has one port), because an operator's `plugin run` binds folders
 //! read-only. A failure is a receipt with `ok: false`, never a non-zero exit.
 //! Fields the document binding adds beyond the request's own are ignored.
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -39,17 +40,19 @@ pub fn run(input: &Value, request_id: &Value) -> Value {
     let id = request_id.as_str().unwrap_or_default();
     let tool = Value::Object(tool_input(input));
     let dry_run = tool.get("dry_run").and_then(Value::as_bool).unwrap_or(false);
+    let graph_id = tool.get("graph_id").and_then(Value::as_str).unwrap_or_default();
     match run_tool(&tool) {
         Ok(output) if output.get("data_calls").is_some() => output,
-        Ok(summary) => receipt(id, &summary, now()),
-        Err(failure) => failed(id, &failure.0, dry_run, now()),
+        Ok(summary) => receipt(id, graph_id, &summary, now()),
+        Err(failure) => failed(id, graph_id, &failure.0, dry_run, now()),
     }
 }
 
-fn receipt(request_id: &str, summary: &Value, exported_at: u64) -> Value {
+fn receipt(request_id: &str, graph_id: &str, summary: &Value, exported_at: u64) -> Value {
     let count = |key: &str| summary["written"][key].as_u64().unwrap_or(0);
     json!({
         "receipt_id": format!("export-{request_id}"),
+        "graph_id": graph_id,
         "ok": true,
         "error": "",
         "claims_written": count("claims"),
@@ -63,9 +66,10 @@ fn receipt(request_id: &str, summary: &Value, exported_at: u64) -> Value {
     })
 }
 
-fn failed(request_id: &str, error: &str, dry_run: bool, exported_at: u64) -> Value {
+fn failed(request_id: &str, graph_id: &str, error: &str, dry_run: bool, exported_at: u64) -> Value {
     json!({
         "receipt_id": format!("export-{request_id}"),
+        "graph_id": graph_id,
         "ok": false,
         "error": error,
         "claims_written": 0,
@@ -121,9 +125,9 @@ mod tests {
         let summary = json!({"ok": true, "dry_run": true,
             "written": {"claims": 2, "edges": 1, "entities": 3, "perspectives": 4},
             "sections": {"a": 2}, "files": ["claims/a.jsonl"]});
-        let r = receipt("r1", &summary, 0);
+        let r = receipt("r1", "g", &summary, 0);
         assert_eq!(r, json!({
-            "receipt_id": "export-r1", "ok": true, "error": "",
+            "receipt_id": "export-r1", "graph_id": "g", "ok": true, "error": "",
             "claims_written": 2, "edges_written": 1, "entities_written": 3, "perspectives_written": 4,
             "sections_json": "{\"a\":2}", "files_json": "[\"claims/a.jsonl\"]",
             "dry_run": true, "exported_at": "1970-01-01T00:00:00Z"}));
@@ -133,9 +137,9 @@ mod tests {
 
     #[test]
     fn document_shaped_inputs_become_tool_inputs() {
-        let t = tool_input(&json!({"request_id": "r", "out_dir": " ", "sections": "[\"a\",\"b\"]",
+        let t = tool_input(&json!({"request_id": "r", "graph_id": "g", "out_dir": " ", "sections": "[\"a\",\"b\"]",
             "dry_run": true, "submitted_at": "x", "out_dir_original": "/o"}));
-        assert_eq!(Value::Object(t), json!({"sections": ["a", "b"], "dry_run": true, "out_dir_original": "/o"}));
+        assert_eq!(Value::Object(t), json!({"graph_id": "g", "sections": ["a", "b"], "dry_run": true, "out_dir_original": "/o"}));
         assert!(tool_input(&json!({"sections": ""}))["sections"].is_null());
         assert!(tool_input(&json!({"sections": "[]"})).get("sections").is_none());
         assert!(tool_input(&json!({"sections": null})).get("sections").unwrap().is_null());
@@ -144,20 +148,24 @@ mod tests {
 
     #[test]
     fn failures_are_receipts() {
-        let out = run(&json!({"request_id": "r2", "data_calls": true, "out_dir": ""}), &json!("r2"));
+        let out = run(&json!({"request_id": "r2", "graph_id": "g", "data_calls": true, "out_dir": ""}), &json!("r2"));
         let r = &out;
         assert_eq!((r["ok"].as_bool(), r["receipt_id"].as_str()), (Some(false), Some("export-r2")));
         assert!(r["error"].as_str().unwrap().starts_with("out_dir is required"));
-        let out = run(&json!({"request_id": "r3", "dry_run": true}), &json!("r3"));
+        assert_eq!(r["graph_id"], "g");
+        let out = run(&json!({"request_id": "r3", "graph_id": "g", "dry_run": true}), &json!("r3"));
         assert!(out["error"].as_str().unwrap().contains("no data calls"));
-        let out = run(&json!({"request_id": "r4", "dry_run": true, "data_calls": true, "sections": "[\"../x\"]"}), &json!("r4"));
+        let out = run(&json!({"request_id": "r4", "graph_id": "g", "dry_run": true, "data_calls": true, "sections": "[\"../x\"]"}), &json!("r4"));
         assert!(out["error"].as_str().unwrap().contains("sections holds"));
+        let out = run(&json!({"request_id": "r5", "dry_run": true, "data_calls": true}), &json!("r5"));
+        assert_eq!(out["error"], "graph_id is required: the graph to export");
+        assert_eq!(out["graph_id"], "");
     }
 
     #[test]
     fn the_first_round_asks_for_the_same_pages_as_tool_mode() {
-        let out = run(&json!({"request_id": "r", "dry_run": true, "data_calls": true, "sections": "", "out_dir": ""}), &json!("r"));
-        assert_eq!(out["data_calls"]["requests"].as_array().unwrap().len(), 16);
+        let out = run(&json!({"request_id": "r", "graph_id": "g", "dry_run": true, "data_calls": true, "sections": "", "out_dir": ""}), &json!("r"));
+        assert_eq!(out["data_calls"]["requests"].as_array().unwrap().len(), 15);
         assert!(out.get("receipt_id").is_none());
     }
 }

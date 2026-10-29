@@ -1,5 +1,6 @@
 {
   "input": {
+    "graph_id": "government-attestation",
     "out_dir": "x"
   },
   "expect": {

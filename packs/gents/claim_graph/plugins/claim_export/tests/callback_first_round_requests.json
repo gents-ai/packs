@@ -1,5 +1,6 @@
 {
   "input": {
+    "graph_id": "government-attestation",
     "request_id": "req-1",
     "dry_run": true,
     "data_calls": true,
@@ -14,7 +15,11 @@
           "id": "claims@0",
           "query": {
             "collection": "Claim",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "claim_id": "ASC"
             },
@@ -46,7 +51,11 @@
           "id": "claims@256",
           "query": {
             "collection": "Claim",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "claim_id": "ASC"
             },
@@ -78,44 +87,16 @@
           "id": "claims@512",
           "query": {
             "collection": "Claim",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "claim_id": "ASC"
             },
             "limit": 256,
             "offset": 512,
-            "fields": [
-              "claim_id",
-              "section",
-              "text",
-              "quote",
-              "from_ref",
-              "sources",
-              "entities",
-              "kind",
-              "by",
-              "asserted",
-              "status",
-              "confidence",
-              "note",
-              "fit",
-              "against",
-              "ref",
-              "valid_from",
-              "valid_to"
-            ]
-          }
-        },
-        {
-          "id": "claims@768",
-          "query": {
-            "collection": "Claim",
-            "filter": {},
-            "order": {
-              "claim_id": "ASC"
-            },
-            "limit": 256,
-            "offset": 768,
             "fields": [
               "claim_id",
               "section",
@@ -142,7 +123,11 @@
           "id": "edges@0",
           "query": {
             "collection": "Edge",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "edge_key": "ASC"
             },
@@ -163,7 +148,11 @@
           "id": "edges@256",
           "query": {
             "collection": "Edge",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "edge_key": "ASC"
             },
@@ -184,7 +173,11 @@
           "id": "edges@512",
           "query": {
             "collection": "Edge",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "edge_key": "ASC"
             },
@@ -202,31 +195,14 @@
           }
         },
         {
-          "id": "edges@768",
-          "query": {
-            "collection": "Edge",
-            "filter": {},
-            "order": {
-              "edge_key": "ASC"
-            },
-            "limit": 256,
-            "offset": 768,
-            "fields": [
-              "edge_key",
-              "from_claim",
-              "to_claim",
-              "edge_type",
-              "by",
-              "date",
-              "note"
-            ]
-          }
-        },
-        {
           "id": "entities@0",
           "query": {
             "collection": "Entity",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "entity_id": "ASC"
             },
@@ -245,7 +221,11 @@
           "id": "entities@256",
           "query": {
             "collection": "Entity",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "entity_id": "ASC"
             },
@@ -264,7 +244,11 @@
           "id": "entities@512",
           "query": {
             "collection": "Entity",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "entity_id": "ASC"
             },
@@ -280,29 +264,14 @@
           }
         },
         {
-          "id": "entities@768",
-          "query": {
-            "collection": "Entity",
-            "filter": {},
-            "order": {
-              "entity_id": "ASC"
-            },
-            "limit": 256,
-            "offset": 768,
-            "fields": [
-              "entity_id",
-              "entity_type",
-              "name",
-              "aliases",
-              "note"
-            ]
-          }
-        },
-        {
           "id": "perspectives@0",
           "query": {
             "collection": "Perspective",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "perspective_id": "ASC"
             },
@@ -321,7 +290,11 @@
           "id": "perspectives@256",
           "query": {
             "collection": "Perspective",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "perspective_id": "ASC"
             },
@@ -340,7 +313,11 @@
           "id": "perspectives@512",
           "query": {
             "collection": "Perspective",
-            "filter": {},
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
               "perspective_id": "ASC"
             },
@@ -356,21 +333,110 @@
           }
         },
         {
-          "id": "perspectives@768",
+          "id": "claim_graph@0",
           "query": {
-            "collection": "Perspective",
-            "filter": {},
+            "collection": "ClaimGraph",
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
             "order": {
-              "perspective_id": "ASC"
+              "version": "ASC"
             },
             "limit": 256,
-            "offset": 768,
+            "offset": 0,
             "fields": [
-              "perspective_id",
-              "name",
-              "kind",
+              "graph_id",
+              "version",
+              "display_name",
+              "kinds",
+              "confidence_classes",
+              "edge_types",
+              "mapping_targets",
+              "mapping_fits",
+              "review_verdicts",
+              "resolver_perspectives",
+              "question_entity",
+              "default_asker",
+              "questions_from_prefix",
+              "claim_id_pattern",
+              "text_max_words",
               "note",
-              "did"
+              "created_at",
+              "batch_id"
+            ]
+          }
+        },
+        {
+          "id": "claim_graph@256",
+          "query": {
+            "collection": "ClaimGraph",
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
+            "order": {
+              "version": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "graph_id",
+              "version",
+              "display_name",
+              "kinds",
+              "confidence_classes",
+              "edge_types",
+              "mapping_targets",
+              "mapping_fits",
+              "review_verdicts",
+              "resolver_perspectives",
+              "question_entity",
+              "default_asker",
+              "questions_from_prefix",
+              "claim_id_pattern",
+              "text_max_words",
+              "note",
+              "created_at",
+              "batch_id"
+            ]
+          }
+        },
+        {
+          "id": "claim_graph@512",
+          "query": {
+            "collection": "ClaimGraph",
+            "filter": {
+              "graph_id": {
+                "_eq": "government-attestation"
+              }
+            },
+            "order": {
+              "version": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "graph_id",
+              "version",
+              "display_name",
+              "kinds",
+              "confidence_classes",
+              "edge_types",
+              "mapping_targets",
+              "mapping_fits",
+              "review_verdicts",
+              "resolver_perspectives",
+              "question_entity",
+              "default_asker",
+              "questions_from_prefix",
+              "claim_id_pattern",
+              "text_max_words",
+              "note",
+              "created_at",
+              "batch_id"
             ]
           }
         }
@@ -396,13 +462,19 @@
             "next": 0,
             "done": false,
             "short": false
+          },
+          "claim_graph": {
+            "next": 0,
+            "done": false,
+            "short": false
           }
         },
         "rows": {
           "claims": [],
           "edges": [],
           "entities": [],
-          "perspectives": []
+          "perspectives": [],
+          "claim_graph": []
         }
       }
     }

@@ -1,12 +1,15 @@
 //! The store lookups a batch needs, asked through the host's `data_calls`
 //! rounds. The plan is recomputed from the batch every round (the host
 //! resends the same input), so `state` carries only the cursor, the requests
-//! in flight, follow-up pages and what the store answered.
-use std::collections::BTreeSet;
+//! in flight, follow-up pages and what the store answered. Every lookup is
+//! scoped to the batch's `graph_id`: ids are unique per graph, so two graphs
+//! may share them.
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
 
 use crate::batch::Batch;
+use crate::profile;
 use crate::rules::{edge_key, ids};
 
 /// Ids per `_in` query, and rows per query: the host's limit.
@@ -19,6 +22,8 @@ pub const MAX_QUERIES: usize = 60 * PER_ROUND;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Lookup {
+    /// The graph's latest ClaimGraph version.
+    Profile,
     Claim,
     Entity,
     Perspective,
@@ -30,6 +35,7 @@ pub enum Lookup {
 impl Lookup {
     pub fn collection(self) -> &'static str {
         match self {
+            Lookup::Profile => "ClaimGraph",
             Lookup::Claim => "Claim",
             Lookup::Entity => "Entity",
             Lookup::Perspective => "Perspective",
@@ -39,6 +45,7 @@ impl Lookup {
 
     pub fn field(self) -> &'static str {
         match self {
+            Lookup::Profile => "version",
             Lookup::Claim => "claim_id",
             Lookup::Entity => "entity_id",
             Lookup::Perspective => "perspective_id",
@@ -47,16 +54,28 @@ impl Lookup {
         }
     }
 
-    fn filter(self, ids: &[String]) -> Value {
-        let mut filter = Map::new();
-        filter.insert(self.field().to_owned(), json!({"_in": ids}));
-        if self == Lookup::Historical {
-            filter.insert(
-                "edge_type".to_owned(),
-                json!({"_in": ["supersedes", "retracts"]}),
-            );
+    fn fields(self) -> Vec<&'static str> {
+        match self {
+            Lookup::Profile => profile::stored_fields(),
+            // A claim's kind decides whether a challenges or reviews edge
+            // from it is well formed.
+            Lookup::Claim => vec!["claim_id", "kind"],
+            other => vec![other.field()],
         }
-        Value::Object(filter)
+    }
+
+    fn filter(self, graph_id: &str, ids: &[String]) -> Value {
+        let graph = json!({"graph_id": {"_eq": graph_id}});
+        if self == Lookup::Profile {
+            return graph;
+        }
+        let mut by_id = Map::new();
+        by_id.insert(self.field().to_owned(), json!({"_in": ids}));
+        let mut clauses = vec![graph, Value::Object(by_id)];
+        if self == Lookup::Historical {
+            clauses.push(json!({"edge_type": {"_in": ["supersedes", "retracts"]}}));
+        }
+        json!({"_and": clauses})
     }
 }
 
@@ -69,21 +88,35 @@ pub struct Query {
 #[derive(Default, Debug)]
 pub struct Found {
     pub claims: BTreeSet<String>,
+    /// The kind of each stored claim found.
+    pub claim_kinds: BTreeMap<String, String>,
     pub entities: BTreeSet<String>,
     pub perspectives: BTreeSet<String>,
     pub edges: BTreeSet<String>,
     pub historical: BTreeSet<String>,
+    /// The graph's latest stored ClaimGraph row, when there is one.
+    pub profile: Option<Value>,
 }
 
 impl Found {
-    fn set(&mut self, lookup: Lookup) -> &mut BTreeSet<String> {
+    fn set(&mut self, lookup: Lookup) -> Option<&mut BTreeSet<String>> {
         match lookup {
-            Lookup::Claim => &mut self.claims,
-            Lookup::Entity => &mut self.entities,
-            Lookup::Perspective => &mut self.perspectives,
-            Lookup::Edge => &mut self.edges,
-            Lookup::Historical => &mut self.historical,
+            Lookup::Profile => None,
+            Lookup::Claim => Some(&mut self.claims),
+            Lookup::Entity => Some(&mut self.entities),
+            Lookup::Perspective => Some(&mut self.perspectives),
+            Lookup::Edge => Some(&mut self.edges),
+            Lookup::Historical => Some(&mut self.historical),
         }
+    }
+
+    /// The highest stored version of the graph's profile, 0 when none.
+    pub fn latest_version(&self) -> i64 {
+        self.profile
+            .as_ref()
+            .and_then(|row| row.get("version"))
+            .and_then(Value::as_i64)
+            .unwrap_or(0)
     }
 }
 
@@ -95,10 +128,12 @@ const FOUND_KEYS: [(&str, Lookup); 5] = [
     ("historical", Lookup::Historical),
 ];
 
-/// One query per chunk of ids, per lookup. Each id set is the batch's own
-/// ids (whose presence in the store is a duplicate) plus the ids the batch
-/// references but does not carry (whose absence is an unknown reference).
-pub fn plan(batch: &Batch) -> Vec<Query> {
+/// The profile lookup, then one query per chunk of ids, per lookup. Each id
+/// set is the batch's own ids (whose presence in the store is a duplicate)
+/// plus the ids the batch references but does not carry (whose absence is
+/// an unknown reference). `resolvers` are an inline profile's
+/// `resolver_perspectives`, which must be known perspectives.
+pub fn plan(batch: &Batch, resolvers: &[String]) -> Vec<Query> {
     let claim_ids = ids(&batch.claims);
     let entity_ids = ids(&batch.entities);
     let perspective_ids = ids(&batch.perspectives);
@@ -109,6 +144,7 @@ pub fn plan(batch: &Batch) -> Vec<Query> {
     }
     let mut entities = entity_ids.clone();
     let mut perspectives = perspective_ids.clone();
+    perspectives.extend(resolvers.iter().cloned());
     for claim in &batch.claims {
         for entity in claim
             .fields
@@ -133,7 +169,10 @@ pub fn plan(batch: &Batch) -> Vec<Query> {
         BTreeSet::new()
     };
 
-    let mut queries = Vec::new();
+    let mut queries = vec![Query {
+        lookup: Lookup::Profile,
+        ids: Vec::new(),
+    }];
     for (lookup, set) in [
         (Lookup::Claim, claims),
         (Lookup::Entity, entities),
@@ -191,6 +230,11 @@ impl State {
         copy("perspectives", &self.found.perspectives);
         copy("edges", &self.found.edges);
         copy("historical", &self.found.historical);
+        found.insert("claim_kinds".to_owned(), json!(self.found.claim_kinds));
+        found.insert(
+            "profile".to_owned(),
+            self.found.profile.clone().unwrap_or(Value::Null),
+        );
         json!({
             "cursor": self.cursor,
             "pages": self.pages,
@@ -214,8 +258,19 @@ impl State {
         let mut found = Found::default();
         let found_json = state.get("found").and_then(Value::as_object).ok_or_else(bad)?;
         for (key, lookup) in FOUND_KEYS {
-            found.set(lookup).extend(strings(found_json.get(key))?);
+            if let Some(set) = found.set(lookup) {
+                set.extend(strings(found_json.get(key))?);
+            }
         }
+        for (id, kind) in found_json
+            .get("claim_kinds")
+            .and_then(Value::as_object)
+            .ok_or_else(bad)?
+        {
+            let kind = kind.as_str().ok_or_else(bad)?.to_owned();
+            found.claim_kinds.insert(id.clone(), kind);
+        }
+        found.profile = found_json.get("profile").filter(|p| !p.is_null()).cloned();
         let pages = state
             .get("pages")
             .and_then(Value::as_array)
@@ -264,9 +319,23 @@ impl State {
                 .and_then(|r| r.get("rows"))
                 .and_then(Value::as_array)
                 .ok_or_else(|| format!("data request {id} answered without result.rows"))?;
+            if lookup == Lookup::Profile {
+                self.found.profile = rows.first().cloned();
+                continue;
+            }
             for row in rows {
-                if let Some(value) = row.get(lookup.field()).and_then(Value::as_str) {
-                    self.found.set(lookup).insert(value.to_owned());
+                let Some(value) = row.get(lookup.field()).and_then(Value::as_str) else {
+                    continue;
+                };
+                if let (Lookup::Claim, Some(kind)) =
+                    (lookup, row.get("kind").and_then(Value::as_str))
+                {
+                    self.found
+                        .claim_kinds
+                        .insert(value.to_owned(), kind.to_owned());
+                }
+                if let Some(set) = self.found.set(lookup) {
+                    set.insert(value.to_owned());
                 }
             }
             if rows.len() >= CHUNK {
@@ -277,7 +346,7 @@ impl State {
     }
 
     /// The next round's requests, or `None` when everything is answered.
-    pub fn next_requests(&mut self, plan: &[Query]) -> Option<Vec<Value>> {
+    pub fn next_requests(&mut self, graph_id: &str, plan: &[Query]) -> Option<Vec<Value>> {
         let mut asks: Vec<(usize, u32)> = Vec::new();
         while asks.len() < PER_ROUND && !self.pages.is_empty() {
             asks.push(self.pages.remove(0));
@@ -296,10 +365,14 @@ impl State {
                     let query = &plan[*index];
                     let mut body = json!({
                         "collection": query.lookup.collection(),
-                        "filter": query.lookup.filter(&query.ids),
+                        "filter": query.lookup.filter(graph_id, &query.ids),
                         "limit": CHUNK,
-                        "fields": [query.lookup.field()],
+                        "fields": query.lookup.fields(),
                     });
+                    if query.lookup == Lookup::Profile {
+                        body["order"] = json!({"version": "DESC"});
+                        body["limit"] = json!(1);
+                    }
                     if *offset > 0 {
                         body["offset"] = json!(offset);
                     }

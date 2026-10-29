@@ -1,12 +1,17 @@
 //! The field, enum, length, uniqueness and reference rules of the research
-//! gate (`graph/tools/validate.sh`), with its `ERROR: ...` wording. References
-//! and store uniqueness are checked only once `found` (the store's answers)
-//! is known; without it a rule that needs the store is not run.
+//! gate (`graph/tools/validate.sh`), with its `ERROR: ...` wording, and the
+//! dispute rules. The vocabulary (kinds, confidence classes, edge types,
+//! mapping targets and fits, review verdicts, resolvers, the claim id
+//! pattern and the word limit) is the graph's profile; without a resolved
+//! profile those rules are not run. References and store uniqueness are
+//! checked only once `found` (the store's answers) is known; without it a
+//! rule that needs the store is not run.
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
 
 use crate::batch::{Batch, Record};
+use crate::profile::Profile;
 use crate::store::Found;
 
 pub const REQUIRED: [&str; 10] = [
@@ -21,35 +26,13 @@ pub const REQUIRED: [&str; 10] = [
     "status",
     "confidence",
 ];
-pub const KINDS: [&str; 9] = [
-    "fact",
-    "number",
-    "date",
-    "rule",
-    "mapping",
-    "interpretation",
-    "position",
-    "quote",
-    "question",
-];
+/// The writer's advisory status; not part of a profile.
 pub const STATUSES: [&str; 4] = ["live", "superseded", "contested", "retracted"];
-pub const CONFIDENCES: [&str; 3] = ["sourced", "memory", "inferred"];
-pub const FITS: [&str; 4] = ["native", "partial", "gap", "convention"];
-pub const AGAINST: [&str; 2] = ["defradb", "fefra"];
-pub const EDGE_TYPES: [&str; 8] = [
-    "supports",
-    "contradicts",
-    "supersedes",
-    "retracts",
-    "answers",
-    "maps-to",
-    "said-first",
-    "depends-on",
-];
-pub const MAX_WORDS: usize = 40;
+/// A disputing claim kind and the edge type that must leave it.
+pub const DISPUTES: [(&str, &str); 2] = [("challenge", "challenges"), ("review", "reviews")];
 
 /// Claim keys a Claim row stores; any other key would be lost on export.
-const CLAIM_TEXT_KEYS: [&str; 15] = [
+const CLAIM_TEXT_KEYS: [&str; 16] = [
     "id",
     "text",
     "quote",
@@ -63,6 +46,7 @@ const CLAIM_TEXT_KEYS: [&str; 15] = [
     "fit",
     "against",
     "ref",
+    "verdict",
     "valid_from",
     "valid_to",
 ];
@@ -148,14 +132,43 @@ fn known(id: &str, in_batch: &BTreeSet<String>, in_store: Option<&BTreeSet<Strin
     in_batch.contains(id) || in_store.is_none_or(|store| store.contains(id))
 }
 
-pub fn check(batch: &Batch, found: Option<&Found>) -> Vec<String> {
+/// The batch's claims and edges, as the per-claim and per-edge rules see them.
+struct Context<'a> {
+    claim_ids: BTreeSet<String>,
+    entity_ids: BTreeSet<String>,
+    perspective_ids: BTreeSet<String>,
+    /// Each batch claim's kind.
+    kinds: BTreeMap<&'a str, &'a str>,
+    /// `(from, type)` of each batch edge, counted.
+    edges_from: BTreeMap<(&'a str, &'a str), usize>,
+    profile: Option<&'a Profile>,
+    found: Option<&'a Found>,
+}
+
+pub fn check(batch: &Batch, profile: Option<&Profile>, found: Option<&Found>) -> Vec<String> {
     let mut errors = batch.parse_errors.clone();
     if !batch.claims.is_empty() && batch.section.is_none() {
         errors.push("ERROR: the batch has claims but no section".to_owned());
     }
-    let claim_ids = ids(&batch.claims);
-    let entity_ids = ids(&batch.entities);
-    let perspective_ids = ids(&batch.perspectives);
+    let mut edges_from = BTreeMap::new();
+    for edge in &batch.edges {
+        if let (Some(from), Some(kind)) = (edge.str("from"), edge.str("type")) {
+            *edges_from.entry((from, kind)).or_insert(0) += 1;
+        }
+    }
+    let cx = Context {
+        claim_ids: ids(&batch.claims),
+        entity_ids: ids(&batch.entities),
+        perspective_ids: ids(&batch.perspectives),
+        kinds: batch
+            .claims
+            .iter()
+            .filter_map(|c| Some((c.str("id")?, c.str("kind")?)))
+            .collect(),
+        edges_from,
+        profile,
+        found,
+    };
 
     for (part, records, keys) in [
         ("entities", &batch.entities, &ENTITY_TEXT_KEYS[..]),
@@ -184,17 +197,11 @@ pub fn check(batch: &Batch, found: Option<&Found>) -> Vec<String> {
     }
 
     for claim in &batch.claims {
-        check_claim(
-            claim,
-            &entity_ids,
-            &perspective_ids,
-            found,
-            &mut errors,
-        );
+        check_claim(claim, &cx, &mut errors);
     }
 
     for edge in &batch.edges {
-        check_edge(edge, &claim_ids, &perspective_ids, found, &mut errors);
+        check_edge(edge, &cx, &mut errors);
     }
     let keys: Vec<String> = batch.edges.iter().filter_map(edge_key).collect();
     for key in repeated(keys.iter().map(String::as_str)) {
@@ -207,6 +214,16 @@ pub fn check(batch: &Batch, found: Option<&Found>) -> Vec<String> {
         }
     }
     errors
+}
+
+/// An inline profile's resolvers must be perspectives of the graph.
+pub fn check_resolvers(batch: &Batch, profile: &Profile, found: &Found) -> Vec<String> {
+    let in_batch = ids(&batch.perspectives);
+    profile
+        .list("resolver_perspectives")
+        .filter(|p| !known(p, &in_batch, Some(&found.perspectives)))
+        .map(|p| format!("ERROR: profile resolver {p} unknown perspective"))
+        .collect()
 }
 
 /// An entity or perspective line: an id, string fields, known keys.
@@ -241,15 +258,11 @@ fn is_string_array(value: &Value) -> bool {
         .is_some_and(|items| items.iter().all(Value::is_string))
 }
 
-fn check_claim(
-    claim: &Record,
-    entity_ids: &BTreeSet<String>,
-    perspective_ids: &BTreeSet<String>,
-    found: Option<&Found>,
-    errors: &mut Vec<String>,
-) {
+fn check_claim(claim: &Record, cx: &Context, errors: &mut Vec<String>) {
     let id = label(claim);
-    let well_formed = claim.str("id").is_some_and(|id| claim_id_ok(id));
+    let well_formed = claim
+        .str("id")
+        .is_some_and(|id| cx.profile.is_none_or(|p| p.claim_id_ok(id)));
     if !well_formed {
         errors.push(format!("ERROR: {id} bad id format"));
     }
@@ -268,32 +281,34 @@ fn check_claim(
             errors.push(format!("ERROR: {id} missing field {key}"));
         }
     }
-    let words = word_count(claim.str("text").unwrap_or(""));
-    if words > MAX_WORDS {
-        errors.push(format!("ERROR: {id} text is {words} words (max {MAX_WORDS})"));
+    let one_of = |key: &str, list: &str| {
+        claim
+            .str(key)
+            .is_some_and(|v| cx.profile.is_some_and(|p| p.allows(list, v)))
+    };
+    if let Some(profile) = cx.profile {
+        let words = word_count(claim.str("text").unwrap_or(""));
+        let max = profile.text_max_words;
+        if words > max {
+            errors.push(format!("ERROR: {id} text is {words} words (max {max})"));
+        }
+        if !one_of("kind", "kinds") {
+            errors.push(format!("ERROR: {id} bad kind"));
+        }
     }
-    let one_of = |key: &str, allowed: &[&str]| claim.str(key).is_some_and(|v| allowed.contains(&v));
-    if !one_of("kind", &KINDS) {
-        errors.push(format!("ERROR: {id} bad kind"));
-    }
-    if !one_of("status", &STATUSES) {
+    if !claim.str("status").is_some_and(|v| STATUSES.contains(&v)) {
         errors.push(format!("ERROR: {id} bad status"));
     }
-    if !one_of("confidence", &CONFIDENCES) {
+    if cx.profile.is_some() && !one_of("confidence", "confidence_classes") {
         errors.push(format!("ERROR: {id} bad confidence"));
     }
-    if let (Some(by), Some(found)) = (claim.str("by"), found) {
-        if !known(by, perspective_ids, Some(&found.perspectives)) {
+    if let (Some(by), Some(found)) = (claim.str("by"), cx.found) {
+        if !known(by, &cx.perspective_ids, Some(&found.perspectives)) {
             errors.push(format!("ERROR: {id} unknown perspective {by}"));
         }
     }
-    if claim.str("kind") == Some("mapping") {
-        if !one_of("fit", &FITS) {
-            errors.push(format!("ERROR: {id} mapping without valid fit"));
-        }
-        if !one_of("against", &AGAINST) {
-            errors.push(format!("ERROR: {id} mapping without valid against"));
-        }
+    if let Some(profile) = cx.profile {
+        check_kind_rules(claim, id, profile, cx, errors);
     }
     match claim.fields.get("entities") {
         None | Some(Value::Null) => errors.push(format!("ERROR: {id} has no entities")),
@@ -304,9 +319,9 @@ fn check_claim(
             errors.push(format!("ERROR: {id} entities must be an array of strings"))
         }
         Some(Value::Array(items)) => {
-            if let Some(found) = found {
+            if let Some(found) = cx.found {
                 for entity in items.iter().filter_map(Value::as_str) {
-                    if !known(entity, entity_ids, Some(&found.entities)) {
+                    if !known(entity, &cx.entity_ids, Some(&found.entities)) {
                         errors.push(format!("ERROR: {id} unknown entity {entity}"));
                     }
                 }
@@ -343,29 +358,42 @@ fn check_claim(
     }
 }
 
-/// `^c:[a-z0-9-]+:[0-9]{3}$`.
-pub fn claim_id_ok(id: &str) -> bool {
-    let Some(rest) = id.strip_prefix("c:") else {
-        return false;
-    };
-    let Some((section, number)) = rest.split_once(':') else {
-        return false;
-    };
-    !section.is_empty()
-        && section
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
-        && number.len() == 3
-        && number.bytes().all(|b| b.is_ascii_digit())
+/// The rules a claim's kind brings under its profile: a mapping's fit and
+/// target, a review's verdict and a disputing claim's edge.
+fn check_kind_rules(claim: &Record, id: &str, profile: &Profile, cx: &Context, errors: &mut Vec<String>) {
+    let one_of = |key: &str, list: &str| claim.str(key).is_some_and(|v| profile.allows(list, v));
+    let kind = claim.str("kind");
+    if kind == Some("mapping") {
+        if !one_of("fit", "mapping_fits") {
+            errors.push(format!("ERROR: {id} mapping without valid fit"));
+        }
+        if !one_of("against", "mapping_targets") {
+            errors.push(format!("ERROR: {id} mapping without valid against"));
+        }
+    }
+    if kind == Some("review") && !one_of("verdict", "review_verdicts") {
+        errors.push(format!("ERROR: {id} review without valid verdict"));
+    }
+    for (dispute, edge_type) in DISPUTES {
+        if kind != Some(dispute) || !profile.allows("kinds", dispute) {
+            continue;
+        }
+        let Some(claim_id) = claim.str("id") else {
+            continue;
+        };
+        match cx.edges_from.get(&(claim_id, edge_type)).copied().unwrap_or(0) {
+            1 => {}
+            0 => errors.push(format!(
+                "ERROR: {id} is a {dispute} without its {edge_type} edge"
+            )),
+            n => errors.push(format!(
+                "ERROR: {id} is a {dispute} with {n} {edge_type} edges (one only)"
+            )),
+        }
+    }
 }
 
-fn check_edge(
-    edge: &Record,
-    claim_ids: &BTreeSet<String>,
-    perspective_ids: &BTreeSet<String>,
-    found: Option<&Found>,
-    errors: &mut Vec<String>,
-) {
+fn check_edge(edge: &Record, cx: &Context, errors: &mut Vec<String>) {
     let from = edge.str("from").unwrap_or("?");
     let to = edge.str("to").unwrap_or("?");
     for key in ["from", "to", "type", "by", "date"] {
@@ -380,24 +408,62 @@ fn check_edge(
             errors.push(format!("ERROR: edge {from}->{to} {key} must be a string"));
         }
     }
-    if let Some(found) = found {
+    if let Some(found) = cx.found {
         for (end, side) in [("from", edge.str("from")), ("to", edge.str("to"))] {
             if let Some(claim) = side {
-                if !known(claim, claim_ids, Some(&found.claims)) {
+                if !known(claim, &cx.claim_ids, Some(&found.claims)) {
                     errors.push(format!("ERROR: edge {end} unknown claim {claim}"));
                 }
             }
         }
     }
-    if !edge.str("type").is_some_and(|t| EDGE_TYPES.contains(&t)) {
+    let Some(profile) = cx.profile else {
+        if let (Some(by), Some(found)) = (edge.str("by"), cx.found) {
+            if !known(by, &cx.perspective_ids, Some(&found.perspectives)) {
+                errors.push(format!("ERROR: edge {from}->{to} unknown perspective {by}"));
+            }
+        }
+        return;
+    };
+    let edge_type = edge.str("type");
+    if !edge_type.is_some_and(|t| profile.allows("edge_types", t)) {
         errors.push(format!(
             "ERROR: edge {from}->{to} bad type {}",
             shown(edge.fields.get("type"))
         ));
     }
-    if let (Some(by), Some(found)) = (edge.str("by"), found) {
-        if !known(by, perspective_ids, Some(&found.perspectives)) {
+    if let (Some(by), Some(found)) = (edge.str("by"), cx.found) {
+        if !known(by, &cx.perspective_ids, Some(&found.perspectives)) {
             errors.push(format!("ERROR: edge {from}->{to} unknown perspective {by}"));
+        }
+    }
+    let Some(edge_type) = edge_type.filter(|t| profile.allows("edge_types", t)) else {
+        return;
+    };
+    for (dispute, disputing) in DISPUTES {
+        if edge_type != disputing {
+            continue;
+        }
+        // A from-claim neither in the batch nor (yet) in the store is an
+        // unknown claim, reported above.
+        let kind = cx.kinds.get(from).copied().or_else(|| {
+            cx.found
+                .and_then(|f| f.claim_kinds.get(from))
+                .map(String::as_str)
+        });
+        if kind.is_some_and(|k| k != dispute) {
+            errors.push(format!(
+                "ERROR: edge {from}->{to} {edge_type} from a claim that is not a {dispute}"
+            ));
+        }
+    }
+    if edge_type == "resolves" {
+        if let Some(by) = edge.str("by") {
+            if !profile.allows("resolver_perspectives", by) {
+                errors.push(format!(
+                    "ERROR: edge {from}->{to} resolves by {by}, not a resolver"
+                ));
+            }
         }
     }
 }

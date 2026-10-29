@@ -1,5 +1,7 @@
 use super::*;
 
+const GRAPH: &str = "government-attestation";
+
 const FIXTURES: [(&str, &str); 6] = [
     (
         "claims/datapack-flipper.jsonl",
@@ -38,6 +40,7 @@ fn store_row(kind: &Kind, section: &str, line: &Value) -> Map<String, Value> {
     let o = line.as_object().unwrap();
     let get = |k: &str| o.get(k).cloned().unwrap_or(Value::Null);
     let mut row = Map::new();
+    row.insert("graph_id".into(), json!(GRAPH));
     match kind.key {
         "claims" => {
             row.insert("claim_id".into(), get("id"));
@@ -200,8 +203,14 @@ impl Host {
             assert!((1..=256).contains(&limit));
             let id_field = q["order"].as_object().unwrap().keys().next().unwrap().as_str();
             assert_eq!(q["order"][id_field], "ASC");
-            let mut rows: Vec<&Map<String, Value>> = self.rows[q["collection"].as_str().unwrap()].iter().collect();
-            rows.sort_by(|a, b| a[id_field].as_str().cmp(&b[id_field].as_str()));
+            let mut rows: Vec<&Map<String, Value>> =
+                self.rows.get(q["collection"].as_str().unwrap()).into_iter().flatten().collect();
+            rows.sort_by(|a, b| match (a[id_field].as_i64(), b[id_field].as_i64()) {
+                (Some(x), Some(y)) => x.cmp(&y),
+                _ => a[id_field].as_str().cmp(&b[id_field].as_str()),
+            });
+            let graph = q["filter"]["graph_id"]["_eq"].as_str().expect("every query names its graph");
+            rows.retain(|r| r["graph_id"] == graph);
             if let Some(allowed) = q["filter"]["section"]["_in"].as_array() {
                 rows.retain(|r| allowed.contains(&r["section"]));
             }
@@ -222,6 +231,9 @@ impl Host {
     /// Runs the plugin's rounds to its final answer.
     fn drive(&mut self, mut input: Value) -> (Value, usize) {
         input["data_calls"] = json!(true);
+        if input.get("graph_id").is_none() {
+            input["graph_id"] = json!(GRAPH);
+        }
         let mut rounds = 1;
         loop {
             let output = run(&input).unwrap_or_else(|f| json!({"ok": false, "error": f.0}));
@@ -276,24 +288,28 @@ fn tree(dir: &Path) -> BTreeMap<String, String> {
 
 #[test]
 fn the_first_round_asks_for_every_collection_ordered_by_its_id() {
-    let output = run(&json!({"out_dir": "/o", "data_calls": true})).unwrap_or_else(|f| json!(f.0));
+    let output = run(&json!({"graph_id": "g", "out_dir": "/o", "data_calls": true})).unwrap_or_else(|f| json!(f.0));
     let requests = output["data_calls"]["requests"].as_array().unwrap();
-    assert_eq!(requests.len(), 16);
+    assert_eq!(requests.len(), 15);
     let ids: Vec<&str> = requests.iter().map(|r| r["id"].as_str().unwrap()).collect();
-    assert_eq!(&ids[..5], ["claims@0", "claims@256", "claims@512", "claims@768", "edges@0"]);
+    assert_eq!(&ids[..4], ["claims@0", "claims@256", "claims@512", "edges@0"]);
+    assert_eq!(&ids[12..], ["claim_graph@0", "claim_graph@256", "claim_graph@512"]);
     let q = &requests[0]["query"];
     assert_eq!((q["collection"].as_str(), q["limit"].as_u64(), q["offset"].as_u64()), (Some("Claim"), Some(256), Some(0)));
     assert_eq!(q["order"], json!({"claim_id": "ASC"}));
-    assert_eq!(q["filter"], json!({}));
+    assert_eq!(q["filter"], json!({"graph_id": {"_eq": "g"}}));
+    assert_eq!(requests[12]["query"]["collection"], "ClaimGraph");
+    assert_eq!(requests[12]["query"]["order"], json!({"version": "ASC"}));
+    assert!(requests.iter().all(|r| r["query"]["filter"]["graph_id"] == json!({"_eq": "g"})));
     assert_eq!(output["data_calls"]["state"]["cursors"]["claims"]["next"], 0);
 }
 
 #[test]
 fn sections_filter_the_claim_queries_only() {
-    let output = run(&json!({"out_dir": "/o", "data_calls": true, "sections": ["a", "b"]})).unwrap_or_else(|f| json!(f.0));
+    let output = run(&json!({"graph_id": "g", "out_dir": "/o", "data_calls": true, "sections": ["a", "b"]})).unwrap_or_else(|f| json!(f.0));
     let requests = output["data_calls"]["requests"].as_array().unwrap();
-    assert_eq!(requests[0]["query"]["filter"], json!({"section": {"_in": ["a", "b"]}}));
-    assert_eq!(requests[4]["query"]["filter"], json!({}));
+    assert_eq!(requests[0]["query"]["filter"], json!({"graph_id": {"_eq": "g"}, "section": {"_in": ["a", "b"]}}));
+    assert_eq!(requests[3]["query"]["filter"], json!({"graph_id": {"_eq": "g"}}));
 }
 
 #[test]
@@ -303,7 +319,7 @@ fn the_exported_files_equal_the_research_files_after_normalisation() {
     let (summary, _) = host.drive(json!({"out_dir": dir.to_str().unwrap()}));
     assert_eq!(summary["ok"], true, "{summary}");
     assert_eq!(summary["dry_run"], false);
-    assert_eq!(summary["written"], json!({"claims": 14, "edges": 4, "entities": 6, "perspectives": 3}));
+    assert_eq!(summary["written"], json!({"claims": 14, "edges": 4, "entities": 6, "perspectives": 3, "claim_graph": 0}));
     assert_eq!(
         summary["files"],
         json!([
@@ -311,11 +327,13 @@ fn the_exported_files_equal_the_research_files_after_normalisation() {
             "claims/mapping-sample.jsonl",
             "edges/edges.jsonl",
             "entities/entities.jsonl",
-            "perspectives/perspectives.jsonl"
+            "perspectives/perspectives.jsonl",
+            "claim_graph.json"
         ])
     );
     let written = tree(&dir);
-    assert_eq!(written.len(), 5, "no temporary file is left: {:?}", written.keys());
+    assert_eq!(written.len(), 6, "no temporary file is left: {:?}", written.keys());
+    assert_eq!(written["claim_graph.json"], "[]\n");
     for (path, fixture) in &FIXTURES[..5] {
         // The store orders by id, so the expected text is the fixture's lines sorted by id.
         let kind = kind_of(path);
@@ -359,6 +377,7 @@ fn many_edges(host: &mut Host, n: usize) {
     for i in 0..n {
         let key = format!("c:s:{:03}|supports|c:s:{:03}", i / 1000, i % 1000);
         let mut row = Map::new();
+        row.insert("graph_id".into(), json!(GRAPH));
         for (k, v) in [
             ("edge_key", json!(key)),
             ("from_claim", json!(format!("c:s:{:03}", i / 1000))),
@@ -403,7 +422,7 @@ fn a_page_the_host_cut_short_is_continued_not_taken_for_the_end() {
 #[test]
 fn a_query_error_fails_the_call_without_writing() {
     let dir = scratch("error");
-    let mut input = json!({"out_dir": dir.to_str().unwrap(), "data_calls": true});
+    let mut input = json!({"graph_id": GRAPH, "out_dir": dir.to_str().unwrap(), "data_calls": true});
     let calls = run(&input).unwrap_or_else(|f| json!(f.0));
     let mut results = Map::new();
     for request in calls["data_calls"]["requests"].as_array().unwrap() {
@@ -419,12 +438,15 @@ fn a_query_error_fails_the_call_without_writing() {
 #[test]
 fn bad_input_is_refused_with_a_sentence() {
     let refused = |input: Value| run(&input).err().map(|f| f.0).unwrap_or_default();
-    assert!(refused(json!({"data_calls": true})).starts_with("out_dir is required"));
-    assert!(refused(json!({"out_dir": "/o"})).starts_with("the host offers this plugin no data calls"));
-    assert!(refused(json!({"out_dir": "/o", "data_calls": true, "bogus": 1})).contains("\"bogus\" is not known"));
-    assert!(refused(json!({"out_dir": "/o", "data_calls": true, "sections": ["../x"]})).contains("sections holds"));
-    assert!(refused(json!({"out_dir": "/o", "data_calls": true, "sections": []})).contains("1 to 1000"));
-    assert!(refused(json!({"out_dir": "/o", "data_calls": true, "dry_run": "yes"})).contains("dry_run"));
+    assert!(refused(json!({"graph_id": "g", "data_calls": true})).starts_with("out_dir is required"));
+    assert_eq!(refused(json!({"out_dir": "/o", "data_calls": true})), "graph_id is required: the graph to export");
+    assert_eq!(refused(json!({"graph_id": " ", "out_dir": "/o", "data_calls": true})), "graph_id is required: the graph to export");
+    assert_eq!(refused(json!({"graph_id": 3, "out_dir": "/o", "data_calls": true})), "graph_id must be a string");
+    assert!(refused(json!({"graph_id": "g", "out_dir": "/o"})).starts_with("the host offers this plugin no data calls"));
+    assert!(refused(json!({"graph_id": "g", "out_dir": "/o", "data_calls": true, "bogus": 1})).contains("\"bogus\" is not known"));
+    assert!(refused(json!({"graph_id": "g", "out_dir": "/o", "data_calls": true, "sections": ["../x"]})).contains("sections holds"));
+    assert!(refused(json!({"graph_id": "g", "out_dir": "/o", "data_calls": true, "sections": []})).contains("1 to 1000"));
+    assert!(refused(json!({"graph_id": "g", "out_dir": "/o", "data_calls": true, "dry_run": "yes"})).contains("dry_run"));
     assert!(refused(json!([])).contains("JSON object"));
 }
 
@@ -435,4 +457,74 @@ fn a_claim_section_that_is_not_a_safe_stem_is_refused() {
     let (summary, _) = host.drive(json!({"dry_run": true}));
     assert_eq!(summary["ok"], false);
     assert!(summary["error"].as_str().unwrap().contains("section"), "{summary}");
+}
+
+fn profile_row(graph: &str, version: i64) -> Map<String, Value> {
+    let mut row = Map::new();
+    for field in render::CLAIM_GRAPH.fields {
+        row.insert((*field).into(), Value::Null);
+    }
+    row.insert("graph_id".into(), json!(graph));
+    row.insert("version".into(), json!(version));
+    row.insert("kinds".into(), json!(["fact", "question"]));
+    row.insert("claim_id_pattern".into(), json!("^c:[a-z0-9-]+:[0-9]{3}$"));
+    row.insert("text_max_words".into(), json!(40));
+    row.insert("batch_id".into(), json!(format!("b-{version}")));
+    // Fields the host adds are not exported.
+    row.insert("_docID".into(), json!("bae-x"));
+    row
+}
+
+#[test]
+fn the_profile_versions_are_exported_as_a_json_array_in_version_order() {
+    let dir = scratch("profiles");
+    let mut host = fixture_host(usize::MAX);
+    host.rows.insert("ClaimGraph", vec![profile_row(GRAPH, 10), profile_row(GRAPH, 2), profile_row("other", 1)]);
+    let (summary, _) = host.drive(json!({"out_dir": dir.to_str().unwrap()}));
+    assert_eq!(summary["written"]["claim_graph"], 2, "{summary}");
+    let text = &tree(&dir)["claim_graph.json"];
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!((lines[0], lines[3]), ("[", "]"));
+    assert!(lines[1].starts_with(r#"{"graph_id":"government-attestation","version":2,"display_name":null,"kinds":["fact","question"]"#), "{}", lines[1]);
+    assert!(lines[1].ends_with(r#""created_at":null,"batch_id":"b-2"},"#), "{}", lines[1]);
+    assert!(lines[2].contains(r#""version":10,"#) && !lines[2].ends_with(','));
+    let parsed: Value = serde_json::from_str(text).unwrap();
+    assert_eq!(parsed.as_array().unwrap().len(), 2);
+    assert!(!text.contains("_docID"));
+}
+
+#[test]
+fn rows_of_another_graph_are_not_exported() {
+    let dir = scratch("graphs");
+    let mut host = fixture_host(usize::MAX);
+    let mut stray = host.rows["Claim"][0].clone();
+    stray.insert("graph_id".into(), json!("other"));
+    stray.insert("claim_id".into(), json!("c:flipper:999"));
+    host.rows.get_mut("Claim").unwrap().push(stray);
+    let (summary, _) = host.drive(json!({"out_dir": dir.to_str().unwrap()}));
+    assert_eq!(summary["written"]["claims"], 14);
+    assert_eq!(summary["graph_id"], GRAPH);
+    let (summary, _) = fixture_host(usize::MAX).drive(json!({"graph_id": "other", "dry_run": true}));
+    assert_eq!(summary["written"], json!({"claims": 0, "edges": 0, "entities": 0, "perspectives": 0, "claim_graph": 0}));
+}
+
+#[test]
+fn every_plugin_case_matches_this_build() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let mut checked = 0;
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().is_none_or(|e| e != "json") {
+            continue;
+        }
+        let case: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let output = run(&case["input"]).unwrap_or_else(|f| json!({"ok": false, "error": f.0, "retryable": false}));
+        match case.get("expect") {
+            Some(expect) => assert_eq!(&output, expect, "{}", path.display()),
+            // A callback receipt carries the time it was made.
+            None => assert!(output["exported_at"].is_string(), "{}: {output}", path.display()),
+        }
+        checked += 1;
+    }
+    assert_eq!(checked, 11);
 }

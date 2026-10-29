@@ -4,6 +4,7 @@
       "collection": "ExportRequest",
       "fields": {
         "request_id": "rt-export-${ATTEMPT}",
+        "graph_id": "rt-empty",
         "dry_run": true,
         "note": "dry run over an empty graph",
         "submitted_at": "2026-10-29T00:00:00Z"

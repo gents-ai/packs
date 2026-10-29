@@ -1,0 +1,419 @@
+{
+  "input": {
+    "request_id": "req-status",
+    "graph_id": "demo",
+    "view": "status",
+    "out_dir": "",
+    "dry_run": true,
+    "view_now": "2026-10-29T12:00:00Z",
+    "data_calls": true
+  },
+  "expect": {
+    "data_calls": {
+      "requests": [
+        {
+          "id": "claims@0",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@256",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@512",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@768",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@1024",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 1024,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@1280",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 1280,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@1536",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 1536,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "claims@1792",
+          "query": {
+            "collection": "Claim",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 1792,
+            "fields": [
+              "claim_id",
+              "text",
+              "kind",
+              "by",
+              "asserted",
+              "confidence",
+              "verdict"
+            ]
+          }
+        },
+        {
+          "id": "edges@0",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@256",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@512",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@768",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@1024",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 1024,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@1280",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 1280,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@1536",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 1536,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        },
+        {
+          "id": "edges@1792",
+          "query": {
+            "collection": "Edge",
+            "filter": {
+              "graph_id": {
+                "_eq": "demo"
+              }
+            },
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 1792,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by"
+            ]
+          }
+        }
+      ],
+      "state": {
+        "cursors": {
+          "claims": {
+            "next": 0,
+            "done": false,
+            "short": false
+          },
+          "edges": {
+            "next": 0,
+            "done": false,
+            "short": false
+          }
+        },
+        "rows": {
+          "claims": [],
+          "edges": []
+        }
+      }
+    }
+  }
+}

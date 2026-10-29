@@ -5,16 +5,20 @@
       "AgentContext/claim-sme-context",
       "Callback/claim-export",
       "Callback/claim-gate",
+      "Callback/claim-views",
       "CallbackBinding/claim-export",
       "CallbackBinding/claim-gate",
-      "DatastoreToolSurface/claim-question-writes",
+      "CallbackBinding/claim-views",
+      "DatastoreToolSurface/claim-graph-writes",
       "EventSource/claim-batch",
       "EventSource/export-request",
+      "EventSource/view-request",
       "Tools/claim-sme-tools"
     ],
     "plugins": [
       "claim_export",
-      "claim_gate"
+      "claim_gate",
+      "claim_views"
     ],
     "slots": [
       "sme"

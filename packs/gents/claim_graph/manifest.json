@@ -7,19 +7,27 @@
     "plugins/claim_export/TOOL.md",
     "plugins/claim_gate.afb",
     "plugins/claim_gate/TOOL.md",
+    "plugins/claim_views.afb",
+    "plugins/claim_views/TOOL.md",
+    "profiles/research.json",
     "schemas/claim.graphql",
     "schemas/claim_batch.graphql",
+    "schemas/claim_graph.graphql",
     "schemas/edge.graphql",
     "schemas/entity.graphql",
     "schemas/export_receipt.graphql",
     "schemas/export_request.graphql",
     "schemas/gate_receipt.graphql",
     "schemas/perspective.graphql",
+    "schemas/view_receipt.graphql",
+    "schemas/view_request.graphql",
     "tests/content.json",
+    "tests/dispute_runtime.json",
     "tests/export_runtime.json",
     "tests/gate_runtime.json",
     "tests/gate_runtime_fail.json",
     "tests/install.json",
+    "tests/view_runtime.json",
     "tools/import_jsonl.sh"
   ],
   "authors": [
@@ -27,7 +35,7 @@
   ],
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "An append-only claim graph (Claim, Edge, Entity, Perspective) admitted only through a mechanical gate plugin, exported back to JSONL, with a subject-matter expert agent that answers with claim ids.",
+  "description": "Append-only claim graphs (Claim, Edge, Entity, Perspective), one or more per node, each with its own vocabulary profile, admitted only through a mechanical gate plugin, with challenges and reviews, derived status, dispute and reputation views, JSONL export, and a subject-matter expert agent that answers with claim ids.",
   "inference_slots": [
     {
       "agents": [
@@ -54,13 +62,14 @@
           "Claim",
           "Edge",
           "Entity",
-          "Perspective"
+          "Perspective",
+          "ClaimGraph"
         ],
         "ops": [
           "query"
         ]
       },
-      "description": "Validates a ClaimBatch like the research gate and admits its rows in one transaction with a receipt.",
+      "description": "Validates a ClaimBatch against its graph's profile like the research gate and admits its rows, and any new profile version, in one transaction with a receipt.",
       "input_schema": {
         "properties": {
           "batch_id": {
@@ -90,11 +99,19 @@
             "description": "Fixes checked_at for reproducible plugin cases; the callback binding never sends it.",
             "type": "string"
           },
+          "graph_id": {
+            "description": "The graph the batch belongs to; ids are unique within a graph.",
+            "type": "string"
+          },
           "note": {
             "type": "string"
           },
           "perspectives": {
             "description": "Perspective lines as JSONL text.",
+            "type": "string"
+          },
+          "profile": {
+            "description": "JSON text of a ClaimGraph profile to admit as the graph's next version; required on a graph's first batch.",
             "type": "string"
           },
           "sample_size": {
@@ -140,19 +157,24 @@
           "Claim",
           "Edge",
           "Entity",
-          "Perspective"
+          "Perspective",
+          "ClaimGraph"
         ],
         "ops": [
           "query"
         ]
       },
-      "description": "Exports the admitted claim graph as the research JSONL files (claims per section, edges, entities, perspectives), sorted by id, or counts them with dry_run.",
+      "description": "Exports one claim graph as the research JSONL files (claims per section, edges, entities, perspectives) and its profile versions, sorted by id, or counts them with dry_run.",
       "input_schema": {
         "properties": {
           "dry_run": {
             "default": false,
             "description": "Return the counts only and write nothing.",
             "type": "boolean"
+          },
+          "graph_id": {
+            "description": "The graph to export.",
+            "type": "string"
           },
           "out_dir": {
             "description": "The folder to write the JSONL tree into, inside an allowed folder.",
@@ -170,6 +192,9 @@
             "type": "array"
           }
         },
+        "required": [
+          "graph_id"
+        ],
         "type": "object"
       },
       "instructions": "plugins/claim_export/TOOL.md",
@@ -181,6 +206,77 @@
       },
       "name": "claim_export",
       "source": "plugins/claim_export"
+    },
+    {
+      "artifact": "plugins/claim_views.afb",
+      "bind_dir": {
+        "access": "read_write",
+        "description": "The folder view Markdown is written into as <graph_id>/<view>.md",
+        "input_field": "out_dir",
+        "original_field": "out_dir_original"
+      },
+      "data": {
+        "collections": [
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective",
+          "ClaimGraph"
+        ],
+        "ops": [
+          "query"
+        ]
+      },
+      "description": "Derives a view of one claim graph (effective status, open disputes, or per-perspective reputation counts) as Markdown in a ViewReceipt, optionally written to a file.",
+      "input_schema": {
+        "properties": {
+          "dry_run": {
+            "default": false,
+            "description": "Render the view into the receipt only and write no file.",
+            "type": "boolean"
+          },
+          "graph_id": {
+            "description": "The graph to derive the view from.",
+            "type": "string"
+          },
+          "out_dir": {
+            "description": "The folder to write <graph_id>/<view>.md into, inside an allowed folder; without it the Markdown is only in the receipt.",
+            "type": "string"
+          },
+          "out_dir_original": {
+            "description": "Set by the host to the real path of out_dir; ignored by the plugin.",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "The ViewRequest correlation key; the receipt carries it.",
+            "type": "string"
+          },
+          "view": {
+            "description": "Which view to derive.",
+            "enum": [
+              "status",
+              "disputes",
+              "reputation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "graph_id",
+          "view"
+        ],
+        "type": "object"
+      },
+      "instructions": "plugins/claim_views/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 256,
+        "wall_clock_secs": 120
+      },
+      "name": "claim_views",
+      "source": "plugins/claim_views"
     }
   ],
   "schemas": [
@@ -188,16 +284,20 @@
     "schemas/edge.graphql",
     "schemas/entity.graphql",
     "schemas/perspective.graphql",
+    "schemas/claim_graph.graphql",
     "schemas/claim_batch.graphql",
     "schemas/gate_receipt.graphql",
     "schemas/export_request.graphql",
-    "schemas/export_receipt.graphql"
+    "schemas/export_receipt.graphql",
+    "schemas/view_request.graphql",
+    "schemas/view_receipt.graphql"
   ],
   "tags": [
-    "knowledge",
     "claims",
-    "provenance",
-    "plugin"
+    "disputes",
+    "knowledge",
+    "plugin",
+    "provenance"
   ],
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

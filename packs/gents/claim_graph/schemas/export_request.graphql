@@ -1,5 +1,6 @@
 type ExportRequest {
   request_id: String @index(unique: true) @immutable
+  graph_id: String @index @immutable
   out_dir: String @immutable
   sections: String @immutable
   dry_run: Boolean @immutable

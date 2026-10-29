@@ -4,8 +4,9 @@ version = 4
 
 [[package]]
 name = "claim_gate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
+ "regex-lite",
  "serde_json",
 ]
 
@@ -66,6 +67,12 @@ checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "regex-lite"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cab834c73d247e67f4fae452806d17d3c7501756d98c8808d7c9c7aa7d18f973"
 
 [[package]]
 name = "serde"

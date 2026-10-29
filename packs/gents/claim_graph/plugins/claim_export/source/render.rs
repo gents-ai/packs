@@ -12,12 +12,7 @@ type Row = Map<String, Value>;
 
 /// One exported record type: its collection, the row field that orders it and
 /// the fields a query for it asks for.
-pub struct Kind {
-    pub key: &'static str,
-    pub collection: &'static str,
-    pub id_field: &'static str,
-    pub fields: &'static [&'static str],
-}
+pub type Kind = crate::pager::Spec;
 
 pub const CLAIMS: Kind = Kind {
     key: "claims",
@@ -63,6 +58,59 @@ pub const PERSPECTIVES: Kind = Kind {
     fields: &["perspective_id", "name", "kind", "note", "did"],
 };
 pub const KINDS: [&Kind; 4] = [&CLAIMS, &EDGES, &ENTITIES, &PERSPECTIVES];
+
+/// The profile versions of the graph, exported as `claim_graph.json`.
+pub const CLAIM_GRAPH: Kind = Kind {
+    key: "claim_graph",
+    collection: "ClaimGraph",
+    id_field: "version",
+    fields: &[
+        "graph_id",
+        "version",
+        "display_name",
+        "kinds",
+        "confidence_classes",
+        "edge_types",
+        "mapping_targets",
+        "mapping_fits",
+        "review_verdicts",
+        "resolver_perspectives",
+        "question_entity",
+        "default_asker",
+        "questions_from_prefix",
+        "claim_id_pattern",
+        "text_max_words",
+        "note",
+        "created_at",
+        "batch_id",
+    ],
+};
+
+/// Everything one export reads: the four JSONL record types and the profiles.
+pub const SPECS: [&Kind; 5] = [&CLAIMS, &EDGES, &ENTITIES, &PERSPECTIVES, &CLAIM_GRAPH];
+
+/// One profile version as written to `claim_graph.json`: every ClaimGraph
+/// field in schema order, a stored null kept as null, keyed by its version.
+pub fn profile(row: &Row) -> Result<(i64, Value), String> {
+    let version = row
+        .get("version")
+        .and_then(Value::as_i64)
+        .ok_or_else(|| "a ClaimGraph row has no integer version".to_owned())?;
+    let mut out = Row::new();
+    for field in CLAIM_GRAPH.fields {
+        put(&mut out, field, row.get(*field).cloned().unwrap_or(Value::Null));
+    }
+    Ok((version, Value::Object(out)))
+}
+
+/// `claim_graph.json`: a JSON array, one compact profile per line, by version.
+pub fn profiles_text<'a>(profiles: impl Iterator<Item = &'a Value>) -> String {
+    let items: Vec<String> = profiles.map(Value::to_string).collect();
+    if items.is_empty() {
+        return "[]\n".to_owned();
+    }
+    format!("[\n{}\n]\n", items.join(",\n"))
+}
 
 /// A string field; null and absent are `None`, a value of another type is a
 /// refusal that names the row.

@@ -1,5 +1,6 @@
 {
   "input": {
+    "graph_id": "government-attestation",
     "dry_run": true,
     "data_calls": true,
     "state": {
@@ -20,6 +21,11 @@
           "short": false
         },
         "perspectives": {
+          "next": 0,
+          "done": true,
+          "short": false
+        },
+        "claim_graph": {
           "next": 0,
           "done": true,
           "short": false
@@ -68,7 +74,8 @@
         ],
         "edges": [],
         "entities": [],
-        "perspectives": []
+        "perspectives": [],
+        "claim_graph": []
       }
     },
     "data_results": {
@@ -81,12 +88,14 @@
   },
   "expect": {
     "ok": true,
+    "graph_id": "government-attestation",
     "dry_run": true,
     "written": {
       "claims": 2,
       "edges": 0,
       "entities": 0,
-      "perspectives": 0
+      "perspectives": 0,
+      "claim_graph": 0
     },
     "sections": {
       "datapack-flipper": 2
@@ -95,7 +104,8 @@
       "claims/datapack-flipper.jsonl",
       "edges/edges.jsonl",
       "entities/entities.jsonl",
-      "perspectives/perspectives.jsonl"
+      "perspectives/perspectives.jsonl",
+      "claim_graph.json"
     ]
   }
 }

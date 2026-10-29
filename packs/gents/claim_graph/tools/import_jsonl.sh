@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Loads a research claim graph (claims/, edges/, entities/, perspectives/ JSONL) into a
-# served gents home through the claim_graph gate, one ClaimBatch at a time, waiting for
-# each batch's GateReceipt before the next.
+# served gents home through the claim_graph gate as the graph --graph-id, one ClaimBatch
+# at a time, waiting for each batch's GateReceipt before the next.
 #
-# usage: tools/import_jsonl.sh [options] <graph-dir> <home> <graphql-url>
+# usage: tools/import_jsonl.sh --graph-id ID [--profile FILE] [options] <graph-dir> <home> <graphql-url>
 #
+#   --graph-id ID        required; the graph every batch and row belongs to (letters,
+#                        digits, '.', '_', '-'); every batch_id starts with it
+#   --profile FILE       a ClaimGraph profile (JSON, like profiles/research.json) sent
+#                        with the first batch, which the gate admits as the graph's
+#                        next version; a graph's first import needs one
 #   --source-root[=DIR]  check files and quotes against DIR (default: the parent of
 #                        <graph-dir>); DIR must be inside a folder allowed with
 #                        `gents plugin dirs add`. Without it those checks are skipped.
@@ -20,10 +25,10 @@
 #   GENTS                the gents binary (default: gents)
 #
 # Order: perspectives and entities first (the first gazetteer batch carries every
-# perspective), then one or more batches per claims/<section>.jsonl, then the remaining
-# edges. A supersedes or retracts edge travels in the batch of the claim it points at,
-# because the gate skips the quote check only for claims such an edge points at, and
-# sections are ordered so the superseding claim is admitted first.
+# perspective and the --profile), then one or more batches per claims/<section>.jsonl,
+# then the remaining edges. A supersedes or retracts edge travels in the batch of the
+# claim it points at, because the gate skips the quote check only for claims such an
+# edge points at, and sections are ordered so the superseding claim is admitted first.
 #
 # Resume: every batch is a family of attempts, <batch_id> then <batch_id>-r2, -r3, ...
 # A family with a passing receipt is skipped. An attempt without a receipt yet is
@@ -36,10 +41,14 @@ set -euo pipefail
 
 usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' >&2; exit 2; }
 
-source_root="" use_source_root="" date="$(date -u +%Y%m%d)" suffix="" chunk=100000 timeout=300 dry_run="" strict=""
+graph_id="" profile_file="" source_root="" use_source_root="" date="$(date -u +%Y%m%d)" suffix="" chunk=100000 timeout=300 dry_run="" strict=""
 args=()
 while (($#)); do
   case "$1" in
+    --graph-id) graph_id="$2"; shift ;;
+    --graph-id=*) graph_id="${1#*=}" ;;
+    --profile) profile_file="$2"; shift ;;
+    --profile=*) profile_file="${1#*=}" ;;
     --source-root) use_source_root=parent ;;
     --source-root=*) use_source_root=dir; source_root="${1#*=}" ;;
     --date) date="$2"; shift ;;
@@ -63,6 +72,12 @@ case "$use_source_root" in
   dir) source_root="$(cd "$source_root" && pwd)" ;;
 esac
 command -v jq >/dev/null || { echo "jq is required" >&2; exit 2; }
+[[ "$graph_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "--graph-id is required (letters, digits, '.', '_', '-')" >&2; usage; }
+profile=""
+if [[ -n "$profile_file" ]]; then
+  profile="$(jq -ce 'if type == "object" then . else error("not a JSON object") end' "$profile_file")" \
+    || { echo "--profile $profile_file is not a JSON object" >&2; exit 2; }
+fi
 
 # Every non-empty line of a JSONL file, as {raw, rec} with its text unchanged.
 lines() { jq -Rc 'select(test("\\S")) | {raw: ., rec: fromjson}' "$@"; }
@@ -95,7 +110,8 @@ plan="$(
     for f in "$graph"/entities/*.jsonl; do lines "$f" | jq -c '{k: "entity"} + .'; done
     for f in "$graph"/perspectives/*.jsonl; do lines "$f" | jq -c '{k: "perspective"} + .'; done
     printf '%s\n' "$edges"
-  } | jq -sc --argjson limit "$chunk" --arg date "$date" --arg suffix "$suffix" --arg root "$source_root" '
+  } | jq -sc --argjson limit "$chunk" --arg date "$date" --arg suffix "$suffix" --arg root "$source_root" \
+    --arg graph "$graph_id" --arg profile "$profile" '
     def size: (.raw | tojson | length) + 2;
     # Greedy chunks of items under $limit encoded bytes.
     def chunks: reduce .[] as $i ([];
@@ -103,7 +119,7 @@ plan="$(
       else .[-1] += [$i] end);
     def text($k): map(select(.k == $k) | .raw) | if length == 0 then null else join("\n") + "\n" end;
     def batch($id; $section; $items):
-      {batch_id: ($id + $suffix), section: $section,
+      {batch_id: ($graph + "-" + $id + $suffix), graph_id: $graph, section: $section,
        claims: ($items | text("claim")), edges: ($items | text("edge")),
        entities: ($items | text("entity")), perspectives: ($items | text("perspective"))}
       | with_entries(select(.value != null));
@@ -142,12 +158,13 @@ plan="$(
             | if $root != "" then .source_root = $root else . end)]
     + ($all | map(select(.k == "edge")) - $deferred | chunks
         | [range(0; length) as $n | batch("edges-\($date)-\($n + 1)"; "edges"; .[$n])])
+    | if $profile != "" and length > 0 then .[0].profile = $profile else . end
     | .[]
     | .extractor = "import_jsonl.sh"'
 )"
 
 if [[ -n "$dry_run" ]]; then
-  jq -c '{batch_id, section, source_root,
+  jq -c '{batch_id, graph_id, section, source_root, profile: has("profile"),
     lines: (with_entries(select(.key | IN("claims", "edges", "entities", "perspectives")))
       | map_values(split("\n") | length - 1))}' <<<"$plan"
   exit 0

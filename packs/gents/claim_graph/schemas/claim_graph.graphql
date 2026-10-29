@@ -1,0 +1,20 @@
+type ClaimGraph @index(fields: ["graph_id", "version"], unique: true) {
+  graph_id: String @index @immutable
+  version: Int @immutable
+  display_name: String @immutable
+  kinds: [String!]
+  confidence_classes: [String!]
+  edge_types: [String!]
+  mapping_targets: [String!]
+  mapping_fits: [String!]
+  review_verdicts: [String!]
+  resolver_perspectives: [String!]
+  question_entity: String @immutable
+  default_asker: String @immutable
+  questions_from_prefix: String @immutable
+  claim_id_pattern: String @immutable
+  text_max_words: Int @immutable
+  note: String @immutable
+  created_at: String @immutable
+  batch_id: String @index @immutable
+}

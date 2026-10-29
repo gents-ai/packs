@@ -8,9 +8,9 @@ use serde_json::Value;
 
 use crate::batch::Record;
 
-/// Claims whose `from` is this file are questions; their quote is the
-/// question itself and is not looked for.
-pub const QUESTIONS_FILE: &str = "graph/claims/questions.jsonl";
+/// Kinds whose quote may be their own text: a question, challenge or review
+/// quotes nobody; such a claim is not looked for when `quote == text`.
+pub const SELF_QUOTING: [&str; 3] = ["question", "challenge", "review"];
 
 /// The narrative file a claim's `from` names: the part before `#`.
 pub fn from_file(claim: &Record) -> Option<&str> {
@@ -81,9 +81,16 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     (0..=last_start).any(|i| haystack[i] == first && &haystack[i..i + needle.len()] == needle)
 }
 
-/// Checks each claim's quote in its `from` file, except questions and the
-/// claims in `historical` (targets of a supersedes or retracts edge).
-pub fn check_quotes(root: &Path, claims: &[Record], historical: &BTreeSet<String>) -> QuoteReport {
+/// Checks each claim's quote in its `from` file, except: a self-quoting kind
+/// whose quote is its text; a claim whose `from` starts with the profile's
+/// `questions_from_prefix`; the claims in `historical` (targets of a
+/// supersedes or retracts edge).
+pub fn check_quotes(
+    root: &Path,
+    claims: &[Record],
+    historical: &BTreeSet<String>,
+    questions_prefix: Option<&str>,
+) -> QuoteReport {
     let mut report = QuoteReport {
         errors: Vec::new(),
         checked: 0,
@@ -98,7 +105,11 @@ pub fn check_quotes(root: &Path, claims: &[Record], historical: &BTreeSet<String
             report.skipped += 1;
             continue;
         };
-        if file == QUESTIONS_FILE || historical.contains(id) {
+        let self_quoted = claim.str("kind").is_some_and(|k| SELF_QUOTING.contains(&k))
+            && claim.str("text") == Some(quote);
+        let question_file = questions_prefix
+            .is_some_and(|prefix| claim.str("from").is_some_and(|from| from.starts_with(prefix)));
+        if self_quoted || question_file || historical.contains(id) {
             report.skipped += 1;
             continue;
         }

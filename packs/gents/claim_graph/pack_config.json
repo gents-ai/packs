@@ -14,9 +14,11 @@
       "event_source_id": "claim-batch",
       "input_fields": [
         "batch_id",
+        "graph_id",
         "section",
         "extractor",
         "source_root",
+        "profile",
         "claims",
         "edges",
         "entities",
@@ -33,8 +35,21 @@
       "event_source_id": "export-request",
       "input_fields": [
         "request_id",
+        "graph_id",
         "out_dir",
         "sections",
+        "dry_run"
+      ]
+    },
+    {
+      "binding_id": "claim-views",
+      "callback_id": "claim-views",
+      "event_source_id": "view-request",
+      "input_fields": [
+        "request_id",
+        "graph_id",
+        "view",
+        "out_dir",
         "dry_run"
       ]
     }
@@ -83,6 +98,13 @@
             "correlation_field": "batch_id",
             "name": "perspectives",
             "schema": "Perspective/v1"
+          },
+          {
+            "cardinality": "one",
+            "collection": "ClaimGraph",
+            "correlation_field": "batch_id",
+            "name": "profile",
+            "schema": "ClaimGraph/v1"
           }
         ],
         "plugin": "claim_gate"
@@ -95,7 +117,6 @@
         "correlation_field": "request_id",
         "digest": "",
         "kind": "plugin",
-        "plugin": "claim_export",
         "outputs": [
           {
             "cardinality": "one",
@@ -105,7 +126,28 @@
             "required": true,
             "schema": "ExportReceipt/v1"
           }
-        ]
+        ],
+        "plugin": "claim_export"
+      }
+    },
+    {
+      "callback_id": "claim-views",
+      "display_name": "claim-views",
+      "handler": {
+        "correlation_field": "request_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "ViewReceipt",
+            "correlation_field": "request_id",
+            "name": "receipt",
+            "required": true,
+            "schema": "ViewReceipt/v1"
+          }
+        ],
+        "plugin": "claim_views"
       }
     }
   ],
@@ -119,14 +161,18 @@
   ],
   "datastore_tool_surfaces": [
     {
-      "display_name": "Claim graph question filing",
+      "display_name": "Claim graph writes",
       "entries": [
         {
           "collection": "ClaimBatch",
-          "description": "File one open question the graph cannot answer, as a one-line ClaimBatch holding a claim of kind question; the gate admits it or writes a failing GateReceipt.",
+          "description": "Submit claims (a question, a challenge, a review, a reply) with their edges as one ClaimBatch for a graph; the gate admits the whole batch or writes a failing GateReceipt.",
           "fields": [
             {
               "name": "batch_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
               "required": true
             },
             {
@@ -138,6 +184,9 @@
               "required": true
             },
             {
+              "name": "edges"
+            },
+            {
               "name": "extractor"
             },
             {
@@ -147,10 +196,38 @@
               "name": "submitted_at"
             }
           ],
-          "tool_name": "file_question"
+          "tool_name": "file_claims"
+        },
+        {
+          "collection": "ViewRequest",
+          "description": "Ask for a derived view (status, disputes or reputation) of one graph; the claim-views callback answers with a ViewReceipt whose markdown holds it.",
+          "fields": [
+            {
+              "name": "request_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "required": true
+            },
+            {
+              "name": "view",
+              "required": true
+            },
+            {
+              "name": "dry_run"
+            },
+            {
+              "name": "note"
+            },
+            {
+              "name": "submitted_at"
+            }
+          ],
+          "tool_name": "request_view"
         }
       ],
-      "surface_id": "claim-question-writes"
+      "surface_id": "claim-graph-writes"
     }
   ],
   "event_sources": [
@@ -167,6 +244,13 @@
       "event_kind": "created",
       "event_source_id": "export-request",
       "source_collection": "ExportRequest"
+    },
+    {
+      "correlation_field": "request_id",
+      "display_name": "view-request",
+      "event_kind": "created",
+      "event_source_id": "view-request",
+      "source_collection": "ViewRequest"
     }
   ],
   "node": {},
@@ -174,15 +258,17 @@
     {
       "datastore": {
         "datastore_tool_surface_ids": [
-          "claim-question-writes"
+          "claim-graph-writes"
         ],
         "defra_query_collections": [
           "Claim",
           "Edge",
           "Entity",
           "Perspective",
+          "ClaimGraph",
           "GateReceipt",
-          "ExportReceipt"
+          "ExportReceipt",
+          "ViewReceipt"
         ],
         "enable_defra_query": true
       },

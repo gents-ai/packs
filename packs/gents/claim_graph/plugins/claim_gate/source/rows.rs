@@ -5,6 +5,7 @@
 use serde_json::{Map, Value, json};
 
 use crate::batch::{Batch, Record};
+use crate::profile::Profile;
 use crate::rules::edge_key;
 
 fn put(row: &mut Map<String, Value>, key: &str, value: Option<&Value>) {
@@ -58,6 +59,7 @@ pub fn claim(section: &str, claim: &Record) -> Value {
         "fit",
         "against",
         "ref",
+        "verdict",
         "valid_from",
         "valid_to",
     ] {
@@ -110,14 +112,23 @@ pub fn perspective(perspective: &Record) -> Value {
 pub const MAX_ERRORS: usize = 200;
 
 pub struct Verdict {
+    /// The profile version the batch was checked against, once resolved.
+    pub profile_version: Option<i64>,
     pub errors: Vec<String>,
     pub quotes_checked: u64,
     pub quotes_skipped: u64,
 }
 
-/// The ports object the host turns into documents: on a pass the receipt
-/// and every row, on a fail the receipt alone.
-pub fn result(batch_id: &str, batch: &Batch, verdict: Verdict, checked_at: &str) -> Value {
+/// The ports object the host turns into documents: on a pass the receipt,
+/// every row and (when the batch carried one) the admitted profile; on a fail
+/// the receipt alone.
+pub fn result(
+    batch_id: &str,
+    batch: &Batch,
+    verdict: Verdict,
+    admitted_profile: Option<&Profile>,
+    checked_at: &str,
+) -> Value {
     let pass = verdict.errors.is_empty();
     let mut errors = verdict.errors;
     if errors.len() > MAX_ERRORS {
@@ -126,7 +137,7 @@ pub fn result(batch_id: &str, batch: &Batch, verdict: Verdict, checked_at: &str)
         errors.push(format!("ERROR: {more} more errors not shown"));
     }
     let admitted = |n: usize| if pass { n } else { 0 };
-    let receipt = json!({
+    let mut receipt = json!({
         "receipt_id": format!("receipt-{batch_id}"),
         "verdict": if pass { "pass" } else { "fail" },
         "errors": Value::from(errors).to_string(),
@@ -139,6 +150,12 @@ pub fn result(batch_id: &str, batch: &Batch, verdict: Verdict, checked_at: &str)
         "gate_version": env!("CARGO_PKG_VERSION"),
         "checked_at": checked_at,
     });
+    if let Some(graph_id) = &batch.graph_id {
+        receipt["graph_id"] = json!(graph_id);
+    }
+    if let Some(version) = verdict.profile_version {
+        receipt["profile_version"] = json!(version);
+    }
     let mut out = Map::new();
     out.insert("receipt".to_owned(), receipt);
     if pass {
@@ -151,9 +168,23 @@ pub fn result(batch_id: &str, batch: &Batch, verdict: Verdict, checked_at: &str)
         ];
         for (name, rows) in ports {
             if !rows.is_empty() {
+                let rows = rows.into_iter().map(|row| in_graph(row, batch)).collect();
                 out.insert(name.to_owned(), Value::Array(rows));
             }
         }
+        if let (Some(profile), Some(graph_id), Some(version)) =
+            (admitted_profile, &batch.graph_id, verdict.profile_version)
+        {
+            out.insert("profile".to_owned(), profile.row(graph_id, version, checked_at));
+        }
     }
     Value::Object(out)
+}
+
+/// Every admitted row belongs to the batch's graph.
+fn in_graph(mut row: Value, batch: &Batch) -> Value {
+    if let (Some(graph_id), Some(fields)) = (&batch.graph_id, row.as_object_mut()) {
+        fields.insert("graph_id".to_owned(), json!(graph_id));
+    }
+    row
 }

@@ -22,6 +22,9 @@ impl Record {
 }
 
 pub struct Batch {
+    pub graph_id: Option<String>,
+    /// The `profile` text, unparsed.
+    pub profile: Option<String>,
     pub section: Option<String>,
     pub source_root: Option<String>,
     pub claims: Vec<Record>,
@@ -57,6 +60,8 @@ pub fn read(input: &Map<String, Value>) -> Result<Batch, String> {
     let edges = parts.pop().unwrap_or_default();
     let claims = parts.pop().unwrap_or_default();
     Ok(Batch {
+        graph_id: text_field(input, "graph_id")?,
+        profile: text_field(input, "profile")?,
         section: text_field(input, "section")?,
         source_root: text_field(input, "source_root")?,
         claims,
