@@ -1,0 +1,311 @@
+//! The store lookups a batch needs, asked through the host's `data_calls`
+//! rounds. The plan is recomputed from the batch every round (the host
+//! resends the same input), so `state` carries only the cursor, the requests
+//! in flight, follow-up pages and what the store answered.
+use std::collections::BTreeSet;
+
+use serde_json::{Map, Value, json};
+
+use crate::batch::Batch;
+use crate::rules::{edge_key, ids};
+
+/// Ids per `_in` query, and rows per query: the host's limit.
+pub const CHUNK: usize = 256;
+/// Queries per round: the host's limit.
+pub const PER_ROUND: usize = 16;
+/// Queries a batch may need: the host serves 64 rounds, and a full chunk of
+/// a historical-edge lookup may need follow-up pages.
+pub const MAX_QUERIES: usize = 60 * PER_ROUND;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Lookup {
+    Claim,
+    Entity,
+    Perspective,
+    Edge,
+    /// Edges of type supersedes or retracts pointing at a batch claim.
+    Historical,
+}
+
+impl Lookup {
+    pub fn collection(self) -> &'static str {
+        match self {
+            Lookup::Claim => "Claim",
+            Lookup::Entity => "Entity",
+            Lookup::Perspective => "Perspective",
+            Lookup::Edge | Lookup::Historical => "Edge",
+        }
+    }
+
+    pub fn field(self) -> &'static str {
+        match self {
+            Lookup::Claim => "claim_id",
+            Lookup::Entity => "entity_id",
+            Lookup::Perspective => "perspective_id",
+            Lookup::Edge => "edge_key",
+            Lookup::Historical => "to_claim",
+        }
+    }
+
+    fn filter(self, ids: &[String]) -> Value {
+        let mut filter = Map::new();
+        filter.insert(self.field().to_owned(), json!({"_in": ids}));
+        if self == Lookup::Historical {
+            filter.insert(
+                "edge_type".to_owned(),
+                json!({"_in": ["supersedes", "retracts"]}),
+            );
+        }
+        Value::Object(filter)
+    }
+}
+
+pub struct Query {
+    pub lookup: Lookup,
+    pub ids: Vec<String>,
+}
+
+/// What the store holds of the ids asked about.
+#[derive(Default, Debug)]
+pub struct Found {
+    pub claims: BTreeSet<String>,
+    pub entities: BTreeSet<String>,
+    pub perspectives: BTreeSet<String>,
+    pub edges: BTreeSet<String>,
+    pub historical: BTreeSet<String>,
+}
+
+impl Found {
+    fn set(&mut self, lookup: Lookup) -> &mut BTreeSet<String> {
+        match lookup {
+            Lookup::Claim => &mut self.claims,
+            Lookup::Entity => &mut self.entities,
+            Lookup::Perspective => &mut self.perspectives,
+            Lookup::Edge => &mut self.edges,
+            Lookup::Historical => &mut self.historical,
+        }
+    }
+}
+
+const FOUND_KEYS: [(&str, Lookup); 5] = [
+    ("claims", Lookup::Claim),
+    ("entities", Lookup::Entity),
+    ("perspectives", Lookup::Perspective),
+    ("edges", Lookup::Edge),
+    ("historical", Lookup::Historical),
+];
+
+/// One query per chunk of ids, per lookup. Each id set is the batch's own
+/// ids (whose presence in the store is a duplicate) plus the ids the batch
+/// references but does not carry (whose absence is an unknown reference).
+pub fn plan(batch: &Batch) -> Vec<Query> {
+    let claim_ids = ids(&batch.claims);
+    let entity_ids = ids(&batch.entities);
+    let perspective_ids = ids(&batch.perspectives);
+
+    let mut claims = claim_ids.clone();
+    for edge in &batch.edges {
+        claims.extend(["from", "to"].iter().filter_map(|k| edge.str(k)).map(str::to_owned));
+    }
+    let mut entities = entity_ids.clone();
+    let mut perspectives = perspective_ids.clone();
+    for claim in &batch.claims {
+        for entity in claim
+            .fields
+            .get("entities")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+        {
+            entities.insert(entity.to_owned());
+        }
+    }
+    for record in batch.claims.iter().chain(&batch.edges) {
+        if let Some(by) = record.str("by") {
+            perspectives.insert(by.to_owned());
+        }
+    }
+    let edges: BTreeSet<String> = batch.edges.iter().filter_map(edge_key).collect();
+    let historical = if batch.source_root.is_some() {
+        claim_ids
+    } else {
+        BTreeSet::new()
+    };
+
+    let mut queries = Vec::new();
+    for (lookup, set) in [
+        (Lookup::Claim, claims),
+        (Lookup::Entity, entities),
+        (Lookup::Perspective, perspectives),
+        (Lookup::Edge, edges),
+        (Lookup::Historical, historical),
+    ] {
+        let all: Vec<String> = set.into_iter().collect();
+        for chunk in all.chunks(CHUNK) {
+            queries.push(Query {
+                lookup,
+                ids: chunk.to_vec(),
+            });
+        }
+    }
+    queries
+}
+
+/// Progress across rounds.
+#[derive(Default, Debug)]
+pub struct State {
+    /// The next plan query not yet asked.
+    pub cursor: usize,
+    /// Follow-up pages `(plan index, offset)` of a query whose answer was full.
+    pub pages: Vec<(usize, u32)>,
+    /// Request ids asked in the previous round.
+    pub asked: Vec<String>,
+    pub found: Found,
+}
+
+fn request_id(index: usize, offset: u32) -> String {
+    if offset == 0 {
+        format!("q{index}")
+    } else {
+        format!("q{index}-{offset}")
+    }
+}
+
+fn parse_request_id(id: &str) -> Option<(usize, u32)> {
+    let rest = id.strip_prefix('q')?;
+    match rest.split_once('-') {
+        Some((index, offset)) => Some((index.parse().ok()?, offset.parse().ok()?)),
+        None => Some((rest.parse().ok()?, 0)),
+    }
+}
+
+impl State {
+    pub fn to_json(&self) -> Value {
+        let mut found = Map::new();
+        let mut copy = |key: &str, set: &BTreeSet<String>| {
+            found.insert(key.to_owned(), json!(set));
+        };
+        copy("claims", &self.found.claims);
+        copy("entities", &self.found.entities);
+        copy("perspectives", &self.found.perspectives);
+        copy("edges", &self.found.edges);
+        copy("historical", &self.found.historical);
+        json!({
+            "cursor": self.cursor,
+            "pages": self.pages,
+            "asked": self.asked,
+            "found": found,
+        })
+    }
+
+    /// The state this plugin handed the host last round.
+    pub fn from_json(value: Option<&Value>) -> Result<State, String> {
+        let bad = || "state is not the state this plugin returned".to_owned();
+        let state = value.and_then(Value::as_object).ok_or_else(bad)?;
+        let strings = |value: Option<&Value>| -> Result<Vec<String>, String> {
+            value
+                .and_then(Value::as_array)
+                .ok_or_else(bad)?
+                .iter()
+                .map(|v| v.as_str().map(str::to_owned).ok_or_else(bad))
+                .collect()
+        };
+        let mut found = Found::default();
+        let found_json = state.get("found").and_then(Value::as_object).ok_or_else(bad)?;
+        for (key, lookup) in FOUND_KEYS {
+            found.set(lookup).extend(strings(found_json.get(key))?);
+        }
+        let pages = state
+            .get("pages")
+            .and_then(Value::as_array)
+            .ok_or_else(bad)?
+            .iter()
+            .map(|page| {
+                let index = page.get(0).and_then(Value::as_u64).ok_or_else(bad)?;
+                let offset = page.get(1).and_then(Value::as_u64).ok_or_else(bad)?;
+                Ok((index as usize, u32::try_from(offset).map_err(|_| bad())?))
+            })
+            .collect::<Result<_, String>>()?;
+        Ok(State {
+            cursor: state.get("cursor").and_then(Value::as_u64).ok_or_else(bad)? as usize,
+            pages,
+            asked: strings(state.get("asked"))?,
+            found,
+        })
+    }
+
+    /// Takes in the answers to the requests asked last round. A query the
+    /// store refused is returned as a gate error; a missing answer or one of
+    /// the wrong shape is a malformed host input.
+    pub fn absorb(&mut self, plan: &[Query], results: &Value) -> Result<Vec<String>, String> {
+        let results = results
+            .as_object()
+            .ok_or("data_results must be an object keyed by request id")?;
+        let mut failures = Vec::new();
+        for id in std::mem::take(&mut self.asked) {
+            let (index, offset) = parse_request_id(&id)
+                .filter(|(index, _)| *index < plan.len())
+                .ok_or_else(|| format!("state names request {id:?}, which this batch never asks"))?;
+            let lookup = plan[index].lookup;
+            let answer = results
+                .get(&id)
+                .ok_or_else(|| format!("the host returned no answer for data request {id}"))?;
+            if let Some(error) = answer.get("error") {
+                failures.push(format!(
+                    "ERROR: store query on {} failed: {}",
+                    lookup.collection(),
+                    error.as_str().unwrap_or("unknown error")
+                ));
+                continue;
+            }
+            let rows = answer
+                .get("result")
+                .and_then(|r| r.get("rows"))
+                .and_then(Value::as_array)
+                .ok_or_else(|| format!("data request {id} answered without result.rows"))?;
+            for row in rows {
+                if let Some(value) = row.get(lookup.field()).and_then(Value::as_str) {
+                    self.found.set(lookup).insert(value.to_owned());
+                }
+            }
+            if rows.len() >= CHUNK {
+                self.pages.push((index, offset + CHUNK as u32));
+            }
+        }
+        Ok(failures)
+    }
+
+    /// The next round's requests, or `None` when everything is answered.
+    pub fn next_requests(&mut self, plan: &[Query]) -> Option<Vec<Value>> {
+        let mut asks: Vec<(usize, u32)> = Vec::new();
+        while asks.len() < PER_ROUND && !self.pages.is_empty() {
+            asks.push(self.pages.remove(0));
+        }
+        while asks.len() < PER_ROUND && self.cursor < plan.len() {
+            asks.push((self.cursor, 0));
+            self.cursor += 1;
+        }
+        if asks.is_empty() {
+            return None;
+        }
+        self.asked = asks.iter().map(|(i, o)| request_id(*i, *o)).collect();
+        Some(
+            asks.iter()
+                .map(|(index, offset)| {
+                    let query = &plan[*index];
+                    let mut body = json!({
+                        "collection": query.lookup.collection(),
+                        "filter": query.lookup.filter(&query.ids),
+                        "limit": CHUNK,
+                        "fields": [query.lookup.field()],
+                    });
+                    if *offset > 0 {
+                        body["offset"] = json!(offset);
+                    }
+                    json!({"id": request_id(*index, *offset), "query": body})
+                })
+                .collect(),
+        )
+    }
+}

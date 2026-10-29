@@ -1,0 +1,10 @@
+{
+  "input": {
+    "out_dir": "x"
+  },
+  "expect": {
+    "ok": false,
+    "error": "the host offers this plugin no data calls; install the pack with its data grant",
+    "retryable": false
+  }
+}

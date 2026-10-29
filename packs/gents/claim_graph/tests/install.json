@@ -1,0 +1,23 @@
+{
+  "install": {
+    "documents": [
+      "Agent/claim-sme",
+      "AgentContext/claim-sme-context",
+      "Callback/claim-export",
+      "Callback/claim-gate",
+      "CallbackBinding/claim-export",
+      "CallbackBinding/claim-gate",
+      "DatastoreToolSurface/claim-question-writes",
+      "EventSource/claim-batch",
+      "EventSource/export-request",
+      "Tools/claim-sme-tools"
+    ],
+    "plugins": [
+      "claim_export",
+      "claim_gate"
+    ],
+    "slots": [
+      "sme"
+    ]
+  }
+}

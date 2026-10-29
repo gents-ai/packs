@@ -1,0 +1,12 @@
+{
+  "input": {
+    "out_dir": "x",
+    "data_calls": true,
+    "bogus": 1
+  },
+  "expect": {
+    "ok": false,
+    "error": "the field \"bogus\" is not known; the fields are out_dir, sections and dry_run",
+    "retryable": false
+  }
+}

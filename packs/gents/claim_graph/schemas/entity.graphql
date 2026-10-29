@@ -1,0 +1,9 @@
+type Entity {
+  entity_id: String @index(unique: true) @immutable
+  entity_type: String @index @immutable
+  name: String @fulltext(language: "english") @immutable
+  aliases: [String!]
+  alias_text: String @immutable
+  note: String @immutable
+  batch_id: String @index @immutable
+}

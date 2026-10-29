@@ -1,0 +1,200 @@
+{
+  "agents": [
+    {
+      "agent_id": "claim-sme",
+      "context_id": "claim-sme-context",
+      "display_name": "Claim graph expert",
+      "inference_profile_id": "gents:inference-slot:sme"
+    }
+  ],
+  "callback_bindings": [
+    {
+      "binding_id": "claim-gate",
+      "callback_id": "claim-gate",
+      "event_source_id": "claim-batch",
+      "input_fields": [
+        "batch_id",
+        "section",
+        "extractor",
+        "source_root",
+        "claims",
+        "edges",
+        "entities",
+        "perspectives",
+        "sample_size",
+        "failure_count",
+        "note",
+        "submitted_at"
+      ]
+    },
+    {
+      "binding_id": "claim-export",
+      "callback_id": "claim-export",
+      "event_source_id": "export-request",
+      "input_fields": [
+        "request_id",
+        "out_dir",
+        "sections",
+        "dry_run"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "callback_id": "claim-gate",
+      "display_name": "claim-gate",
+      "handler": {
+        "correlation_field": "batch_id",
+        "digest": "",
+        "kind": "plugin",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "GateReceipt",
+            "correlation_field": "batch_id",
+            "name": "receipt",
+            "required": true,
+            "schema": "GateReceipt/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "Claim",
+            "correlation_field": "batch_id",
+            "name": "claims",
+            "schema": "Claim/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "Edge",
+            "correlation_field": "batch_id",
+            "name": "edges",
+            "schema": "Edge/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "Entity",
+            "correlation_field": "batch_id",
+            "name": "entities",
+            "schema": "Entity/v1"
+          },
+          {
+            "cardinality": "many",
+            "collection": "Perspective",
+            "correlation_field": "batch_id",
+            "name": "perspectives",
+            "schema": "Perspective/v1"
+          }
+        ],
+        "plugin": "claim_gate"
+      }
+    },
+    {
+      "callback_id": "claim-export",
+      "display_name": "claim-export",
+      "handler": {
+        "correlation_field": "request_id",
+        "digest": "",
+        "kind": "plugin",
+        "plugin": "claim_export",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "ExportReceipt",
+            "correlation_field": "request_id",
+            "name": "receipt",
+            "required": true,
+            "schema": "ExportReceipt/v1"
+          }
+        ]
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "claim-sme-context",
+      "display_name": "Claim graph expert",
+      "system_prompt": "./agent_behaviors/claim_sme/system_prompt.md",
+      "tools_id": "claim-sme-tools"
+    }
+  ],
+  "datastore_tool_surfaces": [
+    {
+      "display_name": "Claim graph question filing",
+      "entries": [
+        {
+          "collection": "ClaimBatch",
+          "description": "File one open question the graph cannot answer, as a one-line ClaimBatch holding a claim of kind question; the gate admits it or writes a failing GateReceipt.",
+          "fields": [
+            {
+              "name": "batch_id",
+              "required": true
+            },
+            {
+              "name": "section",
+              "required": true
+            },
+            {
+              "name": "claims",
+              "required": true
+            },
+            {
+              "name": "extractor"
+            },
+            {
+              "name": "note"
+            },
+            {
+              "name": "submitted_at"
+            }
+          ],
+          "tool_name": "file_question"
+        }
+      ],
+      "surface_id": "claim-question-writes"
+    }
+  ],
+  "event_sources": [
+    {
+      "correlation_field": "batch_id",
+      "display_name": "claim-batch",
+      "event_kind": "created",
+      "event_source_id": "claim-batch",
+      "source_collection": "ClaimBatch"
+    },
+    {
+      "correlation_field": "request_id",
+      "display_name": "export-request",
+      "event_kind": "created",
+      "event_source_id": "export-request",
+      "source_collection": "ExportRequest"
+    }
+  ],
+  "node": {},
+  "tools": [
+    {
+      "datastore": {
+        "datastore_tool_surface_ids": [
+          "claim-question-writes"
+        ],
+        "defra_query_collections": [
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective",
+          "GateReceipt",
+          "ExportReceipt"
+        ],
+        "enable_defra_query": true
+      },
+      "display_name": "Claim graph expert tools",
+      "integrations": {
+        "plugins": [
+          {
+            "plugin": "gents/claim_export"
+          }
+        ]
+      },
+      "tools_id": "claim-sme-tools"
+    }
+  ]
+}

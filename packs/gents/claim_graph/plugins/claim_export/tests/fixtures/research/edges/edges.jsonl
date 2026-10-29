@@ -1,0 +1,4 @@
+{"from": "c:flipper:006", "to": "c:flipper:028", "type": "supports", "by": "p:claude-fable", "date": "2026-10-22", "note": "The grant names no hash, so the certificate cannot distinguish firmware"}
+{"from": "c:flipper:026", "to": "c:flipper:028", "type": "supports", "by": "p:claude-fable", "date": "2026-10-22", "note": ""}
+{"from": "c:flipper:027", "to": "c:flipper:028", "type": "supports", "by": "p:claude-fable", "date": "2026-10-22", "note": ""}
+{"from": "c:flipper:018", "to": "c:flipper:022", "type": "supports", "by": "p:claude-fable", "date": "2026-10-22", "note": ""}

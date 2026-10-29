@@ -1,0 +1,14 @@
+{
+  "input": {
+    "out_dir": "x",
+    "data_calls": true,
+    "sections": [
+      "../x"
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "error": "sections holds \"../x\"; a section is a file stem of letters, digits, '-', '_' and '.'",
+    "retryable": false
+  }
+}

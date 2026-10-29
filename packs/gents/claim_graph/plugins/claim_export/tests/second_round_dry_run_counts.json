@@ -1,0 +1,101 @@
+{
+  "input": {
+    "dry_run": true,
+    "data_calls": true,
+    "state": {
+      "cursors": {
+        "claims": {
+          "next": 2,
+          "done": false,
+          "short": true
+        },
+        "edges": {
+          "next": 0,
+          "done": true,
+          "short": false
+        },
+        "entities": {
+          "next": 0,
+          "done": true,
+          "short": false
+        },
+        "perspectives": {
+          "next": 0,
+          "done": true,
+          "short": false
+        }
+      },
+      "rows": {
+        "claims": [
+          {
+            "claim_id": "c:flipper:001",
+            "section": "datapack-flipper",
+            "text": "FCC ID 2A2V6-FZ was granted to Flipper Devices Inc on 14 January 2022.",
+            "quote": "FCC ID 2A2V6-FZ, granted 14 Jan 2022 to Flipper Devices Inc.",
+            "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+            "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+            "entities": [
+              "e:flipper-zero",
+              "e:flipper-devices",
+              "e:fcc",
+              "e:fcc-grant-2a2v6-fz"
+            ],
+            "kind": "date",
+            "by": "p:datapack",
+            "asserted": "2026-10-22",
+            "status": "live",
+            "confidence": "sourced",
+            "note": ""
+          },
+          {
+            "claim_id": "c:flipper:002",
+            "section": "datapack-flipper",
+            "text": "The Flipper Zero grant certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under 47 CFR 15.231 in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.",
+            "quote": "It certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under Part 15.231 (periodic remote-control rules) in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.",
+            "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+            "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+            "entities": [
+              "e:fcc-grant-2a2v6-fz",
+              "e:47-cfr-15-231"
+            ],
+            "kind": "fact",
+            "by": "p:datapack",
+            "asserted": "2026-10-22",
+            "status": "live",
+            "confidence": "sourced",
+            "note": ""
+          }
+        ],
+        "edges": [],
+        "entities": [],
+        "perspectives": []
+      }
+    },
+    "data_results": {
+      "claims@2": {
+        "result": {
+          "rows": []
+        }
+      }
+    }
+  },
+  "expect": {
+    "ok": true,
+    "dry_run": true,
+    "written": {
+      "claims": 2,
+      "edges": 0,
+      "entities": 0,
+      "perspectives": 0
+    },
+    "sections": {
+      "datapack-flipper": 2
+    },
+    "files": [
+      "claims/datapack-flipper.jsonl",
+      "edges/edges.jsonl",
+      "entities/entities.jsonl",
+      "perspectives/perspectives.jsonl"
+    ]
+  }
+}

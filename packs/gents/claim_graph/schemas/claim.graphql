@@ -1,0 +1,22 @@
+type Claim {
+  claim_id: String @index(unique: true) @immutable
+  section: String @index @immutable
+  text: String @fulltext(language: "english") @immutable
+  quote: String @immutable
+  from_ref: String @immutable
+  sources: String @immutable
+  entities: [String!]
+  entity_text: String @immutable
+  kind: String @index @immutable
+  by: String @index @immutable
+  asserted: String @index @immutable
+  status: String @immutable
+  confidence: String @index @immutable
+  note: String @immutable
+  fit: String @immutable
+  against: String @immutable
+  ref: String @immutable
+  valid_from: String @immutable
+  valid_to: String @immutable
+  batch_id: String @index @immutable
+}

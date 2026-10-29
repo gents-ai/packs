@@ -1,0 +1,203 @@
+{
+  "assets": [
+    "README.md",
+    "agent_behaviors/claim_sme/system_prompt.md",
+    "pack_config.json",
+    "plugins/claim_export.afb",
+    "plugins/claim_export/TOOL.md",
+    "plugins/claim_gate.afb",
+    "plugins/claim_gate/TOOL.md",
+    "schemas/claim.graphql",
+    "schemas/claim_batch.graphql",
+    "schemas/edge.graphql",
+    "schemas/entity.graphql",
+    "schemas/export_receipt.graphql",
+    "schemas/export_request.graphql",
+    "schemas/gate_receipt.graphql",
+    "schemas/perspective.graphql",
+    "tests/content.json",
+    "tests/export_runtime.json",
+    "tests/gate_runtime.json",
+    "tests/gate_runtime_fail.json",
+    "tests/install.json",
+    "tools/import_jsonl.sh"
+  ],
+  "authors": [
+    "gents contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [],
+  "description": "An append-only claim graph (Claim, Edge, Entity, Perspective) admitted only through a mechanical gate plugin, exported back to JSONL, with a subject-matter expert agent that answers with claim ids.",
+  "inference_slots": [
+    {
+      "agents": [
+        "claim-sme"
+      ],
+      "description": "Answers questions from the claim graph with a claim id on every statement and files the questions it cannot answer. Any capable profile.",
+      "name": "sme"
+    }
+  ],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "claim_graph",
+  "namespace": "gents",
+  "plugins": [
+    {
+      "artifact": "plugins/claim_gate.afb",
+      "bind_dir": {
+        "access": "read",
+        "description": "Narrative source root for quote and file checks",
+        "input_field": "source_root"
+      },
+      "data": {
+        "collections": [
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective"
+        ],
+        "ops": [
+          "query"
+        ]
+      },
+      "description": "Validates a ClaimBatch like the research gate and admits its rows in one transaction with a receipt.",
+      "input_schema": {
+        "properties": {
+          "batch_id": {
+            "description": "The batch's unique id; every admitted row and the receipt carry it.",
+            "type": "string"
+          },
+          "claims": {
+            "description": "Claim lines as JSONL text.",
+            "type": "string"
+          },
+          "edges": {
+            "description": "Edge lines as JSONL text.",
+            "type": "string"
+          },
+          "entities": {
+            "description": "Entity lines as JSONL text.",
+            "type": "string"
+          },
+          "extractor": {
+            "description": "Who or what extracted the batch.",
+            "type": "string"
+          },
+          "failure_count": {
+            "type": "integer"
+          },
+          "gate_now": {
+            "description": "Fixes checked_at for reproducible plugin cases; the callback binding never sends it.",
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "perspectives": {
+            "description": "Perspective lines as JSONL text.",
+            "type": "string"
+          },
+          "sample_size": {
+            "type": "integer"
+          },
+          "section": {
+            "description": "The claims file stem the batch's claims belong to.",
+            "type": "string"
+          },
+          "source_root": {
+            "description": "The narrative source root inside an allowed folder; without it file and quote checks are skipped.",
+            "type": "string"
+          },
+          "submitted_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "batch_id"
+        ],
+        "type": "object"
+      },
+      "instructions": "plugins/claim_gate/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 128,
+        "wall_clock_secs": 60
+      },
+      "name": "claim_gate",
+      "source": "plugins/claim_gate"
+    },
+    {
+      "artifact": "plugins/claim_export.afb",
+      "bind_dir": {
+        "access": "read_write",
+        "description": "The folder the claim graph is exported into as claims/, edges/, entities/ and perspectives/ JSONL files",
+        "input_field": "out_dir",
+        "original_field": "out_dir_original"
+      },
+      "data": {
+        "collections": [
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective"
+        ],
+        "ops": [
+          "query"
+        ]
+      },
+      "description": "Exports the admitted claim graph as the research JSONL files (claims per section, edges, entities, perspectives), sorted by id, or counts them with dry_run.",
+      "input_schema": {
+        "properties": {
+          "dry_run": {
+            "default": false,
+            "description": "Return the counts only and write nothing.",
+            "type": "boolean"
+          },
+          "out_dir": {
+            "description": "The folder to write the JSONL tree into, inside an allowed folder.",
+            "type": "string"
+          },
+          "out_dir_original": {
+            "description": "Set by the host to the real path of out_dir; ignored by the plugin.",
+            "type": "string"
+          },
+          "sections": {
+            "description": "Only these claim sections; default every section.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "instructions": "plugins/claim_export/TOOL.md",
+      "language": "rust",
+      "limits": {
+        "max_output_mib": 4,
+        "memory_mib": 256,
+        "wall_clock_secs": 120
+      },
+      "name": "claim_export",
+      "source": "plugins/claim_export"
+    }
+  ],
+  "schemas": [
+    "schemas/claim.graphql",
+    "schemas/edge.graphql",
+    "schemas/entity.graphql",
+    "schemas/perspective.graphql",
+    "schemas/claim_batch.graphql",
+    "schemas/gate_receipt.graphql",
+    "schemas/export_request.graphql",
+    "schemas/export_receipt.graphql"
+  ],
+  "tags": [
+    "knowledge",
+    "claims",
+    "provenance",
+    "plugin"
+  ],
+  "version": "0.1.0"
+}

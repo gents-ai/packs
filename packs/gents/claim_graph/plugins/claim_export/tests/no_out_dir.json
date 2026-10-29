@@ -1,0 +1,10 @@
+{
+  "input": {
+    "data_calls": true
+  },
+  "expect": {
+    "ok": false,
+    "error": "out_dir is required: the allowed folder to write the JSONL tree into (or set dry_run to count only)",
+    "retryable": false
+  }
+}

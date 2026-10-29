@@ -1,0 +1,64 @@
+{
+  "input": {
+    "batch_id": "datapack-flipper-20261029-1",
+    "section": "datapack-flipper",
+    "extractor": "claim_gate plugin cases",
+    "claims": "{\"id\":\"c:flipper:001\",\"text\":\"FCC ID 2A2V6-FZ was granted to Flipper Devices Inc on 14 January 2022.\",\"quote\":\"FCC ID 2A2V6-FZ, granted 14 Jan 2022 to Flipper Devices Inc.\",\"from\":\"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\",\"sources\":[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}],\"entities\":[\"e:flipper-zero\",\"e:flipper-devices\",\"e:fcc\",\"e:fcc-grant-2a2v6-fz\",\"e:nowhere\"],\"kind\":\"date\",\"by\":\"p:ghost\",\"asserted\":\"2026-10-22\",\"status\":\"live\",\"confidence\":\"sourced\",\"note\":\"\"}",
+    "entities": "{\"id\": \"e:fcc\", \"type\": \"organisation\", \"name\": \"Federal Communications Commission\", \"aliases\": [\"FCC\"], \"note\": \"\"}\n{\"id\": \"e:fcc-grant-2a2v6-fz\", \"type\": \"document\", \"name\": \"FCC grant 2A2V6-FZ\", \"aliases\": [\"2A2V6-FZ\"], \"note\": \"Flipper Zero certification grant, 14 Jan 2022\"}\n{\"id\": \"e:flipper-devices\", \"type\": \"organisation\", \"name\": \"Flipper Devices Inc\", \"aliases\": [], \"note\": \"Grantee\"}\n{\"id\": \"e:flipper-zero\", \"type\": \"system\", \"name\": \"Flipper Zero\", \"aliases\": [\"Flipper\"], \"note\": \"Multi-tool radio device; FCC ID 2A2V6-FZ\"}",
+    "perspectives": "",
+    "sample_size": 10,
+    "failure_count": 0,
+    "note": "",
+    "submitted_at": "2026-10-29T12:00:00Z",
+    "gate_now": "2026-10-29T12:00:00Z",
+    "data_calls": true,
+    "state": {
+      "cursor": 3,
+      "pages": [],
+      "asked": [
+        "q0",
+        "q1",
+        "q2"
+      ],
+      "found": {
+        "claims": [],
+        "entities": [],
+        "perspectives": [],
+        "edges": [],
+        "historical": []
+      }
+    },
+    "data_results": {
+      "q0": {
+        "result": {
+          "rows": []
+        }
+      },
+      "q1": {
+        "result": {
+          "rows": []
+        }
+      },
+      "q2": {
+        "result": {
+          "rows": []
+        }
+      }
+    }
+  },
+  "expect": {
+    "receipt": {
+      "receipt_id": "receipt-datapack-flipper-20261029-1",
+      "verdict": "fail",
+      "errors": "[\"ERROR: c:flipper:001 unknown perspective p:ghost\",\"ERROR: c:flipper:001 unknown entity e:nowhere\"]",
+      "claims_admitted": 0,
+      "edges_admitted": 0,
+      "entities_admitted": 0,
+      "perspectives_admitted": 0,
+      "quotes_checked": 0,
+      "quotes_skipped": 1,
+      "gate_version": "0.1.0",
+      "checked_at": "2026-10-29T12:00:00Z"
+    }
+  }
+}

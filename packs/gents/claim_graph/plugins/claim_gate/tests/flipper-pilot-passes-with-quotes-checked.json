@@ -1,0 +1,371 @@
+{
+  "input": {
+    "batch_id": "datapack-flipper-20261029-1",
+    "section": "datapack-flipper",
+    "extractor": "claim_gate plugin cases",
+    "claims": "{\"id\": \"c:flipper:001\", \"text\": \"FCC ID 2A2V6-FZ was granted to Flipper Devices Inc on 14 January 2022.\", \"quote\": \"FCC ID 2A2V6-FZ, granted 14 Jan 2022 to Flipper Devices Inc.\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\", \"url\": \"https://fccid.io/2A2V6-FZ\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:flipper-zero\", \"e:flipper-devices\", \"e:fcc\", \"e:fcc-grant-2a2v6-fz\"], \"kind\": \"date\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:002\", \"text\": \"The Flipper Zero grant certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under 47 CFR 15.231 in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.\", \"quote\": \"It certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under Part 15.231 (periodic remote-control rules) in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\", \"url\": \"https://fccid.io/2A2V6-FZ\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:fcc-grant-2a2v6-fz\", \"e:47-cfr-15-231\"], \"kind\": \"fact\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:003\", \"text\": \"The Flipper Zero grant's public exhibits include the manual, photos and test reports; the schematic, block diagram and operational description are under long-term confidentiality.\", \"quote\": \"Public exhibits include the manual, photos and test reports; the schematic, block diagram and operational description are under long-term confidentiality.\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\", \"url\": \"https://fccid.io/2A2V6-FZ\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:fcc-grant-2a2v6-fz\"], \"kind\": \"fact\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:004\", \"text\": \"No software-defined-radio declaration appears in the exhibit list of the Flipper Zero grant.\", \"quote\": \"No SDR declaration appears in the exhibit list\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\", \"url\": \"https://fccid.io/2A2V6-FZ\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:fcc-grant-2a2v6-fz\", \"e:47-cfr-2-944\"], \"kind\": \"fact\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"inferred\", \"note\": \"A claim about an absence in a public exhibit list\"}\n{\"id\": \"c:flipper:005\", \"text\": \"An FCC certification grant is issued by an FCC-recognised Telecommunication Certification Body on accredited laboratory data and is posted to the FCC's public database.\", \"quote\": \"A certification grant is issued by an FCC-recognised Telecommunication Certification Body on accredited lab data and posted to the public database\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-equipment-authorisation.pdf\", \"url\": \"https://www.fcc.gov/node/23689\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:fcc\", \"e:fcc-tcb\"], \"kind\": \"rule\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:006\", \"text\": \"The Flipper Zero attestation exists, is public and names the grantee, but does not name a firmware hash.\", \"quote\": \"So the attestation exists, is public, and names the grantee; what it does not name is a firmware hash.\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\", \"url\": \"https://fccid.io/2A2V6-FZ\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:fcc-grant-2a2v6-fz\", \"e:binding\", \"e:firmware-hash-binding\"], \"kind\": \"fact\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:007\", \"text\": \"47 CFR 15.15(b) requires a device to be designed so that no user-accessible control can take it outside the rules.\", \"quote\": \"A device must be designed so no user-accessible control can take it outside the rules\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/47-cfr-15-15.pdf\", \"url\": \"https://www.law.cornell.edu/cfr/text/47/15.15\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:47-cfr-15-15\", \"e:fcc\"], \"kind\": \"rule\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:008\", \"text\": \"47 CFR 2.944 requires that for software-defined radios only approved software may load, enforced by authenticated download, signatures or hardware codes.\", \"quote\": \"For software-defined radios, only approved software may load, enforced by authenticated download, signatures or hardware codes\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/47-cfr-2-944.pdf\", \"url\": \"https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-2/subpart-J/subject-group-ECFRd5ad3b739dbf27a/section-2.944\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:47-cfr-2-944\", \"e:fcc\"], \"kind\": \"rule\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:009\", \"text\": \"Under 47 CFR 2.944, if third parties are expected to modify the software that controls RF behaviour, the device must be certified as a software-defined radio.\", \"quote\": \"if third parties are expected to modify RF-controlling software, the device must be certified as an SDR\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/47-cfr-2-944.pdf\", \"url\": \"https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-2/subpart-J/subject-group-ECFRd5ad3b739dbf27a/section-2.944\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:47-cfr-2-944\", \"e:fcc\"], \"kind\": \"rule\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}\n{\"id\": \"c:flipper:010\", \"text\": \"47 CFR 2.1043 defines three classes of permissive change: Class I with no filing, Class II where the grantee files test data, and Class III for SDR software exceeding approved limits, which needs new test data.\", \"quote\": \"Permissive changes: Class I (no filing), Class II (grantee files test data), Class III (SDR software exceeding approved limits, new test data)\", \"from\": \"datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero\", \"sources\": [{\"doc\": \"docpack/05-device-certification-flipper-zero/47-cfr-2-1043.pdf\", \"url\": \"https://www.law.cornell.edu/cfr/text/47/2.1043\", \"fetched\": \"2026-10-17\"}], \"entities\": [\"e:47-cfr-2-1043\", \"e:fcc\"], \"kind\": \"rule\", \"by\": \"p:datapack\", \"asserted\": \"2026-10-22\", \"status\": \"live\", \"confidence\": \"sourced\", \"note\": \"\"}",
+    "entities": "{\"id\": \"e:47-cfr-15-15\", \"type\": \"regulation\", \"name\": \"47 CFR 15.15\", \"aliases\": [], \"note\": \"General technical requirements; 15.15(b) user controls\"}\n{\"id\": \"e:47-cfr-15-231\", \"type\": \"regulation\", \"name\": \"47 CFR 15.231\", \"aliases\": [\"Part 15.231\"], \"note\": \"Periodic operation in 40.66-40.70 MHz and above 70 MHz\"}\n{\"id\": \"e:47-cfr-2-1043\", \"type\": \"regulation\", \"name\": \"47 CFR 2.1043\", \"aliases\": [], \"note\": \"Permissive changes\"}\n{\"id\": \"e:47-cfr-2-944\", \"type\": \"regulation\", \"name\": \"47 CFR 2.944\", \"aliases\": [], \"note\": \"Software defined radios\"}\n{\"id\": \"e:binding\", \"type\": \"concept\", \"name\": \"Binding\", \"aliases\": [], \"note\": \"Nine-element model\"}\n{\"id\": \"e:fcc\", \"type\": \"organisation\", \"name\": \"Federal Communications Commission\", \"aliases\": [\"FCC\"], \"note\": \"\"}\n{\"id\": \"e:fcc-grant-2a2v6-fz\", \"type\": \"document\", \"name\": \"FCC grant 2A2V6-FZ\", \"aliases\": [\"2A2V6-FZ\"], \"note\": \"Flipper Zero certification grant, 14 Jan 2022\"}\n{\"id\": \"e:fcc-tcb\", \"type\": \"concept\", \"name\": \"Telecommunication Certification Body\", \"aliases\": [\"TCB\"], \"note\": \"FCC-recognised body that issues certification grants\"}\n{\"id\": \"e:firmware-hash-binding\", \"type\": \"concept\", \"name\": \"Binding a certification to a firmware hash\", \"aliases\": [\"firmware-bound certification\"], \"note\": \"The datapack's proposal for radios\"}\n{\"id\": \"e:flipper-devices\", \"type\": \"organisation\", \"name\": \"Flipper Devices Inc\", \"aliases\": [], \"note\": \"Grantee\"}\n{\"id\": \"e:flipper-zero\", \"type\": \"system\", \"name\": \"Flipper Zero\", \"aliases\": [\"Flipper\"], \"note\": \"Multi-tool radio device; FCC ID 2A2V6-FZ\"}",
+    "perspectives": "{\"id\": \"p:datapack\", \"name\": \"The datapack position\", \"kind\": \"position\", \"note\": \"Mike and Claude, as written in datapack.md and internal-pitch.md 17–20 Oct 2026, with the 20 Oct corrections\"}",
+    "sample_size": 10,
+    "failure_count": 0,
+    "note": "",
+    "submitted_at": "2026-10-29T12:00:00Z",
+    "gate_now": "2026-10-29T12:00:00Z",
+    "data_calls": true,
+    "source_root": "fixtures/research",
+    "state": {
+      "cursor": 4,
+      "pages": [],
+      "asked": [
+        "q0",
+        "q1",
+        "q2",
+        "q3"
+      ],
+      "found": {
+        "claims": [],
+        "entities": [],
+        "perspectives": [],
+        "edges": [],
+        "historical": []
+      }
+    },
+    "data_results": {
+      "q0": {
+        "result": {
+          "rows": []
+        }
+      },
+      "q1": {
+        "result": {
+          "rows": []
+        }
+      },
+      "q2": {
+        "result": {
+          "rows": []
+        }
+      },
+      "q3": {
+        "result": {
+          "rows": []
+        }
+      }
+    }
+  },
+  "expect": {
+    "receipt": {
+      "receipt_id": "receipt-datapack-flipper-20261029-1",
+      "verdict": "pass",
+      "errors": "[]",
+      "claims_admitted": 10,
+      "edges_admitted": 0,
+      "entities_admitted": 11,
+      "perspectives_admitted": 1,
+      "quotes_checked": 10,
+      "quotes_skipped": 0,
+      "gate_version": "0.1.0",
+      "checked_at": "2026-10-29T12:00:00Z"
+    },
+    "claims": [
+      {
+        "claim_id": "c:flipper:001",
+        "section": "datapack-flipper",
+        "text": "FCC ID 2A2V6-FZ was granted to Flipper Devices Inc on 14 January 2022.",
+        "quote": "FCC ID 2A2V6-FZ, granted 14 Jan 2022 to Flipper Devices Inc.",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:flipper-zero",
+          "e:flipper-devices",
+          "e:fcc",
+          "e:fcc-grant-2a2v6-fz"
+        ],
+        "entity_text": " e:flipper-zero e:flipper-devices e:fcc e:fcc-grant-2a2v6-fz ",
+        "kind": "date",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:002",
+        "section": "datapack-flipper",
+        "text": "The Flipper Zero grant certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under 47 CFR 15.231 in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.",
+        "quote": "It certifies Bluetooth at 2.4 GHz, a 13.56 MHz NFC device, and sub-GHz transmission under Part 15.231 (periodic remote-control rules) in three windows only: 304.5-321.95, 433.075-434.775 and 915-927.95 MHz.",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:fcc-grant-2a2v6-fz",
+          "e:47-cfr-15-231"
+        ],
+        "entity_text": " e:fcc-grant-2a2v6-fz e:47-cfr-15-231 ",
+        "kind": "fact",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:003",
+        "section": "datapack-flipper",
+        "text": "The Flipper Zero grant's public exhibits include the manual, photos and test reports; the schematic, block diagram and operational description are under long-term confidentiality.",
+        "quote": "Public exhibits include the manual, photos and test reports; the schematic, block diagram and operational description are under long-term confidentiality.",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:fcc-grant-2a2v6-fz"
+        ],
+        "entity_text": " e:fcc-grant-2a2v6-fz ",
+        "kind": "fact",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:004",
+        "section": "datapack-flipper",
+        "text": "No software-defined-radio declaration appears in the exhibit list of the Flipper Zero grant.",
+        "quote": "No SDR declaration appears in the exhibit list",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:fcc-grant-2a2v6-fz",
+          "e:47-cfr-2-944"
+        ],
+        "entity_text": " e:fcc-grant-2a2v6-fz e:47-cfr-2-944 ",
+        "kind": "fact",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "inferred",
+        "note": "A claim about an absence in a public exhibit list"
+      },
+      {
+        "claim_id": "c:flipper:005",
+        "section": "datapack-flipper",
+        "text": "An FCC certification grant is issued by an FCC-recognised Telecommunication Certification Body on accredited laboratory data and is posted to the FCC's public database.",
+        "quote": "A certification grant is issued by an FCC-recognised Telecommunication Certification Body on accredited lab data and posted to the public database",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-equipment-authorisation.pdf\",\"url\":\"https://www.fcc.gov/node/23689\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:fcc",
+          "e:fcc-tcb"
+        ],
+        "entity_text": " e:fcc e:fcc-tcb ",
+        "kind": "rule",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:006",
+        "section": "datapack-flipper",
+        "text": "The Flipper Zero attestation exists, is public and names the grantee, but does not name a firmware hash.",
+        "quote": "So the attestation exists, is public, and names the grantee; what it does not name is a firmware hash.",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/fcc-id-2a2v6-fz-fccid-io-mirror.pdf\",\"url\":\"https://fccid.io/2A2V6-FZ\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:fcc-grant-2a2v6-fz",
+          "e:binding",
+          "e:firmware-hash-binding"
+        ],
+        "entity_text": " e:fcc-grant-2a2v6-fz e:binding e:firmware-hash-binding ",
+        "kind": "fact",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:007",
+        "section": "datapack-flipper",
+        "text": "47 CFR 15.15(b) requires a device to be designed so that no user-accessible control can take it outside the rules.",
+        "quote": "A device must be designed so no user-accessible control can take it outside the rules",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/47-cfr-15-15.pdf\",\"url\":\"https://www.law.cornell.edu/cfr/text/47/15.15\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:47-cfr-15-15",
+          "e:fcc"
+        ],
+        "entity_text": " e:47-cfr-15-15 e:fcc ",
+        "kind": "rule",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:008",
+        "section": "datapack-flipper",
+        "text": "47 CFR 2.944 requires that for software-defined radios only approved software may load, enforced by authenticated download, signatures or hardware codes.",
+        "quote": "For software-defined radios, only approved software may load, enforced by authenticated download, signatures or hardware codes",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/47-cfr-2-944.pdf\",\"url\":\"https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-2/subpart-J/subject-group-ECFRd5ad3b739dbf27a/section-2.944\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:47-cfr-2-944",
+          "e:fcc"
+        ],
+        "entity_text": " e:47-cfr-2-944 e:fcc ",
+        "kind": "rule",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:009",
+        "section": "datapack-flipper",
+        "text": "Under 47 CFR 2.944, if third parties are expected to modify the software that controls RF behaviour, the device must be certified as a software-defined radio.",
+        "quote": "if third parties are expected to modify RF-controlling software, the device must be certified as an SDR",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/47-cfr-2-944.pdf\",\"url\":\"https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-2/subpart-J/subject-group-ECFRd5ad3b739dbf27a/section-2.944\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:47-cfr-2-944",
+          "e:fcc"
+        ],
+        "entity_text": " e:47-cfr-2-944 e:fcc ",
+        "kind": "rule",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      },
+      {
+        "claim_id": "c:flipper:010",
+        "section": "datapack-flipper",
+        "text": "47 CFR 2.1043 defines three classes of permissive change: Class I with no filing, Class II where the grantee files test data, and Class III for SDR software exceeding approved limits, which needs new test data.",
+        "quote": "Permissive changes: Class I (no filing), Class II (grantee files test data), Class III (SDR software exceeding approved limits, new test data)",
+        "from_ref": "datapack.md#the-worked-example-radio-equipment-certification-and-flipper-zero",
+        "sources": "[{\"doc\":\"docpack/05-device-certification-flipper-zero/47-cfr-2-1043.pdf\",\"url\":\"https://www.law.cornell.edu/cfr/text/47/2.1043\",\"fetched\":\"2026-10-17\"}]",
+        "entities": [
+          "e:47-cfr-2-1043",
+          "e:fcc"
+        ],
+        "entity_text": " e:47-cfr-2-1043 e:fcc ",
+        "kind": "rule",
+        "by": "p:datapack",
+        "asserted": "2026-10-22",
+        "status": "live",
+        "confidence": "sourced",
+        "note": ""
+      }
+    ],
+    "entities": [
+      {
+        "entity_id": "e:47-cfr-15-15",
+        "entity_type": "regulation",
+        "name": "47 CFR 15.15",
+        "alias_text": " 47 cfr 15.15 ",
+        "note": "General technical requirements; 15.15(b) user controls"
+      },
+      {
+        "entity_id": "e:47-cfr-15-231",
+        "entity_type": "regulation",
+        "name": "47 CFR 15.231",
+        "aliases": [
+          "Part 15.231"
+        ],
+        "alias_text": " 47 cfr 15.231 part 15.231 ",
+        "note": "Periodic operation in 40.66-40.70 MHz and above 70 MHz"
+      },
+      {
+        "entity_id": "e:47-cfr-2-1043",
+        "entity_type": "regulation",
+        "name": "47 CFR 2.1043",
+        "alias_text": " 47 cfr 2.1043 ",
+        "note": "Permissive changes"
+      },
+      {
+        "entity_id": "e:47-cfr-2-944",
+        "entity_type": "regulation",
+        "name": "47 CFR 2.944",
+        "alias_text": " 47 cfr 2.944 ",
+        "note": "Software defined radios"
+      },
+      {
+        "entity_id": "e:binding",
+        "entity_type": "concept",
+        "name": "Binding",
+        "alias_text": " binding ",
+        "note": "Nine-element model"
+      },
+      {
+        "entity_id": "e:fcc",
+        "entity_type": "organisation",
+        "name": "Federal Communications Commission",
+        "aliases": [
+          "FCC"
+        ],
+        "alias_text": " federal communications commission fcc ",
+        "note": ""
+      },
+      {
+        "entity_id": "e:fcc-grant-2a2v6-fz",
+        "entity_type": "document",
+        "name": "FCC grant 2A2V6-FZ",
+        "aliases": [
+          "2A2V6-FZ"
+        ],
+        "alias_text": " fcc grant 2a2v6-fz 2a2v6-fz ",
+        "note": "Flipper Zero certification grant, 14 Jan 2022"
+      },
+      {
+        "entity_id": "e:fcc-tcb",
+        "entity_type": "concept",
+        "name": "Telecommunication Certification Body",
+        "aliases": [
+          "TCB"
+        ],
+        "alias_text": " telecommunication certification body tcb ",
+        "note": "FCC-recognised body that issues certification grants"
+      },
+      {
+        "entity_id": "e:firmware-hash-binding",
+        "entity_type": "concept",
+        "name": "Binding a certification to a firmware hash",
+        "aliases": [
+          "firmware-bound certification"
+        ],
+        "alias_text": " binding a certification to a firmware hash firmware-bound certification ",
+        "note": "The datapack's proposal for radios"
+      },
+      {
+        "entity_id": "e:flipper-devices",
+        "entity_type": "organisation",
+        "name": "Flipper Devices Inc",
+        "alias_text": " flipper devices inc ",
+        "note": "Grantee"
+      },
+      {
+        "entity_id": "e:flipper-zero",
+        "entity_type": "system",
+        "name": "Flipper Zero",
+        "aliases": [
+          "Flipper"
+        ],
+        "alias_text": " flipper zero flipper ",
+        "note": "Multi-tool radio device; FCC ID 2A2V6-FZ"
+      }
+    ],
+    "perspectives": [
+      {
+        "perspective_id": "p:datapack",
+        "name": "The datapack position",
+        "kind": "position",
+        "note": "Mike and Claude, as written in datapack.md and internal-pitch.md 17–20 Oct 2026, with the 20 Oct corrections"
+      }
+    ]
+  },
+  "bind": "fixtures/research"
+}

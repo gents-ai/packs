@@ -1,0 +1,25 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ExportRequest",
+      "fields": {
+        "request_id": "rt-export-${ATTEMPT}",
+        "dry_run": true,
+        "note": "dry run over an empty graph",
+        "submitted_at": "2026-10-29T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "ExportReceipt"
+    },
+    "expect": [
+      {
+        "collection": "ExportReceipt",
+        "fields": {
+          "ok": true,
+          "dry_run": true
+        }
+      }
+    ]
+  }
+}

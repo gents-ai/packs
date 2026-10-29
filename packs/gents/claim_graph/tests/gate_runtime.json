@@ -1,0 +1,64 @@
+{
+  "runtime": {
+    "repository": {
+      "files": {
+        "notes/narrative.md": "# Fixture\n\n## The fixture\n\nThe device carries a grant, granted 14 Jan 2022 to Example Devices, for three bands.\n",
+        "docs/grant.txt": "Grant record for the example device.\n"
+      }
+    },
+    "seed": {
+      "collection": "ClaimBatch",
+      "fields": {
+        "batch_id": "rt-pass-${ATTEMPT}",
+        "section": "rt-fixture",
+        "extractor": "test",
+        "source_root": "${REPOSITORY}",
+        "claims": "{\"id\":\"c:rt:001\",\"text\":\"The fixture grant was issued to Example Devices on 14 January 2022.\",\"quote\":\"granted 14 Jan 2022 to Example Devices\",\"from\":\"notes/narrative.md#the-fixture\",\"sources\":[{\"doc\":\"docs/grant.txt\",\"url\":\"https://example.org/grant\",\"fetched\":\"2026-10-29\"}],\"entities\":[\"e:rt-device\"],\"kind\":\"date\",\"by\":\"p:rt-author\",\"asserted\":\"2026-10-29\",\"status\":\"live\",\"confidence\":\"sourced\",\"note\":\"\"}\n",
+        "entities": "{\"id\":\"e:rt-device\",\"type\":\"system\",\"name\":\"Example Device\",\"aliases\":[\"Device\"],\"note\":\"\"}\n",
+        "perspectives": "{\"id\":\"p:rt-author\",\"name\":\"The fixture author\",\"kind\":\"person\",\"note\":\"\"}\n",
+        "submitted_at": "2026-10-29T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "GateReceipt"
+    },
+    "expect": [
+      {
+        "collection": "GateReceipt",
+        "fields": {
+          "verdict": "pass",
+          "claims_admitted": 1,
+          "entities_admitted": 1,
+          "perspectives_admitted": 1,
+          "quotes_checked": 1,
+          "quotes_skipped": 0
+        }
+      },
+      {
+        "collection": "Claim",
+        "fields": {
+          "claim_id": "c:rt:001",
+          "section": "rt-fixture",
+          "from_ref": "notes/narrative.md#the-fixture",
+          "kind": "date",
+          "confidence": "sourced"
+        }
+      },
+      {
+        "collection": "Entity",
+        "fields": {
+          "entity_id": "e:rt-device",
+          "entity_type": "system",
+          "name": "Example Device"
+        }
+      },
+      {
+        "collection": "Perspective",
+        "fields": {
+          "perspective_id": "p:rt-author",
+          "kind": "person"
+        }
+      }
+    ]
+  }
+}

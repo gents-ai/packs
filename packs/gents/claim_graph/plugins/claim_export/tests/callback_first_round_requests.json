@@ -1,0 +1,410 @@
+{
+  "input": {
+    "request_id": "req-1",
+    "dry_run": true,
+    "data_calls": true,
+    "out_dir": "",
+    "sections": "",
+    "submitted_at": "x"
+  },
+  "expect": {
+    "data_calls": {
+      "requests": [
+        {
+          "id": "claims@0",
+          "query": {
+            "collection": "Claim",
+            "filter": {},
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "claim_id",
+              "section",
+              "text",
+              "quote",
+              "from_ref",
+              "sources",
+              "entities",
+              "kind",
+              "by",
+              "asserted",
+              "status",
+              "confidence",
+              "note",
+              "fit",
+              "against",
+              "ref",
+              "valid_from",
+              "valid_to"
+            ]
+          }
+        },
+        {
+          "id": "claims@256",
+          "query": {
+            "collection": "Claim",
+            "filter": {},
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "claim_id",
+              "section",
+              "text",
+              "quote",
+              "from_ref",
+              "sources",
+              "entities",
+              "kind",
+              "by",
+              "asserted",
+              "status",
+              "confidence",
+              "note",
+              "fit",
+              "against",
+              "ref",
+              "valid_from",
+              "valid_to"
+            ]
+          }
+        },
+        {
+          "id": "claims@512",
+          "query": {
+            "collection": "Claim",
+            "filter": {},
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "claim_id",
+              "section",
+              "text",
+              "quote",
+              "from_ref",
+              "sources",
+              "entities",
+              "kind",
+              "by",
+              "asserted",
+              "status",
+              "confidence",
+              "note",
+              "fit",
+              "against",
+              "ref",
+              "valid_from",
+              "valid_to"
+            ]
+          }
+        },
+        {
+          "id": "claims@768",
+          "query": {
+            "collection": "Claim",
+            "filter": {},
+            "order": {
+              "claim_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "claim_id",
+              "section",
+              "text",
+              "quote",
+              "from_ref",
+              "sources",
+              "entities",
+              "kind",
+              "by",
+              "asserted",
+              "status",
+              "confidence",
+              "note",
+              "fit",
+              "against",
+              "ref",
+              "valid_from",
+              "valid_to"
+            ]
+          }
+        },
+        {
+          "id": "edges@0",
+          "query": {
+            "collection": "Edge",
+            "filter": {},
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by",
+              "date",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "edges@256",
+          "query": {
+            "collection": "Edge",
+            "filter": {},
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by",
+              "date",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "edges@512",
+          "query": {
+            "collection": "Edge",
+            "filter": {},
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by",
+              "date",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "edges@768",
+          "query": {
+            "collection": "Edge",
+            "filter": {},
+            "order": {
+              "edge_key": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "edge_key",
+              "from_claim",
+              "to_claim",
+              "edge_type",
+              "by",
+              "date",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "entities@0",
+          "query": {
+            "collection": "Entity",
+            "filter": {},
+            "order": {
+              "entity_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "entity_id",
+              "entity_type",
+              "name",
+              "aliases",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "entities@256",
+          "query": {
+            "collection": "Entity",
+            "filter": {},
+            "order": {
+              "entity_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "entity_id",
+              "entity_type",
+              "name",
+              "aliases",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "entities@512",
+          "query": {
+            "collection": "Entity",
+            "filter": {},
+            "order": {
+              "entity_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "entity_id",
+              "entity_type",
+              "name",
+              "aliases",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "entities@768",
+          "query": {
+            "collection": "Entity",
+            "filter": {},
+            "order": {
+              "entity_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "entity_id",
+              "entity_type",
+              "name",
+              "aliases",
+              "note"
+            ]
+          }
+        },
+        {
+          "id": "perspectives@0",
+          "query": {
+            "collection": "Perspective",
+            "filter": {},
+            "order": {
+              "perspective_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 0,
+            "fields": [
+              "perspective_id",
+              "name",
+              "kind",
+              "note",
+              "did"
+            ]
+          }
+        },
+        {
+          "id": "perspectives@256",
+          "query": {
+            "collection": "Perspective",
+            "filter": {},
+            "order": {
+              "perspective_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 256,
+            "fields": [
+              "perspective_id",
+              "name",
+              "kind",
+              "note",
+              "did"
+            ]
+          }
+        },
+        {
+          "id": "perspectives@512",
+          "query": {
+            "collection": "Perspective",
+            "filter": {},
+            "order": {
+              "perspective_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 512,
+            "fields": [
+              "perspective_id",
+              "name",
+              "kind",
+              "note",
+              "did"
+            ]
+          }
+        },
+        {
+          "id": "perspectives@768",
+          "query": {
+            "collection": "Perspective",
+            "filter": {},
+            "order": {
+              "perspective_id": "ASC"
+            },
+            "limit": 256,
+            "offset": 768,
+            "fields": [
+              "perspective_id",
+              "name",
+              "kind",
+              "note",
+              "did"
+            ]
+          }
+        }
+      ],
+      "state": {
+        "cursors": {
+          "claims": {
+            "next": 0,
+            "done": false,
+            "short": false
+          },
+          "edges": {
+            "next": 0,
+            "done": false,
+            "short": false
+          },
+          "entities": {
+            "next": 0,
+            "done": false,
+            "short": false
+          },
+          "perspectives": {
+            "next": 0,
+            "done": false,
+            "short": false
+          }
+        },
+        "rows": {
+          "claims": [],
+          "edges": [],
+          "entities": [],
+          "perspectives": []
+        }
+      }
+    }
+  }
+}
