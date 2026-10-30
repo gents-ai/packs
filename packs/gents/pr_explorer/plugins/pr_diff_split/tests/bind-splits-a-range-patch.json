@@ -1,0 +1,106 @@
+{
+  "input": {
+    "patch": "range.patch",
+    "analysis_id": "fixture-1",
+    "max_files": 3
+  },
+  "bind": "fixtures/.pr-explorer/patches",
+  "expect": {
+    "analysis_id": "fixture-1",
+    "total_files": 4,
+    "offset": 0,
+    "next_offset": 3,
+    "dropped_over_limit": 0,
+    "files": [
+      {
+        "ordinal": 0,
+        "path": "kept.md",
+        "old_path": "keep.md",
+        "change": "R",
+        "binary": false,
+        "additions": 0,
+        "deletions": 0,
+        "truncated": false
+      },
+      {
+        "ordinal": 1,
+        "path": "lib.rs",
+        "old_path": "lib.rs",
+        "change": "M",
+        "binary": false,
+        "additions": 1,
+        "deletions": 1,
+        "truncated": false
+      },
+      {
+        "ordinal": 2,
+        "path": "new file.md",
+        "old_path": "new file.md",
+        "change": "A",
+        "binary": false,
+        "additions": 1,
+        "deletions": 0,
+        "truncated": false
+      }
+    ],
+    "writes": [
+      {
+        "op": "insert",
+        "collection": "PrExplorerDiff",
+        "on_conflict": "ignore",
+        "fields": {
+          "file_key": "fixture-1:0",
+          "analysis_id": "fixture-1",
+          "ordinal": 0,
+          "path": "kept.md",
+          "old_path": "keep.md",
+          "change": "R",
+          "binary": false,
+          "additions": 0,
+          "deletions": 0,
+          "diff": "diff --git a/keep.md b/kept.md\nsimilarity index 100%\nrename from keep.md\nrename to kept.md\n",
+          "diff_bytes": 91,
+          "truncated": false
+        }
+      },
+      {
+        "op": "insert",
+        "collection": "PrExplorerDiff",
+        "on_conflict": "ignore",
+        "fields": {
+          "file_key": "fixture-1:1",
+          "analysis_id": "fixture-1",
+          "ordinal": 1,
+          "path": "lib.rs",
+          "old_path": "lib.rs",
+          "change": "M",
+          "binary": false,
+          "additions": 1,
+          "deletions": 1,
+          "diff": "diff --git a/lib.rs b/lib.rs\nindex 83021ca..dc090a8 100644\n--- a/lib.rs\n+++ b/lib.rs\n@@ -1,2 +1,2 @@\n fn a() {}\n-fn b() {}\n+fn b() -> u8 { 1 }\n",
+          "diff_bytes": 143,
+          "truncated": false
+        }
+      },
+      {
+        "op": "insert",
+        "collection": "PrExplorerDiff",
+        "on_conflict": "ignore",
+        "fields": {
+          "file_key": "fixture-1:2",
+          "analysis_id": "fixture-1",
+          "ordinal": 2,
+          "path": "new file.md",
+          "old_path": "new file.md",
+          "change": "A",
+          "binary": false,
+          "additions": 1,
+          "deletions": 0,
+          "diff": "diff --git a/new file.md b/new file.md\nnew file mode 100644\nindex 0000000..4f7fd6a\n--- /dev/null\n+++ b/new file.md\t\n@@ -0,0 +1 @@\n+# new\n",
+          "diff_bytes": 137,
+          "truncated": false
+        }
+      }
+    ]
+  }
+}

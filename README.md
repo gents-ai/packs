@@ -352,6 +352,8 @@ builds.
 | [mailbox](packs/gents/mailbox/README.md) | Explicit human-attention tool surface |
 | [ocr](packs/gents/ocr/README.md) | A Document reader agent and an ocr plugin that read PDF, EPUB, Office, OpenDocument, HTML and image files into Markdown, OCR included |
 | [pipeline](packs/gents/pipeline/README.md) | Minimal document-trigger pipeline |
+| [pr_explorer](packs/gents/pr_explorer/README.md) | A PR Explorer agent and the pr_diff_split plugin that diff a GitHub pull request or a local branch range, store each file's diff, and group the files into logical units for review |
+| [pr_explorer_ux](packs/gents/pr_explorer_ux/README.md) | The PR Explorer page: an analysis's units on the left, the selected file's unified diff on the right, and a chip that opens it from chat |
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
 | [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |
 | [security_scan](packs/gents/security_scan/README.md) | Whole-codebase discovery and verification |

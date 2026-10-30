@@ -1,0 +1,121 @@
+{
+  "manifest_version": 1,
+  "name": "pr_explorer",
+  "namespace": "gents",
+  "version": "0.4.0",
+  "description": "PR Explorer's analysis half: a pr-explorer agent that diffs a local branch range or a GitHub pull request (fetched by commit into a local clone) with git, splits the patch per file with the pr_diff_split plugin, groups the files into logical units, and records them in the pr_explorer surface the PR Explorer page reads.",
+  "authors": [
+    "gents contributors"
+  ],
+  "tags": [
+    "code-review",
+    "diff",
+    "ux"
+  ],
+  "kind": "documents",
+  "dependencies": [],
+  "config": "pack_config.json",
+  "assets": [
+    "README.md",
+    "agent_behaviors/pr_explorer/system_prompt.md",
+    "pack_config.json",
+    "plugins/pr_diff_split.afb",
+    "plugins/pr_diff_split/TOOL.md",
+    "schemas/pr_explorer_analysis.graphql",
+    "schemas/pr_explorer_diff.graphql",
+    "schemas/pr_explorer_unit.graphql",
+    "tests/content.json",
+    "tests/install.json"
+  ],
+  "schemas": [
+    "schemas/pr_explorer_analysis.graphql",
+    "schemas/pr_explorer_diff.graphql",
+    "schemas/pr_explorer_unit.graphql"
+  ],
+  "inference_slots": [
+    {
+      "name": "analyzer",
+      "description": "Groups a branch range's changed files into logical units and summarizes each. Any capable profile.",
+      "agents": [
+        "pr-explorer"
+      ]
+    }
+  ],
+  "plugins": [
+    {
+      "name": "pr_diff_split",
+      "description": "Splits a git diff patch in <root>/.pr-explorer/patches into one PrExplorerDiff document per changed file (bounded per file, paged per call), returns the file list without diff text, and deletes the patch on a final remove_patch call.",
+      "artifact": "plugins/pr_diff_split.afb",
+      "source": "plugins/pr_diff_split",
+      "language": "rust",
+      "instructions": "plugins/pr_diff_split/TOOL.md",
+      "bind_dir": {
+        "input_field": "dir",
+        "description": "The <root>/.pr-explorer/patches folder holding the patch file (written only by remove_patch)",
+        "access": "read_write",
+        "write_fields": [
+          "remove_patch"
+        ]
+      },
+      "data": {
+        "collections": [
+          "PrExplorerDiff"
+        ],
+        "ops": [
+          "insert"
+        ]
+      },
+      "limits": {
+        "memory_mib": 1024,
+        "wall_clock_secs": 120,
+        "max_output_mib": 4
+      },
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dir",
+          "patch",
+          "analysis_id"
+        ],
+        "properties": {
+          "dir": {
+            "type": "string",
+            "description": "Absolute path of <root>/.pr-explorer/patches. Read-only unless remove_patch is set; the plugin refuses any other folder."
+          },
+          "patch": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]{0,113}\\.patch$",
+            "description": "The patch file's name in dir, e.g. <analysis_id>.patch. A name, never a path."
+          },
+          "analysis_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$",
+            "description": "The analysis every written file document belongs to."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "First file (0-based, patch order) to write; pass the previous call's next_offset."
+          },
+          "max_files": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Files per call. Defaults to 100."
+          },
+          "max_file_bytes": {
+            "type": "integer",
+            "minimum": 1024,
+            "maximum": 262144,
+            "description": "Bound on each file's stored diff. Defaults to 262144."
+          },
+          "remove_patch": {
+            "type": "boolean",
+            "description": "Delete the patch file and do nothing else. Call once, after every page is stored. Needs write access to dir."
+          }
+        }
+      }
+    }
+  ]
+}

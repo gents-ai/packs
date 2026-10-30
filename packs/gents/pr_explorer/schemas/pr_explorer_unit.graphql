@@ -1,0 +1,11 @@
+# One logical unit of an analysis, written by the pr-explorer agent.
+# `files` is a JSON array of paths encoded as a string (a mutation never
+# carries `[]`); every changed file belongs to exactly one unit.
+type PrExplorerUnit {
+  analysis_id: String
+  unit_id: String
+  ordinal: Int
+  title: String
+  summary: String
+  files: String
+}

@@ -1,0 +1,48 @@
+{
+  "jq": [
+    {
+      "name": "the page's three read tools and the agent's two record tools are exactly the surface",
+      "expr": "[.config.datastore_tool_surfaces[] | select(.surface_id == \"pr_explorer\") | .entries.entries[].tool_name] | sort == [\"pr_list_analyses\", \"pr_list_files\", \"pr_list_units\", \"pr_record_analysis\", \"pr_record_unit\"]"
+    },
+    {
+      "name": "the surface's create tools fill nothing at runtime, so the page could call them (it does not)",
+      "expr": "[.config.datastore_tool_surfaces[].entries.entries[] | select(.kind != \"query\") | .fields[] | select(type == \"object\" and has(\"fill\"))] | length == 0"
+    },
+    {
+      "name": "the plugin binds only the patches folder, writable only for remove_patch, and may only insert PrExplorerDiff",
+      "expr": "[.manifest.plugins[] | select(.name == \"pr_diff_split\")][0] | .bind_dir.input_field == \"dir\" and .bind_dir.access == \"read_write\" and .bind_dir.write_fields == [\"remove_patch\"] and .data.collections == [\"PrExplorerDiff\"] and .data.ops == [\"insert\"]"
+    },
+    {
+      "name": "bash runs only the listed programs, token for token: no shell strings, no git -C, no push/checkout/config",
+      "expr": "[.config.tools[] | select(.tools_id == \"pr-explorer-tools\")][0].host.bash | .network_mode == \"enabled\" and .allowed_argv_prefixes == [[\"git\",  \"rev-parse\"],  [\"git\",  \"merge-base\"],  [\"git\",  \"diff\"],  [\"git\",  \"log\"],  [\"git\",  \"show\"],  [\"git\",  \"ls-files\"],  [\"git\",  \"remote\",  \"get-url\"],  [\"git\",  \"worktree\",  \"list\"],  [\"git\",  \"fetch\",  \"--no-tags\",  \"origin\"],  [\"gh\",  \"pr\",  \"view\"],  [\"date\",  \"-u\"],  [\"mkdir\",  \"-p\"]] and ([.allowed_argv_prefixes[] | select(.[0] == \"/bin/sh\" or .[0] == \"sh\" or (.[0] == \"git\" and (.[1] == \"-C\" or .[1] == \"-c\" or .[1] == \"push\" or .[1] == \"checkout\" or .[1] == \"config\" or .[1] == \"update-ref\")))] | length == 0)"
+    },
+    {
+      "name": "units carry files as a JSON string, never a list field",
+      "expr": ".assets[\"schemas/pr_explorer_unit.graphql\"] | test(\"files: String\")"
+    },
+    {
+      "name": "PrExplorerDiff has exactly one unique key (file_key), which the plugin's on_conflict writes need",
+      "expr": ".assets[\"schemas/pr_explorer_diff.graphql\"] | ([scan(\"@index\\\\(unique: true\\\\)\")] | length == 1) and test(\"file_key: String @index\\\\(unique: true\\\\)\")"
+    },
+    {
+      "name": "the prompt stops before recording an analysis whose files were not written",
+      "expr": ".assets[\"agent_behaviors/pr_explorer/system_prompt.md\"] | contains(\"If any pr_diff_split call fails\")"
+    },
+    {
+      "name": "the prompt writes patches outside every repository and always cleans up",
+      "expr": ".assets[\"agent_behaviors/pr_explorer/system_prompt.md\"] | contains(\"--output=<root>/.pr-explorer/patches/<analysis_id>.patch\") and contains(\"remove_patch: true\") and (contains(\"--output=.git/\") | not)"
+    },
+    {
+      "name": "the prompt forbids ref changes, fetches by commit id only, and ends on the page directive",
+      "expr": ".assets[\"agent_behaviors/pr_explorer/system_prompt.md\"] | contains(\"never check out\") and contains(\"git fetch --no-tags origin <baseRefOid> <headRefOid>\") and contains(\"never a branch, a `:` or `+`\") and contains(\"::pr-explorer{analysis=\\\"<analysis_id>\\\"}\")"
+    },
+    {
+      "name": "the prompt asks which clone when several match, and handles github.com only",
+      "expr": ".assets[\"agent_behaviors/pr_explorer/system_prompt.md\"] | contains(\"More than one: ask the user and wait for the reply\") and contains(\"Only github.com for now\") and contains(\"--git-common-dir\")"
+    },
+    {
+      "name": "the prompt runs commands as argv with cwd, never shell strings or -C",
+      "expr": ".assets[\"agent_behaviors/pr_explorer/system_prompt.md\"] | contains(\"Never pass a shell\") and (test(\"`git -C \") | not)"
+    }
+  ]
+}
