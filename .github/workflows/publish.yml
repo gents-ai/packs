@@ -39,7 +39,9 @@ jobs:
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Long enough for several rate-limit waits (up to 10 minutes each) when
+    # more than five new pack names land at once.
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -99,6 +101,35 @@ jobs:
           [[ -n "$GENTS_REGISTRY_TOKEN" ]] || { echo 'Configure the GENTS_REGISTRY_TOKEN repository secret with publishing access to the gents namespace.' >&2; exit 1; }
           # One pack the registry refuses must not hold back the others:
           # publish every pack, then fail the job naming each one that failed.
+          # The registry rate-limits publishes per account (gents-cloud
+          # services/registry/src/ratelimit.rs): a new pack name has a burst of
+          # 5, then 1 per 10 minutes; a new version of an existing pack has a
+          # burst of 30, then 1 per minute. A 429 says how long to wait
+          # ("try again in Ns"), so wait that long and retry, up to
+          # MAX_RATE_LIMIT_WAITS times per pack. Anything else fails at once.
+          MAX_RATE_LIMIT_WAITS=3
+          publish_with_retry() {
+            local pack="$1" version="$2" file="$3" waits=0 out wait
+            while true; do
+              if out="$(gents-bin/gents pack publish "$file" --registry "$REGISTRY" 2>&1)"; then
+                printf '%s\n' "$out"
+                return 0
+              fi
+              printf '%s\n' "$out" >&2
+              wait="$(grep -oE 'try again in [0-9]+s' <<<"$out" | grep -oE '[0-9]+' | head -1 || true)"
+              if [[ -z "$wait" ]] || ! grep -q '429' <<<"$out"; then
+                return 1
+              fi
+              if (( waits >= MAX_RATE_LIMIT_WAITS )); then
+                echo "::warning::gents/$pack@$version still rate-limited after $waits waits."
+                return 1
+              fi
+              waits=$((waits + 1))
+              echo "::notice::Rate-limited publishing gents/$pack@$version; waiting $((wait + 5))s (wait $waits of $MAX_RATE_LIMIT_WAITS)."
+              sleep $((wait + 5))
+            done
+          }
+
           failed=()
           for pack in $PACK_NAMES; do
             file="dist/gents.$pack.pack"
@@ -107,7 +138,7 @@ jobs:
             case "$status" in
               200) echo "gents/$pack@$version is already published; skipping." ;;
               404)
-                if gents-bin/gents pack publish "$file" --registry "$REGISTRY"; then
+                if publish_with_retry "$pack" "$version" "$file"; then
                   echo "::notice::Published gents/$pack@$version."
                 else
                   echo "::error::Publishing gents/$pack@$version failed."
