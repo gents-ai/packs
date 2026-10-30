@@ -97,16 +97,31 @@ jobs:
         run: |
           set -euo pipefail
           [[ -n "$GENTS_REGISTRY_TOKEN" ]] || { echo 'Configure the GENTS_REGISTRY_TOKEN repository secret with publishing access to the gents namespace.' >&2; exit 1; }
+          # One pack the registry refuses must not hold back the others:
+          # publish every pack, then fail the job naming each one that failed.
+          failed=()
           for pack in $PACK_NAMES; do
             file="dist/gents.$pack.pack"
             version="$(tar -xzOf "$file" pack.json | jq -r .version)"
             status="$(curl -sS -o /dev/null -w '%{http_code}' "$REGISTRY/api/v1/packs/gents/$pack/$version")"
             case "$status" in
               200) echo "gents/$pack@$version is already published; skipping." ;;
-              404) gents-bin/gents pack publish "$file" --registry "$REGISTRY" ;;
-              *) echo "Checking gents/$pack@$version on the registry returned HTTP $status." >&2; exit 1 ;;
+              404)
+                if gents-bin/gents pack publish "$file" --registry "$REGISTRY"; then
+                  echo "::notice::Published gents/$pack@$version."
+                else
+                  echo "::error::Publishing gents/$pack@$version failed."
+                  failed+=("$pack@$version")
+                fi ;;
+              *)
+                echo "::error::Checking gents/$pack@$version on the registry returned HTTP $status."
+                failed+=("$pack@$version") ;;
             esac
           done
+          if (( ${#failed[@]} )); then
+            echo "Not published: ${failed[*]}" >&2
+            exit 1
+          fi
 
       # Every gents pack comes from this repo, so one the registry still
       # offers but master no longer has is yanked (undo: gents pack yank --undo).
