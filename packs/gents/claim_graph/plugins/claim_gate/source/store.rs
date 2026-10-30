@@ -3,13 +3,15 @@
 //! resends the same input), so `state` carries only the cursor, the requests
 //! in flight, follow-up pages and what the store answered. Every lookup is
 //! scoped to the batch's `graph_id`: ids are unique per graph, so two graphs
-//! may share them.
+//! may share them. A stored source's text is matched against the quotes
+//! citing it in the round it arrives; `state` keeps only the matches.
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
 
 use crate::batch::Batch;
 use crate::profile;
+use crate::quotes::{self, Origin};
 use crate::rules::{edge_key, ids};
 
 /// Ids per `_in` query, and rows per query: the host's limit.
@@ -19,6 +21,11 @@ pub const PER_ROUND: usize = 16;
 /// Queries a batch may need: the host serves 64 rounds, and a full chunk of
 /// a historical-edge lookup may need follow-up pages.
 pub const MAX_QUERIES: usize = 60 * PER_ROUND;
+/// Ids per text query of `Source`: one. A text is at most 200 000
+/// characters (about 1.2 MB as JSON at worst) and the host drops rows past
+/// the plugin's output budget (4 MiB) without saying so, so a chunk of
+/// several texts could lose a row that would then read as a missing source.
+pub const TEXT_CHUNK: usize = 1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Lookup {
@@ -30,6 +37,11 @@ pub enum Lookup {
     Edge,
     /// Edges of type supersedes or retracts pointing at a batch claim.
     Historical,
+    /// The status of stored sources the batch cites without needing their
+    /// text (in `sources[]`, or the `from` of a self-quoting claim).
+    Source,
+    /// The status and text of a stored source a claim's `from` cites.
+    SourceText,
 }
 
 impl Lookup {
@@ -40,6 +52,7 @@ impl Lookup {
             Lookup::Entity => "Entity",
             Lookup::Perspective => "Perspective",
             Lookup::Edge | Lookup::Historical => "Edge",
+            Lookup::Source | Lookup::SourceText => "Source",
         }
     }
 
@@ -51,6 +64,7 @@ impl Lookup {
             Lookup::Perspective => "perspective_id",
             Lookup::Edge => "edge_key",
             Lookup::Historical => "to_claim",
+            Lookup::Source | Lookup::SourceText => "source_id",
         }
     }
 
@@ -60,6 +74,8 @@ impl Lookup {
             // A claim's kind decides whether a challenges or reviews edge
             // from it is well formed.
             Lookup::Claim => vec!["claim_id", "kind"],
+            Lookup::Source => vec!["source_id", "status"],
+            Lookup::SourceText => vec!["source_id", "status", "text"],
             other => vec![other.field()],
         }
     }
@@ -96,17 +112,50 @@ pub struct Found {
     pub historical: BTreeSet<String>,
     /// The graph's latest stored ClaimGraph row, when there is one.
     pub profile: Option<Value>,
+    /// The status of each stored source found.
+    pub sources: BTreeMap<String, String>,
+    /// Batch claims whose quote occurs in the text of the source their
+    /// `from` cites. A text is matched as it arrives and never kept.
+    pub source_quotes: BTreeSet<String>,
 }
 
 impl Found {
     fn set(&mut self, lookup: Lookup) -> Option<&mut BTreeSet<String>> {
         match lookup {
-            Lookup::Profile => None,
+            Lookup::Profile | Lookup::Source | Lookup::SourceText => None,
             Lookup::Claim => Some(&mut self.claims),
             Lookup::Entity => Some(&mut self.entities),
             Lookup::Perspective => Some(&mut self.perspectives),
             Lookup::Edge => Some(&mut self.edges),
             Lookup::Historical => Some(&mut self.historical),
+        }
+    }
+
+    /// Whether the graph holds the source with status `ok`.
+    pub fn source_ok(&self, id: &str) -> bool {
+        self.sources.get(id).is_some_and(|status| status == "ok")
+    }
+
+    /// Records a stored source's status and, for an `ok` one whose text came
+    /// with it, which batch claims citing it in `from` quote it verbatim.
+    fn absorb_source(&mut self, batch: &Batch, row: &Value) {
+        let Some(id) = row.get("source_id").and_then(Value::as_str) else {
+            return;
+        };
+        let status = row.get("status").and_then(Value::as_str).unwrap_or("");
+        self.sources.insert(id.to_owned(), status.to_owned());
+        let Some(text) = row.get("text").and_then(Value::as_str).filter(|_| status == "ok") else {
+            return;
+        };
+        for claim in &batch.claims {
+            if quotes::origin(claim) != Some(Origin::Source(id)) {
+                continue;
+            }
+            if let (Some(claim_id), Some(quote)) = (claim.str("id"), claim.str("quote")) {
+                if quotes::grep_fixed(text.as_bytes(), quote) {
+                    self.source_quotes.insert(claim_id.to_owned());
+                }
+            }
         }
     }
 
@@ -163,7 +212,18 @@ pub fn plan(batch: &Batch, resolvers: &[String]) -> Vec<Query> {
         }
     }
     let edges: BTreeSet<String> = batch.edges.iter().filter_map(edge_key).collect();
-    let historical = if batch.source_root.is_some() {
+    let mut sources = BTreeSet::new();
+    let mut texts = BTreeSet::new();
+    for claim in &batch.claims {
+        sources.extend(quotes::cited_sources(claim).into_iter().map(str::to_owned));
+        if let Some(Origin::Source(id)) = quotes::origin(claim) {
+            if !id.is_empty() && !quotes::self_quoted(claim) {
+                texts.insert(id.to_owned());
+            }
+        }
+    }
+    let statuses: BTreeSet<String> = sources.difference(&texts).cloned().collect();
+    let historical = if batch.source_root.is_some() || !texts.is_empty() {
         claim_ids
     } else {
         BTreeSet::new()
@@ -179,9 +239,16 @@ pub fn plan(batch: &Batch, resolvers: &[String]) -> Vec<Query> {
         (Lookup::Perspective, perspectives),
         (Lookup::Edge, edges),
         (Lookup::Historical, historical),
+        (Lookup::Source, statuses),
+        (Lookup::SourceText, texts),
     ] {
         let all: Vec<String> = set.into_iter().collect();
-        for chunk in all.chunks(CHUNK) {
+        let size = if lookup == Lookup::SourceText {
+            TEXT_CHUNK
+        } else {
+            CHUNK
+        };
+        for chunk in all.chunks(size) {
             queries.push(Query {
                 lookup,
                 ids: chunk.to_vec(),
@@ -231,6 +298,8 @@ impl State {
         copy("edges", &self.found.edges);
         copy("historical", &self.found.historical);
         found.insert("claim_kinds".to_owned(), json!(self.found.claim_kinds));
+        found.insert("sources".to_owned(), json!(self.found.sources));
+        found.insert("source_quotes".to_owned(), json!(self.found.source_quotes));
         found.insert(
             "profile".to_owned(),
             self.found.profile.clone().unwrap_or(Value::Null),
@@ -270,6 +339,17 @@ impl State {
             let kind = kind.as_str().ok_or_else(bad)?.to_owned();
             found.claim_kinds.insert(id.clone(), kind);
         }
+        for (id, status) in found_json
+            .get("sources")
+            .and_then(Value::as_object)
+            .ok_or_else(bad)?
+        {
+            let status = status.as_str().ok_or_else(bad)?.to_owned();
+            found.sources.insert(id.clone(), status);
+        }
+        found
+            .source_quotes
+            .extend(strings(found_json.get("source_quotes"))?);
         found.profile = found_json.get("profile").filter(|p| !p.is_null()).cloned();
         let pages = state
             .get("pages")
@@ -293,7 +373,12 @@ impl State {
     /// Takes in the answers to the requests asked last round. A query the
     /// store refused is returned as a gate error; a missing answer or one of
     /// the wrong shape is a malformed host input.
-    pub fn absorb(&mut self, plan: &[Query], results: &Value) -> Result<Vec<String>, String> {
+    pub fn absorb(
+        &mut self,
+        batch: &Batch,
+        plan: &[Query],
+        results: &Value,
+    ) -> Result<Vec<String>, String> {
         let results = results
             .as_object()
             .ok_or("data_results must be an object keyed by request id")?;
@@ -321,6 +406,15 @@ impl State {
                 .ok_or_else(|| format!("data request {id} answered without result.rows"))?;
             if lookup == Lookup::Profile {
                 self.found.profile = rows.first().cloned();
+                continue;
+            }
+            if matches!(lookup, Lookup::Source | Lookup::SourceText) {
+                for row in rows {
+                    self.found.absorb_source(batch, row);
+                }
+                if rows.len() >= CHUNK {
+                    self.pages.push((index, offset + CHUNK as u32));
+                }
                 continue;
             }
             for row in rows {
@@ -372,6 +466,9 @@ impl State {
                     if query.lookup == Lookup::Profile {
                         body["order"] = json!({"version": "DESC"});
                         body["limit"] = json!(1);
+                    }
+                    if query.lookup == Lookup::SourceText {
+                        body["limit"] = json!(TEXT_CHUNK);
                     }
                     if *offset > 0 {
                         body["offset"] = json!(offset);

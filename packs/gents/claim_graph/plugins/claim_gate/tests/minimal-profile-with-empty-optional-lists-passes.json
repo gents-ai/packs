@@ -30,6 +30,8 @@
         "edges": [],
         "historical": [],
         "claim_kinds": {},
+        "sources": {},
+        "source_quotes": [],
         "profile": null
       }
     },
@@ -67,7 +69,7 @@
       "perspectives_admitted": 1,
       "quotes_checked": 0,
       "quotes_skipped": 1,
-      "gate_version": "0.2.0",
+      "gate_version": "0.3.0",
       "checked_at": "2026-10-29T12:00:00Z",
       "graph_id": "government-attestation",
       "profile_version": 1

@@ -110,12 +110,12 @@ pub fn run(raw: &str) -> Result<Value, String> {
                 .as_deref()
                 .is_some_and(|root| !quotes::missing_files(Path::new(root), &batch.claims).is_empty());
             if !errors.is_empty() || files_missing {
-                let verdict = local_verdict(&batch, errors, &Found::default(), inline_ok, None);
+                let verdict = local_verdict(&batch, errors, None, inline_ok, None);
                 return finish(verdict, None);
             }
             if input.get("data_calls") != Some(&Value::Bool(true)) {
                 return Err(
-                    "the host offers this plugin no data_calls; declare data with query on ClaimGraph, Claim, Edge, Entity and Perspective in the manifest"
+                    "the host offers this plugin no data_calls; declare data with query on ClaimGraph, Claim, Edge, Entity, Perspective and Source in the manifest"
                         .into(),
                 );
             }
@@ -123,9 +123,9 @@ pub fn run(raw: &str) -> Result<Value, String> {
         }
         Some(results) => {
             let mut state = State::from_json(input.get("state"))?;
-            let failures = state.absorb(&plan, results)?;
+            let failures = state.absorb(&batch, &plan, results)?;
             if !failures.is_empty() {
-                let verdict = local_verdict(&batch, failures, &state.found, None, None);
+                let verdict = local_verdict(&batch, failures, Some(&state.found), None, None);
                 return finish(verdict, None);
             }
             state
@@ -167,29 +167,26 @@ pub fn run(raw: &str) -> Result<Value, String> {
         errors.extend(rules::check_resolvers(&batch, profile, &state.found));
     }
     errors.extend(rules::check(&batch, profile, Some(&state.found)));
-    let verdict = local_verdict(&batch, errors, &state.found, profile, version);
+    let verdict = local_verdict(&batch, errors, Some(&state.found), profile, version);
     finish(verdict, inline_ok)
 }
 
-/// `errors` plus the file and quote checks when the batch names a source
-/// root. Quotes are checked only under a resolved profile, whose
-/// `questions_from_prefix` exempts question files.
+/// `errors` plus the file and quote checks: file `from`s against the source
+/// root when the batch names one, `source:` `from`s against the stored
+/// sources once `found` (the store's answers) is known. Quotes are checked
+/// only under a resolved profile, whose `questions_from_prefix` exempts
+/// question files.
 fn local_verdict(
     batch: &Batch,
     mut errors: Vec<String>,
-    found: &Found,
+    found: Option<&Found>,
     profile: Option<&Profile>,
     profile_version: Option<i64>,
 ) -> rows::Verdict {
-    let Some(root) = batch.source_root.as_deref().map(Path::new) else {
-        return rows::Verdict {
-            profile_version,
-            errors,
-            quotes_checked: 0,
-            quotes_skipped: batch.claims.len() as u64,
-        };
-    };
-    errors.extend(quotes::missing_files(root, &batch.claims));
+    let root = batch.source_root.as_deref().map(Path::new);
+    if let Some(root) = root {
+        errors.extend(quotes::missing_files(root, &batch.claims));
+    }
     let Some(profile) = profile else {
         return rows::Verdict {
             profile_version,
@@ -198,7 +195,7 @@ fn local_verdict(
             quotes_skipped: batch.claims.len() as u64,
         };
     };
-    let mut historical = found.historical.clone();
+    let mut historical = found.map(|f| f.historical.clone()).unwrap_or_default();
     for edge in &batch.edges {
         if matches!(edge.str("type"), Some("supersedes" | "retracts")) {
             if let Some(to) = edge.str("to") {
@@ -207,7 +204,8 @@ fn local_verdict(
         }
     }
     let prefix = profile.text("questions_from_prefix").filter(|p| !p.is_empty());
-    let report = quotes::check_quotes(root, &batch.claims, &historical, prefix);
+    let places = quotes::Places { root, store: found };
+    let report = quotes::check_quotes(&places, &batch.claims, &historical, prefix);
     errors.extend(report.errors);
     rows::Verdict {
         profile_version,

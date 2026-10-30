@@ -1,0 +1,30 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "file:///etc/passwd",
+    "http_calls": true
+  },
+  "expect": {
+    "source_id": "s:0e7a5a5c10cbe88a-bf7c1a27",
+    "graph_id": "flipper-fcc",
+    "url": "file:///etc/passwd",
+    "final_url": "file:///etc/passwd",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "url must start with http:// or https://",
+    "http_status": null,
+    "content_type": null,
+    "content_hash": null,
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

@@ -1,0 +1,19 @@
+type Source @index(fields: ["graph_id", "source_id"], unique: true) {
+  source_id: String @index @immutable
+  graph_id: String @index @immutable
+  request_id: String @index @immutable
+  url: String @immutable
+  final_url: String @immutable
+  title: String @immutable
+  fetched_at: String @immutable
+  status: String @index @immutable
+  error: String @immutable
+  http_status: Int @immutable
+  content_type: String @immutable
+  content_hash: String @immutable
+  text: String @immutable
+  text_chars: Int @immutable
+  truncated: Boolean @immutable
+  confidential: Boolean @immutable
+  note: String @immutable
+}

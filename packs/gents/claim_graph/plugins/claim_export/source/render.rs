@@ -86,8 +86,47 @@ pub const CLAIM_GRAPH: Kind = Kind {
     ],
 };
 
-/// Everything one export reads: the four JSONL record types and the profiles.
-pub const SPECS: [&Kind; 5] = [&CLAIMS, &EDGES, &ENTITIES, &PERSPECTIVES, &CLAIM_GRAPH];
+/// The graph's fetched sources, exported as `sources/sources.jsonl`; their
+/// `text` is read in a pass of its own (see `SOURCE_TEXT`), never in these pages.
+pub const SOURCES: Kind = Kind {
+    key: "sources",
+    collection: "Source",
+    id_field: "source_id",
+    fields: &[
+        "source_id",
+        "url",
+        "final_url",
+        "title",
+        "fetched_at",
+        "status",
+        "error",
+        "http_status",
+        "content_type",
+        "content_hash",
+        "text_chars",
+        "truncated",
+        "confidential",
+        "request_id",
+        "note",
+    ],
+};
+
+/// Everything one export reads in its paged pass: the four JSONL record
+/// types, the profiles and the source metadata.
+pub const SPECS: [&Kind; 6] = [&CLAIMS, &EDGES, &ENTITIES, &PERSPECTIVES, &CLAIM_GRAPH, &SOURCES];
+
+/// One source as a `sources/sources.jsonl` line: `id`, then the metadata in
+/// the order of [`SOURCES`] (a stored null stays null), then `text` when the
+/// export includes it.
+pub fn source(row: &Row) -> Result<(String, Value), String> {
+    let id = required(row, "source_id", "a source")?;
+    let mut out = Row::new();
+    put_text(&mut out, "id", id);
+    for field in &SOURCES.fields[1..] {
+        put(&mut out, field, row.get(*field).cloned().unwrap_or(Value::Null));
+    }
+    Ok((id.to_owned(), Value::Object(out)))
+}
 
 /// One profile version as written to `claim_graph.json`: every ClaimGraph
 /// field in schema order, a stored null kept as null, keyed by its version.

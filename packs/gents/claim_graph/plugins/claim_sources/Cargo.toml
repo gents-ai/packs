@@ -1,0 +1,23 @@
+[workspace]
+
+[package]
+name = "claim_sources"
+version = "0.3.0"
+edition = "2024"
+rust-version = "1.92"
+
+[[bin]]
+name = "claim_sources"
+path = "source/main.rs"
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+# The content hash and the source id; pure Rust, no assembly.
+sha2 = { version = "0.10", default-features = false }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

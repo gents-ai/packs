@@ -1,0 +1,29 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://example.org:99999/"
+  },
+  "expect": {
+    "source_id": "s:f17fe749b037bc92-bf7c1a27",
+    "graph_id": "flipper-fcc",
+    "url": "https://example.org:99999/",
+    "final_url": "https://example.org:99999/",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "url has the port \"99999\"; a port is 1 to 65535",
+    "http_status": null,
+    "content_type": null,
+    "content_hash": null,
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

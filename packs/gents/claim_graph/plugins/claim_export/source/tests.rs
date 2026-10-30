@@ -290,16 +290,16 @@ fn tree(dir: &Path) -> BTreeMap<String, String> {
 fn the_first_round_asks_for_every_collection_ordered_by_its_id() {
     let output = run(&json!({"graph_id": "g", "out_dir": "/o", "data_calls": true})).unwrap_or_else(|f| json!(f.0));
     let requests = output["data_calls"]["requests"].as_array().unwrap();
-    assert_eq!(requests.len(), 15);
+    assert_eq!(requests.len(), 12);
     let ids: Vec<&str> = requests.iter().map(|r| r["id"].as_str().unwrap()).collect();
-    assert_eq!(&ids[..4], ["claims@0", "claims@256", "claims@512", "edges@0"]);
-    assert_eq!(&ids[12..], ["claim_graph@0", "claim_graph@256", "claim_graph@512"]);
+    assert_eq!(&ids[..4], ["claims@0", "claims@256", "edges@0", "edges@256"]);
+    assert_eq!(&ids[8..], ["claim_graph@0", "claim_graph@256", "sources@0", "sources@256"]);
     let q = &requests[0]["query"];
     assert_eq!((q["collection"].as_str(), q["limit"].as_u64(), q["offset"].as_u64()), (Some("Claim"), Some(256), Some(0)));
     assert_eq!(q["order"], json!({"claim_id": "ASC"}));
     assert_eq!(q["filter"], json!({"graph_id": {"_eq": "g"}}));
-    assert_eq!(requests[12]["query"]["collection"], "ClaimGraph");
-    assert_eq!(requests[12]["query"]["order"], json!({"version": "ASC"}));
+    assert_eq!(requests[8]["query"]["collection"], "ClaimGraph");
+    assert_eq!(requests[8]["query"]["order"], json!({"version": "ASC"}));
     assert!(requests.iter().all(|r| r["query"]["filter"]["graph_id"] == json!({"_eq": "g"})));
     assert_eq!(output["data_calls"]["state"]["cursors"]["claims"]["next"], 0);
 }
@@ -319,7 +319,7 @@ fn the_exported_files_equal_the_research_files_after_normalisation() {
     let (summary, _) = host.drive(json!({"out_dir": dir.to_str().unwrap()}));
     assert_eq!(summary["ok"], true, "{summary}");
     assert_eq!(summary["dry_run"], false);
-    assert_eq!(summary["written"], json!({"claims": 14, "edges": 4, "entities": 6, "perspectives": 3, "claim_graph": 0}));
+    assert_eq!(summary["written"], json!({"claims": 14, "edges": 4, "entities": 6, "perspectives": 3, "claim_graph": 0, "sources": 0}));
     assert_eq!(
         summary["files"],
         json!([
@@ -328,11 +328,13 @@ fn the_exported_files_equal_the_research_files_after_normalisation() {
             "edges/edges.jsonl",
             "entities/entities.jsonl",
             "perspectives/perspectives.jsonl",
+            "sources/sources.jsonl",
             "claim_graph.json"
         ])
     );
     let written = tree(&dir);
-    assert_eq!(written.len(), 6, "no temporary file is left: {:?}", written.keys());
+    assert_eq!(written.len(), 7, "no temporary file is left: {:?}", written.keys());
+    assert_eq!(written["sources/sources.jsonl"], "");
     assert_eq!(written["claim_graph.json"], "[]\n");
     for (path, fixture) in &FIXTURES[..5] {
         // The store orders by id, so the expected text is the fixture's lines sorted by id.
@@ -505,7 +507,7 @@ fn rows_of_another_graph_are_not_exported() {
     assert_eq!(summary["written"]["claims"], 14);
     assert_eq!(summary["graph_id"], GRAPH);
     let (summary, _) = fixture_host(usize::MAX).drive(json!({"graph_id": "other", "dry_run": true}));
-    assert_eq!(summary["written"], json!({"claims": 0, "edges": 0, "entities": 0, "perspectives": 0, "claim_graph": 0}));
+    assert_eq!(summary["written"], json!({"claims": 0, "edges": 0, "entities": 0, "perspectives": 0, "claim_graph": 0, "sources": 0}));
 }
 
 #[test]
@@ -526,5 +528,99 @@ fn every_plugin_case_matches_this_build() {
         }
         checked += 1;
     }
-    assert_eq!(checked, 11);
+    assert_eq!(checked, 12);
+}
+
+fn source_row(graph: &str, n: usize, text: &str) -> Map<String, Value> {
+    let mut row = Map::new();
+    for field in render::SOURCES.fields {
+        row.insert((*field).into(), Value::Null);
+    }
+    let fields = [
+        ("graph_id", json!(graph)),
+        ("source_id", json!(format!("s:{n:016x}"))),
+        ("url", json!(format!("https://example.org/{n}"))),
+        ("final_url", json!(format!("https://example.org/{n}"))),
+        ("fetched_at", json!("2026-10-30T12:00:00Z")),
+        ("status", json!("ok")),
+        ("http_status", json!(200)),
+        ("content_type", json!("text/plain")),
+        ("text_chars", json!(text.chars().count())),
+        ("truncated", json!(false)),
+        ("confidential", json!(false)),
+        ("request_id", json!(format!("sr-{n}"))),
+        ("text", json!(text)),
+        ("_docID", json!("bae-y")),
+    ];
+    for (k, v) in fields {
+        row.insert(k.into(), v);
+    }
+    row
+}
+
+fn source_host(cap: usize, n: usize) -> Host {
+    let mut host = fixture_host(cap);
+    let mut rows: Vec<_> = (0..n).map(|i| source_row(GRAPH, i, &format!("text of source {i}\nline two"))).collect();
+    rows.push(source_row("other", 999, "another graph"));
+    host.rows.insert("Source", rows);
+    host
+}
+
+#[test]
+fn sources_are_exported_as_metadata_without_text() {
+    let dir = scratch("sources-meta");
+    let (summary, _) = source_host(usize::MAX, 3).drive(json!({"out_dir": dir.to_str().unwrap()}));
+    assert_eq!(summary["written"]["sources"], 3, "{summary}");
+    let text = &tree(&dir)["sources/sources.jsonl"];
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines.len(), 3);
+    assert_eq!(
+        lines[0],
+        r#"{"id":"s:0000000000000000","url":"https://example.org/0","final_url":"https://example.org/0","title":null,"fetched_at":"2026-10-30T12:00:00Z","status":"ok","error":null,"http_status":200,"content_type":"text/plain","content_hash":null,"text_chars":25,"truncated":false,"confidential":false,"request_id":"sr-0","note":null}"#
+    );
+    assert!(!text.contains("text of source") && !text.contains("_docID") && !text.contains("another graph"));
+}
+
+#[test]
+fn source_texts_are_exported_in_a_pass_of_their_own() {
+    for (cap, n) in [(usize::MAX, 0), (usize::MAX, 1), (usize::MAX, 32), (usize::MAX, 70), (5, 40)] {
+        let dir = scratch("sources-text");
+        let mut host = source_host(cap, n);
+        let (summary, rounds) = host.drive(json!({"out_dir": dir.to_str().unwrap(), "include_source_text": true}));
+        assert_eq!(summary["ok"], true, "{summary}");
+        assert_eq!(summary["written"]["sources"], n);
+        assert_eq!(summary["include_source_text"], true);
+        let files = summary["files"].as_array().unwrap();
+        assert_eq!(files[files.len() - 2], "sources/sources.jsonl");
+        let written = tree(&dir);
+        assert!(!written.keys().any(|k| k.contains(".part")), "{:?}", written.keys());
+        let lines: Vec<Value> = written["sources/sources.jsonl"].lines().map(|l| serde_json::from_str(l).unwrap()).collect();
+        assert_eq!(lines.len(), n, "cap {cap}");
+        for (i, line) in lines.iter().enumerate() {
+            assert_eq!(line["id"], format!("s:{i:016x}"));
+            assert_eq!(line["text"], format!("text of source {i}\nline two"));
+            assert_eq!(line.as_object().unwrap().keys().last().unwrap(), "text");
+        }
+        assert!(rounds < 64, "{rounds}");
+    }
+}
+
+#[test]
+fn a_dry_run_with_texts_reads_no_texts() {
+    let dir = scratch("sources-dry");
+    let (summary, rounds) = source_host(usize::MAX, 5).drive(json!({"out_dir": dir.to_str().unwrap(), "include_source_text": true, "dry_run": true}));
+    assert_eq!(summary["written"]["sources"], 5);
+    assert_eq!(rounds, 3);
+    assert!(tree(&dir).is_empty());
+}
+
+#[test]
+fn a_text_query_error_fails_the_call() {
+    let dir = scratch("sources-error");
+    let mut input = json!({"graph_id": GRAPH, "out_dir": dir.to_str().unwrap(), "data_calls": true, "include_source_text": true,
+        "state": source_text::start(&dir, pager::start(&SPECS)).unwrap(),
+        "data_results": {"source_text@0": {"error": "boom"}, "source_text@16": {"result": {"rows": []}}}});
+    assert_eq!(run(&input).err().unwrap().0, "the Source text query failed: boom");
+    input["include_source_text"] = json!("yes");
+    assert_eq!(run(&input).err().unwrap().0, "include_source_text must be true or false");
 }

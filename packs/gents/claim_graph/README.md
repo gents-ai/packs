@@ -1,16 +1,14 @@
 # claim_graph pack
 
 Append-only claim graphs kept as DefraDB documents, admitted only through a mechanical gate. A `Claim` is one
-sourced statement with a verbatim quote from the narrative file it came from; an `Edge` relates two claims; an
+sourced statement with a verbatim quote from the narrative file or fetched source it came from; an `Edge` relates two claims; an
 `Entity` is a thing claims link to; a `Perspective` is an issuer (a person, a position, a critic). One node may
 hold several graphs, each named by a `graph_id` and each with its own vocabulary, the graph's profile
 (`ClaimGraph`). Writers never create graph rows directly: they create a `ClaimBatch` holding JSONL text, and
 the `claim_gate` plugin checks the whole batch against the graph's profile (the checks of a research graph's
 `validate.sh` and `quotes.sh`, plus the dispute rules) and, in one transaction, writes a `GateReceipt` and the
-admitted rows, or only a failing receipt. `claim_views` derives a graph's effective status, open disputes and
-per-perspective reputation as Markdown. `claim_export` writes a graph back as the same JSONL files. A **Claim
-graph expert** agent (`claim-sme`) answers questions from a graph with a claim id on every statement, files
-the questions it cannot answer, and raises challenges, reviews and replies when asked.
+admitted rows, or only a failing receipt. A quote is checked against the narrative file it names or, for a claim made from a fetched web page, against that page's stored `Source` text. `claim_sources` fetches a URL into a `Source` document. `claim_views` derives a graph's effective status, open disputes and
+per-perspective reputation as Markdown. `claim_export` writes a graph back as the same JSONL files. Three agents work on the graphs. The **Claim graph researcher** (`claim-researcher`) takes a `ResearchRequest` naming a topic, starts the graph if it does not exist, fetches sources, files claims whose quotes come verbatim from them, fixes refused batches, and closes the request with a `ResearchReceipt`. The **Claim graph reviewer** (`claim-reviewer`) then checks a sample of those claims against their quotes and files reviews and challenges. The **Claim graph expert** (`claim-sme`) answers questions from a graph with a claim id on every statement, files the questions it cannot answer, and raises challenges, reviews and replies when asked.
 
 ```text
 ClaimBatch (created) --claim-batch--> claim-gate (claim_gate plugin)
@@ -26,22 +24,37 @@ ViewRequest (created) --view-request--> claim-views (claim_views plugin)
 
 ExportRequest (created) --export-request--> claim-export (claim_export plugin)
                                               `-- receipt --> ExportReceipt (always one)
+
+SourceRequest (created) --source-request--> claim-sources (claim_sources plugin)
+                                              `-- source --> Source (always one; status ok or failed)
+
+ResearchRequest (created) --research-request--> claim-research-task (claim-researcher)
+                                                  writes ClaimBatch, SourceRequest, then one ResearchReceipt
+ResearchReceipt (created) --research-receipt--> claim-review-task (claim-reviewer)
+                                                  writes ClaimBatch (reviews, challenges), ViewRequest
 ```
 
 ## Installation
 
 ```sh
-gents pack install ./packs/gents/claim_graph --home <home> --inference-slot sme=<profile>
-gents pack install gents/claim_graph --home <home> --inference-slot sme=<profile>   # once published
+gents pack install ./packs/gents/claim_graph --home <home> --grant-authority \
+  --inference-slot sme=<profile> --inference-slot researcher=<profile> --inference-slot reviewer=<profile>
+gents pack install gents/claim_graph --home <home> --grant-authority ...   # once published
 ```
 
-Building from a source checkout compiles the three plugins to `wasm32-wasip1` (`gents pack build`), so it
+`--grant-authority` allows `claim_sources` its outbound HTTP (below); without the grant every `Source` comes
+back `failed` with the reason, and the rest of the pack works unchanged.
+
+Building from a source checkout compiles the four plugins to `wasm32-wasip1` (`gents pack build`), so it
 needs a Rust toolchain with `rustup target add wasm32-wasip1`; a pack fetched pre-built skips the build.
 
 ## Bindings and prerequisites
 
-- One inference slot, `sme`, bound to the `claim-sme` agent. Any capable profile. The gate and the views need
-  no model.
+- Three inference slots: `sme` (the `claim-sme` agent), `researcher` (`claim-researcher`; a model that follows
+  JSON tool schemas reliably, since every write is JSONL text inside a tool argument) and `reviewer`
+  (`claim-reviewer`). The gate, the fetcher, the views and the export need no model.
+- Outbound HTTPS for `claim_sources` (Authority, below). The research flow needs no folder: agent batches are
+  quote-checked against stored sources, and the tool ceiling can stay `readonly`.
 - An allowed folder for the gate's file and quote checks: `source_root` must be an absolute path inside a
   folder added with `gents plugin dirs add <folder> --home <home>`. A callback has nobody to ask, so a
   `source_root` outside the allowed folders fails the call. For a research graph that lives at
@@ -56,10 +69,18 @@ needs a Rust toolchain with `rustup target add wasm32-wasip1`; a pack fetched pr
 
 | Who | May | Why |
 | --- | --- | --- |
-| `claim_gate` (callback) | query `Claim`, `Edge`, `Entity`, `Perspective`, `ClaimGraph`; read `source_root` | profile lookup, existence and uniqueness checks against the store; file and verbatim-quote checks. Its rows reach the store only as the callback's declared outputs, committed with the receipt |
-| `claim_views` (callback) | query the same five collections; read and write `out_dir` | derives a view; its only database write is the `ViewReceipt` |
-| `claim_export` (tool and callback) | query the same five collections; read and write `out_dir` | pages one graph and writes the JSONL tree; as the `claim-export` callback its only database write is the `ExportReceipt` |
-| `claim-sme` (agent) | `query` over the four graph collections, `ClaimGraph`, `GateReceipt`, `ViewReceipt` and `ExportReceipt`; `file_claims`; `request_view`; `claim_export` | retrieval and status derivation; it writes only a `ClaimBatch`, which still goes through the gate, and a `ViewRequest` |
+| `claim_gate` (callback) | query `Claim`, `Edge`, `Entity`, `Perspective`, `ClaimGraph`, `Source`; read `source_root` | profile lookup, existence and uniqueness checks against the store; file and verbatim-quote checks against files and stored sources. Its rows reach the store only as the callback's declared outputs, committed with the receipt |
+| `claim_sources` (callback) | outbound HTTP (`OutboundHttp`, unscoped); query `Source` | fetches one URL per `SourceRequest` after checking whether the graph already holds it; its only database write is the `Source` row. No folder, no environment |
+| `claim_views` (callback) | query `Claim`, `Edge`, `Entity`, `Perspective`, `ClaimGraph`; read and write `out_dir` | derives a view; its only database write is the `ViewReceipt` |
+| `claim_export` (tool and callback) | query the gate's six collections; read and write `out_dir` | pages one graph and writes the JSONL tree; as the `claim-export` callback its only database write is the `ExportReceipt` |
+| `claim-researcher` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchRequest`; `start_graph`, `file_batch`, `fetch_source`, `finish_research` | writes only `ClaimBatch` (through the gate), `SourceRequest` (through the fetcher) and its `ResearchReceipt`; `graph_id`, and the receipt's `request_id`, are filled from the request it runs for, so it cannot write into another graph |
+| `claim-reviewer` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchReceipt`, `ViewReceipt`; `file_batch`, `request_view` | writes only a `ClaimBatch` and a `ViewRequest`, with `graph_id` filled from the receipt it reviews |
+| `claim-sme` (agent) | `query` over the four graph collections, `ClaimGraph`, `Source`, `GateReceipt`, `ViewReceipt`, `ExportReceipt` and `ResearchReceipt`; `file_claims`; `request_view`; `start_research`; `claim_export` | retrieval and status derivation; it writes only a `ClaimBatch`, which still goes through the gate, a `ViewRequest`, and a `ResearchRequest`, which hands the topic to the researcher |
+
+Only `claim_sources` needs the network, and nothing in the research flow needs a folder; no agent surface
+exposes `source_root`, `out_dir` or a path. The host's HTTP client follows no redirects (the plugin follows up
+to five itself, 8 s each), and an unscoped `OutboundHttp` grant reaches only `https://` on port 443: `http://`
+URLs and other ports are refused unless the operator installs with an explicit allow-list.
 
 Nothing in the pack updates or deletes a graph row: every scalar field of every collection is `@immutable`
 (DefraDB refuses the directive on list fields: `Claim.entities`, `Entity.aliases` and the vocabulary lists of
@@ -98,6 +119,12 @@ the latest version; the first batch of a graph must carry one, else it fails wit
 ```json
 {"display_name": "Government attestation research", "kinds": ["fact", "number", "date", "rule", "mapping", "interpretation", "position", "quote", "question", "challenge", "review"], "confidence_classes": ["sourced", "memory", "inferred"], "edge_types": ["supports", "contradicts", "supersedes", "retracts", "answers", "maps-to", "said-first", "depends-on", "challenges", "reviews", "resolves"], "mapping_targets": ["defradb", "fefra"], "mapping_fits": ["native", "partial", "gap", "convention"], "review_verdicts": ["sustains", "weakens", "unclear"], "resolver_perspectives": ["p:mike"], "question_entity": "e:open-question", "default_asker": "p:mike", "questions_from_prefix": "graph/claims/questions.jsonl", "claim_id_pattern": "^c:[a-z0-9-]+:[0-9]{3}$", "text_max_words": 40, "note": "..."}
 ```
+
+`profiles/general.json` is the vocabulary the researcher starts a new graph with: the kinds `fact number date
+rule interpretation position quote question challenge review`, all eleven edge types, no mapping targets or
+fits, the verdicts `sustains weakens unclear`, `p:owner` as resolver and default asker, `e:open-question` as
+question entity, and `memory:questions` as the questions prefix, so a question filed from memory carries
+`confidence: memory` (the research profile's file-based questions keep `inferred`).
 
 ## Effective status
 
@@ -180,6 +207,14 @@ Any error fails the whole batch. Every existence check is within the batch's gra
    verbatim in its `from` file, except claims filed under `questions_from_prefix`, `question`, `challenge` and
    `review` claims whose `quote` equals their `text`, and claims a `supersedes` or `retracts` edge (in the
    batch or the store) points at.
+7. Stored sources: a `from` of `source:<source_id>#<anchor>` names a `Source` of the graph with `status` `ok`,
+   and the `quote` occurs verbatim in its `text` (the same matching as files; counted in `quotes_checked`); each
+   `sources[].source` names such a `Source`, and one satisfies `confidence: sourced` as a `doc` or `code` does.
+   A `from` of `memory:<anything>` needs `quote` equal to `text` and `confidence: memory`. The errors read
+   `ERROR: <id> cites source <source_id> which is missing or failed`, `ERROR: <id> quote not found verbatim in
+   source <source_id>`, `ERROR: <id> from names no source id (write source:<source_id>#<anchor>)`, `ERROR: <id>
+   is from memory but claims confidence <c>`, `ERROR: <id> is from memory but its quote is not its text` and
+   `ERROR: <id> is sourced but cites no fetched doc, code ref or source`.
 
 ### GateReceipt
 
@@ -197,7 +232,8 @@ Any error fails the whole batch. Every existence check is within the batch's gra
 ### Filing claims
 
 The SME's `file_claims` tool creates a `ClaimBatch` with `batch_id`, `graph_id`, `section`, `claims` and
-optionally `edges`; it cannot set `source_root` or `profile`, so the gate skips the file and quote checks. A
+optionally `edges`; it cannot set `source_root` or `profile`, so the gate skips the file checks (stored-source
+quotes are still checked). A
 question is one claim line, such as:
 
 ```json
@@ -208,7 +244,75 @@ A challenge is a `challenge` claim plus `edges` holding its `challenges` edge, f
 `{"from": "c:ch:001", "to": "c:eu:010", "type": "challenges", "by": "p:mike", "date": "2026-10-29", "note": ""}`;
 a review is a `review` claim with `"verdict"` after `note` plus its `reviews` edge; a reply is a claim plus an
 `answers` edge to the challenge. The prompt (`agent_behaviors/claim_sme/system_prompt.md`) holds the id and
-batch conventions.
+batch conventions. In a graph started with `profiles/general.json` the question's `from` is
+`memory:questions#questions` and its `confidence` is `memory`.
+
+### Research
+
+A `ResearchRequest` starts the research flow, made in one of two ways:
+
+- From a chat: ask the expert for research on a topic. Its `start_research` tool creates the request with
+  `request_id`, `graph_id` (the graph in use, or a new slug for a topic no graph covers), `topic` and an
+  optional `brief`, and the expert replies with the `request_id`; ask it later how the research went and it
+  reads the `ResearchReceipt`.
+- By document: `gents document create ResearchRequest --home <home> --graphql <url> --json '{"request_id":
+  "flipper-fcc-1", "graph_id": "flipper-fcc", "topic": "..."}'`, or a seed as in the live scenario.
+
+The `research-request` trigger hands it to `claim-researcher`, serially, one request
+at a time:
+
+| `ResearchRequest` field | Meaning |
+| --- | --- |
+| `request_id` | unique correlation key; every batch, source request and the receipt the researcher writes start with it |
+| `graph_id` | required: the graph to research into; every researcher write is filled with it |
+| `topic`, `brief` | what to research, and what the answer should cover |
+| `max_sources` | the most URLs to fetch for the request; unset means 4 |
+| `create_graph` | advice only: the researcher starts the graph exactly when no `ClaimGraph` exists for `graph_id` |
+| `note`, `submitted_at` | provenance |
+
+The researcher (`agent_behaviors/claim_researcher/system_prompt.md`) starts a missing graph with
+`profiles/general.json`, the perspectives `p:owner` (person), `p:researcher` (position) and `p:reviewer` (critic)
+and the entity `e:open-question`; plans 3 to 6 sections; fetches sources (`fetch_source` creates a
+`SourceRequest`, the `claim-sources` callback answers with a `Source`); files one batch per section with claims
+whose `from` is `source:<source_id>#p<page>` and whose quote is copied from that page of `Source.text`; reads
+each `GateReceipt` and refiles a failed batch as `<batch_id>-r2`, `-r3`; files its open questions; and writes
+one `ResearchReceipt`:
+
+| `ResearchReceipt` field | Meaning |
+| --- | --- |
+| `receipt_id`, `request_id`, `graph_id` | the receipt, its request (filled from the trigger) and its graph |
+| `summary` | the sections with their claim counts and the open questions |
+| `sources_fetched`, `sources_failed` | `Source` rows ok and failed |
+| `batches_filed`, `claims_admitted`, `claims_memory` | batches filed (refiles included), claims admitted, of which from memory |
+| `open_questions`, `finished_at` | the question claim ids, space-separated, and an ISO-8601 UTC time |
+
+The receipt runs `claim-reviewer` (`research-receipt` trigger, serial), which reads up to five of the request's
+sourced claims, judges whether each quote supports its text, and files one batch of `review` claims (verdict
+`sustains`, `weakens` or `unclear`) and `challenge` claims, each with its edge, `from` `review:<target id>`,
+`confidence: inferred`.
+
+No-web mode: when no source can be fetched (no network grant, every URL refused), the researcher files what it
+knows as memory claims (`from` `memory:<section>`, `quote` equal to `text`, `confidence: memory`) and says so in
+the summary; the gate refuses a `memory:` claim marked `sourced`, so such a graph never claims a checked quote.
+
+### Sources
+
+A `SourceRequest` (`request_id`, `graph_id`, `url`, `confidential`, `note`, `submitted_at`) runs the
+`claim-sources` callback, which writes exactly one `Source` with the same `request_id`. A fetch that fails is a
+`Source` with `status: failed` and the reason in `error`, never a missing row.
+
+| `Source` field | Meaning |
+| --- | --- |
+| `source_id` | `s:` and 16 hex digits of the URL's hash for the first successful fetch of a URL; a refetch or a failure gets a longer id (`s:<16 hex>-<8 hex>`), so readers copy it whole and assume no shape |
+| `graph_id`, `request_id` | its graph and the request that fetched it |
+| `url`, `final_url`, `title`, `fetched_at` | what was asked, where redirects led, the page title, an ISO-8601 UTC time |
+| `status`, `error`, `http_status` | `ok` or `failed`, the reason, the HTTP status |
+| `content_type`, `content_hash` | the response type and `sha256:<hex>` of the raw body |
+| `text`, `text_chars`, `truncated` | the plain text (HTML stripped, plain text and JSON verbatim), at most 200 000 characters |
+| `confidential`, `note` | copied from the request |
+
+A URL the graph already holds comes back `failed` with an `error` naming the stored `source_id` to cite. See
+`plugins/claim_sources/TOOL.md`.
 
 ### Views
 
@@ -239,7 +343,8 @@ See `plugins/claim_views/TOOL.md`.
 `claim_export` with `{"graph_id": "<graph>", "out_dir": "<allowed folder>"}` writes `claims/<section>.jsonl`,
 `edges/edges.jsonl`, `entities/entities.jsonl`, `perspectives/perspectives.jsonl`, each sorted by id, and the
 graph's profile versions as `claim_graph.json` (a JSON array), and returns the counts; `{"graph_id": "<graph>",
-"dry_run": true}` returns the counts only. See `plugins/claim_export/TOOL.md`.
+"dry_run": true}` returns the counts only. It also writes the graph's sources as `sources/sources.jsonl`, metadata only
+unless `include_source_text` is true. See `plugins/claim_export/TOOL.md`.
 
 An operator exports without a model by creating an `ExportRequest`; the `claim-export` callback runs the plugin
 and writes one `ExportReceipt`. `gents plugin run --bind-dir` binds its folder read-only, so it cannot write the
@@ -260,6 +365,7 @@ gents query find --home <home> --graphql http://127.0.0.1:8080/api/v0/graphql --
 | `out_dir` | absolute path inside a folder allowed `read_write`; may be left out with `dry_run` |
 | `sections` | JSON text of an array of claim section names; absent means every section |
 | `dry_run` | count the rows and write nothing |
+| `include_source_text` | also write each `Source`'s `text` into `sources/sources.jsonl` |
 | `note`, `submitted_at` | provenance; not passed to the plugin |
 
 | `ExportReceipt` field | Meaning |
@@ -318,6 +424,10 @@ Rows written by the first version of this pack carry no `graph_id` and no profil
 export and the SME (which all scope by `graph_id`) do not read them. There are none in the wild: the first
 version was never imported outside test homes. Import the research graph again with `--graph-id`.
 
+0.3.0 adds collections (`Source`, `SourceRequest`, `ResearchRequest`, `ResearchReceipt`) and the optional
+`ExportRequest.include_source_text`; it changes no existing field, so a 0.2.0 home upgrades by reinstalling the
+pack, with no re-init and no re-import.
+
 ## Validation
 
 ```sh
@@ -326,8 +436,10 @@ scripts/test-pack.sh packs/gents/claim_graph
 ```
 
 The suite builds the pack, runs every plugin case (`plugins/*/tests/*.json`) and each plugin's `cargo test`,
-the install case (`tests/install.json`: thirteen documents, three plugins, the `sme` slot), the configuration
-checks in `tests/content.json`, and five runtime cases served from a throwaway repository:
+the install case (`tests/install.json`: thirty documents, four plugins, the `sme`, `researcher` and `reviewer`
+slots), the configuration checks in `tests/content.json` (among them: each prompt's schema card names exactly the
+SDL fields of the collections it describes, and the worked batches parse with the general profile verbatim),
+the scenario seam checks in `tests/scenario.json`, and seven runtime cases served from a throwaway repository:
 
 - `tests/gate_runtime.json` seeds a valid batch with an inline profile whose quote and cited document are in the
   repository, and expects a passing receipt at profile version 1, one `Claim`, `Entity` and `Perspective`, and
@@ -340,6 +452,20 @@ checks in `tests/content.json`, and five runtime cases served from a throwaway r
   `ViewReceipt` with no rows.
 - `tests/export_runtime.json` seeds a dry-run `ExportRequest` and expects an `ExportReceipt` with `ok` and
   `dry_run`.
+- `tests/source_runtime.json` seeds a `SourceRequest` for `http://127.0.0.1:9/` and expects a `Source` with
+  `status: failed`.
+- `tests/memory_claim_runtime.json` seeds a batch whose `memory:` claim is marked `sourced` and expects a failing
+  receipt with nothing admitted.
+
+The live scenario `scenarios/claim_graph_live` (repository root) runs the research flow with a real model:
+
+```sh
+make live LIVE_PACK=claim_graph LIVE_ENDPOINT=http://127.0.0.1:11434/v1 LIVE_MODEL=qwen3.8:latest
+```
+
+It seeds one `ResearchRequest` (topic: the Flipper Zero's FCC certification) and passes when the expert's answer
+from the new graph completes and the home holds at least one `Source`, five `Claim`s, one `GateReceipt` and one
+`ResearchReceipt`.
 
 Research data the import tolerates: the research `edges/edges.jsonl` gives `c:exchange:084|supports|c:pitch:164`
 twice (lines 67 and 181, with different `date` and `note`); the import keeps line 67 and warns about line 181.
@@ -347,5 +473,6 @@ Fix the source file to import it with `--strict`.
 
 ## Operational history
 
-29 Oct 2026: pack created. 29 Oct 2026: profiles, several graphs per node, disputes and views added. No run
-recorded yet.
+29 Oct 2026: pack created. 29 Oct 2026: profiles, several graphs per node, disputes and views added. 30 Oct
+2026: 0.3.0, sources as documents, the researcher and reviewer agents and the live research scenario added. No
+run recorded yet.

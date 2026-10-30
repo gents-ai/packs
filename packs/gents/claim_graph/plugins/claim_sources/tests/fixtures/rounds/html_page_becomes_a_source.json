@@ -1,0 +1,40 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "http_calls": true,
+    "http_results": {
+      "fetch": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "server": "nginx"
+        },
+        "body": "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>FCC ID 2A2V6-FZ &mdash; Flipper Zero</title><script>track()</script></head>\n<body><nav><a href=\"/\">Home</a> | <a href=\"/search\">Search</a></nav>\n<h1>FCC ID 2A2V6-FZ</h1>\n<p>Flipper Devices Inc. <b>Flipper Zero</b> was granted equipment authorization on\n  <time>2020-12-15</time>.</p>\n<table><tr><th>Frequency</th><td>13.56 MHz</td></tr><tr><th>Rule part</th><td>15C</td></tr></table>\n<footer>&copy; fccid.io</footer></body></html>"
+      }
+    }
+  },
+  "expect": {
+    "source_id": "s:e9c4f2716857a1e6",
+    "graph_id": "flipper-fcc",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "final_url": "https://fccid.io/2A2V6-FZ",
+    "title": "FCC ID 2A2V6-FZ — Flipper Zero",
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "ok",
+    "error": null,
+    "http_status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "content_hash": "sha256:fdb9eda286b511f116d5eed9f8c5f1256efc918879daf913a2a17d7ce22b0a88",
+    "text": "FCC ID 2A2V6-FZ\nFlipper Devices Inc. Flipper Zero was granted equipment authorization on 2020-12-15.\nFrequency\n13.56 MHz\nRule part\n15C",
+    "text_chars": 134,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

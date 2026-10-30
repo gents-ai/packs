@@ -19,14 +19,14 @@
     "receipt": {
       "receipt_id": "receipt-datapack-flipper-20261029-1",
       "verdict": "fail",
-      "errors": "[\"ERROR: c:flipper:001 is sourced but cites no fetched doc or code ref\"]",
+      "errors": "[\"ERROR: c:flipper:001 is sourced but cites no fetched doc, code ref or source\"]",
       "claims_admitted": 0,
       "edges_admitted": 0,
       "entities_admitted": 0,
       "perspectives_admitted": 0,
       "quotes_checked": 0,
       "quotes_skipped": 1,
-      "gate_version": "0.2.0",
+      "gate_version": "0.3.0",
       "checked_at": "2026-10-29T12:00:00Z",
       "graph_id": "government-attestation"
     }

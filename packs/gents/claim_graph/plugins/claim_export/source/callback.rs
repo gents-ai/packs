@@ -144,6 +144,7 @@ mod tests {
         assert!(tool_input(&json!({"sections": "[]"})).get("sections").is_none());
         assert!(tool_input(&json!({"sections": null})).get("sections").unwrap().is_null());
         assert_eq!(tool_input(&json!({"sections": "plain"}))["sections"], json!(["plain"]));
+        assert_eq!(tool_input(&json!({"include_source_text": true}))["include_source_text"], true);
     }
 
     #[test]
@@ -165,7 +166,7 @@ mod tests {
     #[test]
     fn the_first_round_asks_for_the_same_pages_as_tool_mode() {
         let out = run(&json!({"request_id": "r", "graph_id": "g", "dry_run": true, "data_calls": true, "sections": "", "out_dir": ""}), &json!("r"));
-        assert_eq!(out["data_calls"]["requests"].as_array().unwrap().len(), 15);
+        assert_eq!(out["data_calls"]["requests"].as_array().unwrap().len(), 12);
         assert!(out.get("receipt_id").is_none());
     }
 }

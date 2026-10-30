@@ -29,6 +29,11 @@
           "next": 0,
           "done": true,
           "short": false
+        },
+        "sources": {
+          "next": 0,
+          "done": true,
+          "short": false
         }
       },
       "rows": {
@@ -75,7 +80,8 @@
         "edges": [],
         "entities": [],
         "perspectives": [],
-        "claim_graph": []
+        "claim_graph": [],
+        "sources": []
       }
     },
     "data_results": {

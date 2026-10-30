@@ -12,6 +12,7 @@ use serde_json::Value;
 
 use crate::batch::{Batch, Record};
 use crate::profile::Profile;
+use crate::quotes::{self, Origin};
 use crate::store::Found;
 
 pub const REQUIRED: [&str; 10] = [
@@ -347,14 +348,59 @@ fn check_claim(claim: &Record, cx: &Context, errors: &mut Vec<String>) {
         if source.get("doc").is_some_and(|d| !d.is_null() && !d.is_string()) {
             errors.push(format!("ERROR: {id} source doc must be a string or null"));
         }
+        if source
+            .get("source")
+            .is_some_and(|s| !s.is_null() && s.as_str().is_none_or(str::is_empty))
+        {
+            errors.push(format!(
+                "ERROR: {id} sources[].source must be a source id or null"
+            ));
+        }
     }
-    let cites = sources
-        .iter()
-        .any(|s| truthy(s.get("doc")) || truthy(s.get("code")));
+    let cites = sources.iter().any(|s| {
+        truthy(s.get("doc")) || truthy(s.get("code")) || s.get("source").and_then(Value::as_str).is_some_and(|s| !s.is_empty())
+    });
     if claim.str("confidence") == Some("sourced") && !cites {
         errors.push(format!(
-            "ERROR: {id} is sourced but cites no fetched doc or code ref"
+            "ERROR: {id} is sourced but cites no fetched doc, code ref or source"
         ));
+    }
+    check_origin(claim, id, cx, errors);
+}
+
+/// The rules a claim's `from` brings: a `memory:` claim quotes its own text
+/// and claims only `memory` confidence; a `source:` claim names a source id;
+/// every stored source the claim cites (its `from` and `sources[].source`)
+/// is in the graph with status `ok`, once the store has answered.
+fn check_origin(claim: &Record, id: &str, cx: &Context, errors: &mut Vec<String>) {
+    match quotes::origin(claim) {
+        Some(Origin::Memory) => {
+            if claim.str("quote").is_some() && claim.str("quote") != claim.str("text") {
+                errors.push(format!(
+                    "ERROR: {id} is from memory but its quote is not its text"
+                ));
+            }
+            if let Some(confidence) = claim.str("confidence").filter(|c| *c != "memory") {
+                errors.push(format!(
+                    "ERROR: {id} is from memory but claims confidence {confidence}"
+                ));
+            }
+        }
+        Some(Origin::Source("")) => {
+            errors.push(format!(
+                "ERROR: {id} from names no source id (write source:<source_id>#<anchor>)"
+            ));
+        }
+        _ => {}
+    }
+    if let Some(found) = cx.found {
+        for source in quotes::cited_sources(claim) {
+            if !found.source_ok(source) {
+                errors.push(format!(
+                    "ERROR: {id} cites source {source} which is missing or failed"
+                ));
+            }
+        }
     }
 }
 

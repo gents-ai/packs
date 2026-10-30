@@ -1,0 +1,26 @@
+{
+  "input": {
+    "request_id": "sr-x",
+    "url": "https://example.org/",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "http_calls": true
+  },
+  "expect": {
+    "source_id": "s:8198d1bac40a1033-9bbfa6a5",
+    "graph_id": "",
+    "url": "https://example.org/",
+    "final_url": "https://example.org/",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "graph_id is required: the graph the source belongs to",
+    "http_status": null,
+    "content_type": null,
+    "content_hash": null,
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": null
+  }
+}

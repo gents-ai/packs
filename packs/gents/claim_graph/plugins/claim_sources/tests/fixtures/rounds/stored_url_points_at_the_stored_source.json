@@ -1,0 +1,44 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "http_calls": true,
+    "data_calls": true,
+    "data_results": {
+      "existing": {
+        "result": {
+          "rows": [
+            {
+              "source_id": "s:e9c4f2716857a1e6",
+              "status": "ok",
+              "fetched_at": "2026-10-29T09:00:00Z"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expect": {
+    "source_id": "s:e9c4f2716857a1e6-bf7c1a27",
+    "graph_id": "flipper-fcc",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "final_url": "https://fccid.io/2A2V6-FZ",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "this url is already stored as source s:e9c4f2716857a1e6 (fetched 2026-10-29T09:00:00Z); cite that source_id",
+    "http_status": null,
+    "content_type": null,
+    "content_hash": null,
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

@@ -2,13 +2,18 @@
 
 Writes one graph back out as the research repository's JSONL tree, so the
 research tools (`validate.sh`, `check.sh`) and diffs work on it. It reads the
-graph's `Claim`, `Edge`, `Entity`, `Perspective` and `ClaimGraph` rows (every
-query filters on `graph_id`) and writes, under the folder you name:
+graph's `Claim`, `Edge`, `Entity`, `Perspective`, `Source` and `ClaimGraph`
+rows (every query filters on `graph_id`) and writes, under the folder you name:
 
 - `claims/<section>.jsonl`, one file per claim section
 - `edges/edges.jsonl`
 - `entities/entities.jsonl`
 - `perspectives/perspectives.jsonl`
+- `sources/sources.jsonl`: the fetched sources, one compact line each: `id`
+  (the `source_id`), `url`, `final_url`, `title`, `fetched_at`, `status`,
+  `error`, `http_status`, `content_type`, `content_hash`, `text_chars`,
+  `truncated`, `confidential`, `request_id`, `note` (a stored null stays
+  null), and `text` last when `include_source_text` is set
 - `claim_graph.json`: the graph's profile versions, a JSON array ordered by
   `version`, one compact object per line holding every ClaimGraph field in
   schema order (a stored null stays null)
@@ -26,16 +31,22 @@ the store.
 - `sections`: export only the claims of these sections (file stems). Edges,
   entities and perspectives are always exported in full.
 - `dry_run`: count and list the files without writing anything.
+- `include_source_text`: also write each source's `text` into
+  `sources/sources.jsonl`. The texts are read after everything else, 32 a
+  round, and appended to a hidden part file under `out_dir` that replaces
+  `sources/sources.jsonl` when the export finishes; with `dry_run` they are
+  not read.
 
 ## Output
 
-`{"ok": true, "graph_id": "...", "dry_run": false, "written": {"claims": n,
-"edges": n, "entities": n, "perspectives": n, "claim_graph": n}, "sections":
-{"<section>": n}, "files": ["claims/<section>.jsonl", ..., "claim_graph.json"]}`. With `dry_run`, `written` holds the counts
+`{"ok": true, "graph_id": "...", "dry_run": false, "include_source_text": false, "written": {"claims": n,
+"edges": n, "entities": n, "perspectives": n, "claim_graph": n, "sources": n}, "sections":
+{"<section>": n}, "files": ["claims/<section>.jsonl", ..., "sources/sources.jsonl", "claim_graph.json"]}`. With `dry_run`, `written` holds the counts
 that would be written and `files` the paths.
 
 Failure: `{"ok": false, "error": "...", "retryable": false}`. Nothing is
-written when a read fails; a write failure can leave earlier files of the same
+written when a read fails (a failed text pass leaves only its hidden part file under
+`sources/`); a write failure can leave earlier files of the same
 call replaced.
 
 Status is never exported as derived state: `status` is the writer's advisory
@@ -45,7 +56,7 @@ written.
 
 ## Authority and limits
 
-Read-only queries on `Claim`, `Edge`, `Entity`, `Perspective` and
+Read-only queries on `Claim`, `Edge`, `Entity`, `Perspective`, `Source` and
 `ClaimGraph`; writes only inside `out_dir`.
 No network, environment or commands. About 100000 rows per collection is the
 most the host lets one call page.
@@ -58,9 +69,9 @@ When the input carries `request_id`, the plugin runs as the callback of an
 (`export-<request_id>`), `graph_id`, `ok`, `error`,
 `claims_written`, `edges_written`, `entities_written`, `perspectives_written`,
 `sections_json`, `files_json` (JSON text), `dry_run`, `exported_at` (UTC
-ISO-8601). The profile count has no receipt field; `files_json` lists
-`claim_graph.json`. It accepts `graph_id` (required), `out_dir`, `sections` (a list or its JSON text; blank
-means all), `dry_run` and the host fields, and ignores other fields. Every
+ISO-8601). The profile and source counts have no receipt field; `files_json` lists
+`sources/sources.jsonl` and `claim_graph.json`. It accepts `graph_id` (required), `out_dir`, `sections` (a list or its JSON text; blank
+means all), `dry_run`, `include_source_text` and the host fields, and ignores other fields. Every
 failure, including a missing `out_dir` without `dry_run`, is a receipt with
 `ok: false`, never a non-zero exit. `out_dir` must be a folder the callback is
 allowed to write; a read-only bind (`gents plugin run --bind-dir`) fails the

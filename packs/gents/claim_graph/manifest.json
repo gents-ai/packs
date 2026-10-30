@@ -1,14 +1,19 @@
 {
   "assets": [
     "README.md",
+    "agent_behaviors/claim_researcher/system_prompt.md",
+    "agent_behaviors/claim_reviewer/system_prompt.md",
     "agent_behaviors/claim_sme/system_prompt.md",
     "pack_config.json",
     "plugins/claim_export.afb",
     "plugins/claim_export/TOOL.md",
     "plugins/claim_gate.afb",
     "plugins/claim_gate/TOOL.md",
+    "plugins/claim_sources.afb",
+    "plugins/claim_sources/TOOL.md",
     "plugins/claim_views.afb",
     "plugins/claim_views/TOOL.md",
+    "profiles/general.json",
     "profiles/research.json",
     "schemas/claim.graphql",
     "schemas/claim_batch.graphql",
@@ -19,14 +24,23 @@
     "schemas/export_request.graphql",
     "schemas/gate_receipt.graphql",
     "schemas/perspective.graphql",
+    "schemas/research_receipt.graphql",
+    "schemas/research_request.graphql",
+    "schemas/source.graphql",
+    "schemas/source_request.graphql",
     "schemas/view_receipt.graphql",
     "schemas/view_request.graphql",
+    "tasks/claim_research_task/prompt.md",
+    "tasks/claim_review_task/prompt.md",
     "tests/content.json",
     "tests/dispute_runtime.json",
     "tests/export_runtime.json",
     "tests/gate_runtime.json",
     "tests/gate_runtime_fail.json",
     "tests/install.json",
+    "tests/memory_claim_runtime.json",
+    "tests/scenario.json",
+    "tests/source_runtime.json",
     "tests/view_runtime.json",
     "tools/import_jsonl.sh"
   ],
@@ -35,14 +49,28 @@
   ],
   "config": "pack_config.json",
   "dependencies": [],
-  "description": "Append-only claim graphs (Claim, Edge, Entity, Perspective), one or more per node, each with its own vocabulary profile, admitted only through a mechanical gate plugin, with challenges and reviews, derived status, dispute and reputation views, JSONL export, and a subject-matter expert agent that answers with claim ids.",
+  "description": "Append-only claim graphs (Claim, Edge, Entity, Perspective), one or more per node, each with its own vocabulary profile, admitted only through a mechanical gate plugin that checks every sourced quote against a fetched Source or a narrative file; a researcher agent that fetches sources and files claims for a topic, a reviewer that challenges and reviews them, derived status, dispute and reputation views, JSONL export, and a subject-matter expert agent that answers with claim ids.",
   "inference_slots": [
     {
+      "name": "sme",
       "agents": [
         "claim-sme"
       ],
-      "description": "Answers questions from the claim graph with a claim id on every statement and files the questions it cannot answer. Any capable profile.",
-      "name": "sme"
+      "description": "Answers questions from the claim graph with a claim id on every statement and files the questions it cannot answer. Any capable profile."
+    },
+    {
+      "name": "researcher",
+      "agents": [
+        "claim-researcher"
+      ],
+      "description": "Researches a ResearchRequest's topic: fetches sources, files claims with verbatim quotes through the gate, fixes refused batches and closes the request with a ResearchReceipt. A model that follows JSON tool schemas reliably."
+    },
+    {
+      "name": "reviewer",
+      "agents": [
+        "claim-reviewer"
+      ],
+      "description": "Reviews a finished research request's claims against their sources and files reviews, challenges and questions. Any capable profile."
     }
   ],
   "kind": "documents",
@@ -63,7 +91,8 @@
           "Edge",
           "Entity",
           "Perspective",
-          "ClaimGraph"
+          "ClaimGraph",
+          "Source"
         ],
         "ops": [
           "query"
@@ -158,13 +187,14 @@
           "Edge",
           "Entity",
           "Perspective",
-          "ClaimGraph"
+          "ClaimGraph",
+          "Source"
         ],
         "ops": [
           "query"
         ]
       },
-      "description": "Exports one claim graph as the research JSONL files (claims per section, edges, entities, perspectives) and its profile versions, sorted by id, or counts them with dry_run.",
+      "description": "Exports one claim graph as the research JSONL files (claims per section, edges, entities, perspectives, sources) and its profile versions, sorted by id, or counts them with dry_run.",
       "input_schema": {
         "properties": {
           "dry_run": {
@@ -190,6 +220,11 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "include_source_text": {
+            "type": "boolean",
+            "default": false,
+            "description": "Also write each stored source's text into sources/sources.jsonl; without it only the metadata is written."
           }
         },
         "required": [
@@ -277,6 +312,68 @@
       },
       "name": "claim_views",
       "source": "plugins/claim_views"
+    },
+    {
+      "name": "claim_sources",
+      "artifact": "plugins/claim_sources.afb",
+      "source": "plugins/claim_sources",
+      "language": "rust",
+      "description": "Fetches one http or https URL for a SourceRequest through host-mediated HTTP and writes it as a Source row: plain text, title, content hash and status, or status failed with the reason.",
+      "instructions": "plugins/claim_sources/TOOL.md",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "graph_id",
+          "url"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "description": "The SourceRequest correlation key; the Source row carries it."
+          },
+          "graph_id": {
+            "type": "string",
+            "description": "The graph the source belongs to."
+          },
+          "url": {
+            "type": "string",
+            "description": "The http or https URL to fetch, at most 2048 characters, without credentials or a private-range literal IP."
+          },
+          "confidential": {
+            "type": "boolean",
+            "default": false,
+            "description": "Marks the stored source as confidential; copied onto the Source row."
+          },
+          "note": {
+            "type": "string",
+            "description": "Why the source was requested; copied onto the Source row."
+          }
+        }
+      },
+      "limits": {
+        "memory_mib": 128,
+        "wall_clock_secs": 60,
+        "max_output_mib": 4
+      },
+      "manifold": {
+        "net": {
+          "OutboundHttp": null
+        },
+        "fs": "None",
+        "env": "None",
+        "child_process": false,
+        "crypto": false,
+        "http_timeout_ms": 8000
+      },
+      "data": {
+        "collections": [
+          "Source"
+        ],
+        "ops": [
+          "query"
+        ]
+      }
     }
   ],
   "schemas": [
@@ -290,14 +387,19 @@
     "schemas/export_request.graphql",
     "schemas/export_receipt.graphql",
     "schemas/view_request.graphql",
-    "schemas/view_receipt.graphql"
+    "schemas/view_receipt.graphql",
+    "schemas/source.graphql",
+    "schemas/source_request.graphql",
+    "schemas/research_request.graphql",
+    "schemas/research_receipt.graphql"
   ],
   "tags": [
     "claims",
     "disputes",
     "knowledge",
     "plugin",
-    "provenance"
+    "provenance",
+    "research"
   ],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

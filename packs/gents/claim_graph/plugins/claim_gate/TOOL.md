@@ -41,6 +41,17 @@ gate checks that each claim's `from` file (before `#`) and every non-null
 `sources[].doc` exist under it, and that each quote occurs verbatim in its
 `from` file. Without it those checks are skipped.
 
+A claim's `from` says where its quote is, in one of three forms:
+
+- `source:<source_id>#<anchor>`: a `Source` document of the graph, fetched
+  by `claim_sources` (anchor is free text, e.g. a heading). The quote is
+  looked for in its stored `text`, with or without `source_root`. List the
+  source in `sources` too: `{"source": "<source_id>", "url": "<url>",
+  "fetched": "<fetched_at>"}`.
+- `memory:<topic>`: nothing outside the writer. The `quote` is the `text`
+  and `confidence` is `memory`; no quote is looked for.
+- anything else: a file path under `source_root` (research imports).
+
 `gate_now`, which the binding never sends, fixes `checked_at` for
 reproducible plugin cases.
 
@@ -61,7 +72,9 @@ Any broken rule fails the whole batch. The wording is the research gate's
   words; `kind` is in `kinds`, `confidence` in `confidence_classes`, `status`
   is `live`, `superseded`, `contested` or `retracted`; a `mapping` has `fit`
   in `mapping_fits` and `against` in `mapping_targets`; at least one entity;
-  a `sourced` claim cites a `doc` or a `code` reference; a `code` reference
+  a `sourced` claim cites a `doc`, a `code` reference or a stored `source`
+  (`ERROR: <id> is sourced but cites no fetched doc, code ref or source`);
+  a `sources[].source` is a non-empty id or null; a `code` reference
   is `path[:line[-line]]`. A claim carries no field outside the schema, and
   text fields are strings.
 - Every entity a claim names, and every `by`, is in the batch or the graph.
@@ -77,6 +90,17 @@ Any broken rule fails the whole batch. The wording is the research gate's
     without valid verdict`);
   - a `resolves` edge's `by` is in `resolver_perspectives` (`ERROR: edge
     <from>-><to> resolves by <by>, not a resolver`).
+- A `memory:` claim's quote is its text and its confidence is `memory`
+  (`ERROR: <id> is from memory but its quote is not its text`, `ERROR: <id>
+  is from memory but claims confidence <c>`). This holds for every kind,
+  questions included.
+- A `source:` `from` names an id (`ERROR: <id> from names no source id
+  (write source:<source_id>#<anchor>)`). Every source a claim cites, in
+  `from` or in `sources[].source`, is a `Source` of the graph with status
+  `ok` (`ERROR: <id> cites source <source_id> which is missing or failed`),
+  and the quote of a `source:` claim is found in that source's `text` as
+  `grep -F` finds it (`ERROR: <id> quote not found verbatim in source
+  <source_id>`), under the same exemptions as file quotes below.
 - With `source_root`: files exist, and quotes are found as `grep -F` finds
   them (each line of a multi-line quote is its own pattern). Not
   quote-checked: a `question`, `challenge` or `review` whose `quote` equals
@@ -96,6 +120,16 @@ per round, its cursor in `state`), and the last round resolves the profile
 and applies every rule and the quotes. A batch needing more than 960 queries
 fails and asks to be split.
 
+Stored sources are asked for on `Source` with the same `_and` filter on
+`source_id`. A source whose text a quote needs (the `from` of a claim that
+is not a self-quoting question, challenge or review) is asked alone, fields
+`source_id, status, text`, `limit` 1: the host drops rows past the plugin's
+4 MiB output budget without saying so, and a text is at most 200 000
+characters, so one text per query always arrives whole. Sources cited only
+in `sources[]` are asked 256 at a time for `source_id, status`. Each text is
+matched against the quotes citing it in the round it arrives; `state` keeps
+which claims matched, never the text.
+
 ## Output
 
 An object keyed by port. `receipt` is always present: a `GateReceipt` with
@@ -103,8 +137,9 @@ An object keyed by port. `receipt` is always present: a `GateReceipt` with
 `fail`), `errors` (the JSON text of an array of `ERROR: ...` strings, at most
 200, the last saying how many more were cut), `claims_admitted`,
 `edges_admitted`, `entities_admitted`, `perspectives_admitted` (0 on a fail),
-`quotes_checked`, `quotes_skipped` (exempt claims, and every claim when there
-is no `source_root`), `profile_version`, `gate_version` and `checked_at`
+`quotes_checked` (file and source quotes looked for), `quotes_skipped`
+(exempt and `memory:` claims, file quotes when there is no `source_root`,
+and quotes whose source is missing or failed), `profile_version`, `gate_version` and `checked_at`
 (UTC). `profile_version` is the version the batch was checked against: the
 stored one, or for an inline profile the version it is admitted as (one more
 than the graph's highest). It is absent when no profile was resolved: a

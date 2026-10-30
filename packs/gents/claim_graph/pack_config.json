@@ -5,6 +5,18 @@
       "context_id": "claim-sme-context",
       "display_name": "Claim graph expert",
       "inference_profile_id": "gents:inference-slot:sme"
+    },
+    {
+      "agent_id": "claim-researcher",
+      "context_id": "claim-researcher-context",
+      "display_name": "Claim graph researcher",
+      "inference_profile_id": "gents:inference-slot:researcher"
+    },
+    {
+      "agent_id": "claim-reviewer",
+      "context_id": "claim-reviewer-context",
+      "display_name": "Claim graph reviewer",
+      "inference_profile_id": "gents:inference-slot:reviewer"
     }
   ],
   "callback_bindings": [
@@ -38,7 +50,8 @@
         "graph_id",
         "out_dir",
         "sections",
-        "dry_run"
+        "dry_run",
+        "include_source_text"
       ]
     },
     {
@@ -51,6 +64,18 @@
         "view",
         "out_dir",
         "dry_run"
+      ]
+    },
+    {
+      "binding_id": "claim-sources",
+      "callback_id": "claim-sources",
+      "event_source_id": "source-request",
+      "input_fields": [
+        "request_id",
+        "graph_id",
+        "url",
+        "confidential",
+        "note"
       ]
     }
   ],
@@ -149,6 +174,26 @@
         ],
         "plugin": "claim_views"
       }
+    },
+    {
+      "callback_id": "claim-sources",
+      "display_name": "claim-sources",
+      "handler": {
+        "correlation_field": "request_id",
+        "digest": "",
+        "kind": "plugin",
+        "plugin": "claim_sources",
+        "outputs": [
+          {
+            "cardinality": "one",
+            "collection": "Source",
+            "correlation_field": "request_id",
+            "name": "source",
+            "required": true,
+            "schema": "Source/v1"
+          }
+        ]
+      }
     }
   ],
   "contexts": [
@@ -157,6 +202,18 @@
       "display_name": "Claim graph expert",
       "system_prompt": "./agent_behaviors/claim_sme/system_prompt.md",
       "tools_id": "claim-sme-tools"
+    },
+    {
+      "context_id": "claim-researcher-context",
+      "display_name": "Claim graph researcher",
+      "system_prompt": "./agent_behaviors/claim_researcher/system_prompt.md",
+      "tools_id": "claim-researcher-tools"
+    },
+    {
+      "context_id": "claim-reviewer-context",
+      "display_name": "Claim graph reviewer",
+      "system_prompt": "./agent_behaviors/claim_reviewer/system_prompt.md",
+      "tools_id": "claim-reviewer-tools"
     }
   ],
   "datastore_tool_surfaces": [
@@ -225,9 +282,270 @@
             }
           ],
           "tool_name": "request_view"
+        },
+        {
+          "tool_name": "start_research",
+          "collection": "ResearchRequest",
+          "description": "Ask the researcher to research a topic into a graph: one ResearchRequest; the researcher answers with a ResearchReceipt for request_id, and the reviewer then reviews its claims.",
+          "fields": [
+            {
+              "name": "request_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "required": true
+            },
+            {
+              "name": "topic",
+              "required": true
+            },
+            {
+              "name": "brief"
+            },
+            {
+              "name": "note"
+            }
+          ]
         }
       ],
       "surface_id": "claim-graph-writes"
+    },
+    {
+      "surface_id": "claim-researcher-writes",
+      "display_name": "Claim graph researcher writes",
+      "entries": [
+        {
+          "tool_name": "start_graph",
+          "collection": "ClaimBatch",
+          "description": "Start the research graph: one ClaimBatch carrying the profile, the perspectives and the first entities (claims and edges optional). graph_id is filled from the research request. The gate answers with a GateReceipt for batch_id.",
+          "fields": [
+            {
+              "name": "batch_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "section",
+              "required": true
+            },
+            {
+              "name": "profile",
+              "required": true
+            },
+            {
+              "name": "perspectives",
+              "required": true
+            },
+            {
+              "name": "entities",
+              "required": true
+            },
+            {
+              "name": "claims"
+            },
+            {
+              "name": "edges"
+            },
+            {
+              "name": "note"
+            }
+          ]
+        },
+        {
+          "tool_name": "file_batch",
+          "collection": "ClaimBatch",
+          "description": "File claims (JSONL text) with their edges and any new entities as one ClaimBatch; graph_id is filled from the research request. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
+          "fields": [
+            {
+              "name": "batch_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "section",
+              "required": true
+            },
+            {
+              "name": "claims",
+              "required": true
+            },
+            {
+              "name": "edges"
+            },
+            {
+              "name": "entities"
+            },
+            {
+              "name": "perspectives"
+            },
+            {
+              "name": "extractor"
+            },
+            {
+              "name": "note"
+            }
+          ]
+        },
+        {
+          "tool_name": "fetch_source",
+          "collection": "SourceRequest",
+          "description": "Ask the node to fetch one http or https URL; graph_id is filled from the research request. The claim-sources callback writes one Source row with the same request_id: status ok with its text, or status failed with the error.",
+          "fields": [
+            {
+              "name": "request_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "url",
+              "required": true
+            },
+            {
+              "name": "confidential"
+            },
+            {
+              "name": "note"
+            }
+          ]
+        },
+        {
+          "tool_name": "finish_research",
+          "collection": "ResearchReceipt",
+          "description": "Close the research request with its counts and a summary; request_id and graph_id are filled from the research request. Call it once, last.",
+          "fields": [
+            {
+              "name": "receipt_id",
+              "required": true
+            },
+            {
+              "name": "request_id",
+              "fill": "correlation"
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "summary",
+              "required": true
+            },
+            {
+              "name": "sources_fetched",
+              "required": true
+            },
+            {
+              "name": "sources_failed",
+              "required": true
+            },
+            {
+              "name": "batches_filed",
+              "required": true
+            },
+            {
+              "name": "claims_admitted",
+              "required": true
+            },
+            {
+              "name": "claims_memory",
+              "required": true
+            },
+            {
+              "name": "open_questions"
+            },
+            {
+              "name": "finished_at"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "claim-reviewer-writes",
+      "display_name": "Claim graph reviewer writes",
+      "entries": [
+        {
+          "tool_name": "file_batch",
+          "collection": "ClaimBatch",
+          "description": "File review, challenge and question claims (JSONL text) with their edges as one ClaimBatch; graph_id is filled from the research receipt. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
+          "fields": [
+            {
+              "name": "batch_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "section",
+              "required": true
+            },
+            {
+              "name": "claims",
+              "required": true
+            },
+            {
+              "name": "edges"
+            },
+            {
+              "name": "perspectives"
+            },
+            {
+              "name": "extractor"
+            },
+            {
+              "name": "note"
+            }
+          ]
+        },
+        {
+          "tool_name": "request_view",
+          "collection": "ViewRequest",
+          "description": "Ask for a derived view (status, disputes or reputation) of the graph; graph_id is filled from the research receipt. The claim-views callback answers with a ViewReceipt for request_id whose markdown holds it.",
+          "fields": [
+            {
+              "name": "request_id",
+              "required": true
+            },
+            {
+              "name": "graph_id",
+              "fill": {
+                "source_field": "graph_id"
+              }
+            },
+            {
+              "name": "view",
+              "required": true
+            },
+            {
+              "name": "dry_run"
+            },
+            {
+              "name": "note"
+            }
+          ]
+        }
+      ]
     }
   ],
   "event_sources": [
@@ -251,6 +569,27 @@
       "event_kind": "created",
       "event_source_id": "view-request",
       "source_collection": "ViewRequest"
+    },
+    {
+      "correlation_field": "request_id",
+      "display_name": "source-request",
+      "event_kind": "created",
+      "event_source_id": "source-request",
+      "source_collection": "SourceRequest"
+    },
+    {
+      "correlation_field": "request_id",
+      "display_name": "research-request",
+      "event_kind": "created",
+      "event_source_id": "research-request",
+      "source_collection": "ResearchRequest"
+    },
+    {
+      "correlation_field": "request_id",
+      "display_name": "research-receipt",
+      "event_kind": "created",
+      "event_source_id": "research-receipt",
+      "source_collection": "ResearchReceipt"
     }
   ],
   "node": {},
@@ -268,7 +607,9 @@
           "ClaimGraph",
           "GateReceipt",
           "ExportReceipt",
-          "ViewReceipt"
+          "ViewReceipt",
+          "Source",
+          "ResearchReceipt"
         ],
         "enable_defra_query": true
       },
@@ -281,6 +622,89 @@
         ]
       },
       "tools_id": "claim-sme-tools"
+    },
+    {
+      "tools_id": "claim-researcher-tools",
+      "display_name": "Claim graph researcher tools",
+      "built_ins": {
+        "enable_context_budget": false
+      },
+      "datastore": {
+        "enable_defra_query": true,
+        "defra_query_collections": [
+          "ClaimGraph",
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective",
+          "GateReceipt",
+          "Source",
+          "ResearchRequest"
+        ],
+        "datastore_tool_surface_ids": [
+          "claim-researcher-writes"
+        ]
+      }
+    },
+    {
+      "tools_id": "claim-reviewer-tools",
+      "display_name": "Claim graph reviewer tools",
+      "built_ins": {
+        "enable_context_budget": false
+      },
+      "datastore": {
+        "enable_defra_query": true,
+        "defra_query_collections": [
+          "ClaimGraph",
+          "Claim",
+          "Edge",
+          "Entity",
+          "Perspective",
+          "GateReceipt",
+          "Source",
+          "ResearchReceipt",
+          "ViewReceipt"
+        ],
+        "datastore_tool_surface_ids": [
+          "claim-reviewer-writes"
+        ]
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "claim-research-task",
+      "agent_id": "claim-researcher",
+      "display_name": "claim-research-task",
+      "prompt_template": "./tasks/claim_research_task/prompt.md"
+    },
+    {
+      "task_id": "claim-review-task",
+      "agent_id": "claim-reviewer",
+      "display_name": "claim-review-task",
+      "prompt_template": "./tasks/claim_review_task/prompt.md"
+    }
+  ],
+  "triggers": [
+    {
+      "trigger_id": "research-request",
+      "display_name": "research-request",
+      "concurrency": "serial",
+      "source": {
+        "kind": "event",
+        "event_source_id": "research-request"
+      },
+      "task_id": "claim-research-task"
+    },
+    {
+      "trigger_id": "research-receipt",
+      "display_name": "research-receipt",
+      "concurrency": "serial",
+      "source": {
+        "kind": "event",
+        "event_source_id": "research-receipt"
+      },
+      "task_id": "claim-review-task"
     }
   ]
 }

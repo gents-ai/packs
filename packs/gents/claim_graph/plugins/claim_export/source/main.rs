@@ -2,9 +2,10 @@
 //! The plugin reads the graph's `Claim`, `Edge`, `Entity`, `Perspective` and
 //! `ClaimGraph` rows through `data_calls`, a few pages of 256 rows per round,
 //! then writes `claims/<section>.jsonl`, `edges/edges.jsonl`,
-//! `entities/entities.jsonl`, `perspectives/perspectives.jsonl` and
-//! `claim_graph.json` under the bound `out_dir`, sorted by id (profiles by
-//! version). A failure is `{"ok": false, "error": ...}` with a zero exit, never a
+//! `entities/entities.jsonl`, `perspectives/perspectives.jsonl`,
+//! `sources/sources.jsonl` (with each source's `text` when
+//! `include_source_text` is set) and `claim_graph.json` under the bound
+//! `out_dir`, sorted by id (profiles by version). A failure is `{"ok": false, "error": ...}` with a zero exit, never a
 //! partial write.
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
@@ -15,16 +16,24 @@ use serde_json::{Map, Value, json};
 mod callback;
 mod pager;
 mod render;
+mod source_text;
 mod write;
 
-use render::{CLAIM_GRAPH, KINDS, Kind, SPECS};
+use render::{CLAIM_GRAPH, KINDS, Kind, SOURCES, SPECS};
 use write::Output;
 
 const MAX_INPUT_BYTES: usize = 64 * 1024 * 1024;
 const MAX_SECTIONS: usize = 1000;
 /// Top-level fields the host adds to the caller's input.
 pub(crate) const HOST_FIELDS: [&str; 3] = ["data_calls", "data_results", "state"];
-pub(crate) const FIELDS: [&str; 5] = ["graph_id", "out_dir", "out_dir_original", "sections", "dry_run"];
+pub(crate) const FIELDS: [&str; 6] = [
+    "graph_id",
+    "out_dir",
+    "out_dir_original",
+    "sections",
+    "dry_run",
+    "include_source_text",
+];
 
 pub(crate) struct Failure(pub(crate) String);
 
@@ -37,6 +46,7 @@ struct Request<'a> {
     out_dir: Option<&'a str>,
     sections: Option<Vec<&'a str>>,
     dry_run: bool,
+    include_source_text: bool,
 }
 
 fn parse(input: &Map<String, Value>) -> Result<Request<'_>, Failure> {
@@ -45,13 +55,18 @@ fn parse(input: &Map<String, Value>) -> Result<Request<'_>, Failure> {
         .find(|k| !FIELDS.contains(&k.as_str()) && !HOST_FIELDS.contains(&k.as_str()))
     {
         return Err(invalid(format!(
-            "the field {field:?} is not known; the fields are graph_id, out_dir, sections and dry_run"
+            "the field {field:?} is not known; the fields are graph_id, out_dir, sections, dry_run and include_source_text"
         )));
     }
     let dry_run = match input.get("dry_run") {
         None | Some(Value::Null) => false,
         Some(Value::Bool(b)) => *b,
         Some(_) => return Err(invalid("dry_run must be true or false")),
+    };
+    let include_source_text = match input.get("include_source_text") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err(invalid("include_source_text must be true or false")),
     };
     let graph_id = match input.get("graph_id") {
         Some(Value::String(s)) if !s.trim().is_empty() => s.as_str(),
@@ -97,6 +112,7 @@ fn parse(input: &Map<String, Value>) -> Result<Request<'_>, Failure> {
         out_dir,
         sections,
         dry_run,
+        include_source_text,
     })
 }
 
@@ -157,11 +173,46 @@ fn advance(
     state: &Value,
     results: &Map<String, Value>,
 ) -> Result<Value, Failure> {
-    let (state, done) = pager::advance(&SPECS, state, results).map_err(invalid)?;
-    if done {
-        return finish(request, &state);
+    if source_text::active(state) {
+        let dir = text_dir(request)?;
+        let lines = source_lines(state)?;
+        let (state, done) =
+            source_text::advance(dir, state.clone(), results, &lines).map_err(invalid)?;
+        if done {
+            return finish(request, &state);
+        }
+        return Ok(source_text::ask(request.graph_id, state));
     }
-    Ok(ask(request, state))
+    let (state, done) = pager::advance(&SPECS, state, results).map_err(invalid)?;
+    if !done {
+        return Ok(ask(request, state));
+    }
+    if request.include_source_text && !request.dry_run {
+        let state = source_text::start(text_dir(request)?, state).map_err(invalid)?;
+        return Ok(source_text::ask(request.graph_id, state));
+    }
+    finish(request, &state)
+}
+
+/// The folder the text pass appends to; only a writing export has one.
+fn text_dir<'a>(request: &Request<'a>) -> Result<&'a Path, Failure> {
+    request
+        .out_dir
+        .map(Path::new)
+        .ok_or_else(|| invalid("out_dir is required"))
+}
+
+/// The metadata line of every source read by the paged pass, by id.
+fn source_lines(state: &Value) -> Result<BTreeMap<String, Value>, Failure> {
+    let mut lines = BTreeMap::new();
+    for row in pager::rows(state, &SOURCES) {
+        let row = row
+            .as_object()
+            .ok_or_else(|| invalid("a Source row is not an object"))?;
+        let (id, line) = render::source(row).map_err(invalid)?;
+        lines.insert(id, line);
+    }
+    Ok(lines)
 }
 
 /// The records of one type keyed by id, so a row seen twice (the store moved
@@ -226,16 +277,31 @@ fn finish(request: &Request<'_>, state: &Value) -> Result<Value, Failure> {
         let (version, profile) = render::profile(row).map_err(invalid)?;
         profiles.insert(version, profile);
     }
+    let sources = source_lines(state)?;
+    // With the texts, the file is the part the text pass wrote, put in place
+    // after the other files.
+    let texts = request.include_source_text && !request.dry_run;
+    if !texts {
+        outputs.push(Output {
+            path: source_text::FILE.to_owned(),
+            text: lines(sources.values()),
+        });
+    }
     counts.insert(CLAIM_GRAPH.key.to_owned(), json!(profiles.len()));
+    counts.insert(SOURCES.key.to_owned(), json!(sources.len()));
     outputs.push(Output {
         path: "claim_graph.json".to_owned(),
         text: render::profiles_text(profiles.values()),
     });
-    let files: Vec<&str> = outputs.iter().map(|o| o.path.as_str()).collect();
+    let mut files: Vec<&str> = outputs.iter().map(|o| o.path.as_str()).collect();
+    if texts {
+        files.insert(files.len() - 1, source_text::FILE);
+    }
     let summary = json!({
         "ok": true,
         "graph_id": request.graph_id,
         "dry_run": request.dry_run,
+        "include_source_text": request.include_source_text,
         "written": counts,
         "sections": by_section,
         "files": files,
@@ -245,6 +311,9 @@ fn finish(request: &Request<'_>, state: &Value) -> Result<Value, Failure> {
     }
     let dir = request.out_dir.ok_or_else(|| invalid("out_dir is required"))?;
     write::write_all(Path::new(dir), &outputs).map_err(invalid)?;
+    if texts {
+        source_text::commit(Path::new(dir)).map_err(invalid)?;
+    }
     Ok(summary)
 }
 

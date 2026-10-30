@@ -98,7 +98,13 @@ fn drive(input: Value, held: &[(&str, &str)]) -> Value {
 
 /// Runs the rounds against a store holding `held`, the claims `kinds`
 /// (id, kind) and the ClaimGraph row `profile`, all in graph `g`.
-fn drive_store(mut input: Value, held: &[(&str, &str)], kinds: &[(&str, &str)], profile: Option<Value>) -> Value {
+fn drive_store(input: Value, held: &[(&str, &str)], kinds: &[(&str, &str)], profile: Option<Value>) -> Value {
+    drive_sources(input, held, kinds, profile, &[])
+}
+
+/// `drive_store` with the graph's `Source` rows too, each projected to the
+/// fields a query asks for.
+fn drive_sources(mut input: Value, held: &[(&str, &str)], kinds: &[(&str, &str)], profile: Option<Value>, sources: &[Value]) -> Value {
     for _ in 0..64 {
         let out = call(input.clone());
         let Some(calls) = out.get("data_calls") else {
@@ -107,7 +113,25 @@ fn drive_store(mut input: Value, held: &[(&str, &str)], kinds: &[(&str, &str)], 
         let mut results = serde_json::Map::new();
         for request in calls["requests"].as_array().unwrap() {
             let query = &request["query"];
-            let rows: Vec<Value> = if query["collection"] == "ClaimGraph" {
+            let rows: Vec<Value> = if query["collection"] == "Source" {
+                let clauses = query["filter"]["_and"].as_array().unwrap();
+                assert_eq!(clauses[0], json!({"graph_id": {"_eq": "g"}}));
+                let wanted = clauses[1]["source_id"]["_in"].as_array().unwrap();
+                assert!(wanted.len() <= query["limit"].as_u64().unwrap() as usize);
+                sources
+                    .iter()
+                    .filter(|row| wanted.contains(&row["source_id"]))
+                    .map(|row| {
+                        let fields = query["fields"].as_array().unwrap();
+                        let picked: serde_json::Map<String, Value> = fields
+                            .iter()
+                            .filter_map(|f| f.as_str())
+                            .filter_map(|f| row.get(f).map(|v| (f.to_owned(), v.clone())))
+                            .collect();
+                        Value::Object(picked)
+                    })
+                    .collect()
+            } else if query["collection"] == "ClaimGraph" {
                 assert_eq!(query["filter"], json!({"graph_id": {"_eq": "g"}}));
                 profile.clone().into_iter().collect()
             } else {
@@ -552,7 +576,7 @@ fn each_claim_rule_fails_the_batch_in_the_research_wording() {
         (with(claim(), "kind", json!("mapping")), "ERROR: c:t:001 mapping without valid against"),
         (with(claim(), "entities", json!([])), "ERROR: c:t:001 has no entities"),
         (with(claim(), "sources", json!([{"code": "a b.rs"}])), "ERROR: c:t:001 bad code ref a b.rs"),
-        (with(claim(), "confidence", json!("sourced")), "ERROR: c:t:001 is sourced but cites no fetched doc or code ref"),
+        (with(claim(), "confidence", json!("sourced")), "ERROR: c:t:001 is sourced but cites no fetched doc, code ref or source"),
         (with(claim(), "colour", json!("red")), "ERROR: c:t:001 unknown field colour"),
         (with(claim(), "note", json!(3)), "ERROR: c:t:001 note must be a string"),
         (with(claim(), "entities", json!("e:a")), "ERROR: c:t:001 entities must be an array of strings"),
@@ -894,4 +918,252 @@ fn optional_lists_may_be_empty_or_absent_and_then_refuse_their_rule() {
         errors(&call(input)),
         vec!["ERROR: c:t:002 review without valid verdict", "ERROR: edge c:t:001->c:t:002 resolves by p:a, not a resolver"]
     );
+}
+
+const SOURCE_TEXT: &str = "Flipper Zero\nThe FCC granted 2A2V6-FZ on 2020-07-29 after review.\nOther text.";
+
+/// `claim()` made from stored source `s:0123456789abcdef`.
+fn source_claim() -> Value {
+    let claim = with(claim(), "from", json!("source:s:0123456789abcdef#grant"));
+    let claim = with(claim, "quote", json!("The FCC granted 2A2V6-FZ on 2020-07-29"));
+    let claim = with(claim, "confidence", json!("sourced"));
+    with(
+        claim,
+        "sources",
+        json!([{"source": "s:0123456789abcdef", "url": "https://fccid.io/2A2V6-FZ", "fetched": "2026-10-30T10:00:00Z"}]),
+    )
+}
+
+fn source_row(id: &str, status: &str, text: Option<&str>) -> Value {
+    let mut row = json!({"source_id": id, "status": status});
+    if let Some(text) = text {
+        row["text"] = json!(text);
+    }
+    row
+}
+
+fn ok_source() -> Value {
+    source_row("s:0123456789abcdef", "ok", Some(SOURCE_TEXT))
+}
+
+#[test]
+fn a_source_backed_claim_passes_with_its_quote_checked_against_the_stored_text() {
+    let out = drive_sources(batch(&[source_claim()]), &[], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    assert_eq!(out["receipt"]["verdict"], "pass");
+    assert_eq!(out["receipt"]["quotes_checked"], 1);
+    assert_eq!(out["receipt"]["quotes_skipped"], 0);
+    let row = &out["claims"][0];
+    assert_eq!(row["from_ref"], "source:s:0123456789abcdef#grant");
+    assert!(row["sources"].as_str().unwrap().contains("\"source\":\"s:0123456789abcdef\""));
+}
+
+#[test]
+fn source_texts_are_asked_one_per_query_and_statuses_in_chunks() {
+    let listed = with(
+        with(source_claim(), "id", json!("c:t:002")),
+        "sources",
+        json!([{"source": "s:0123456789abcdef"}, {"source": "s:ffffffffffffffff"}]),
+    );
+    let out = call(batch(&[source_claim(), listed]));
+    let requests = out["data_calls"]["requests"].as_array().unwrap();
+    let sources: Vec<&Value> = requests
+        .iter()
+        .map(|r| &r["query"])
+        .filter(|q| q["collection"] == "Source")
+        .collect();
+    assert_eq!(sources.len(), 2);
+    assert_eq!(
+        *sources[0],
+        json!({"collection": "Source", "limit": 256, "fields": ["source_id", "status"],
+            "filter": {"_and": [{"graph_id": {"_eq": "g"}}, {"source_id": {"_in": ["s:ffffffffffffffff"]}}]}})
+    );
+    assert_eq!(
+        *sources[1],
+        json!({"collection": "Source", "limit": 1, "fields": ["source_id", "status", "text"],
+            "filter": {"_and": [{"graph_id": {"_eq": "g"}}, {"source_id": {"_in": ["s:0123456789abcdef"]}}]}})
+    );
+    // A source claim's historical edges are asked for, as under a source root.
+    assert!(requests.iter().any(|r| r["query"]["fields"] == json!(["to_claim"])));
+}
+
+#[test]
+fn a_quote_absent_from_the_source_text_fails() {
+    let claim = with(source_claim(), "quote", json!("granted in 2023"));
+    let out = drive_sources(batch(&[claim]), &[], &[], None, &[ok_source()]);
+    assert_eq!(
+        errors(&out),
+        vec!["ERROR: c:t:001 quote not found verbatim in source s:0123456789abcdef"]
+    );
+    assert_eq!(out["receipt"]["quotes_checked"], 1);
+    assert!(out.get("claims").is_none());
+}
+
+#[test]
+fn source_quotes_match_like_grep_fixed_strings() {
+    // One line of a multi-line quote found is a match, as `grep -F` has it.
+    let claim = with(source_claim(), "quote", json!("not there\nOther text."));
+    let out = drive_sources(batch(&[claim]), &[], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    let claim = with(source_claim(), "quote", json!("The FCC granted 2A2V6-FZ on 2020-07-29 after review.\nOther"));
+    let out = drive_sources(batch(&[claim]), &[], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+}
+
+#[test]
+fn a_missing_or_failed_source_fails_and_its_quote_is_not_checked() {
+    let missing = "ERROR: c:t:001 cites source s:0123456789abcdef which is missing or failed";
+    let out = drive_sources(batch(&[source_claim()]), &[], &[], None, &[]);
+    assert_eq!(errors(&out), vec![missing]);
+    assert_eq!(out["receipt"]["quotes_checked"], 0);
+    assert_eq!(out["receipt"]["quotes_skipped"], 1);
+    let failed = source_row("s:0123456789abcdef", "failed", None);
+    let out = drive_sources(batch(&[source_claim()]), &[], &[], None, &[failed]);
+    assert_eq!(errors(&out), vec![missing]);
+    // A failed row's text, if any, is never quoted from.
+    let failed = source_row("s:0123456789abcdef", "failed", Some(SOURCE_TEXT));
+    let out = drive_sources(batch(&[source_claim()]), &[], &[], None, &[failed]);
+    assert_eq!(errors(&out), vec![missing]);
+}
+
+#[test]
+fn every_listed_source_must_be_ok() {
+    let claim = with(
+        source_claim(),
+        "sources",
+        json!([{"source": "s:0123456789abcdef"}, {"source": "s:ffffffffffffffff"}]),
+    );
+    let failed = source_row("s:ffffffffffffffff", "failed", None);
+    let out = drive_sources(batch(&[claim.clone()]), &[], &[], None, &[ok_source(), failed]);
+    assert_eq!(
+        errors(&out),
+        vec!["ERROR: c:t:001 cites source s:ffffffffffffffff which is missing or failed"]
+    );
+    let ok = source_row("s:ffffffffffffffff", "ok", Some("x"));
+    let out = drive_sources(batch(&[claim]), &[], &[], None, &[ok_source(), ok]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+}
+
+#[test]
+fn a_source_entry_satisfies_sourced_confidence() {
+    // A file-mode claim listing a stored source is sourced by it.
+    let listed = with(
+        with(claim(), "confidence", json!("sourced")),
+        "sources",
+        json!([{"source": "s:0123456789abcdef", "url": "https://fccid.io/2A2V6-FZ"}]),
+    );
+    let out = drive_sources(batch(&[listed]), &[], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    let blank = with(with(claim(), "confidence", json!("sourced")), "sources", json!([{"source": ""}]));
+    assert_eq!(
+        errors(&call(batch(&[blank]))),
+        vec![
+            "ERROR: c:t:001 sources[].source must be a source id or null",
+            "ERROR: c:t:001 is sourced but cites no fetched doc, code ref or source",
+        ]
+    );
+}
+
+#[test]
+fn a_source_from_must_name_a_source_id() {
+    let claim = with(source_claim(), "from", json!("source:#grant"));
+    let out = call(batch(&[claim]));
+    assert_eq!(
+        errors(&out),
+        vec!["ERROR: c:t:001 from names no source id (write source:<source_id>#<anchor>)"]
+    );
+}
+
+#[test]
+fn a_memory_claim_quotes_its_text_and_claims_only_memory() {
+    let memory = with(with(claim(), "from", json!("memory:flipper")), "quote", json!("A test claim."));
+    let out = drive(batch(&[memory.clone()]), &[]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    assert_eq!(out["receipt"]["quotes_checked"], 0);
+    assert_eq!(out["receipt"]["quotes_skipped"], 1);
+    let sourced = with(memory.clone(), "confidence", json!("sourced"));
+    let sourced = with(sourced, "sources", json!([{"source": "s:0123456789abcdef"}]));
+    assert_eq!(
+        errors(&call(batch(&[sourced]))),
+        vec!["ERROR: c:t:001 is from memory but claims confidence sourced"]
+    );
+    let inferred = with(memory.clone(), "confidence", json!("inferred"));
+    assert_eq!(
+        errors(&call(batch(&[inferred]))),
+        vec!["ERROR: c:t:001 is from memory but claims confidence inferred"]
+    );
+    let paraphrase = with(memory, "quote", json!("A test"));
+    assert_eq!(
+        errors(&call(batch(&[paraphrase]))),
+        vec!["ERROR: c:t:001 is from memory but its quote is not its text"]
+    );
+}
+
+#[test]
+fn a_memory_claim_needs_no_file_under_a_source_root() {
+    let memory = with(with(claim(), "from", json!("memory:flipper")), "quote", json!("A test claim."));
+    let mut input = batch(&[memory, with(source_claim(), "id", json!("c:t:002"))]);
+    input["source_root"] = json!(fixture_root());
+    let out = drive_sources(input, &[], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    assert_eq!(out["receipt"]["quotes_checked"], 1);
+    assert_eq!(out["receipt"]["quotes_skipped"], 1);
+}
+
+#[test]
+fn a_self_quoting_claim_from_a_source_needs_only_its_status() {
+    let question = with(
+        with(with(source_claim(), "kind", json!("question")), "quote", json!("A test claim.")),
+        "confidence",
+        json!("inferred"),
+    );
+    let out = call(batch(&[question.clone()]));
+    let fields: Vec<&Value> = out["data_calls"]["requests"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|r| r["query"]["collection"] == "Source")
+        .map(|r| &r["query"]["fields"])
+        .collect();
+    assert_eq!(fields, vec![&json!(["source_id", "status"])]);
+    let out = drive_sources(batch(&[question]), &[], &[], None, &[source_row("s:0123456789abcdef", "ok", None)]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    assert_eq!(out["receipt"]["quotes_skipped"], 1);
+}
+
+#[test]
+fn a_superseded_source_claim_is_not_quote_checked() {
+    let claim = with(source_claim(), "quote", json!("granted in 2023"));
+    let out = drive_sources(batch(&[claim]), &[("Edge", "c:t:001")], &[], None, &[ok_source()]);
+    assert_eq!(errors(&out), Vec::<String>::new());
+    assert_eq!(out["receipt"]["quotes_skipped"], 1);
+}
+
+#[test]
+fn state_keeps_the_quote_matches_not_the_source_text() {
+    let mut input = batch(&[source_claim()]);
+    let first = call(input.clone());
+    let mut results = serde_json::Map::new();
+    for request in first["data_calls"]["requests"].as_array().unwrap() {
+        let rows = if request["query"]["collection"] == "Source" {
+            json!([ok_source()])
+        } else {
+            json!([])
+        };
+        results.insert(request["id"].as_str().unwrap().to_owned(), json!({"result": {"rows": rows}}));
+    }
+    input["data_results"] = Value::Object(results);
+    input["state"] = first["data_calls"]["state"].clone();
+    let second = call(input);
+    // Every query fit in one round, so this is the final answer.
+    assert_eq!(second["receipt"]["verdict"], "pass");
+    let state = first["data_calls"]["state"].to_string();
+    assert!(!state.contains("Other text"));
+    let mut found = crate::store::State::default();
+    found.found.sources.insert("s:x".into(), "ok".into());
+    found.found.source_quotes.insert("c:t:001".into());
+    let back = crate::store::State::from_json(Some(&found.to_json())).unwrap();
+    assert!(back.found.source_ok("s:x"));
+    assert!(back.found.source_quotes.contains("c:t:001"));
+    assert!(!back.to_json().to_string().contains(SOURCE_TEXT));
 }

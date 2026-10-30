@@ -1,0 +1,44 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://fccid.io/2A2V6-FZ/",
+    "http_calls": true,
+    "state": {
+      "url": "https://fccid.io/2A2V6-FZ",
+      "hops": 1,
+      "canonical_free": true
+    },
+    "http_results": {
+      "fetch": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain"
+        },
+        "body": "FCC ID 2A2V6-FZ granted 2020-12-15"
+      }
+    }
+  },
+  "expect": {
+    "source_id": "s:7e7a17abdb2fb9bb",
+    "graph_id": "flipper-fcc",
+    "url": "https://fccid.io/2A2V6-FZ/",
+    "final_url": "https://fccid.io/2A2V6-FZ",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "ok",
+    "error": null,
+    "http_status": 200,
+    "content_type": "text/plain",
+    "content_hash": "sha256:f495f8ced02ae415accc4e81f00606b669b392f946b46a0b770fba8493f9b918",
+    "text": "FCC ID 2A2V6-FZ granted 2020-12-15",
+    "text_chars": 34,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

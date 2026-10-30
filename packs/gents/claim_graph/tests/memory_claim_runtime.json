@@ -1,0 +1,31 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ClaimBatch",
+      "fields": {
+        "batch_id": "rt-memory-${ATTEMPT}",
+        "graph_id": "rt-memory-${ATTEMPT}",
+        "section": "rt-fixture",
+        "extractor": "test",
+        "profile": "{\"display_name\":\"General research\",\"kinds\":[\"fact\",\"number\",\"date\",\"rule\",\"interpretation\",\"position\",\"quote\",\"question\",\"challenge\",\"review\"],\"confidence_classes\":[\"sourced\",\"memory\",\"inferred\"],\"edge_types\":[\"supports\",\"contradicts\",\"supersedes\",\"retracts\",\"answers\",\"maps-to\",\"said-first\",\"depends-on\",\"challenges\",\"reviews\",\"resolves\"],\"mapping_targets\":[],\"mapping_fits\":[],\"review_verdicts\":[\"sustains\",\"weakens\",\"unclear\"],\"resolver_perspectives\":[\"p:owner\"],\"question_entity\":\"e:open-question\",\"default_asker\":\"p:owner\",\"questions_from_prefix\":\"memory:questions\",\"claim_id_pattern\":\"^c:[a-z0-9-]+:[0-9]{3}$\",\"text_max_words\":40,\"note\":\"General research vocabulary: no mapping claims, disputes on, questions from memory.\"}",
+        "perspectives": "{\"id\":\"p:researcher\",\"name\":\"The fixture researcher\",\"kind\":\"position\",\"note\":\"\"}\n{\"id\":\"p:owner\",\"name\":\"The fixture owner\",\"kind\":\"person\",\"note\":\"\"}\n",
+        "entities": "{\"id\":\"e:rt-device\",\"type\":\"system\",\"name\":\"Example Device\",\"aliases\":[],\"note\":\"\"}\n",
+        "claims": "{\"id\":\"c:rt:001\",\"text\":\"The fixture device was certified in 2022.\",\"quote\":\"The fixture device was certified in 2022.\",\"from\":\"memory:rt-fixture\",\"sources\":[],\"entities\":[\"e:rt-device\"],\"kind\":\"date\",\"by\":\"p:researcher\",\"asserted\":\"2026-10-30\",\"status\":\"live\",\"confidence\":\"sourced\",\"note\":\"\"}\n",
+        "submitted_at": "2026-10-30T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "GateReceipt"
+    },
+    "expect": [
+      {
+        "collection": "GateReceipt",
+        "fields": {
+          "verdict": "fail",
+          "claims_admitted": 0,
+          "perspectives_admitted": 0
+        }
+      }
+    ]
+  }
+}

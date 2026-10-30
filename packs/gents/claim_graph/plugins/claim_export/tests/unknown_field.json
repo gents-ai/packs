@@ -7,7 +7,7 @@
   },
   "expect": {
     "ok": false,
-    "error": "the field \"bogus\" is not known; the fields are graph_id, out_dir, sections and dry_run",
+    "error": "the field \"bogus\" is not known; the fields are graph_id, out_dir, sections, dry_run and include_source_text",
     "retryable": false
   }
 }
