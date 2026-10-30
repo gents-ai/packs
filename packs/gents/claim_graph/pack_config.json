@@ -318,7 +318,7 @@
         {
           "tool_name": "start_graph",
           "collection": "ClaimBatch",
-          "description": "Start the research graph: one ClaimBatch carrying the profile, the perspectives and the first entities (claims and edges optional). graph_id is filled from the research request. The gate answers with a GateReceipt for batch_id.",
+          "description": "Start the research graph: one ClaimBatch carrying the profile, the perspectives and the first entities (claims and edges optional). The gate answers with a GateReceipt for batch_id.",
           "fields": [
             {
               "name": "batch_id",
@@ -326,9 +326,7 @@
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "section",
@@ -360,7 +358,7 @@
         {
           "tool_name": "file_batch",
           "collection": "ClaimBatch",
-          "description": "File claims (JSONL text) with their edges and any new entities as one ClaimBatch; graph_id is filled from the research request. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
+          "description": "File claims (JSONL text) with their edges and any new entities as one ClaimBatch. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
           "fields": [
             {
               "name": "batch_id",
@@ -368,9 +366,7 @@
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "section",
@@ -400,7 +396,7 @@
         {
           "tool_name": "fetch_source",
           "collection": "SourceRequest",
-          "description": "Ask the node to fetch one http or https URL; graph_id is filled from the research request. The claim-sources callback writes one Source row with the same request_id: status ok with its text, or status failed with the error.",
+          "description": "Ask the node to fetch one https URL. The claim-sources callback writes one Source row with the same request_id: status ok with its text, or status failed with the error.",
           "fields": [
             {
               "name": "request_id",
@@ -408,9 +404,7 @@
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "url",
@@ -427,7 +421,7 @@
         {
           "tool_name": "finish_research",
           "collection": "ResearchReceipt",
-          "description": "Close the research request with its counts and a summary; request_id and graph_id are filled from the research request. Call it once, last.",
+          "description": "Close the research request with its counts and a summary. Call it once, last.",
           "fields": [
             {
               "name": "receipt_id",
@@ -435,13 +429,11 @@
             },
             {
               "name": "request_id",
-              "fill": "correlation"
+              "required": true
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "summary",
@@ -484,7 +476,7 @@
         {
           "tool_name": "file_batch",
           "collection": "ClaimBatch",
-          "description": "File review, challenge and question claims (JSONL text) with their edges as one ClaimBatch; graph_id is filled from the research receipt. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
+          "description": "File review, challenge and question claims (JSONL text) with their edges as one ClaimBatch. The gate admits the whole batch or writes a failing GateReceipt for batch_id.",
           "fields": [
             {
               "name": "batch_id",
@@ -492,9 +484,7 @@
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "section",
@@ -521,7 +511,7 @@
         {
           "tool_name": "request_view",
           "collection": "ViewRequest",
-          "description": "Ask for a derived view (status, disputes or reputation) of the graph; graph_id is filled from the research receipt. The claim-views callback answers with a ViewReceipt for request_id whose markdown holds it.",
+          "description": "Ask for a derived view (status, disputes or reputation) of the graph. The claim-views callback answers with a ViewReceipt for request_id whose markdown holds it.",
           "fields": [
             {
               "name": "request_id",
@@ -529,9 +519,7 @@
             },
             {
               "name": "graph_id",
-              "fill": {
-                "source_field": "graph_id"
-              }
+              "required": true
             },
             {
               "name": "view",

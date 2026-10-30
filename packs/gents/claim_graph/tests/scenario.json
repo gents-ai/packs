@@ -6,8 +6,8 @@
       "expr": "typed(\"ResearchRequest\") | .request_id == \"String\" and .topic == \"String\" and .graph_id == \"String\" and .brief == \"String\" and .note == \"String\""
     },
     {
-      "name": "a seeded ResearchRequest runs the researcher under the run id, and its ResearchReceipt carries that id to the scenario's trigger",
-      "expr": "(.config.event_sources[] | select(.source_collection == \"ResearchRequest\") | .event_source_id == \"research-request\" and .correlation_field == \"request_id\") and (.config.triggers[] | select(.trigger_id == \"research-request\") | .source.event_source_id == \"research-request\" and .task_id == \"claim-research-task\") and ([.config.datastore_tool_surfaces[] | entries[] | select(.collection == \"ResearchReceipt\") | .fields[] | select(.name == \"request_id\") | .fill] == [\"correlation\"])"
+      "name": "a seeded ResearchRequest runs the researcher under the run id, and hands the agent that id, which its ResearchReceipt carries to the scenario's trigger",
+      "expr": "(.config.event_sources[] | select(.source_collection == \"ResearchRequest\") | .event_source_id == \"research-request\" and .correlation_field == \"request_id\") and (.config.triggers[] | select(.trigger_id == \"research-request\") | .source.event_source_id == \"research-request\" and .task_id == \"claim-research-task\") and ([.config.datastore_tool_surfaces[] | entries[] | select(.collection == \"ResearchReceipt\") | .fields[] | select(.name == \"request_id\") | .required] == [true]) and (.assets[\"tasks/claim_research_task/prompt.md\"] | contains(\"request_id: {{ doc.request_id }}\") and contains(\"graph_id: {{ doc.graph_id }}\"))"
     },
     {
       "name": "the collections the live scenario counts are the pack's",

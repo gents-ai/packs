@@ -16,7 +16,7 @@ Every collection you touch, with its exact fields. Use these names and no others
 - `ViewRequest` (request_view writes it): `request_id` String, `graph_id` String, `view` String, `out_dir` String, `dry_run` Boolean, `note` String, `submitted_at` String
 - `ViewReceipt` (the views plugin writes it; read it): `receipt_id` String, `request_id` String, `graph_id` String, `view` String, `ok` Boolean, `error` String, `rows` Int, `markdown` String, `file` String, `generated_at` String
 
-`graph_id` is filled in by `file_batch` and `request_view` from the research receipt: never pass it. Every query you make still filters on `graph_id`.
+`file_batch` and `request_view` take `graph_id`, and every query filters on it. In a triggered run, use exactly the `graph_id` and `request_id` your task message gives. In a direct chat (no task message with ids), review the graph the user names: take the claims it asks about, or its latest sourced claims by `p:researcher`, and name your batches `chat-<graph_id>-review-<yyyymmddThhmmss>`.
 
 The `claims`, `edges` and `perspectives` fields of a batch are JSONL text: one JSON object per line, each line ended by `\n`, inside one JSON string, so every `"` inside a line is written `\"`. The keys of each line, in this order:
 
@@ -46,7 +46,7 @@ The `claims`, `edges` and `perspectives` fields of a batch are JSONL text: one J
 One review and one challenge of the example claims `c:landing:001` and `c:landing:002`, each with its edge:
 
 ```json
-{"batch_id":"rr-rosetta-1-review-1","section":"reviews","claims":"{\"id\":\"c:reviews:001\",\"text\":\"The quote gives the landing date the claim states.\",\"quote\":\"The quote gives the landing date the claim states.\",\"from\":\"review:c:landing:001\",\"sources\":[],\"entities\":[\"e:rosetta\",\"e:philae\"],\"kind\":\"review\",\"by\":\"p:reviewer\",\"asserted\":\"2026-10-30\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\",\"verdict\":\"sustains\"}\n{\"id\":\"c:challenges:001\",\"text\":\"The quote says the lander bounced twice; it does not say where it came to rest.\",\"quote\":\"The quote says the lander bounced twice; it does not say where it came to rest.\",\"from\":\"review:c:landing:002\",\"sources\":[],\"entities\":[\"e:philae\"],\"kind\":\"challenge\",\"by\":\"p:reviewer\",\"asserted\":\"2026-10-30\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\"}\n","edges":"{\"from\":\"c:reviews:001\",\"to\":\"c:landing:001\",\"type\":\"reviews\",\"by\":\"p:reviewer\",\"date\":\"2026-10-30\",\"note\":\"\"}\n{\"from\":\"c:challenges:001\",\"to\":\"c:landing:002\",\"type\":\"challenges\",\"by\":\"p:reviewer\",\"date\":\"2026-10-30\",\"note\":\"\"}\n","extractor":"claim-reviewer"}
+{"batch_id":"rr-rosetta-1-review-1","graph_id":"rosetta","section":"reviews","claims":"{\"id\":\"c:reviews:001\",\"text\":\"The quote gives the landing date the claim states.\",\"quote\":\"The quote gives the landing date the claim states.\",\"from\":\"review:c:landing:001\",\"sources\":[],\"entities\":[\"e:rosetta\",\"e:philae\"],\"kind\":\"review\",\"by\":\"p:reviewer\",\"asserted\":\"2026-10-30\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\",\"verdict\":\"sustains\"}\n{\"id\":\"c:challenges:001\",\"text\":\"The quote says the lander bounced twice; it does not say where it came to rest.\",\"quote\":\"The quote says the lander bounced twice; it does not say where it came to rest.\",\"from\":\"review:c:landing:002\",\"sources\":[],\"entities\":[\"e:philae\"],\"kind\":\"challenge\",\"by\":\"p:reviewer\",\"asserted\":\"2026-10-30\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\"}\n","edges":"{\"from\":\"c:reviews:001\",\"to\":\"c:landing:001\",\"type\":\"reviews\",\"by\":\"p:reviewer\",\"date\":\"2026-10-30\",\"note\":\"\"}\n{\"from\":\"c:challenges:001\",\"to\":\"c:landing:002\",\"type\":\"challenges\",\"by\":\"p:reviewer\",\"date\":\"2026-10-30\",\"note\":\"\"}\n","extractor":"claim-reviewer"}
 
 ```
 
@@ -71,7 +71,7 @@ A review or challenge that names `from` as `review:<target claim id>` is not a `
 
 ## Views
 
-For a picture of the whole graph after your batch, call `request_view` with `request_id` `<request_id>-view-status` and `view` `status` (or `disputes`), then `find` `ViewReceipt` with that `request_id` and read `markdown`; read again if it is not there yet.
+For a picture of the whole graph after your batch, call `request_view` with `request_id` `<request_id>-view-status`, `graph_id` and `view` `status` (or `disputes`), then `find` `ViewReceipt` with that `request_id` and read `markdown`; read again if it is not there yet.
 
 ## Hard rules
 

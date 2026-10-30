@@ -73,8 +73,8 @@ needs a Rust toolchain with `rustup target add wasm32-wasip1`; a pack fetched pr
 | `claim_sources` (callback) | outbound HTTP (`OutboundHttp`, unscoped); query `Source` | fetches one URL per `SourceRequest` after checking whether the graph already holds it; its only database write is the `Source` row. No folder, no environment |
 | `claim_views` (callback) | query `Claim`, `Edge`, `Entity`, `Perspective`, `ClaimGraph`; read and write `out_dir` | derives a view; its only database write is the `ViewReceipt` |
 | `claim_export` (tool and callback) | query the gate's six collections; read and write `out_dir` | pages one graph and writes the JSONL tree; as the `claim-export` callback its only database write is the `ExportReceipt` |
-| `claim-researcher` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchRequest`; `start_graph`, `file_batch`, `fetch_source`, `finish_research` | writes only `ClaimBatch` (through the gate), `SourceRequest` (through the fetcher) and its `ResearchReceipt`; `graph_id`, and the receipt's `request_id`, are filled from the request it runs for, so it cannot write into another graph |
-| `claim-reviewer` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchReceipt`, `ViewReceipt`; `file_batch`, `request_view` | writes only a `ClaimBatch` and a `ViewRequest`, with `graph_id` filled from the receipt it reviews |
+| `claim-researcher` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchRequest`; `start_graph`, `file_batch`, `fetch_source`, `finish_research` | writes only `ClaimBatch` (through the gate), `SourceRequest` (through the fetcher) and its `ResearchReceipt`; it passes `graph_id` on every write (and `request_id` on the receipt), taking them from its task in a triggered run or from the user in a direct chat |
+| `claim-reviewer` (agent) | `query` over `ClaimGraph`, the four graph collections, `GateReceipt`, `Source`, `ResearchReceipt`, `ViewReceipt`; `file_batch`, `request_view` | writes only a `ClaimBatch` and a `ViewRequest`, passing the `graph_id` of the receipt it reviews, or of the graph the user names in a direct chat |
 | `claim-sme` (agent) | `query` over the four graph collections, `ClaimGraph`, `Source`, `GateReceipt`, `ViewReceipt`, `ExportReceipt` and `ResearchReceipt`; `file_claims`; `request_view`; `start_research`; `claim_export` | retrieval and status derivation; it writes only a `ClaimBatch`, which still goes through the gate, a `ViewRequest`, and a `ResearchRequest`, which hands the topic to the researcher |
 
 Only `claim_sources` needs the network, and nothing in the research flow needs a folder; no agent surface
@@ -258,13 +258,20 @@ A `ResearchRequest` starts the research flow, made in one of two ways:
 - By document: `gents document create ResearchRequest --home <home> --graphql <url> --json '{"request_id":
   "flipper-fcc-1", "graph_id": "flipper-fcc", "topic": "..."}'`, or a seed as in the live scenario.
 
+Either agent also works in a direct chat, without a request. The researcher then researches the topic the
+user names into the graph the user names (or a new slug), makes up `request_id` as
+`chat-<graph_id>-<yyyymmddThhmmss>`, creates no `ResearchRequest` (which would start a second run), and still
+writes a `ResearchReceipt`, so the reviewer runs as usual. The reviewer in a direct chat reviews the graph the
+user names. Every write tool takes `graph_id` from the agent: the surfaces fill nothing from a trigger, since a
+fill works only inside a triggered task.
+
 The `research-request` trigger hands it to `claim-researcher`, serially, one request
 at a time:
 
 | `ResearchRequest` field | Meaning |
 | --- | --- |
 | `request_id` | unique correlation key; every batch, source request and the receipt the researcher writes start with it |
-| `graph_id` | required: the graph to research into; every researcher write is filled with it |
+| `graph_id` | required: the graph to research into; the task hands it to the researcher, which passes it on every write |
 | `topic`, `brief` | what to research, and what the answer should cover |
 | `max_sources` | the most URLs to fetch for the request; unset means 4 |
 | `create_graph` | advice only: the researcher starts the graph exactly when no `ClaimGraph` exists for `graph_id` |
@@ -280,7 +287,7 @@ one `ResearchReceipt`:
 
 | `ResearchReceipt` field | Meaning |
 | --- | --- |
-| `receipt_id`, `request_id`, `graph_id` | the receipt, its request (filled from the trigger) and its graph |
+| `receipt_id`, `request_id`, `graph_id` | the receipt, its request and its graph |
 | `summary` | the sections with their claim counts and the open questions |
 | `sources_fetched`, `sources_failed` | `Source` rows ok and failed |
 | `batches_filed`, `claims_admitted`, `claims_memory` | batches filed (refiles included), claims admitted, of which from memory |
