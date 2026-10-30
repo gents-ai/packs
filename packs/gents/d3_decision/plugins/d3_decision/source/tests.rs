@@ -53,7 +53,7 @@ fn spark_2_is_reached_only_when_named() {
     let out = run(&i).unwrap();
     assert_eq!(
         out["http_calls"]["requests"][0]["url"],
-        "http://100.86.62.91:8100/v1/systemone"
+        "http://100.86.62.91:8000/v1/systemone"
     );
 }
 
@@ -157,8 +157,27 @@ fn needs_the_host_http_capability() {
 #[test]
 fn caps_the_request_body() {
     let mut i = input();
-    i["context"] = json!("x".repeat(MAX_BODY_BYTES));
-    assert!(failure(&i).error.contains("may be at most"));
+    i["context"] = json!("x".repeat(MAX_WORK_BYTES));
+    let f = failure(&i);
+    assert!(!f.retryable);
+    assert!(f.error.contains("bytes of work"), "{}", f.error);
+}
+
+#[test]
+fn bounds_the_work_of_context_times_questions() {
+    // Three questions over 3 KiB of context fit; over 4 KiB they do not,
+    // though one question over 4 KiB still does.
+    let mut i = input();
+    i["context"] = json!("x".repeat(3 * 1024));
+    assert!(run(&i).unwrap()["http_calls"].is_object());
+    i["context"] = json!("x".repeat(4 * 1024));
+    let f = failure(&i);
+    assert!(!f.retryable);
+    assert!(f.error.contains("3 questions"), "{}", f.error);
+    assert!(f.error.contains("ask fewer questions"), "{}", f.error);
+    let questions = i["questions"].as_object_mut().unwrap();
+    questions.retain(|name, _| name == "wake");
+    assert!(run(&i).unwrap()["http_calls"].is_object());
 }
 
 #[test]
@@ -190,6 +209,19 @@ fn an_unreachable_server_is_retryable_and_not_redirected() {
     assert!(f.retryable);
     assert!(f.error.starts_with("d3 on spark-2 could not be reached"));
     assert!(f.error.contains("not sent elsewhere"));
+}
+
+#[test]
+fn a_dropped_connection_is_retryable() {
+    for error in [
+        "the http request to 100.74.68.88 failed",
+        "the http response was cut off",
+    ] {
+        let f = failure(&with_results(json!({"error": error})));
+        assert!(f.retryable, "{error}");
+        assert!(f.error.contains("dropped the connection"), "{}", f.error);
+        assert!(f.error.contains("Not retried"));
+    }
 }
 
 #[test]
