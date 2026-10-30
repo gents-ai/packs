@@ -1,0 +1,11 @@
+{"id": "e:47-cfr-15-15", "type": "regulation", "name": "47 CFR 15.15", "aliases": [], "note": "General technical requirements; 15.15(b) user controls"}
+{"id": "e:47-cfr-15-231", "type": "regulation", "name": "47 CFR 15.231", "aliases": ["Part 15.231"], "note": "Periodic operation in 40.66-40.70 MHz and above 70 MHz"}
+{"id": "e:47-cfr-2-1043", "type": "regulation", "name": "47 CFR 2.1043", "aliases": [], "note": "Permissive changes"}
+{"id": "e:47-cfr-2-944", "type": "regulation", "name": "47 CFR 2.944", "aliases": [], "note": "Software defined radios"}
+{"id": "e:binding", "type": "concept", "name": "Binding", "aliases": [], "note": "Nine-element model"}
+{"id": "e:fcc", "type": "organisation", "name": "Federal Communications Commission", "aliases": ["FCC"], "note": ""}
+{"id": "e:fcc-grant-2a2v6-fz", "type": "document", "name": "FCC grant 2A2V6-FZ", "aliases": ["2A2V6-FZ"], "note": "Flipper Zero certification grant, 14 Jan 2022"}
+{"id": "e:fcc-tcb", "type": "concept", "name": "Telecommunication Certification Body", "aliases": ["TCB"], "note": "FCC-recognised body that issues certification grants"}
+{"id": "e:firmware-hash-binding", "type": "concept", "name": "Binding a certification to a firmware hash", "aliases": ["firmware-bound certification"], "note": "The datapack's proposal for radios"}
+{"id": "e:flipper-devices", "type": "organisation", "name": "Flipper Devices Inc", "aliases": [], "note": "Grantee"}
+{"id": "e:flipper-zero", "type": "system", "name": "Flipper Zero", "aliases": ["Flipper"], "note": "Multi-tool radio device; FCC ID 2A2V6-FZ"}

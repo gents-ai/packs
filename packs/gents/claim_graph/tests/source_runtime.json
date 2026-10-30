@@ -1,0 +1,27 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "SourceRequest",
+      "fields": {
+        "request_id": "rt-source-${ATTEMPT}",
+        "graph_id": "rt-sources",
+        "url": "http://127.0.0.1:9/",
+        "note": "an address nothing listens on",
+        "submitted_at": "2026-10-30T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "Source"
+    },
+    "expect": [
+      {
+        "collection": "Source",
+        "fields": {
+          "status": "failed",
+          "graph_id": "rt-sources",
+          "url": "http://127.0.0.1:9/"
+        }
+      }
+    ]
+  }
+}

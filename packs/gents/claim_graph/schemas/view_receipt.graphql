@@ -1,0 +1,12 @@
+type ViewReceipt {
+  receipt_id: String @index(unique: true) @immutable
+  request_id: String @index @immutable
+  graph_id: String @index @immutable
+  view: String @immutable
+  ok: Boolean @immutable
+  error: String @immutable
+  rows: Int @immutable
+  markdown: String @immutable
+  file: String @immutable
+  generated_at: String @immutable
+}

@@ -1,0 +1,26 @@
+{
+  "assets": [
+    "README.md",
+    "experiment.json",
+    "fixtures/README.md",
+    "pack_config.json",
+    "tasks/live_task/prompt.md"
+  ],
+  "authors": [
+    "gents-ai contributors"
+  ],
+  "config": "pack_config.json",
+  "dependencies": [
+    "claim_graph"
+  ],
+  "description": "Live model run of the claim_graph pack: a ResearchRequest names a topic, the researcher fetches sources and files gated claims, and the expert answers from the new graph.",
+  "inference_slots": [],
+  "kind": "documents",
+  "manifest_version": 1,
+  "name": "claim_graph_live",
+  "namespace": "gents",
+  "tags": [
+    "scenario"
+  ],
+  "version": "0.1.0"
+}

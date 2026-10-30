@@ -1,0 +1,52 @@
+{
+  "input": {
+    "request_id": "req-empty",
+    "graph_id": "empty",
+    "view": "status",
+    "out_dir": "",
+    "dry_run": true,
+    "view_now": "2026-10-29T12:00:00Z",
+    "data_calls": true,
+    "state": {
+      "cursors": {
+        "claims": {
+          "next": 0,
+          "done": false,
+          "short": true
+        },
+        "edges": {
+          "next": 0,
+          "done": false,
+          "short": true
+        }
+      },
+      "rows": {
+        "claims": [],
+        "edges": []
+      }
+    },
+    "data_results": {
+      "claims@0": {
+        "result": {
+          "rows": []
+        }
+      },
+      "edges@0": {
+        "result": {
+          "rows": []
+        }
+      }
+    }
+  },
+  "expect": {
+    "receipt_id": "view-req-empty",
+    "graph_id": "empty",
+    "view": "status",
+    "ok": true,
+    "error": "",
+    "rows": 0,
+    "markdown": "# Status of empty\n\nGenerated 2026-10-29T12:00:00Z from 0 claims and 0 edges.\n\n| Status | Claims |\n| --- | ---: |\n| live | 0 |\n| challenged | 0 |\n| contested | 0 |\n| superseded | 0 |\n| retracted | 0 |\n\n## Claims that are not live\n\nEvery claim is live.\n",
+    "file": "",
+    "generated_at": "2026-10-29T12:00:00Z"
+  }
+}

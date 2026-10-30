@@ -1,0 +1,15 @@
+type ExportReceipt {
+  receipt_id: String @index(unique: true) @immutable
+  request_id: String @index @immutable
+  graph_id: String @index @immutable
+  ok: Boolean @immutable
+  error: String @immutable
+  claims_written: Int @immutable
+  edges_written: Int @immutable
+  entities_written: Int @immutable
+  perspectives_written: Int @immutable
+  sections_json: String @immutable
+  files_json: String @immutable
+  dry_run: Boolean @immutable
+  exported_at: String @immutable
+}

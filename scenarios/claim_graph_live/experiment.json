@@ -1,0 +1,34 @@
+{
+  "name": "claim_graph_live",
+  "description": "claim_graph: research a topic from one ResearchRequest into a gated graph with fetched sources, then answer from it with claim ids",
+  "init": {
+    "inference_url": "${GENTS_LIVE_ENDPOINT:-http://127.0.0.1:11434/v1}",
+    "model_name": "${GENTS_LIVE_MODEL:-qwen3.8:latest}",
+    "backend_preset": "${GENTS_LIVE_PRESET:-ollama}",
+    "openai_wire_api": "chat-completions"
+  },
+  "seed": {
+    "collection": "ResearchRequest",
+    "job_id_field": "request_id",
+    "prompt_field": "topic",
+    "fields": {
+      "graph_id": "flipper-fcc",
+      "brief": "Who certified the device, when, under which rules and FCC ID, and what changed since.",
+      "note": "claim_graph_live scenario"
+    }
+  },
+  "default_prompt": "The history and current status of the Flipper Zero's FCC certification",
+  "expect": {
+    "trigger_ids": ["claim-graph-live"],
+    "signed_provenance": true,
+    "projections": ["atif"],
+    "required_tool_call_trigger_ids": ["claim-graph-live"],
+    "collection_counts": {
+      "Source": 1,
+      "Claim": 5,
+      "GateReceipt": 1,
+      "ResearchReceipt": 1
+    }
+  },
+  "await_timeout_secs": ${GENTS_LIVE_AWAIT_TIMEOUT_SECS:-2400}
+}

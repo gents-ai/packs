@@ -1,0 +1,29 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "http://localhost:8080/admin"
+  },
+  "expect": {
+    "source_id": "s:0ea70552d0f7e411-bf7c1a27",
+    "graph_id": "flipper-fcc",
+    "url": "http://localhost:8080/admin",
+    "final_url": "http://localhost:8080/admin",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "url names localhost, this machine; this plugin fetches public addresses only",
+    "http_status": null,
+    "content_type": null,
+    "content_hash": null,
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

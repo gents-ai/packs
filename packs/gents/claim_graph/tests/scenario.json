@@ -1,0 +1,21 @@
+{
+  "defs": "def sdl: [.assets | to_entries[] | select(.key | startswith(\"schemas/\")) | .value] | join(\"\\n\"); def fields($type): sdl | [capture(\"type \" + $type + \"(\\\\s[^{]*)?\\\\{(?<b>[^}]*)\\\\}\").b | split(\"\\n\")[] | select(test(\"^\\\\s*[a-z_]+:\")) ]; def typed($type): fields($type) | map(capture(\"^\\\\s*(?<n>[a-z_]+): (?<t>[A-Za-z\\\\[\\\\]!]+)\") | {key: .n, value: .t}) | from_entries; def entries: (.entries | if type == \"object\" then .entries else . end);",
+  "jq": [
+    {
+      "name": "the live scenario's seed fits ResearchRequest: request_id is the run id, topic the prompt, graph_id, brief and note the string seed fields",
+      "expr": "typed(\"ResearchRequest\") | .request_id == \"String\" and .topic == \"String\" and .graph_id == \"String\" and .brief == \"String\" and .note == \"String\""
+    },
+    {
+      "name": "a seeded ResearchRequest runs the researcher under the run id, and hands the agent that id, which its ResearchReceipt carries to the scenario's trigger",
+      "expr": "(.config.event_sources[] | select(.source_collection == \"ResearchRequest\") | .event_source_id == \"research-request\" and .correlation_field == \"request_id\") and (.config.triggers[] | select(.trigger_id == \"research-request\") | .source.event_source_id == \"research-request\" and .task_id == \"claim-research-task\") and ([.config.datastore_tool_surfaces[] | entries[] | select(.collection == \"ResearchReceipt\") | .fields[] | select(.name == \"request_id\") | .required] == [true]) and (.assets[\"tasks/claim_research_task/prompt.md\"] | contains(\"request_id: {{ doc.request_id }}\") and contains(\"graph_id: {{ doc.graph_id }}\"))"
+    },
+    {
+      "name": "the collections the live scenario counts are the pack's",
+      "expr": ". as $d | [\"Source\", \"Claim\", \"GateReceipt\", \"ResearchReceipt\"] | all(. as $t | $d | fields($t) | length > 0)"
+    },
+    {
+      "name": "the researcher task needs only the fields a string-only seed can set, and says what an unset value means",
+      "expr": "(.assets[\"tasks/claim_research_task/prompt.md\"] | contains(\"{{ doc.max_sources }}\") and contains(\"{{ doc.create_graph }}\")) and (.assets[\"agent_behaviors/claim_researcher/system_prompt.md\"] | contains(\"A value shown as `none` is unset; `max_sources` unset means 4.\") and contains(\"whatever `create_graph` says\"))"
+    }
+  ]
+}

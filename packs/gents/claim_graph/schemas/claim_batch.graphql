@@ -1,0 +1,16 @@
+type ClaimBatch {
+  batch_id: String @index(unique: true) @immutable
+  graph_id: String @index @immutable
+  section: String @index @immutable
+  extractor: String @immutable
+  source_root: String @immutable
+  profile: String @immutable
+  claims: String @immutable
+  edges: String @immutable
+  entities: String @immutable
+  perspectives: String @immutable
+  sample_size: Int @immutable
+  failure_count: Int @immutable
+  note: String @immutable
+  submitted_at: String @immutable
+}

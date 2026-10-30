@@ -1,0 +1,10 @@
+type Entity @index(fields: ["graph_id", "entity_id"], unique: true) {
+  graph_id: String @index @immutable
+  entity_id: String @index @immutable
+  entity_type: String @index @immutable
+  name: String @fulltext(language: "english") @immutable
+  aliases: [String!]
+  alias_text: String @immutable
+  note: String @immutable
+  batch_id: String @index @immutable
+}
