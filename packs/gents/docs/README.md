@@ -51,7 +51,7 @@ gents document create DocsRevision --home <home> --json '{"document_id":"documen
 
 With the same Gents home and the `docs-editor` agent selected, ask the agent
 to read the supplied document ID and revision ID and suggest a change. For
-example, use `gents chat --agent-id docs-editor` and ask it to review
+example, use `gents chat --home <home> --agent-id docs-editor` and ask it to review
 `document-123` at `revision-123`, providing a fresh suggestion ID. The agent
 should read the revision before creating a suggestion. A client may read the
 suggestion through the same authorized datastore API:
