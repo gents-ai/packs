@@ -1,0 +1,25 @@
+{
+  "defs": "def surface($id): .config.datastore_tool_surfaces[] | select(.surface_id == $id) | (if (.entries | type) == \"array\" then .entries else .entries.entries end);",
+  "jq": [
+    {
+      "name": "the agent only reads revisions and creates suggestions",
+      "expr": "(surface(\"docs-reviewer\") | map([.kind // \"create\", .collection, .tool_name]) | sort) == [[\"create\", \"DocsSuggestion\", \"create_docs_suggestion\"], [\"query\", \"DocsRevision\", \"read_docs_revision\"]] and ([.config.tools[] | select(.tools_id == \"docs-editor-tools\") | .datastore.datastore_tool_surface_ids[]] == [\"docs-reviewer\"])"
+    },
+    {
+      "name": "revision reads require both exact identities",
+      "expr": "surface(\"docs-reviewer\") | any(.[]; .tool_name == \"read_docs_revision\" and ([.filter_fields[] | select(.required) | .name] | sort) == [\"document_id\", \"revision_id\"])"
+    },
+    {
+      "name": "suggestions retain the base revision and a complete replacement",
+      "expr": "surface(\"docs-reviewer\") | any(.[]; .tool_name == \"create_docs_suggestion\" and ([.fields[] | select(.required) | .name] | sort) == [\"base_revision_id\", \"content\", \"document_id\", \"suggestion_id\", \"summary\"])"
+    },
+    {
+      "name": "document saves remain a separate editor surface",
+      "expr": "surface(\"docs-editor\") | any(.[]; .tool_name == \"create_docs_revision\" and .collection == \"DocsRevision\")"
+    },
+    {
+      "name": "the prompt asks for review and identifies uncertain authority",
+      "expr": ".assets[\"agent_behaviors/docs_editor/system_prompt.md\"] | contains(\"does not alter or approve\") and contains(\"Do not infer authorship\")"
+    }
+  ]
+}

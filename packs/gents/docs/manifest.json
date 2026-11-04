@@ -1,0 +1,34 @@
+{
+  "manifest_version": 1,
+  "name": "docs",
+  "namespace": "gents",
+  "version": "0.1.0",
+  "description": "Document revisions and reviewable agent suggestions for a headless document workflow.",
+  "authors": ["gents contributors"],
+  "tags": ["documents", "collaboration"],
+  "kind": "documents",
+  "config": "pack_config.json",
+  "dependencies": [],
+  "inference_slots": [
+    {
+      "name": "docs_editor",
+      "description": "The profile used to read document revisions and propose edits.",
+      "agents": ["docs-editor"]
+    }
+  ],
+  "schemas": [
+    "schemas/docs_revision.graphql",
+    "schemas/docs_suggestion.graphql"
+  ],
+  "assets": [
+    "README.md",
+    "agent_behaviors/docs_editor/system_prompt.md",
+    "pack_config.json",
+    "schemas/docs_revision.graphql",
+    "schemas/docs_suggestion.graphql",
+    "tests/install.json",
+    "tests/contract.json",
+    "tests/runtime_revision.json",
+    "tests/runtime_suggestion.json"
+  ]
+}
