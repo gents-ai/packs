@@ -33,8 +33,9 @@ page reports these cases and stops rather than choosing a winner. The pack does
 not install document access policies. Configure and verify ACP and pairing for
 both collections before sharing data. It does not grant access to an agent,
 private conversation, model account or other packs. Agent access requires a
-separate, explicit grant. The page refreshes on client events and periodically;
-this is not a guarantee of real-time updates.
+separate, explicit grant. The page uses scoped query observations when the host
+provides them and falls back to client events and periodic refresh otherwise.
+Cross-node delivery is not guaranteed by the pack itself.
 
 ## Checks
 

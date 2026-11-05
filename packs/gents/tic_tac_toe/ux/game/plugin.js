@@ -57,16 +57,42 @@ export async function readRows(ctx, node, tool, args = {}, maxRows = null) {
   }
 }
 
+export function observeGameQueries(ctx, node, game, refresh, ready, failed) {
+  let stopped = false, remaining = game ? 2 : 1
+  const stops = []
+  const stop = () => { if (stopped) return; stopped = true; for (const cancel of stops.splice(0)) cancel() }
+  if (typeof ctx.data.watch !== 'function') { failed(); return stop }
+  const start = (tool, args) => {
+    Promise.resolve().then(() => {
+      if (stopped || ctx.shell.selectedDeployment()?.nodeDid !== node) { stop(); return null }
+      return ctx.data.watch(surface, tool, args, (event) => {
+      if (stopped || ctx.shell.selectedDeployment()?.nodeDid !== node) return
+      if (event.kind === 'snapshot') void refresh()
+      else { stop(); failed() }
+    }) }).then((cancel) => {
+      if (!cancel) return
+      if (ctx.shell.selectedDeployment()?.nodeDid !== node) { cancel(); stop(); return }
+      if (stopped) { cancel(); return }
+      stops.push(cancel)
+      if (--remaining === 0) ready()
+    }).catch(() => { if (!stopped) { stop(); failed() } })
+  }
+  start('list_games', {})
+  if (game) start('list_moves', {game_id:game})
+  return stop
+}
+
 function GamePage({ ctx }) {
   const [node, setNode] = useState(() => ctx.shell.selectedDeployment()?.nodeDid ?? '')
   const [games, setGames] = useState([]), [moves, setMoves] = useState([]), [game, setGame] = useState(''), [loadedGame, setLoadedGame] = useState('')
   const [title, setTitle] = useState(''), [player, setPlayer] = useState('X')
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [pending, setPending] = useState(null)
-  const generation = useRef(0), active = useRef(true), refreshing = useRef(false)
+  const generation = useRef(0), active = useRef(true), refreshing = useRef(false), refreshAgain = useRef(null)
   const selected = () => ctx.shell.selectedDeployment()?.nodeDid ?? ''
   const state = game && loadedGame === game ? gameState(game, moves) : { status: 'loading' }
   const refresh = useCallback(async () => {
-    if (refreshing.current || !node) return
+    if (refreshing.current) { refreshAgain.current = refresh; return }
+    if (!node) return
     refreshing.current = true
     const token = ++generation.current
     try {
@@ -75,19 +101,21 @@ function GamePage({ ctx }) {
       if (!active.current || token !== generation.current || selected() !== node) return
       setGames(list); setMoves(current); setLoadedGame(game); setError('')
     } catch (e) { if (active.current && token === generation.current) setError(String(e?.message ?? e)) }
-    finally { refreshing.current = false }
+    finally { refreshing.current = false; const next = refreshAgain.current; refreshAgain.current = null; if (active.current && next) void next() }
   }, [ctx, node, game])
   useEffect(() => {
     active.current = true
     void refresh()
+    let fallback = true
+    const stopWatching = node ? observeGameQueries(ctx, node, game, refresh, () => { fallback = false }, () => { fallback = true; void refresh() }) : () => {}
     const tick = () => {
       const next = selected()
       if (next !== node) { generation.current++; setNode(next); setGame(''); setLoadedGame(''); setGames([]); setMoves([]); setError('Runtime changed. Select a game on this runtime.') }
-      else void refresh()
+      else if (fallback) void refresh()
     }
     const stop = ctx.setInterval(tick, 1000)
     const off = ctx.onEvent('client-updated', tick)
-    return () => { active.current = false; generation.current++; stop(); off() }
+    return () => { active.current = false; generation.current++; stopWatching(); stop(); off() }
   }, [ctx, node, refresh])
   const write = async (tool, payload) => {
     if (!ctx.data.supportsExpectedNode) throw new Error('Update Gents before writing game data.')

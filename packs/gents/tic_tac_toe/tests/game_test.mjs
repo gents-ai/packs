@@ -11,7 +11,7 @@ for (const [from, to] of [
   assert.ok(source.includes(from))
   source = source.replace(from, to)
 }
-const { gameState, readRows } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
+const { gameState, readRows, observeGameQueries } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 const move = (id, parent, mark, cell) => ({game_id:'g', move_id:id, parent_move_id:parent, mark, cell})
 const line = (...cells) => cells.map((cell, i) => move(`m${i}`, i ? `m${i-1}` : '', i % 2 ? 'O' : 'X', cell))
 
@@ -79,4 +79,74 @@ test('reads a playable history in one bounded query and refuses larger histories
   await assert.rejects(readRows(ctx,'a','list_moves',{game_id:'g'},9),/too many moves/)
   ctx.data.call = async()=>({kind:'query',output:{results:[rows[0]],next_offset:1}})
   await assert.rejects(readRows(ctx,'a','list_moves',{game_id:'g'},9),/too many moves/)
+})
+
+test('scopes live game watches to the selected node and stops both on switch', async () => {
+  let node = 'a', refreshes = 0, ready = 0, failures = 0
+  const watches = []
+  const ctx = {shell:{selectedDeployment:()=>({nodeDid:node})},data:{watch:async (_surface,tool,args,listener)=>{
+    const item = {tool,args,listener,stops:0}; watches.push(item); return () => {item.stops++}
+  }}}
+  const stop = observeGameQueries(ctx,'a','g',()=>{refreshes++},()=>{ready++},()=>{failures++})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  assert.equal(ready,1)
+  assert.deepEqual(watches.map(({tool,args})=>({tool,args})),[{tool:'list_games',args:{}},{tool:'list_moves',args:{game_id:'g'}}])
+  watches[1].listener({kind:'snapshot',value:{kind:'query',output:{}}})
+  assert.equal(refreshes,1)
+  node = 'b'
+  watches[0].listener({kind:'snapshot',value:{kind:'query',output:{}}})
+  assert.equal(refreshes,1)
+  stop(); stop()
+  assert.deepEqual(watches.map(({stops})=>stops),[1,1])
+  assert.equal(failures,0)
+})
+
+test('falls back and disposes partial or late-starting watches', async () => {
+  let resolveMove, stops = 0, failures = 0
+  const ctx = {shell:{selectedDeployment:()=>({nodeDid:'a'})},data:{watch:async (_surface,tool)=>{
+    if (tool === 'list_moves') return new Promise((resolve)=>{resolveMove=resolve})
+    return () => {stops++}
+  }}}
+  const stop = observeGameQueries(ctx,'a','g',()=>{},()=>{},()=>{failures++})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  stop()
+  resolveMove(()=>{stops++})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  assert.equal(stops,2)
+  const older = {shell:ctx.shell,data:{}}
+  observeGameQueries(older,'a','g',()=>{},()=>{},()=>{failures++})
+  assert.equal(failures,1)
+})
+
+test('returns to fallback when either live query fails', async () => {
+  let failure = 0, stops = 0
+  const listeners = []
+  const ctx = {shell:{selectedDeployment:()=>({nodeDid:'a'})},data:{watch:async (_surface,_tool,_args,listener)=>{
+    listeners.push(listener); return () => {stops++}
+  }}}
+  observeGameQueries(ctx,'a','g',()=>{},()=>{},()=>{failure++})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  listeners[0]({kind:'error',message:'unavailable'})
+  assert.equal(failure,1)
+  assert.equal(stops,2)
+  listeners[1]({kind:'error',message:'late'})
+  assert.equal(failure,1)
+})
+
+test('ignores the old game after switching to another watch', async () => {
+  let refreshes = 0
+  const listeners = []
+  const ctx = {shell:{selectedDeployment:()=>({nodeDid:'a'})},data:{watch:async (_surface,_tool,args,listener)=>{
+    listeners.push({args,listener}); return () => {}
+  }}}
+  const stopOld = observeGameQueries(ctx,'a','old',()=>{refreshes++},()=>{},()=>{})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  stopOld()
+  const stopNew = observeGameQueries(ctx,'a','new',()=>{refreshes++},()=>{},()=>{})
+  await new Promise((resolve)=>setTimeout(resolve,0))
+  listeners.find(({args})=>args.game_id==='old').listener({kind:'snapshot',value:{kind:'query',output:{}}})
+  assert.equal(refreshes,0)
+  listeners.find(({args})=>args.game_id==='new').listener({kind:'snapshot',value:{kind:'query',output:{}}})
+  assert.equal(refreshes,1)
+  stopNew()
 })
