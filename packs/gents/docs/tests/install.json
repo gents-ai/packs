@@ -1,0 +1,12 @@
+{
+  "install": {
+    "documents": [
+      "Agent/docs-editor",
+      "AgentContext/docs-editor-context",
+      "DatastoreToolSurface/docs-editor",
+      "DatastoreToolSurface/docs-reviewer",
+      "Tools/docs-editor-tools"
+    ],
+    "slots": ["docs_editor"]
+  }
+}

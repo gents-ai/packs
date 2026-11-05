@@ -1,0 +1,25 @@
+.gents-docs { display: grid; grid-template-columns: minmax(190px, 230px) minmax(0, 1fr); height: 100%; min-height: 560px; color: var(--foreground); background: var(--background) }
+.docs-sidebar { display: flex; flex-direction: column; gap: 8px; padding: 18px 12px; border-right: 1px solid var(--border); overflow: auto }
+.docs-sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+.docs-sidebar h2 { font-size: 15px; font-weight: 600; margin: 0 }
+.docs-refresh, .docs-document button, .docs-mode button { border: 0; background: transparent; color: var(--muted-foreground); cursor: pointer; padding: 5px; text-align: left }
+.docs-document { display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; border-radius: 8px; overflow-wrap: anywhere }
+.docs-document:hover { background: var(--muted) }
+.docs-document strong { font-size: 13px; font-weight: 500 }
+.docs-document small, .docs-hint, .docs-mode { font-size: 12px; color: var(--muted-foreground) }
+.docs-main { min-width: 0; overflow: auto; padding: 32px clamp(16px, 5vw, 72px) }
+.docs-sheet { max-width: 850px; margin: 0 auto }
+.docs-heading { display: flex; align-items: center; gap: 12px }
+.docs-heading input { border: 0; box-shadow: none; font-size: 24px; font-weight: 600; height: auto; padding: 4px 0 }
+.docs-mode { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 16px }
+.docs-toolbar { display: flex; flex-wrap: wrap; gap: 3px; padding: 8px; border: 1px solid var(--border); border-radius: 10px 10px 0 0; background: var(--muted) }
+.docs-tool { cursor: pointer; border: 0; border-radius: 6px; padding: 7px 9px; background: transparent; color: var(--foreground); font-size: 12px }
+.docs-tool:hover, .docs-tool:focus-visible { background: var(--background); outline: 1px solid var(--ring) }
+.docs-editor, .docs-source { display: block; box-sizing: border-box; width: 100%; min-height: 420px; padding: 28px; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 10px 10px; background: var(--background); color: var(--foreground); line-height: 1.65; outline: none; overflow-wrap: anywhere }
+.docs-source { border-top: 1px solid var(--border); border-radius: 10px; resize: vertical; font-family: monospace; font-size: 13px }
+.docs-editor:focus, .docs-source:focus { border-color: var(--ring) }
+.docs-editor h1, .docs-editor h2, .docs-editor h3 { line-height: 1.3; margin: 1.2em 0 .5em }
+.docs-editor ul, .docs-editor ol { padding-left: 1.6em }
+.docs-error { padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; border: 1px solid var(--destructive); color: var(--destructive); font-size: 13px }
+.docs-empty { display: grid; place-items: center; min-height: 420px; color: var(--muted-foreground) }
+@media (max-width: 650px) { .gents-docs { grid-template-columns: 1fr; height: auto } .docs-sidebar { max-height: 180px; border-right: 0; border-bottom: 1px solid var(--border) } .docs-main { padding: 20px 12px } .docs-editor, .docs-source { padding: 18px; min-height: 300px } }

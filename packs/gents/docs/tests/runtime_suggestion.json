@@ -1,0 +1,28 @@
+{
+  "runtime": {
+    "repository": {},
+    "seed": {
+      "collection": "DocsSuggestion",
+      "fields": {
+        "document_id": "agreement",
+        "base_revision_id": "revision-1",
+        "suggestion_id": "suggestion-1",
+        "content": "# Agreement\n\nRevised terms.",
+        "summary": "Clarify the terms."
+      }
+    },
+    "expect": [
+      {
+        "collection": "DocsSuggestion",
+        "filter": {"document_id": "agreement"},
+        "fields": {
+          "document_id": "agreement",
+          "base_revision_id": "revision-1",
+          "suggestion_id": "suggestion-1",
+          "content": "# Agreement\n\nRevised terms.",
+          "summary": "Clarify the terms."
+        }
+      }
+    ]
+  }
+}

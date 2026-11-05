@@ -343,6 +343,7 @@ builds.
 | [code_review](packs/gents/code_review/README.md) | The review-changes workflow: recon, lens scans, verification and triage of a diff as one job |
 | [d3_decision](packs/gents/d3_decision/README.md) | The d3_decision plugin, which asks the D3 decision model typed choice, yes/no and score questions about text or JSON on an operator-owned server and returns its probabilities |
 | [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and the data_tables plugin, which runs SQL over CSV, JSON, Parquet, XLSX and ODS files with exact types and saves results as CSV or Parquet |
+| [docs](packs/gents/docs/README.md) | Headless document revisions and reviewable agent suggestions |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
 | [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
 | [dynamic_workflows](packs/gents/dynamic_workflows/README.md) | The `workflow` tool that runs an in-session step function as a dynamic job |

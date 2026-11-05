@@ -558,6 +558,24 @@ for case in "${cases[@]}"; do
   fi
 done
 
+# Pack UI tests use Node's built-in test runner and ship as declared assets.
+node_tests=("$dir"/tests/*_test.mjs)
+if ((${#node_tests[@]} > 0)); then
+  if ! command -v node >/dev/null 2>&1; then
+    fail "Node.js is required for the pack's UI tests"
+  else
+    for case in "${node_tests[@]}"; do
+      name="$(basename "$case")"
+      if node --test "$case" >"$work/$name.log" 2>&1; then
+        pass "$name: UI tests"
+      else
+        fail "$name: UI tests failed"
+        cat "$work/$name.log" >&2
+      fi
+    done
+  fi
+fi
+
 # A plugin may ship tools/wasm_check.py: checks of its real WebAssembly build that case files and
 # native tests cannot express (damaged inputs, output limits, large inputs). It runs once per plugin
 # source, against the pack installed in a fresh home (env GENTS and PACK_HOME), and needs python3.

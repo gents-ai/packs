@@ -1,0 +1,26 @@
+{
+  "runtime": {
+    "repository": {},
+    "seed": {
+      "collection": "DocsRevision",
+      "fields": {
+        "document_id": "agreement",
+        "revision_id": "revision-1",
+        "title": "Agreement",
+        "content": "# Agreement\n\nInitial terms."
+      }
+    },
+    "expect": [
+      {
+        "collection": "DocsRevision",
+        "filter": {"document_id": "agreement"},
+        "fields": {
+          "document_id": "agreement",
+          "revision_id": "revision-1",
+          "title": "Agreement",
+          "content": "# Agreement\n\nInitial terms."
+        }
+      }
+    ]
+  }
+}
