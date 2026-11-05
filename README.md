@@ -355,4 +355,5 @@ builds.
 | [prompt_proposer](packs/gents/prompt_proposer/README.md) | Rewrites a behavior's instruction from training feedback |
 | [repo_maintenance](packs/gents/repo_maintenance/README.md) | Repository work through reviewed PR |
 | [security_scan](packs/gents/security_scan/README.md) | Whole-codebase discovery and verification |
+| [tic_tac_toe](packs/gents/tic_tac_toe/README.md) | A shared tic-tac-toe board with explicit agent-assisted turns |
 | [web](packs/gents/web/README.md) | A Web researcher agent with self-contained search, fetch and bounded crawl tools |

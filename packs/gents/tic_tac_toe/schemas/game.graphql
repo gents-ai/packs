@@ -1,0 +1,12 @@
+type TicTacToeGame @branchable {
+  game_id: String @index
+  title: String
+}
+
+type TicTacToeMove @branchable {
+  game_id: String @index
+  move_id: String
+  parent_move_id: String
+  mark: String
+  cell: Int
+}
