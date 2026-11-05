@@ -40,7 +40,7 @@ image_tools to read `<path>`?" with Allow once, Always allow this file, Always
 allow this folder and Deny. The reader sees only the file or folder the
 question names, never its neighbours. Only a call that sets `save` writes, and
 it needs read and write access to the folder: the host asks you once, or you
-allow it up front with `gents plugin dirs add <folder> --access read_write`.
+allow it up front with `gents pack plugin dirs add <folder> --access read_write`.
 
 From a terminal:
 
@@ -82,7 +82,7 @@ gql '{ ImageOutput(filter: {run_id: {_eq: "r1"}}) { source role width height ima
 
 `path` names a folder or one image; a relative path starts at the server's
 working folder, which is readable without asking; a path elsewhere must be in
-the allowed folders (`gents plugin dirs add <folder>`). A request is a node's
+the allowed folders (`gents pack plugin dirs add <folder>`). A request is a node's
 when it carries the `run_id` every such document has. A folder job can name the
 images in `files`; an image another node produced is passed as `data_base64`
 and `name`.
@@ -111,12 +111,12 @@ write files; use the CLI or the model tool to write.
 
 ## Use it from the CLI
 
-`gents plugin run` binds the folder you name for one call:
+`gents pack plugin run` binds the folder you name for one call:
 
 ```sh
-gents plugin run gents/image_tools --bind-dir ./screenshots \
+gents pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "files": ["login.png"], "op": "info"}'
-gents plugin run gents/image_tools --bind-dir ./screenshots \
+gents pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "files": ["a.png"], "op": "diff", "against": "b.png", "tolerance": 8}' \
   | jq '.response.results[0].steps[0] | {changed_ratio, ssim, regions}'
 ```
@@ -126,7 +126,7 @@ part with `jq -r '.parts[0].data' | base64 -d > out.png`. To write results into
 the folder set `save`; that call needs read and write access to the folder:
 
 ```sh
-gents plugin run gents/image_tools --bind-dir ./screenshots \
+gents pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "op": "resize", "width": 800, "save": {"suffix": "_800"}}'
 ```
 

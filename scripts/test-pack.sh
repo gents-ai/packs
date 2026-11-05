@@ -341,7 +341,7 @@ install_assets() {
 }
 
 # Polls the live runtime until one expectation's rows include one whose
-# fields match; prints the last response. The read goes through `gents query`
+# fields match; prints the last response. The read goes through `gents data query`
 # as the home's node: the GraphQL endpoint shows anonymous readers no
 # documents. Waits with a deadline and backoff, so a fast machine finishes at
 # once and a slow one still passes.
@@ -351,7 +351,7 @@ await_rows() {
   want="$(jq -c '.fields // {}' <<<"$expect")"
   while read -r arg; do args+=("$arg"); done < <(expectation_args "$expect")
   while :; do
-    response="$("$gents" query find --home "$home" --graphql "$url" --limit 1000 "${args[@]}" 2>"$work/query.err" || true)"
+    response="$("$gents" data query find --home "$home" --graphql "$url" --limit 1000 "${args[@]}" 2>"$work/query.err" || true)"
     if jq -e --argjson want "$want" \
       '[.results[]? | select(. as $row | $want | to_entries | all(.value == $row[.key]))] | length > 0' \
       <<<"$response" >/dev/null 2>&1; then
@@ -367,7 +367,7 @@ await_rows() {
   done
 }
 
-# The `gents query find` arguments for one runtime expectation, one per line:
+# The `gents data query find` arguments for one runtime expectation, one per line:
 # its collection, filtered by `filter`, selecting the fields it expects.
 expectation_args() {
   jq -r '"--collection", .collection,
@@ -380,8 +380,8 @@ runtime_case() {
   local case="$1" name repo home port url log pid args=() arg base path
   name="$(basename "$case" .json)"
   # Runtime cases seed through the operator document command; fail at once on a gents without it.
-  "$gents" document create --help >/dev/null 2>&1 \
-    || { fail "$name: this gents has no 'document create' command; set GENTS to a gents build that includes it"; return; }
+  "$gents" data document create --help >/dev/null 2>&1 \
+    || { fail "$name: this gents has no 'data document create' command; set GENTS to a gents build that includes it"; return; }
   repo="$work/repo-$name"
   mkdir -p "$repo"
   while read -r path; do mkdir -p "$repo/$path"; done < <(jq -r '.runtime.repository.dirs // [] | .[]' "$case")
@@ -404,7 +404,7 @@ runtime_case() {
   export_required "$repo"
   local access
   access="$(jq -r '.runtime.repository.access // empty' "$case")"
-  "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
+  "$gents" pack plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
   "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
@@ -434,7 +434,7 @@ runtime_case() {
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
     # the collection; retried below.
-    "$gents" document create "$collection" --home "$home" --graphql "$url" --json "$fields" \
+    "$gents" data document create "$collection" --home "$home" --graphql "$url" --json "$fields" \
       >/dev/null 2>"$work/$name-seed.err" && seeded=yes
     # An authorization refusal or a bad field can never succeed on retry.
     if [[ -z "$seeded" ]] && grep -qiE 'not authorized|permission denied|has no field|--json' "$work/$name-seed.err"; then
@@ -469,7 +469,7 @@ install_plugins() {
   want="$(jq -c '.install.plugins' "$case")"
   "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   expect_set "$name: install registers" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/install.json")"
-  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  "$gents" pack plugin list --home "$home" >"$work/plugins.json"
   expect_set "$name: plugin list after install" "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
 
   "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
@@ -477,7 +477,7 @@ install_plugins() {
 
   "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
   expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
-  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  "$gents" pack plugin list --home "$home" >"$work/plugins.json"
   expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
 }
 

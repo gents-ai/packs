@@ -132,7 +132,7 @@ then reconstructs the timeline and all four adapter projections from the
 persisted documents.
 
 ```bash
-gents trace timeline --request-id <id> --home <home>
+gents debug trace timeline --request-id <id> --home <home>
 ```
 
 For cost, query `InferenceCall { prompt_tokens completion_tokens }` - not

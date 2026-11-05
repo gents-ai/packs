@@ -63,7 +63,7 @@ gql '{ OcrPage(filter: {run_id: {_eq: "r1"}}) { source page markdown } }'
 
 `path` names a folder, or one file; a relative path starts at the server's
 working folder, which is readable without asking. A path elsewhere must be in
-the allowed folders (`gents plugin dirs add <folder>`): a callback node asks nobody
+the allowed folders (`gents pack plugin dirs add <folder>`): a callback node asks nobody
 and is refused with that command otherwise. A request is recognized as a node's
 by the `run_id` every such document carries. A folder job can name the files to
 read in `files` (a list of names).
@@ -89,7 +89,7 @@ Markdown and images. When more remains, `OcrDocument.complete` is `false` and
 A job plans at most 1000 chunks and says so when it would exceed them.
 
 A pack of your own can call the same plugin from a callback or from a
-workflow plugin, pinned to the digest `gents plugin list` shows.
+workflow plugin, pinned to the digest `gents pack plugin list` shows.
 
 ## Use it from a scenario
 
@@ -98,7 +98,7 @@ A scenario seeds its documents from `seed.fields`, and `${NAME}` in
 once with the CLI and handed to the scenario as text:
 
 ```sh
-export REPORT_MD="$(gents plugin run gents/ocr --bind-dir ./reports \
+export REPORT_MD="$(gents pack plugin run gents/ocr --bind-dir ./reports \
   --input '{"path": "./reports", "files": ["q3.pdf"], "pages": "1-5"}' | jq -r '.documents[0].markdown')"
 ```
 
@@ -112,7 +112,7 @@ This example was not run: a scenario needs a model endpoint.
 
 ## Use it from the CLI
 
-`gents plugin run` binds the folder you name for one call. A document longer
+`gents pack plugin run` binds the folder you name for one call. A document longer
 than one call returns `next.cursor`; this loop follows it to the end:
 
 ```sh
@@ -120,7 +120,7 @@ dir=~/Documents/reports file=big.pdf cursor=""
 while :; do
   input="$(jq -nc --arg p "$dir" --arg f "$file" --arg c "$cursor" \
     '{path: $p, files: [$f]} + (if $c == "" then {} else {cursor: $c} end)')"
-  out="$(gents plugin run gents/ocr --bind-dir "$dir" --input "$input")"
+  out="$(gents pack plugin run gents/ocr --bind-dir "$dir" --input "$input")"
   jq -r '.documents[].markdown' <<<"$out"
   cursor="$(jq -r '.next.cursor // empty' <<<"$out")"
   [ -n "$cursor" ] || break
@@ -241,7 +241,7 @@ and a folder it names is that folder. Nothing is bound beyond that and nothing
 is recorded as an install grant. Allowed without asking: the session's working
 folder, but only a specific folder: never `/`, your home folder or a folder
 holding it or the gents home. Allowed once you listed them: Allowed folders in
-the settings, or `gents plugin dirs add <folder or file>` (read-only unless
+the settings, or `gents pack plugin dirs add <folder or file>` (read-only unless
 `--access read_write`). Anything else asks first in a chat (Allow once, Always
 allow this file, Always allow this folder, Deny), and in a callback or a headless
 run is refused with the command that allows it. A chat connected to a server on
@@ -310,7 +310,7 @@ plugin offered to an agent as a tool returns its output through
 `ToolResultContent::from_tool_output`, which makes the text of `response` and
 one image per entry of `parts` (checked in gents `message.rs`, `plugin/tool.rs`
 and the loop's tool-result threading). A caller that reads the JSON directly,
-such as `gents plugin run`, gets the same object.
+such as `gents pack plugin run`, gets the same object.
 
 ## Completion and failure
 
@@ -450,7 +450,7 @@ pages being read are copied out of the file.
 
 Peak memory is the resident size of the whole `gents` process (idle about 365
 MiB with the module loaded). The text PDF, EPUB and scan numbers come from
-`plugins/ocr/tools/bench.sh` and `gents plugin run` (wasm, single thread, SIMD)
+`plugins/ocr/tools/bench.sh` and `gents pack plugin run` (wasm, single thread, SIMD)
 on a shared 36-core Linux machine, on the code of this release, a few runs
 each; the table is order of magnitude, so re-run the script on your own
 machine. The LaTeX manual row was measured on an earlier build of the same
@@ -540,4 +540,4 @@ Chandra for what was read and what was not).
   render on another machine changes nothing until someone regenerates and
   commits.
 - To refresh a case's expectation after an intended change, run the plugin on
-  the fixture with `gents plugin run` and review the diff before committing it.
+  the fixture with `gents pack plugin run` and review the diff before committing it.

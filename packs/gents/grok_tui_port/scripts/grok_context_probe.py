@@ -62,7 +62,7 @@ def main():
             assert details["context"]["used"] == expected, details
             assert details["context"]["total"] == accounting["context_window"], details
             decoded = json.loads(subprocess.check_output([
-                args.gents_cli, "trace", "capture", "--graphql", args.graphql,
+                args.gents_cli, "debug", "trace", "capture", "--graphql", args.graphql,
                 "--request-id", requests[0]["request_id"], "--turn",
                 str(accounting["turn_index"]), "--attempt", str(accounting["attempt"]),
                 "--include-body", "--list",

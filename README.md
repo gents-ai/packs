@@ -62,7 +62,7 @@ coordinate owns.
 
 `kind` is `documents`, `assets`, or `plugins`. A `plugins` pack
 installs no documents of its own: it exists to ship capabilities. Its plugins
-land in the same store `gents plugin install` uses, one store per home, so
+land in the same store `gents pack plugin install` uses, one store per home, so
 they are callable by name whichever pack put them there and one pack can
 build on another's capabilities instead of vendoring a copy.
 
@@ -75,7 +75,7 @@ one artifact every language Afterburner compiles down to, since some of them
 form to ship instead, and only Afterburner's own runtime knows how to
 dispatch every one of those shapes.
 
-An admitted plugin can be called directly (`gents plugin run`), as a job
+An admitted plugin can be called directly (`gents pack plugin run`), as a job
 (a workflow the host drives step by step), or by a model as an ordinary tool. Its bytes sit in a content-addressed
 store separate from the per-name record, so installing a second version never
 disturbs the first; `gents pack remove` releases a digest's bytes once no
@@ -127,16 +127,16 @@ gents pack install sha256:<hex>                        # or from this home's sto
 A plugin is also managed on its own, without a pack around it:
 
 ```sh
-gents plugin build ./format_check          # compile one .afb
-gents plugin publish format_check-0.1.0.afb
-gents plugin install acme/format_check
-gents plugin list
-gents plugin run acme/format_check --input '{"path":"src"}'
-gents plugin remove acme/format_check
+gents pack plugin build ./format_check          # compile one .afb
+gents pack plugin publish format_check-0.1.0.afb
+gents pack plugin install acme/format_check
+gents pack plugin list
+gents pack plugin run acme/format_check --input '{"path":"src"}'
+gents pack plugin remove acme/format_check
 ```
 
 Installing a pack of any kind installs the plugins it declares into the same
-store `gents plugin install` uses, so a plugin that arrived inside a pack is
+store `gents pack plugin install` uses, so a plugin that arrived inside a pack is
 runnable by name exactly like one installed alone. `documents` packs
 install their plugins the same way `assets` and `plugins` packs do, before
 writing their own documents. If that later write fails, the
@@ -151,7 +151,7 @@ digest is computed over. A pack is named by its digest, `sha256:<hex>`, and a
 home keeps the packs it has seen under `packs/store/sha256/`. A path is local
 only when written as one (`./dir`, `../dir`, `/abs`, or a `.pack` file); a
 bare name means `gents/<name>`. The registry serves
-packs only: `gents plugin publish` wraps a plugin in a single-plugin pack, so
+packs only: `gents pack plugin publish` wraps a plugin in a single-plugin pack, so
 a pack that ships plugins is one artifact rather than an archive plus a pile
 of modules.
 
@@ -311,7 +311,7 @@ any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 | `{"eval_case": {"asset": "...", "after": "..."}}` | the first json fence after that heading line of the asset is an eval case `gents eval checks --validate-case -` accepts |
 | `{"cli_flags": {"command": [...], "flags": [...]}}` | `gents <command> --help` documents every flag |
 | `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
-| `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents plugin list` agrees); a reinstall keeps the same set; `gents pack remove` releases them |
+| `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents pack plugin list` agrees); a reinstall keeps the same set; `gents pack remove` releases them |
 
 Every documents pack also passes the built-in checks: it declares
 inference slots and authors no inference backend, profile, sampling, execution

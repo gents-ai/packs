@@ -18,7 +18,7 @@ through the host.
 ```sh
 gents pack install ./packs/gents/d3_decision --home <home> --preview
 gents pack install ./packs/gents/d3_decision --home <home> --grant-authority
-gents plugin run gents/d3_decision --home <home> --input '{
+gents pack plugin run gents/d3_decision --home <home> --input '{
   "context": "The order arrived damaged and the customer has a receipt.",
   "questions": {
     "receipt": {"type": "noul", "instructions": "Does the customer have a receipt?"},
@@ -119,7 +119,7 @@ mistyped answers). Check a live server by hand with semantic assertions, not
 exact floats, since probabilities differ slightly between calls and servers:
 
 ```sh
-gents plugin run gents/d3_decision --home <home> --input '{"context": "The customer has a receipt.",
+gents pack plugin run gents/d3_decision --home <home> --input '{"context": "The customer has a receipt.",
   "questions": {"receipt": {"type": "noul", "instructions": "Does the customer have a receipt?"}}}' \
   | jq -e '.ok and .answers.receipt.type == "noul" and .answers.receipt.noul > 0.9'
 ```
