@@ -1,0 +1,68 @@
+{
+  "manifest_version": 1,
+  "name": "tic_tac_toe",
+  "namespace": "gents",
+  "version": "0.1.0",
+  "description": "A shared tic-tac-toe board with explicit agent-assisted turns.",
+  "authors": [
+    "gents contributors"
+  ],
+  "tags": [
+    "games",
+    "collaboration"
+  ],
+  "kind": "documents",
+  "config": "pack_config.json",
+  "dependencies": [],
+  "inference_slots": [
+    {
+      "name": "game_player",
+      "description": "A profile for the game player agent.",
+      "agents": [
+        "tic-tac-toe-player"
+      ]
+    }
+  ],
+  "schemas": [
+    "schemas/game.graphql"
+  ],
+  "assets": [
+    "README.md",
+    "pack_config.json",
+    "schemas/game.graphql",
+    "agent_behaviors/game_player/system_prompt.md",
+    "ux/game/plugin.js",
+    "ux/game/plugin.css",
+    "tests/install.json",
+    "tests/contract.json",
+    "tests/game_test.mjs",
+    "tests/browser_check.mjs",
+    "tests/runtime_game.json",
+    "tests/runtime_move.json"
+  ],
+  "ux": [
+    {
+      "name": "tic_tac_toe",
+      "description": "Play a shared tic-tac-toe game.",
+      "entry": "ux/game/plugin.js",
+      "css": "ux/game/plugin.css",
+      "contributes": {
+        "areas": [
+          "nav",
+          "plugin.pages"
+        ]
+      },
+      "data": [
+        {
+          "surface": "tic-tac-toe-board",
+          "tools": [
+            "list_games",
+            "list_moves",
+            "create_game",
+            "create_move"
+          ]
+        }
+      ]
+    }
+  ]
+}

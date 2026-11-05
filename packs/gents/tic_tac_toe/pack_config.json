@@ -1,0 +1,16 @@
+{
+  "node": {},
+  "agents": [{"agent_id":"tic-tac-toe-player","context_id":"tic-tac-toe-player-context","display_name":"Game player","inference_profile_id":"gents:inference-slot:game_player"}],
+  "contexts": [{"context_id":"tic-tac-toe-player-context","display_name":"Game player","system_prompt":"./agent_behaviors/game_player/system_prompt.md","tools_id":"tic-tac-toe-player-tools"}],
+  "datastore_tool_surfaces": [{
+    "surface_id":"tic-tac-toe-board",
+    "display_name":"Tic-tac-toe board",
+    "entries":[
+      {"kind":"query","tool_name":"list_games","collection":"TicTacToeGame","description":"List games.","fields":["game_id","title"],"filter_fields":[{"name":"game_id"}]},
+      {"kind":"query","tool_name":"list_moves","collection":"TicTacToeMove","description":"List all moves in one game.","fields":["game_id","move_id","parent_move_id","mark","cell"],"filter_fields":[{"name":"game_id","required":true}]},
+      {"tool_name":"create_game","collection":"TicTacToeGame","description":"Create a new game with a fresh identifier.","fields":[{"name":"game_id","required":true},{"name":"title","required":true}]},
+      {"tool_name":"create_move","collection":"TicTacToeMove","description":"Create a move in a game. Read every move first and make only a legal move; this datastore does not enforce game rules or player identity.","fields":[{"name":"game_id","required":true},{"name":"move_id","required":true},{"name":"parent_move_id"},{"name":"mark","required":true},{"name":"cell","required":true}]}
+    ]
+  }],
+  "tools": [{"tools_id":"tic-tac-toe-player-tools","display_name":"Tic-tac-toe game tools","datastore":{"datastore_tool_surface_ids":["tic-tac-toe-board"]}}]
+}

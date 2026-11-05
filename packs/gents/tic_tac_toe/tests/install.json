@@ -1,0 +1,1 @@
+{"install":{"documents":["Agent/tic-tac-toe-player","AgentContext/tic-tac-toe-player-context","DatastoreToolSurface/tic-tac-toe-board","Tools/tic-tac-toe-player-tools"],"slots":["game_player"]}}
