@@ -40,12 +40,12 @@ image_tools to read `<path>`?" with Allow once, Always allow this file, Always
 allow this folder and Deny. The reader sees only the file or folder the
 question names, never its neighbours. Only a call that sets `save` writes, and
 it needs read and write access to the folder: the host asks you once, or you
-allow it up front with `gents pack plugin dirs add <folder> --access read_write`.
+allow it up front with `gents config pack plugin dirs add <folder> --access read_write`.
 
 From a terminal:
 
 ```sh
-gents pack install gents/image_tools --inference-slot image_helper=<profile>
+gents config pack install gents/image_tools --inference-slot image_helper=<profile>
 gents chat --agent-id image-helper "What is in screenshots/login.png?"
 ```
 
@@ -74,7 +74,7 @@ Installing the pack also installs two plugin nodes, `image-plan` and
 needed: create an `ImageJob` document and the records below appear.
 
 ```sh
-gents server --home <home> --http-port 8080 &   # started in the folder holding your pictures
+gents runtime server --home <home> --http-port 8080 &   # started in the folder holding your pictures
 gql() { curl -fsS http://127.0.0.1:8080/api/v0/graphql -H 'content-type: application/json' -d "$(jq -cn --arg q "$1" '{query: $q}')"; }
 gql 'mutation { create_ImageJob(input: {run_id: "r1", path: "screenshots", ops: "[{\"op\":\"view\",\"max_side\":512}]"}) { _docID } }'
 gql '{ ImageOutput(filter: {run_id: {_eq: "r1"}}) { source role width height image_base64 } }'
@@ -82,7 +82,7 @@ gql '{ ImageOutput(filter: {run_id: {_eq: "r1"}}) { source role width height ima
 
 `path` names a folder or one image; a relative path starts at the server's
 working folder, which is readable without asking; a path elsewhere must be in
-the allowed folders (`gents pack plugin dirs add <folder>`). A request is a node's
+the allowed folders (`gents config pack plugin dirs add <folder>`). A request is a node's
 when it carries the `run_id` every such document has. A folder job can name the
 images in `files`; an image another node produced is passed as `data_base64`
 and `name`.
@@ -111,12 +111,12 @@ write files; use the CLI or the model tool to write.
 
 ## Use it from the CLI
 
-`gents pack plugin run` binds the folder you name for one call:
+`gents config pack plugin run` binds the folder you name for one call:
 
 ```sh
-gents pack plugin run gents/image_tools --bind-dir ./screenshots \
+gents config pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "files": ["login.png"], "op": "info"}'
-gents pack plugin run gents/image_tools --bind-dir ./screenshots \
+gents config pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "files": ["a.png"], "op": "diff", "against": "b.png", "tolerance": 8}' \
   | jq '.response.results[0].steps[0] | {changed_ratio, ssim, regions}'
 ```
@@ -126,7 +126,7 @@ part with `jq -r '.parts[0].data' | base64 -d > out.png`. To write results into
 the folder set `save`; that call needs read and write access to the folder:
 
 ```sh
-gents pack plugin run gents/image_tools --bind-dir ./screenshots \
+gents config pack plugin run gents/image_tools --bind-dir ./screenshots \
   --input '{"path": "./screenshots", "op": "resize", "width": 800, "save": {"suffix": "_800"}}'
 ```
 
@@ -149,8 +149,8 @@ paged plugin: send the same input plus `"cursor"` until `next` is absent.
 ## Installation
 
 ```sh
-gents pack install ./packs/gents/image_tools --home <home> --inference-slot image_helper=<profile>
-gents pack install gents/image_tools --home <home> --inference-slot image_helper=<profile>   # once published
+gents config pack install ./packs/gents/image_tools --home <home> --inference-slot image_helper=<profile>
+gents config pack install gents/image_tools --home <home> --inference-slot image_helper=<profile>   # once published
 ```
 
 Building from a source checkout compiles the plugin to `wasm32-wasip1` with

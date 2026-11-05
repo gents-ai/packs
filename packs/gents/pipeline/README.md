@@ -20,8 +20,8 @@ create ExperimentJob
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/pipeline --home <home> --inference-slot worker=<profile_id>
-gents pack install gents/pipeline --home <home> --inference-slot worker=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/pipeline --home <home> --inference-slot worker=<profile_id>
+gents config pack install gents/pipeline --home <home> --inference-slot worker=<profile_id>   # once published to the registry
 ```
 
 Equivalent, applying the pack against a running server instead (recommended
@@ -29,7 +29,7 @@ for this pack, since it also validates the schema first):
 
 ```bash
 gents config validate --root packs/gents/pipeline
-gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim \
+gents runtime server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim \
   --apply-root packs/gents/pipeline
 ```
 
@@ -45,7 +45,7 @@ surfaces, and their reachable tasks/schedules/triggers).
 Equivalent without folding into server:
 
 ```bash
-gents server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim
+gents runtime server --home <home> --http-port 19191 --p2p-transport none --no-codex-shim
 gents config apply --root packs/gents/pipeline --home <home> \
   --graphql http://127.0.0.1:19191/api/v0/graphql \
   --bind-node-did home --force-rebind-concrete-did --prune
@@ -132,7 +132,7 @@ then reconstructs the timeline and all four adapter projections from the
 persisted documents.
 
 ```bash
-gents debug trace timeline --request-id <id> --home <home>
+gents utils debug trace timeline --request-id <id> --home <home>
 ```
 
 For cost, query `InferenceCall { prompt_tokens completion_tokens }` - not
@@ -141,8 +141,8 @@ For cost, query `InferenceCall { prompt_tokens completion_tokens }` - not
 ## Validation
 
 ```bash
-gents pack check ./packs/gents/pipeline
-gents pack test ./packs/gents/pipeline
+gents config pack check ./packs/gents/pipeline
+gents config pack test ./packs/gents/pipeline
 make test-pipeline
 ```
 

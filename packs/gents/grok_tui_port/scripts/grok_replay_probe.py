@@ -4,7 +4,7 @@
 Compares the assistant text that `session/load` replays for one request with
 the request's canonical assistant messages, and checks that replayed chunks do
 not acquire timestamps after the request terminalized. The canonical text comes
-from `gents debug trace project`, which presents each message through the same owner
+from `gents utils debug trace project`, which presents each message through the same owner
 the runtime uses; this probe never reassembles output segments itself.
 """
 import argparse
@@ -114,7 +114,7 @@ def main():
     prompt_id = replay_prompt_id(request)
     projection = json.loads(
         subprocess.run(
-            [args.gents, "debug", "trace", "project", "--graphql", args.graphql,
+            [args.gents, "utils", "debug", "trace", "project", "--graphql", args.graphql,
              "--request-id", args.request, "--projection", "openai-codex"],
             check=True, capture_output=True, text=True,
         ).stdout

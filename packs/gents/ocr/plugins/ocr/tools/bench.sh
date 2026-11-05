@@ -15,7 +15,7 @@ trap 'rm -rf "$work"' EXIT
 
 (cd "$plugin" && cargo run --quiet --release --example gen_fixtures -- "$work/fx" --bench >/dev/null)
 "$gents" init --home "$work/home" >/dev/null
-"$gents" pack install "$pack" --home "$work/home" >/dev/null
+"$gents" config pack install "$pack" --home "$work/home" >/dev/null
 
 # Peak resident memory of the whole gents process, from the kernel's own
 # accounting through tools/peakrss.py (the same on Linux and macOS).
@@ -27,7 +27,7 @@ now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 run() { # dir input
   local dir="$1" input="$2" start end
   start="$(now)"
-  python3 "$tools/peakrss.py" "$work/peak.txt" "$gents" pack plugin run ocr --home "$work/home" --bind-dir "$dir" --input "$input" >"$work/out.json"
+  python3 "$tools/peakrss.py" "$work/peak.txt" "$gents" config pack plugin run ocr --home "$work/home" --bind-dir "$dir" --input "$input" >"$work/out.json"
   end="$(now)"
   printf '  %s s, peak %s, %s\n' "$(awk -v a="$end" -v b="$start" 'BEGIN { printf "%.2f", a - b }')" "$(peak)" "$(jq -r '(.response // .).documents | map("\(.pages) page(s), \(.markdown | length) chars") | join("; ")' "$work/out.json")"
 }

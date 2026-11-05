@@ -9,7 +9,7 @@
     "gents-ai contributors"
   ],
   "config": "pack_config.json",
-  "description": "The prompt proposer: rewrites one agent's system instruction from a training run's feedback. Installed by gents optimization run --proposer agent:prompt_proposer.",
+  "description": "The prompt proposer: rewrites one agent's system instruction from a training run's feedback. Installed by gents utils optimization run --proposer agent:prompt_proposer.",
   "inference_slots": [
     {
       "agents": [

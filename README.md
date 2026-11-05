@@ -8,14 +8,14 @@ supporting assets. It may contain a workflow (a job plugin), a document-driven
 worked scenario, or reusable assets alone.
 
 ```sh
-gents pack list
-gents pack show code_review
-gents pack install code_review --home <initialized-home>
-gents pack wire gents/review_changes --agent <agent> --targets-from gents/code_review --home <home>
-gents pack install mailbox --home <home>
-gents pack remove mailbox --home <home>
-gents pack prune mailbox
-gents pack scenario run pipeline --http-port 19191 --keep-home
+gents config pack list
+gents config pack show code_review
+gents config pack install code_review --home <initialized-home>
+gents config pack wire gents/review_changes --agent <agent> --targets-from gents/code_review --home <home>
+gents config pack install mailbox --home <home>
+gents config pack remove mailbox --home <home>
+gents config pack prune mailbox
+gents config pack scenario run pipeline --http-port 19191 --keep-home
 ```
 
 ## What a pack is made of
@@ -57,12 +57,12 @@ namespaces may each carry a `format_check` without one replacing the other.
 Within one namespace, a plugin record is owned by the pack coordinate that
 installed it: installing a same-named plugin from a different pack is
 refused, naming both packs, and only that pack's own reinstall or update
-replaces its record. `gents pack remove` releases only what its own
+replaces its record. `gents config pack remove` releases only what its own
 coordinate owns.
 
 `kind` is `documents`, `assets`, or `plugins`. A `plugins` pack
 installs no documents of its own: it exists to ship capabilities. Its plugins
-land in the same store `gents pack plugin install` uses, one store per home, so
+land in the same store `gents config pack plugin install` uses, one store per home, so
 they are callable by name whichever pack put them there and one pack can
 build on another's capabilities instead of vendoring a copy.
 
@@ -75,17 +75,17 @@ one artifact every language Afterburner compiles down to, since some of them
 form to ship instead, and only Afterburner's own runtime knows how to
 dispatch every one of those shapes.
 
-An admitted plugin can be called directly (`gents pack plugin run`), as a job
+An admitted plugin can be called directly (`gents config pack plugin run`), as a job
 (a workflow the host drives step by step), or by a model as an ordinary tool. Its bytes sit in a content-addressed
 store separate from the per-name record, so installing a second version never
-disturbs the first; `gents pack remove` releases a digest's bytes once no
+disturbs the first; `gents config pack remove` releases a digest's bytes once no
 installed record anywhere in the home references it any more, and keeps them
 otherwise. A plugin declares:
 
 - `artifact`, the compiled `.afb` inside the pack, under `plugins/`. It must
   also appear in `assets`, so the pack's own digest covers it and nothing can
   be swapped underneath the name it was admitted under.
-- `source`, optionally, where the artifact is built from. `gents pack build`
+- `source`, optionally, where the artifact is built from. `gents config pack build`
   compiles it through Afterburner, whatever language `language` names. The
   builder stages each declared source tree as a standalone plugin directory;
   a shared Rust implementation can select its entrypoint at build time from
@@ -116,27 +116,27 @@ error is diagnostics.
 ## Building and publishing
 
 ```sh
-gents pack build packs/shipping_plugins                # compile the plugins, write one .pack
-gents pack verify acme.shipping_plugins-0.1.0.pack     # check it against its digest
-gents pack publish acme.shipping_plugins-0.1.0.pack    # push it to the registry
-gents pack install acme/shipping_plugins               # from the registry, anywhere
-gents pack install ./acme.shipping_plugins-0.1.0.pack  # or from the file
-gents pack install sha256:<hex>                        # or from this home's store
+gents config pack build packs/shipping_plugins                # compile the plugins, write one .pack
+gents config pack verify acme.shipping_plugins-0.1.0.pack     # check it against its digest
+gents config pack publish acme.shipping_plugins-0.1.0.pack    # push it to the registry
+gents config pack install acme/shipping_plugins               # from the registry, anywhere
+gents config pack install ./acme.shipping_plugins-0.1.0.pack  # or from the file
+gents config pack install sha256:<hex>                        # or from this home's store
 ```
 
 A plugin is also managed on its own, without a pack around it:
 
 ```sh
-gents pack plugin build ./format_check          # compile one .afb
-gents pack plugin publish format_check-0.1.0.afb
-gents pack plugin install acme/format_check
-gents pack plugin list
-gents pack plugin run acme/format_check --input '{"path":"src"}'
-gents pack plugin remove acme/format_check
+gents config pack plugin build ./format_check          # compile one .afb
+gents config pack plugin publish format_check-0.1.0.afb
+gents config pack plugin install acme/format_check
+gents config pack plugin list
+gents config pack plugin run acme/format_check --input '{"path":"src"}'
+gents config pack plugin remove acme/format_check
 ```
 
 Installing a pack of any kind installs the plugins it declares into the same
-store `gents pack plugin install` uses, so a plugin that arrived inside a pack is
+store `gents config pack plugin install` uses, so a plugin that arrived inside a pack is
 runnable by name exactly like one installed alone. `documents` packs
 install their plugins the same way `assets` and `plugins` packs do, before
 writing their own documents. If that later write fails, the
@@ -151,7 +151,7 @@ digest is computed over. A pack is named by its digest, `sha256:<hex>`, and a
 home keeps the packs it has seen under `packs/store/sha256/`. A path is local
 only when written as one (`./dir`, `../dir`, `/abs`, or a `.pack` file); a
 bare name means `gents/<name>`. The registry serves
-packs only: `gents pack plugin publish` wraps a plugin in a single-plugin pack, so
+packs only: `gents config pack plugin publish` wraps a plugin in a single-plugin pack, so
 a pack that ships plugins is one artifact rather than an archive plus a pile
 of modules.
 
@@ -243,9 +243,9 @@ Omit `--home` to prune the same default cache used by named scenario runs; pass
 the same explicit `--home` used to install an asset pack when pruning that
 cache.
 
-A workflow is a job plugin: `gents pack wire <ns>/<plugin> --agent <agent>
+A workflow is a job plugin: `gents config pack wire <ns>/<plugin> --agent <agent>
 --targets-from <pack>` gives an agent the tool, the agent calls it with its
-`args` and `agent_budget`, and `gents job list|show|watch|stop` follow the run.
+`args` and `agent_budget`, and `gents automation job list|show|watch|stop` follow the run.
 
 ## Authoring standard
 
@@ -281,10 +281,10 @@ and operational history. A workflow's phases must be described in prose.
 Check a pack the way an install would, with:
 
 ```sh
-gents pack check packs/gents/<name>
+gents config pack check packs/gents/<name>
 ```
 
-`gents pack check` reports missing and undeclared files, configuration
+`gents config pack check` reports missing and undeclared files, configuration
 errors and event-source filters the schemas reject, each by name, and
 writes nothing.
 
@@ -298,20 +298,20 @@ There is no GitHub source.
 Every pack carries its own suite in `tests/`, declared in its `assets` like
 any other file, so nothing skips it. `scripts/test-pack.sh <dir>` runs it:
 
-1. `gents pack build`, and the built `.pack` verified against its digest;
-2. `gents pack test`: the check an install runs and every plugin's cases
+1. `gents config pack build`, and the built `.pack` verified against its digest;
+2. `gents config pack test`: the check an install runs and every plugin's cases
    (`plugins/<name>/tests/*.json`);
 3. every `tests/*.json` case, each one expectation:
 
 | Case | Asserts |
 | --- | --- |
-| `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents pack remove` deletes exactly these |
-| `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents pack remove` releases them |
-| `{"defs": "...", "jq": [{"name": "...", "expr": "..."}]}` | each jq expression is true over one document built once per pack from a single `gents pack show --config`: `{manifest, config, scenario, assets}`, `assets` mapping every UTF-8 declared asset path to its text; `defs` is a shared prelude of jq definitions |
-| `{"eval_case": {"asset": "...", "after": "..."}}` | the first json fence after that heading line of the asset is an eval case `gents eval checks --validate-case -` accepts |
+| `{"install": {"documents": [...], "slots": [...], "dependencies": [...]}}` | installed from its directory into a fresh `gents init` home, the pack binds these inference slots, installs these dependency packs and creates exactly these documents; a reinstall creates nothing new; `gents config pack remove` deletes exactly these |
+| `{"install": {"assets": [...]}}` | installed into a fresh home, an assets pack materializes exactly these files; `gents config pack remove` releases them |
+| `{"defs": "...", "jq": [{"name": "...", "expr": "..."}]}` | each jq expression is true over one document built once per pack from a single `gents config pack show --config`: `{manifest, config, scenario, assets}`, `assets` mapping every UTF-8 declared asset path to its text; `defs` is a shared prelude of jq definitions |
+| `{"eval_case": {"asset": "...", "after": "..."}}` | the first json fence after that heading line of the asset is an eval case `gents utils eval checks --validate-case -` accepts |
 | `{"cli_flags": {"command": [...], "flags": [...]}}` | `gents <command> --help` documents every flag |
-| `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
-| `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents pack plugin list` agrees); a reinstall keeps the same set; `gents pack remove` releases them |
+| `{"runtime": {"repository": ..., "seed": ..., "taken": ..., "expect": [...]}}` | the pack installed into a fresh home and served by `gents runtime server` from a throwaway git repository (the operator ceiling) reaches every expected document state after the seed document is created, with no model involved. `${BASE_SHA}` in a seed field is the repository's commit; `${ATTEMPT}` keeps a re-created seed unique while the runtime starts; `taken` names a row that shows the runtime picked the seed up |
+| `{"install": {"plugins": [...]}}` | installed into a fresh home, a plugins pack registers exactly these plugins (`gents config pack plugin list` agrees); a reinstall keeps the same set; `gents config pack remove` releases them |
 
 Every documents pack also passes the built-in checks: it declares
 inference slots and authors no inference backend, profile, sampling, execution
@@ -319,7 +319,7 @@ or retry documents; no task sets `goal_token_budget`; and every dependency is a
 sibling pack directory with that coordinate, which is built and pre-stored in
 the install's home. Rust plugins run their own `cargo test` when `cargo` is on
 `PATH`. Scenarios (`experiment.json`) need a
-model endpoint and run only on request (`gents pack test --scenario`).
+model endpoint and run only on request (`gents config pack test --scenario`).
 
 ```sh
 make test               # every pack
@@ -344,7 +344,7 @@ builds.
 | [d3_decision](packs/gents/d3_decision/README.md) | The d3_decision plugin, which asks the D3 decision model typed choice, yes/no and score questions about text or JSON on an operator-owned server and returns its probabilities |
 | [data_tables](packs/gents/data_tables/README.md) | A Data analyst agent and the data_tables plugin, which runs SQL over CSV, JSON, Parquet, XLSX and ODS files with exact types and saves results as CSV or Parquet |
 | [defending_code](packs/gents/defending_code/README.md) | Discovery, verification and patch review |
-| [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents eval init) |
+| [eval_author](packs/gents/eval_author/README.md) | Drafts an eval definition with the operator (gents utils eval init) |
 | [dynamic_workflows](packs/gents/dynamic_workflows/README.md) | The `workflow` tool that runs an in-session step function as a dynamic job |
 | [grok_tui_port](packs/gents/grok_tui_port/README.md) | Large implementation case study and probes |
 | [image_tools](packs/gents/image_tools/README.md) | An Image helper agent and image_tools plugins that show, cut, compare and measure PNG, JPEG, GIF, BMP, TIFF and WebP images: upright model-ready views, tiles, diffs, QR and barcode reading, hashes |

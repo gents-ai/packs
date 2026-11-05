@@ -14,12 +14,12 @@ document fragments.
 ## Installation
 
 ```sh
-gents pack install ./packs/gents/lsp_rust --home <home> --inference-slot coder=<profile_id>
-gents pack install gents/lsp_rust --home <home> --inference-slot coder=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/lsp_rust --home <home> --inference-slot coder=<profile_id>
+gents config pack install gents/lsp_rust --home <home> --inference-slot coder=<profile_id>   # once published to the registry
 ```
 
-Install configuration with `gents pack install gents/lsp_rust --home <home>`, or
-exercise the scenario directly with `gents pack scenario run ./packs/gents/lsp_rust`. See
+Install configuration with `gents config pack install gents/lsp_rust --home <home>`, or
+exercise the scenario directly with `gents config pack scenario run ./packs/gents/lsp_rust`. See
 Bindings and prerequisites and Authority below before enabling compiler or
 shell access.
 
@@ -67,7 +67,7 @@ CommandNetworkMode`, quoting the documented rank order; call `hover` on
 signature).
 
 Output: persisted `AgentToolCall` rows for the `symbols` call and both
-`hover` calls. `experiment.json` asks `gents pack scenario run` for a
+`hover` calls. `experiment.json` asks `gents config pack scenario run` for a
 **readonly** ceiling rooted at `tool_root` and then checks those persisted
 rows. The ignored live test loads this same pack prompt and lsp_config. It
 first runs `unscripted_prompt.md`, which gives the model no path, action
@@ -86,8 +86,8 @@ on `meet` to return a result containing `Disabled` and `Inherit`, and the
 ## Validation
 
 ```sh
-gents pack check ./packs/gents/lsp_rust
-gents pack test ./packs/gents/lsp_rust
+gents config pack check ./packs/gents/lsp_rust
+gents config pack test ./packs/gents/lsp_rust
 make test-lsp_rust        # from the repository root
 ```
 
@@ -106,7 +106,7 @@ rust-analyzer --version
 
 # Pin the gents checkout the scenario reads
 GENTS_LSP_WORKSPACE=/abs/path/to/gents \
-  gents pack scenario run ./packs/gents/lsp_rust --keep-home
+  gents config pack scenario run ./packs/gents/lsp_rust --keep-home
 ```
 
 From a gents checkout, the ignored live e2e test exercises the same pack
