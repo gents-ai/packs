@@ -58,12 +58,12 @@ export async function readRows(ctx, node, tool, args = {}) {
 
 function GamePage({ ctx }) {
   const [node, setNode] = useState(() => ctx.shell.selectedDeployment()?.nodeDid ?? '')
-  const [games, setGames] = useState([]), [moves, setMoves] = useState([]), [game, setGame] = useState('')
+  const [games, setGames] = useState([]), [moves, setMoves] = useState([]), [game, setGame] = useState(''), [loadedGame, setLoadedGame] = useState('')
   const [title, setTitle] = useState(''), [player, setPlayer] = useState('X')
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [pending, setPending] = useState(null)
   const generation = useRef(0), active = useRef(true), refreshing = useRef(false)
   const selected = () => ctx.shell.selectedDeployment()?.nodeDid ?? ''
-  const state = gameState(game, moves)
+  const state = game && loadedGame === game ? gameState(game, moves) : { status: 'loading' }
   const refresh = useCallback(async () => {
     if (refreshing.current || !node) return
     refreshing.current = true
@@ -72,7 +72,7 @@ function GamePage({ ctx }) {
       const list = await readRows(ctx, node, 'list_games')
       const current = game ? await readRows(ctx, node, 'list_moves', { game_id: game }) : []
       if (!active.current || token !== generation.current || selected() !== node) return
-      setGames(list); setMoves(current); setError('')
+      setGames(list); setMoves(current); setLoadedGame(game); setError('')
     } catch (e) { if (active.current && token === generation.current) setError(String(e?.message ?? e)) }
     finally { refreshing.current = false }
   }, [ctx, node, game])
@@ -81,7 +81,7 @@ function GamePage({ ctx }) {
     void refresh()
     const tick = () => {
       const next = selected()
-      if (next !== node) { generation.current++; setNode(next); setGame(''); setGames([]); setMoves([]); setError('Runtime changed. Select a game on this runtime.') }
+      if (next !== node) { generation.current++; setNode(next); setGame(''); setLoadedGame(''); setGames([]); setMoves([]); setError('Runtime changed. Select a game on this runtime.') }
       else void refresh()
     }
     const stop = ctx.setInterval(tick, 1000)
@@ -131,7 +131,7 @@ function GamePage({ ctx }) {
       setPending(null); if (tool === 'create_game') setGame(payload.game_id); await refresh()
     } catch (e) { setError(String(e?.message ?? e)) } finally { if (active.current) setBusy(false) }
   }
-  const status = state.status === 'won' ? `${state.winner} won` : state.status === 'draw' ? 'Draw' : state.status === 'playing' ? `${state.next} to play` : state.status === 'conflict' ? 'Conflicting moves. Resolve the game before continuing.' : 'Invalid or incomplete game history.'
+  const status = state.status === 'loading' ? 'Loading game…' : state.status === 'won' ? `${state.winner} won` : state.status === 'draw' ? 'Draw' : state.status === 'playing' ? `${state.next} to play` : state.status === 'conflict' ? 'Conflicting moves. Resolve the game before continuing.' : 'Invalid or incomplete game history.'
   return jsxs('div', { className: 'ttt', children: [
     jsxs('aside', { className: 'ttt-sidebar', children: [
       jsx('h2', { children: 'Games' }),
@@ -139,7 +139,7 @@ function GamePage({ ctx }) {
         jsx(Input, { value: title, onChange: (e) => setTitle(e.target.value), placeholder: 'Game name', 'aria-label': 'Game name' }),
         jsx(Button, { type: 'submit', disabled: !node || busy || Boolean(pending), children: 'New game' }),
       ] }),
-      ...games.map((row) => jsx('button', { type:'button', className:'ttt-game', disabled:busy || Boolean(pending), onClick:() => {setGame(row.game_id); setMoves([])}, children: row.title || 'Untitled game' }, row.game_id)),
+      ...games.map((row) => jsx('button', { type:'button', className:'ttt-game', disabled:busy || Boolean(pending), onClick:() => {if (row.game_id !== game) {setGame(row.game_id); setLoadedGame(''); setMoves([])}}, children: row.title || 'Untitled game' }, row.game_id)),
     ] }),
     jsxs('main', { className: 'ttt-main', children: [
       error ? jsx('p', { role:'alert', className:'ttt-error', children:error }) : null,

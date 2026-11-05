@@ -15,7 +15,7 @@ const games = [], moves = [], sends = []; window.testState = {games, moves, send
 const ctx = {shell:{selectedDeployment:()=>({nodeDid:'node-a'})}, onEvent:()=>()=>{}, setInterval:(f,n)=>{const id=setInterval(f,n);return ()=>clearInterval(id)}, send:async text=>sends.push(text), data:{supportsExpectedNode:true,call:async (surface,tool,args,node)=>{
 if(node!=='node-a')throw Error('node mismatch');
 if(tool==='list_games')return {kind:'query',output:{results:games.filter(r=>!args.game_id||r.game_id===args.game_id)}};
-if(tool==='list_moves')return {kind:'query',output:{results:moves.filter(r=>r.game_id===args.game_id)}};
+if(tool==='list_moves'){if(window.testState.blockGame===args.game_id)await new Promise(resolve=>window.testState.releaseGame=resolve); return {kind:'query',output:{results:moves.filter(r=>r.game_id===args.game_id)}};}
 if(tool==='create_game')games.push({...args}); else if(tool==='create_move')moves.push({...args}); else throw Error('unknown tool');
 if(window.testState.failNext){window.testState.failNext=false;throw Error('receipt unavailable')}
 return {kind:'create',output:{document_id:'physical'}};
@@ -54,5 +54,13 @@ try {
   await page.evaluate(()=>{const s=window.testState; const parent=s.moves[0].move_id; s.moves.push({...s.moves[1],move_id:'conflicting',parent_move_id:parent,cell:2})})
   await page.getByRole('status').getByText(/Conflicting moves/).waitFor({timeout:5000})
   assert.equal(await page.getByRole('button',{name:'Ask selected agent to play'}).isDisabled(),true)
+  await page.evaluate(()=>{const s=window.testState; s.games.push({game_id:'other',title:'Other match'}); s.moves.push({game_id:'other',move_id:'first',mark:'X',cell:4}); s.blockGame='other'})
+  await page.getByRole('button',{name:'Other match'}).click({timeout:5000})
+  await page.getByRole('status').getByText('Loading game…').waitFor()
+  assert.equal(await page.getByRole('button',{name:'Cell 1: empty'}).isDisabled(),true)
+  assert.equal(await page.getByRole('button',{name:'Ask selected agent to play'}).isDisabled(),true)
+  await page.waitForFunction(()=>typeof window.testState.releaseGame==='function')
+  await page.evaluate(()=>{window.testState.blockGame=null; window.testState.releaseGame()})
+  await page.getByRole('status').getByText('O to play').waitFor()
   console.log('Create, play, uncertain receipt, agent request and conflict checks passed.')
 } finally { await browser.close(); server.close() }
