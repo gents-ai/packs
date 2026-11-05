@@ -37,16 +37,17 @@ function mintId() {
   return [...crypto.getRandomValues(new Uint8Array(16))].map((n) => n.toString(16).padStart(2, '0')).join('')
 }
 
-export async function readRows(ctx, node, tool, args = {}) {
+export async function readRows(ctx, node, tool, args = {}, maxRows = null) {
   if (!ctx.data.supportsExpectedNode) throw new Error('Update Gents to use game data safely when switching runtimes.')
   const rows = []
   let offset = 0
   for (;;) {
     if (ctx.shell.selectedDeployment()?.nodeDid !== node) throw new Error('The selected runtime changed.')
-    const result = await ctx.data.call(surface, tool, { ...args, limit: 1000, offset }, node)
+    const result = await ctx.data.call(surface, tool, { ...args, limit: maxRows === null ? 1000 : maxRows + 1, offset }, node)
     if (ctx.shell.selectedDeployment()?.nodeDid !== node) throw new Error('The selected runtime changed.')
     if (result.kind !== 'query' || !Array.isArray(result.output?.results) || result.output.field_recovery?.length) throw new Error('Game data is incomplete.')
     rows.push(...result.output.results)
+    if (maxRows !== null && (rows.length > maxRows || result.output.next_offset != null)) throw new Error('The game has too many moves to play safely. Resolve the conflicting history.')
     if (result.output.next_offset == null) {
       if (result.output.limit_note) throw new Error('Game data is incomplete.')
       return rows
@@ -70,7 +71,7 @@ function GamePage({ ctx }) {
     const token = ++generation.current
     try {
       const list = await readRows(ctx, node, 'list_games')
-      const current = game ? await readRows(ctx, node, 'list_moves', { game_id: game }) : []
+      const current = game ? await readRows(ctx, node, 'list_moves', { game_id: game }, 9) : []
       if (!active.current || token !== generation.current || selected() !== node) return
       setGames(list); setMoves(current); setLoadedGame(game); setError('')
     } catch (e) { if (active.current && token === generation.current) setError(String(e?.message ?? e)) }
@@ -110,7 +111,7 @@ function GamePage({ ctx }) {
     if (!game || busy || pending || state.status !== 'playing' || state.next !== player || state.cells[cell] != null) return
     setBusy(true); setError('')
     try {
-      const observed = await readRows(ctx, node, 'list_moves', { game_id: game })
+      const observed = await readRows(ctx, node, 'list_moves', { game_id: game }, 9)
       const current = gameState(game, observed)
       if (current.status !== 'playing' || current.lastMove !== state.lastMove || current.next !== player || current.cells[cell] != null) throw new Error('The game changed. Refresh and choose your move again.')
       const payload = { game_id: game, move_id: mintId(), ...(current.lastMove ? { parent_move_id: current.lastMove } : {}), mark: player, cell }
@@ -125,7 +126,7 @@ function GamePage({ ctx }) {
     setBusy(true)
     try {
       const { tool, payload } = pending
-      const rows = await readRows(ctx, node, tool === 'create_game' ? 'list_games' : 'list_moves', { game_id: payload.game_id })
+      const rows = await readRows(ctx, node, tool === 'create_game' ? 'list_games' : 'list_moves', { game_id: payload.game_id }, tool === 'create_game' ? null : 9)
       const matches = rows.filter((row) => tool === 'create_game' ? row.game_id === payload.game_id : row.move_id === payload.move_id)
       if (matches.length !== 1 || !Object.entries(payload).every(([key, value]) => matches[0][key] === value)) throw new Error('The write is not yet confirmed. Check again later.')
       setPending(null); if (tool === 'create_game') setGame(payload.game_id); await refresh()

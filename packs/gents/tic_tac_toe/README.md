@@ -23,6 +23,9 @@ checked when rendering and before writing. A pending write keeps its identity
 and must be checked before another write, because a lost receipt is not proof
 of non-delivery.
 
+A playable history is read in one bounded query. More than nine moves or an
+incomplete result stops play, since separate pages do not form a snapshot.
+
 The current generic data surfaces do not enforce game rules, bind a player to
 a verified DID, or provide atomic compare-and-set. A peer can bypass page-side
 checks, and two concurrent legal moves can still form competing children. The

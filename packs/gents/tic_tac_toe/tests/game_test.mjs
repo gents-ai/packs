@@ -63,3 +63,20 @@ test('rejects incomplete pages and stuck cursors', async () => {
   ctx.data.call = async()=>({kind:'query',output:{results:[],field_recovery:[{}]}})
   await assert.rejects(readRows(ctx,'a','list_moves'),/incomplete/)
 })
+
+test('reads a playable history in one bounded query and refuses larger histories', async () => {
+  const rows = line(0,1,2,4,3,5,7,6,8)
+  let calls = 0
+  const ctx = {shell:{selectedDeployment:()=>({nodeDid:'a'})},data:{supportsExpectedNode:true,call:async (_surface,_tool,args)=>{
+    calls++
+    assert.equal(args.limit, 10)
+    assert.equal(args.offset, 0)
+    return {kind:'query',output:{results:rows}}
+  }}}
+  assert.equal((await readRows(ctx,'a','list_moves',{game_id:'g'},9)).length,9)
+  assert.equal(calls,1)
+  ctx.data.call = async()=>({kind:'query',output:{results:[...rows,move('extra','m8','X',0)],next_offset:10}})
+  await assert.rejects(readRows(ctx,'a','list_moves',{game_id:'g'},9),/too many moves/)
+  ctx.data.call = async()=>({kind:'query',output:{results:[rows[0]],next_offset:1}})
+  await assert.rejects(readRows(ctx,'a','list_moves',{game_id:'g'},9),/too many moves/)
+})
