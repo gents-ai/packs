@@ -6,6 +6,13 @@ agent, and narrow datastore tools. The agent reads one named revision and
 saves a proposed complete Markdown replacement for a person to review. It
 does not change the revision itself.
 
+The pack also provides an optional Docs page in Gents. It edits paragraphs,
+headings, bold, italic and lists directly, with a Markdown source view for
+content the rich editor cannot safely preserve. Drafts remain in memory while
+the page is open. Opening and saving require a Gents version that supports
+binding pack data calls to the selected runtime; older versions show an update
+message and leave the headless tools available.
+
 ## Install and bind a model
 
 Install into an initialized Gents home and bind the slot to an existing
@@ -75,7 +82,7 @@ a replacement from partial content or assume a capped result is complete.
 To accept a proposal, a person or authorized client must review it against the
 current document, resolve any conflict, and create a new `DocsRevision` with a
 new revision ID and the reviewed content. The pack does not implement an
-accept operation, live editor, typing indicators, agent-memory sharing or
+accept operation, live collaboration, typing indicators, agent-memory sharing or
 multiplayer merging.
 
 ## Access and provenance
@@ -108,6 +115,14 @@ gents pack check ./packs/gents/docs
 GENTS=<path-to-gents> make test-docs
 ```
 
-The pack tests cover its configuration, tool boundaries, installation, and
-headless creation and reads of revision and suggestion records. They do not
-demonstrate a multi-client workflow, policy setup, or a model-driven edit.
+The pack tests cover its configuration, tool declarations, installation,
+headless record creation and reads, and editor conversion and conflict checks.
+To run the focused browser fixture with an installed browser and a Gents
+checkout whose desktop dependencies are installed:
+
+```sh
+GENTS_DESKTOP_ROOT=<gents-checkout> node packs/gents/docs/tests/editor_browser_check.mjs
+```
+
+The browser fixture uses a test data provider. These checks do not demonstrate
+a multi-client workflow, policy setup, or a model-driven edit.

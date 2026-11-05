@@ -4,8 +4,13 @@
   "namespace": "gents",
   "version": "0.1.0",
   "description": "Document revisions and reviewable agent suggestions for a headless document workflow.",
-  "authors": ["gents contributors"],
-  "tags": ["documents", "collaboration"],
+  "authors": [
+    "gents contributors"
+  ],
+  "tags": [
+    "documents",
+    "collaboration"
+  ],
   "kind": "documents",
   "config": "pack_config.json",
   "dependencies": [],
@@ -13,7 +18,9 @@
     {
       "name": "docs_editor",
       "description": "The profile used to read document revisions and propose edits.",
-      "agents": ["docs-editor"]
+      "agents": [
+        "docs-editor"
+      ]
     }
   ],
   "schemas": [
@@ -29,6 +36,34 @@
     "tests/install.json",
     "tests/contract.json",
     "tests/runtime_revision.json",
-    "tests/runtime_suggestion.json"
+    "tests/runtime_suggestion.json",
+    "ux/docs/plugin.js",
+    "ux/docs/plugin.css",
+    "tests/editor_test.mjs",
+    "tests/editor_browser_check.mjs"
+  ],
+  "ux": [
+    {
+      "name": "docs",
+      "description": "Browse and edit document revisions.",
+      "entry": "ux/docs/plugin.js",
+      "css": "ux/docs/plugin.css",
+      "contributes": {
+        "areas": [
+          "nav",
+          "plugin.pages"
+        ]
+      },
+      "data": [
+        {
+          "surface": "docs-editor",
+          "tools": [
+            "list_docs_revisions",
+            "create_docs_revision",
+            "list_docs_suggestions"
+          ]
+        }
+      ]
+    }
   ]
 }
