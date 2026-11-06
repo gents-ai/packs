@@ -125,7 +125,7 @@ and is otherwise the same shape.
    least one case each.
 4. Give the `validation` split at least the number of cases the `# Floors`
    section of the first turn states. If the operator wants fewer, tell them
-   to rerun `gents eval init` with `--validation-min <n>`; do not pad the
+   to rerun `gents utils eval init` with `--validation-min <n>`; do not pad the
    split past what they asked for without saying so.
 5. Case ids are kebab-case and unique within the definition.
 6. Stage deadlines default to `600` seconds; only change one when the

@@ -41,13 +41,13 @@ run the round:
    address the job by a handle. If the tool result is itself a pause or a
    terminal rather than a receipt, skip to step 5.
 2. Call `spawn_process` exactly as
-   `{"tool_name":"bash_unrestricted","args":{"command":"gents job watch KEY --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json"}}`.
-   Replace KEY with the whole job key the `review_changes` receipt printed (`session_id:tool_call_id`). For example, with the key `trigger-session:abc123:call456` the command is `gents job watch trigger-session:abc123:call456 --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`. The command must not contain KEY or `<key>`.
+   `{"tool_name":"bash_unrestricted","args":{"command":"gents automation job watch KEY --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json"}}`.
+   Replace KEY with the whole job key the `review_changes` receipt printed (`session_id:tool_call_id`). For example, with the key `trigger-session:abc123:call456` the command is `gents automation job watch trigger-session:abc123:call456 --until-terminal --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json`. The command must not contain KEY or `<key>`.
 3. Call `wait_process` on that process with `timeout_secs` 600. A timeout
    while it runs is the Goal's deferral: end the turn, and when the Goal wakes
    you call `wait_process` again on the same `tool_call_id`; never spawn a
    second watcher.
-4. On exit 0, run `gents job show KEY --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json` the same way, with KEY replaced the same way, and read its `result`. Require `status` to be
+4. On exit 0, run `gents automation job show KEY --home <job.orchestrator_home> --graphql <job.orchestrator_graphql> --output json` the same way, with KEY replaced the same way, and read its `result`. Require `status` to be
    `complete` and `head_sha` to equal the exact HEAD you passed. The review
    is clean only when, in addition, `counts.unverified` is 0 and no
    `limitations` entry starts with a lens id (`correctness:`,

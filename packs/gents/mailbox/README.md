@@ -3,13 +3,13 @@
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/mailbox --home <home>
-gents pack install gents/mailbox --home <home>   # once published to the registry
+gents config pack install ./packs/gents/mailbox --home <home>
+gents config pack install gents/mailbox --home <home>   # once published to the registry
 ```
 
 This pack declares no inference slots.
 
-`gents pack install mailbox --home <home>` materializes this reusable surface
+`gents config pack install mailbox --home <home>` materializes this reusable surface
 asset under the home's pack assets; it is not a complete desired-state root and
 does not write runtime configuration. Incorporate the surface into a document
 pack's canonical `pack_config.json`, bind its `node_did` to the consuming
@@ -45,8 +45,8 @@ not start requests.
 ## Validation
 
 ```bash
-gents pack check ./packs/gents/mailbox
-gents pack test ./packs/gents/mailbox
+gents config pack check ./packs/gents/mailbox
+gents config pack test ./packs/gents/mailbox
 make test-mailbox
 ```
 

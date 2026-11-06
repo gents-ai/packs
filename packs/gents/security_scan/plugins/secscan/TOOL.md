@@ -50,7 +50,7 @@ entry) the plugin exits non-zero with a one-line explanation on stderr.
 
 This plugin declares no standing manifold grant; it declares `bind_dir`
 (input field `root`) instead. A caller binds one directory fresh for a
-single call - `gents plugin run secscan --bind-dir DIR`, a `gents pack
+single call - `gents config pack plugin run secscan --bind-dir DIR`, a `gents config pack
 test` case's own `"bind"` field, or a scenario's `prepare` step - and that
 call runs with `root` overwritten to the bound directory's canonical path
 and the sandbox's filesystem grant narrowed to exactly it, read-only.

@@ -65,7 +65,7 @@ receipt so convergence can reconcile it.
   projection helpers returning fresh Grok notification payloads. The root
   `projection.rs` owns `ProjectionEngine` and module declarations.
 - `grok_shim.rs` owns assembly/configuration; CLI wiring adds the smallest
-  `gents server` flags and launch path. No Cargo dependency change is allowed.
+  `gents runtime server` flags and launch path. No Cargo dependency change is allowed.
 
 Slice requirements
 ------------------

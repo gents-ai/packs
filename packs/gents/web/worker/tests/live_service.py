@@ -77,8 +77,10 @@ def main():
                 "--tool-package",
                 "minimal",
             )
-            run("pack", "install", str(pack), "--home", str(home), "--grant-authority")
+            run("config", "pack", "install", str(pack), "--home", str(home), "--grant-authority")
             command = [
+                "config",
+                "pack",
                 "plugin",
                 "run",
                 "gents/browser_exec",

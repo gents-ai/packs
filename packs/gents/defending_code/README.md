@@ -91,8 +91,8 @@ GraphQL merely to simulate status updates.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
-gents pack install gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
+gents config pack install gents/defending_code --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
 ## Bindings and prerequisites
@@ -150,7 +150,7 @@ triggers own the fan-out, counting, retries, and audit trail (see Run below).
 
 ## Inputs and outputs
 
-Input: a repository checkout named by `GENTS_DEFENDING_ROOT` (or `DEFENDING_ROOT` for the Make target), started with `gents pack scenario run defending_code` or `make defend` (see Run below).
+Input: a repository checkout named by `GENTS_DEFENDING_ROOT` (or `DEFENDING_ROOT` for the Make target), started with `gents config pack scenario run defending_code` or `make defend` (see Run below).
 
 Output: one `DefenseReport` per campaign, with a typed audit status of `complete`, `blocked_provenance`, `inconsistent`, or `partial` (see above). Results and all four trace projections land under `runs/<job_id>/`.
 
@@ -172,8 +172,8 @@ git repository, creates one ready work document and requires the patch stage's w
 succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
-gents pack check ./packs/gents/defending_code
-gents pack test ./packs/gents/defending_code
+gents config pack check ./packs/gents/defending_code
+gents config pack test ./packs/gents/defending_code
 make test-defending_code
 ```
 
@@ -185,7 +185,7 @@ None recorded yet.
 
 ```bash
 GENTS_DEFENDING_ROOT=/path/to/repository \
-  gents pack scenario run defending_code
+  gents config pack scenario run defending_code
 ```
 
 From this repository, the Make target exposes the same controls:

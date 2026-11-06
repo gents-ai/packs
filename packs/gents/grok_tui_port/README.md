@@ -18,8 +18,8 @@ ACP traffic onto Gents documents; it does not launch Grok's own leader process.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>
-gents pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>
+gents config pack install gents/grok_tui_port --home <home> --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id> --inference-slot reviewer=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
 Runtime configuration is authored once in `pack_config.json`. The distribution
@@ -146,7 +146,7 @@ output is persisted.
 ### Recovery invariants
 
 The resolved pack environment is part of the run. Do not repair a live run by
-applying this directory directly: use `gents pack install` with the original
+applying this directory directly: use `gents config pack install` with the original
 slot bindings so inference remains on the user's existing profiles. Restore the
 original environment first, wait until the affected agent is runnable, and
 only then reactivate paused goals. Requests retain the tool-policy snapshot they were
@@ -168,8 +168,8 @@ git repository, creates one ready work document and requires the implement stage
 succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
-gents pack check ./packs/gents/grok_tui_port
-gents pack test ./packs/gents/grok_tui_port
+gents config pack check ./packs/gents/grok_tui_port
+gents config pack test ./packs/gents/grok_tui_port
 make test-grok_tui_port
 ```
 
