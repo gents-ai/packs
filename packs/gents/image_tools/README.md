@@ -46,7 +46,7 @@ From a terminal:
 
 ```sh
 gents config pack install gents/image_tools --inference-slot image_helper=<profile>
-gents chat --agent-id image-helper "What is in screenshots/login.png?"
+gents -p "What is in screenshots/login.png?" --agent image-helper
 ```
 
 ## Use it as a model tool

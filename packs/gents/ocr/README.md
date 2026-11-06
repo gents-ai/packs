@@ -31,7 +31,7 @@ The same agent runs from a terminal:
 
 ```sh
 gents config pack install gents/ocr --inference-slot document_reader=<profile>
-gents chat --agent-id document-reader "Summarize reports/q3.pdf"
+gents -p "Summarize reports/q3.pdf" --agent document-reader
 ```
 
 ## Use it as a model tool
