@@ -1,0 +1,7 @@
+type DocsRevision {
+  document_id: String @index
+  revision_id: String @index
+  parent_revision_id: String
+  title: String
+  content: String
+}

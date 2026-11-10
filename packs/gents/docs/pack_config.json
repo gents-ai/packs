@@ -1,0 +1,88 @@
+{
+  "node": {},
+  "agents": [
+    {
+      "agent_id": "docs-editor",
+      "context_id": "docs-editor-context",
+      "display_name": "Document editor",
+      "inference_profile_id": "gents:inference-slot:docs_editor"
+    }
+  ],
+  "contexts": [
+    {
+      "context_id": "docs-editor-context",
+      "display_name": "Document editor",
+      "system_prompt": "./agent_behaviors/docs_editor/system_prompt.md",
+      "tools_id": "docs-editor-tools"
+    }
+  ],
+  "datastore_tool_surfaces": [
+    {
+      "surface_id": "docs-editor",
+      "display_name": "Read and save document revisions",
+      "entries": [
+        {
+          "kind": "query",
+          "tool_name": "list_docs_revisions",
+          "collection": "DocsRevision",
+          "description": "Read accessible document revisions, optionally filtered by document ID.",
+          "fields": ["document_id", "revision_id", "parent_revision_id", "title", "content"],
+          "filter_fields": [{"name": "document_id"}]
+        },
+        {
+          "tool_name": "create_docs_revision",
+          "collection": "DocsRevision",
+          "description": "Save a document revision. Parent links are informational and do not provide conflict detection.",
+          "fields": [
+            {"name": "document_id", "required": true},
+            {"name": "revision_id", "required": true},
+            {"name": "parent_revision_id"},
+            {"name": "title", "required": true},
+            {"name": "content", "required": true}
+          ]
+        },
+        {
+          "kind": "query",
+          "tool_name": "list_docs_suggestions",
+          "collection": "DocsSuggestion",
+          "description": "Read accessible suggestions for a document and optionally one base revision.",
+          "fields": ["document_id", "base_revision_id", "suggestion_id", "content", "summary"],
+          "filter_fields": [{"name": "document_id", "required": true}, {"name": "base_revision_id"}]
+        }
+      ]
+    },
+    {
+      "surface_id": "docs-reviewer",
+      "display_name": "Read a revision and propose edits",
+      "entries": [
+        {
+          "kind": "query",
+          "tool_name": "read_docs_revision",
+          "collection": "DocsRevision",
+          "description": "Read a specific accessible document revision by document and revision ID.",
+          "fields": ["document_id", "revision_id", "parent_revision_id", "title", "content"],
+          "filter_fields": [{"name": "document_id", "required": true}, {"name": "revision_id", "required": true}]
+        },
+        {
+          "tool_name": "create_docs_suggestion",
+          "collection": "DocsSuggestion",
+          "description": "Save a complete proposed replacement for a specific base revision, without changing that revision.",
+          "fields": [
+            {"name": "document_id", "required": true},
+            {"name": "base_revision_id", "required": true},
+            {"name": "suggestion_id", "required": true},
+            {"name": "content", "required": true},
+            {"name": "summary", "required": true}
+          ]
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "tools_id": "docs-editor-tools",
+      "display_name": "Document review tools",
+      "datastore": {"datastore_tool_surface_ids": ["docs-reviewer"]}
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+type DocsSuggestion {
+  document_id: String @index
+  base_revision_id: String @index
+  suggestion_id: String @index
+  content: String
+  summary: String
+}
