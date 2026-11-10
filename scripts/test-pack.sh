@@ -47,8 +47,8 @@
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
-# Every documents pack also gets the built-in checks: it declares
-# inference slots and authors no inference documents, no task sets a goal
+# Every documents pack also gets the built-in checks: packs with agents declare
+# inference slots and author no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
 # and is pre-stored in the install's home.
 # Every variable the pack's config requires (`${VAR}`, or `${VAR:-}` so pack
@@ -216,8 +216,8 @@ builtin_checks() {
   local doc dep
   [[ "$kind" == "documents" ]] || return 0
   doc="$(show_document)"
-  jq -e '(.manifest.inference_slots // []) | length > 0' "$doc" >/dev/null \
-    && pass "declares inference slots" || fail "declares no inference slots"
+  jq -e '((.config.agents // []) | length == 0) or ((.manifest.inference_slots // []) | length > 0)' "$doc" >/dev/null \
+    && pass "authored agents declare inference slots" || fail "authors agents without inference slots"
   jq -e '[.config.inference_backends, .config.inference_profiles, .config.inference_sampling,
           .config.inference_execution, .config.inference_retry_policies] | all((. // []) | length == 0)' "$doc" >/dev/null \
     && pass "authors no inference documents" || fail "authors inference backends, profiles, sampling, execution or retry policies; slots bind them at install"
