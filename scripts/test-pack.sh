@@ -127,12 +127,17 @@ by_agent_slot() {
     '($install[0].apply.agents // {} | with_entries({key: ("Agent/" + .value), value: ("Agent/" + .key)})) as $slots
       | map($slots[.] // .)'
 }
-# True when the removal whose stderr is $1 was refused because the pack ships
-# plugins: gents retires a plugin only with a complete inventory of the Tools
-# that reference it, which no reader can prove under document ACP, so it
-# refuses and leaves the pack installed (PackRemovalError::ReferenceInventoryUnavailable).
+# True when the removal whose stderr is $1 was refused because the pack or
+# one of its dependencies ships plugins: gents retires a plugin only with a
+# complete inventory of the Tools that reference it, which no reader can prove
+# under document ACP, so it refuses and leaves the pack installed
+# (PackRemovalError::ReferenceInventoryUnavailable).
 plugin_retirement_refused() {
-  jq -e '(.plugins // []) | length > 0' "$dir/manifest.json" >/dev/null \
+  local dep manifests=("$dir/manifest.json")
+  while read -r dep; do
+    manifests+=("$(dirname "$dir")/$dep/manifest.json")
+  done < <(jq -r '.dependencies // [] | .[] | split("/") | last' "$dir/manifest.json")
+  jq -es 'map(.plugins // [] | length) | add > 0' "${manifests[@]}" >/dev/null \
     && grep -q 'plugin retirement requires a complete native configuration reference inventory' "$1"
 }
 expect_set() {
@@ -444,10 +449,16 @@ runtime_case() {
 
   local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded="" schema="" sdl
   collection="$(jq -r '.runtime.seed.collection' "$case")"
-  # The operator command signs the seed against the pack's own SDL for its collection.
-  while read -r sdl; do
-    grep -qE "^type $collection([^A-Za-z0-9_]|\$)" "$dir/$sdl" && schema="$dir/$sdl"
-  done < <(jq -r '.schemas // [] | .[]' "$dir/manifest.json")
+  # The operator command signs the seed against the pack's own SDL for its
+  # collection, and takes a schema that declares that one collection only.
+  for sdl in "$dir"/schemas/*.graphql; do
+    grep -qE "^type $collection([^A-Za-z0-9_]|\$)" "$sdl" || continue
+    schema="$work/$name-seed.graphql"
+    awk -v type="$collection" '
+      !found && $1 == "type" && $2 == type { found = 1 }
+      found { print }
+      found && /^}/ { exit }' "$sdl" >"$schema"
+  done
   [[ -n "$schema" ]] || { fail "$name: no schema of the pack declares the seed collection $collection"; stop_server "$pid"; return; }
   first="$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")"
   # The callback engine logs nothing when it picks up its bindings, and a
