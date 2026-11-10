@@ -1,4 +1,4 @@
-.ttt {display:grid;grid-template-columns:minmax(190px,240px) minmax(0,1fr);height:100%;min-height:520px;background:var(--background);color:var(--foreground)}
+.ttt {display:grid;grid-template-columns:minmax(190px,240px) minmax(0,1fr);height:100%;min-height:520px;background:var(--bg);color:var(--text)}
 .ttt-sidebar {border-right:1px solid var(--border);padding:20px 14px;overflow:auto}
 .ttt-sidebar h2 {font-size:16px;margin:0 0 18px}
 .ttt-create {display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
@@ -8,9 +8,9 @@
 .ttt-sheet {max-width:380px;width:min(80vw,380px)}
 .ttt-sheet h1 {font-size:25px;margin:0 0 8px}
 .ttt-player,.ttt-hint {font-size:13px;color:var(--muted-foreground)}
-.ttt-player select {color:var(--foreground);background:var(--background);border:1px solid var(--border);border-radius:5px;padding:4px}
+.ttt-player select {color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:4px}
 .ttt-board {display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:20px 0}
-.ttt-cell {aspect-ratio:1;border:1px solid var(--border);border-radius:10px;background:var(--muted);color:var(--foreground);font-size:clamp(28px,7vw,48px);font-weight:600;cursor:pointer}
+.ttt-cell {aspect-ratio:1;border:1px solid var(--border);border-radius:10px;background:var(--muted);color:var(--text);font-size:clamp(28px,7vw,48px);font-weight:600;cursor:pointer}
 .ttt-cell:hover:enabled,.ttt-cell:focus-visible {outline:2px solid var(--ring)}
 .ttt-cell:disabled {cursor:default;opacity:.8}
 .ttt-error {color:var(--destructive);overflow-wrap:anywhere}

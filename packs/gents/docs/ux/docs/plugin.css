@@ -1,4 +1,4 @@
-.gents-docs { display: grid; grid-template-columns: minmax(190px, 230px) minmax(0, 1fr); height: 100%; min-height: 560px; color: var(--foreground); background: var(--background) }
+.gents-docs { display: grid; grid-template-columns: minmax(190px, 230px) minmax(0, 1fr); height: 100%; min-height: 560px; color: var(--text); background: var(--bg) }
 .docs-sidebar { display: flex; flex-direction: column; gap: 8px; padding: 18px 12px; border-right: 1px solid var(--border); overflow: auto }
 .docs-sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px }
 .docs-sidebar h2 { font-size: 15px; font-weight: 600; margin: 0 }
@@ -13,9 +13,9 @@
 .docs-heading input { border: 0; box-shadow: none; font-size: 24px; font-weight: 600; height: auto; padding: 4px 0 }
 .docs-mode { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 16px }
 .docs-toolbar { display: flex; flex-wrap: wrap; gap: 3px; padding: 8px; border: 1px solid var(--border); border-radius: 10px 10px 0 0; background: var(--muted) }
-.docs-tool { cursor: pointer; border: 0; border-radius: 6px; padding: 7px 9px; background: transparent; color: var(--foreground); font-size: 12px }
-.docs-tool:hover, .docs-tool:focus-visible { background: var(--background); outline: 1px solid var(--ring) }
-.docs-editor, .docs-source { display: block; box-sizing: border-box; width: 100%; min-height: 420px; padding: 28px; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 10px 10px; background: var(--background); color: var(--foreground); line-height: 1.65; outline: none; overflow-wrap: anywhere }
+.docs-tool { cursor: pointer; border: 0; border-radius: 6px; padding: 7px 9px; background: transparent; color: var(--text); font-size: 12px }
+.docs-tool:hover, .docs-tool:focus-visible { background: var(--bg); outline: 1px solid var(--ring) }
+.docs-editor, .docs-source { display: block; box-sizing: border-box; width: 100%; min-height: 420px; padding: 28px; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 10px 10px; background: var(--bg); color: var(--text); line-height: 1.65; outline: none; overflow-wrap: anywhere }
 .docs-source { border-top: 1px solid var(--border); border-radius: 10px; resize: vertical; font-family: monospace; font-size: 13px }
 .docs-editor:focus, .docs-source:focus { border-color: var(--ring) }
 .docs-editor h1, .docs-editor h2, .docs-editor h3 { line-height: 1.3; margin: 1.2em 0 .5em }
