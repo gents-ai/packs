@@ -1,6 +1,6 @@
 # Eval author
 
-The eval author is the model side of `gents eval init`. It is a single
+The eval author is the model side of `gents utils eval init`. It is a single
 agent, `eval-author`, with a fixed system prompt and no tools: it cannot
 read or write documents, files or configuration. It interviews an operator
 about one subject agent and drafts an eval definition - cases that will
@@ -9,11 +9,11 @@ later run against that subject and grade what it does.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/eval_author --home <home> --inference-slot author=<profile_id>
-gents pack install gents/eval_author --home <home> --inference-slot author=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/eval_author --home <home> --inference-slot author=<profile_id>
+gents config pack install gents/eval_author --home <home> --inference-slot author=<profile_id>   # once published to the registry
 ```
 
-`gents eval init` installs the pack into the operator's home once,
+`gents utils eval init` installs the pack into the operator's home once,
 idempotently, and binds that slot to `--profile` or the home's default
 profile.
 
@@ -33,7 +33,7 @@ tools.
 ## Inputs and outputs
 
 ```
-gents eval init <subject-pack> --out <dir> [--agent <id>] [--profile <profile_id>] [--pilot]
+gents utils eval init <subject-pack> --out <dir> [--agent <id>] [--profile <profile_id>] [--pilot]
 ```
 
 The command opens a fresh `AgentSession` against the served home, sends the
@@ -41,7 +41,7 @@ subject dossier and the check catalog as the first turn, and runs an ordinary
 chat-turn loop between the operator and the author. A reply that contains
 exactly one fenced `json` block is a draft.
 
-`gents eval checks` prints the same catalog the author sees.
+`gents utils eval checks` prints the same catalog the author sees.
 
 ## Completion and failure
 
@@ -55,8 +55,8 @@ disk or live configuration before validation passes.
 ## Validation
 
 ```bash
-gents pack check ./packs/gents/eval_author
-gents pack test ./packs/gents/eval_author
+gents config pack check ./packs/gents/eval_author
+gents config pack test ./packs/gents/eval_author
 make test-eval_author
 ```
 

@@ -17,7 +17,7 @@ correction, or the result. There is no script and no engine dependency.
    plugin's declared limits:
 
    ```sh
-   gents pack install gents/code_review --home ./.gents --node-did "$REVIEW_NODE_DID" \
+   gents config pack install gents/code_review --home ./.gents --node-did "$REVIEW_NODE_DID" \
      --grant-authority \
      --inference-slot coordinator=claude-coordinator \
      --inference-slot worker=glm-worker \
@@ -28,7 +28,7 @@ correction, or the result. There is no script and no engine dependency.
    targets from this pack:
 
    ```sh
-   gents pack wire gents/review_changes --agent <A> --targets-from gents/code_review
+   gents config pack wire gents/review_changes --agent <A> --targets-from gents/code_review
    ```
 
    This adds the `review_changes` tool to the agent's Tools with a `job`
@@ -95,7 +95,7 @@ On completion the job's result is:
 - `limitations`: every blocked lens, unverified candidate or other gap
 - `path`: the scratch report, see below
 
-Read the full value with `gents job show <address>` or the job result
+Read the full value with `gents automation job show <address>` or the job result
 readers; the background completion notification is capped at 4,000 B and is
 not the result.
 
@@ -142,7 +142,7 @@ canonical protocol; other packs copy or link it.
    result is itself a pause or a terminal rather than a receipt, skip to
    step 5.
 2. Call `spawn_process` with exactly
-   `{"tool_name":"bash_unrestricted","args":{"command":"gents job watch <address> --until-terminal --home <home> --graphql <graphql> --output json"}}`.
+   `{"tool_name":"bash_unrestricted","args":{"command":"gents automation job watch <address> --until-terminal --home <home> --graphql <graphql> --output json"}}`.
 3. Call `wait_process` on that process with `timeout_secs` 600. A timeout
    while it runs is the Goal's deferral: end the turn, and when the Goal
    wakes you call `wait_process` again on the same `tool_call_id`; never
@@ -168,7 +168,7 @@ canonical protocol; other packs copy or link it.
 ## Upgrading from 1.x
 
 2.0.0 changes the pack kind from graph to documents, so upgrade with
-`gents pack remove gents/code_review` and then `gents pack install`, not
+`gents config pack remove gents/code_review` and then `gents config pack install`, not
 `pack update`. The old `CodeReview*` collections stay dormant: `pack remove`
 reports them `retained` and nothing reads them. There is no wipe and no
 conversion, and the `review_evidence` plugin is gone.
@@ -176,9 +176,9 @@ conversion, and the `review_evidence` plugin is gone.
 ## Validation
 
 ```sh
-gents pack build ./packs/gents/code_review
-gents pack check ./packs/gents/code_review
-gents pack test ./packs/gents/code_review
+gents config pack build ./packs/gents/code_review
+gents config pack check ./packs/gents/code_review
+gents config pack test ./packs/gents/code_review
 make test-code_review        # from the repository root
 cargo test --manifest-path packs/gents/code_review/plugins/review_changes/Cargo.toml
 ```

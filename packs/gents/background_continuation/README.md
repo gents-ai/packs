@@ -27,9 +27,9 @@ create BackgroundContinuationJob
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/background_continuation --home <home> \
+gents config pack install ./packs/gents/background_continuation --home <home> \
   --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id>
-gents pack install gents/background_continuation --home <home> \
+gents config pack install gents/background_continuation --home <home> \
   --inference-slot coordinator=<profile_id> --inference-slot worker=<profile_id>   # once published to the registry
 ```
 
@@ -67,7 +67,7 @@ for the scenario runner that checks this).
 Run it with a fresh home:
 
 ```bash
-gents pack scenario run background_continuation
+gents config pack scenario run background_continuation
 ```
 
 The runner requires two completed depth-positive child requests, at least one
@@ -84,8 +84,8 @@ repair, failed-wake redrive, and exact successor acknowledgement against the
 real store.
 
 ```bash
-gents pack check ./packs/gents/background_continuation
-gents pack test ./packs/gents/background_continuation
+gents config pack check ./packs/gents/background_continuation
+gents config pack test ./packs/gents/background_continuation
 make test-background_continuation
 ```
 

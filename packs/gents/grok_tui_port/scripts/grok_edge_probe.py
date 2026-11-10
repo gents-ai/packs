@@ -3141,9 +3141,9 @@ def codex_projection_fixture() -> Path:
 
 
 def trace_projection(gents: str, graphql: str, request_id: str) -> dict[str, Any]:
-    """Present one request through the native `gents trace project` owner."""
+    """Present one request through the native `gents utils debug trace project` owner."""
     completed = subprocess.run(
-        [gents, "trace", "project", "--graphql", graphql,
+        [gents, "utils", "debug", "trace", "project", "--graphql", graphql,
          "--request-id", request_id, "--projection", "openai-codex"],
         check=True, capture_output=True, text=True,
     )

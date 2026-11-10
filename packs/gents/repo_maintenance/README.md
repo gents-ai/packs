@@ -25,8 +25,8 @@ Recon, scanning, verification, and commit planning are read-only. The runtime pr
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
-gents pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>
+gents config pack install gents/repo_maintenance --home <home> --inference-slot coordinator=<profile_id> --inference-slot scanner=<profile_id> --inference-slot worker=<profile_id> --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
 ## Bindings and prerequisites
@@ -65,8 +65,8 @@ git repository, creates one ready work document and requires the execute stage's
 succeed and leave a ready isolated workspace, with no model involved.
 
 ```bash
-gents pack check ./packs/gents/repo_maintenance
-gents pack test ./packs/gents/repo_maintenance
+gents config pack check ./packs/gents/repo_maintenance
+gents config pack test ./packs/gents/repo_maintenance
 make test-repo_maintenance
 ```
 

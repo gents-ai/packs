@@ -917,6 +917,8 @@ def main():
             binding = subprocess.run(
                 [
                     args.gents,
+                    "config",
+                    "pack",
                     "plugin",
                     "dirs",
                     "add",
@@ -938,6 +940,8 @@ def main():
             result["gents_binding"] = "required_for_model_calls"
             result["next_command"] = [
                 args.gents,
+                "config",
+                "pack",
                 "plugin",
                 "dirs",
                 "add",
