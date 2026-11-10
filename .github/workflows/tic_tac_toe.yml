@@ -1,0 +1,29 @@
+name: Tic-tac-toe rules
+on:
+  pull_request:
+    paths:
+      - 'packs/gents/tic_tac_toe/**'
+      - '.github/workflows/tic_tac_toe.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'packs/gents/tic_tac_toe/**'
+      - '.github/workflows/tic_tac_toe.yml'
+permissions:
+  contents: read
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test packs/gents/tic_tac_toe/tests/game_test.mjs
+      - name: Install browser fixture dependencies
+        run: npm install --prefix "$RUNNER_TEMP/tic-tac-toe-deps" --no-save --ignore-scripts --no-package-lock --no-audit --no-fund esbuild@0.28.1 playwright@1.61.1 react@19.2.7 react-dom@19.2.7
+      - name: Exercise the board
+        env:
+          TIC_TAC_TOE_TEST_DEPS: ${{ runner.temp }}/tic-tac-toe-deps
+          GENTS_CHROMIUM_PATH: /usr/bin/google-chrome
+        run: node packs/gents/tic_tac_toe/tests/browser_check.mjs
