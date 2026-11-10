@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "agent_id": "image-helper",
+      "agent_slot": "image-helper",
       "context_id": "image-helper-context",
       "display_name": "Image helper",
       "inference_profile_id": "gents:inference-slot:image_helper"
@@ -10,6 +10,7 @@
   "node": {},
   "callback_bindings": [
     {
+      "agent_did": "gents:agent-slot:image-helper",
       "binding_id": "image-plan",
       "callback_id": "image-plan",
       "event_source_id": "image-plan",
@@ -27,6 +28,7 @@
       ]
     },
     {
+      "agent_did": "gents:agent-slot:image-helper",
       "binding_id": "image-run",
       "callback_id": "image-run",
       "event_source_id": "image-run",

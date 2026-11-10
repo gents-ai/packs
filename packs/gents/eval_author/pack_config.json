@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "agent_id": "eval-author",
+      "agent_slot": "eval-author",
       "context_id": "eval-author-context",
       "description": "Interviews the operator and drafts eval cases for one subject agent.",
       "display_name": "Eval author",

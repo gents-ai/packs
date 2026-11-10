@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "name": "docs",
   "namespace": "gents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Document revisions and reviewable agent suggestions for a headless document workflow.",
   "authors": [
     "gents contributors"

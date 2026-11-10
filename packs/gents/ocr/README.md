@@ -31,8 +31,10 @@ The same agent runs from a terminal:
 
 ```sh
 gents config pack install gents/ocr --inference-slot document_reader=<profile>
-gents -p "Summarize reports/q3.pdf" --agent document-reader
+gents -p "Summarize reports/q3.pdf" --agent <agent-did>
 ```
+
+The install prints the DID it gave the `document-reader` agent under `apply.agents`; pass it as `<agent-did>`.
 
 ## Use it as a model tool
 

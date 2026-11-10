@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "name": "tic_tac_toe",
   "namespace": "gents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A shared tic-tac-toe board with explicit agent-assisted turns.",
   "authors": [
     "gents contributors"

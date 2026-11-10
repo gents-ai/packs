@@ -46,8 +46,10 @@ From a terminal:
 
 ```sh
 gents config pack install gents/image_tools --inference-slot image_helper=<profile>
-gents -p "What is in screenshots/login.png?" --agent image-helper
+gents -p "What is in screenshots/login.png?" --agent <agent-did>
 ```
+
+The install prints the DID it gave the `image-helper` agent under `apply.agents`; pass it as `<agent-did>`.
 
 ## Use it as a model tool
 

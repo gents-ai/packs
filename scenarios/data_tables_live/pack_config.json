@@ -11,7 +11,7 @@
   ],
   "tasks": [
     {
-      "agent_id": "data-analyst",
+      "agent_did": "gents:agent-slot:gents/data_tables#data-analyst",
       "display_name": "data-tables-live-task",
       "prompt_template": "./tasks/live_task/prompt.md",
       "task_id": "data-tables-live-task"

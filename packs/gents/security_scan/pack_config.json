@@ -1,28 +1,28 @@
 {
   "agents": [
     {
-      "agent_id": "scan-investigate",
+      "agent_slot": "scan-investigate",
       "context_id": "scan-investigate-context",
       "description": "Investigates one candidate batch in depth and records findings.",
       "display_name": "Batch investigator",
       "inference_profile_id": "gents:inference-slot:scanner"
     },
     {
-      "agent_id": "scan-plan",
+      "agent_slot": "scan-plan",
       "context_id": "scan-plan-context",
       "description": "Batches pre-scan candidates into investigation assignments.",
       "display_name": "Scan batch planner",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "agent_id": "scan-report",
+      "agent_slot": "scan-report",
       "context_id": "scan-report-context",
       "description": "Publishes confirmed findings and the run report.",
       "display_name": "Scan reporter",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "agent_id": "scan-revalidate",
+      "agent_slot": "scan-revalidate",
       "context_id": "scan-revalidate-context",
       "description": "Re-checks every candidate finding and stamps verdicts.",
       "display_name": "Adversarial revalidator",
@@ -480,25 +480,25 @@
   ],
   "tasks": [
     {
-      "agent_id": "scan-investigate",
+      "agent_did": "gents:agent-slot:scan-investigate",
       "display_name": "Investigate a candidate batch",
       "prompt_template": "./tasks/scan_investigate_task/prompt.md",
       "task_id": "scan-investigate-task"
     },
     {
-      "agent_id": "scan-plan",
+      "agent_did": "gents:agent-slot:scan-plan",
       "display_name": "Plan investigation batches",
       "prompt_template": "./tasks/scan_plan_task/prompt.md",
       "task_id": "scan-plan-task"
     },
     {
-      "agent_id": "scan-report",
+      "agent_did": "gents:agent-slot:scan-report",
       "display_name": "Publish the scan report",
       "prompt_template": "./tasks/scan_report_task/prompt.md",
       "task_id": "scan-report-task"
     },
     {
-      "agent_id": "scan-revalidate",
+      "agent_did": "gents:agent-slot:scan-revalidate",
       "display_name": "Revalidate candidate findings",
       "prompt_template": "./tasks/scan_revalidate_task/prompt.md",
       "task_id": "scan-revalidate-task"

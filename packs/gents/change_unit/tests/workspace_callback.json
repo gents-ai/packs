@@ -9,6 +9,7 @@
     "seed": {
       "collection": "ChangeUnitWork",
       "fields": {
+        "adapter": "git_worktree",
         "work_unit_id": "change-unit:unit-${ATTEMPT}",
         "repository_id": "change-unit-repository",
         "base_sha": "${BASE_SHA}",

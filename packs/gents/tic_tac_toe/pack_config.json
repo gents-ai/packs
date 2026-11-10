@@ -1,6 +1,6 @@
 {
   "node": {},
-  "agents": [{"agent_id":"tic-tac-toe-player","context_id":"tic-tac-toe-player-context","display_name":"Game player","inference_profile_id":"gents:inference-slot:game_player"}],
+  "agents": [{"agent_slot":"tic-tac-toe-player","context_id":"tic-tac-toe-player-context","display_name":"Game player","inference_profile_id":"gents:inference-slot:game_player"}],
   "contexts": [{"context_id":"tic-tac-toe-player-context","display_name":"Game player","system_prompt":"./agent_behaviors/game_player/system_prompt.md","tools_id":"tic-tac-toe-player-tools"}],
   "datastore_tool_surfaces": [{
     "surface_id":"tic-tac-toe-board",
