@@ -11,6 +11,8 @@
 #                            a reinstall creates nothing new, `config apply`
 #                            accepts the installed configuration, and a
 #                            remove deletes exactly what the install created
+#                            (an Agent is listed by its agent slot: the
+#                            install provisions its DID)
 #        {"install": {"assets": [...]}}
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
@@ -116,6 +118,22 @@ fail() {
 set_diff() {
   jq -rn --argjson want "$1" --argjson got "$2" \
     '(($want - $got) | map("missing " + .)) + (($got - $want) | map("unexpected " + .)) | join(", ")'
+}
+# Rewrites each "Agent/<did>" of a JSON string array on stdin to
+# "Agent/<slot>", by the slot-to-DID map the install in $1 reported: an
+# install provisions every agent's DID, so a case names the agent by its slot.
+by_agent_slot() {
+  jq -c --slurpfile install "$1" \
+    '($install[0].apply.agents // {} | with_entries({key: ("Agent/" + .value), value: ("Agent/" + .key)})) as $slots
+      | map($slots[.] // .)'
+}
+# True when the removal whose stderr is $1 was refused because the pack ships
+# plugins: gents retires a plugin only with a complete inventory of the Tools
+# that reference it, which no reader can prove under document ACP, so it
+# refuses and leaves the pack installed (PackRemovalError::ReferenceInventoryUnavailable).
+plugin_retirement_refused() {
+  jq -e '(.plugins // []) | length > 0' "$dir/manifest.json" >/dev/null \
+    && grep -q 'plugin retirement requires a complete native configuration reference inventory' "$1"
 }
 expect_set() {
   local what="$1" want="$2" got="$3" diff
@@ -272,7 +290,8 @@ install_documents() {
     "$(jq -c '[.dependencies[] | if type == "object" then .name else . end]' "$work/install.json")"
   local want
   want="$(jq -c '.install.documents' "$case")"
-  expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
+  expect_set "$(basename "$case"): install creates" "$want" \
+    "$(jq -c '.apply.created' "$work/install.json" | by_agent_slot "$work/install.json")"
   if jq -e '.install | has("plugins")' "$case" >/dev/null; then
     expect_set "$(basename "$case"): install registers plugins" \
       "$(jq -c '.install.plugins' "$case")" "$(jq -c '[.apply.plugins[].name]' "$work/install.json")"
@@ -281,14 +300,20 @@ install_documents() {
   "$gents" config pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
     expect_set "$(basename "$case"): reinstall keeps" "$want" \
-      "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json")"
+      "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json" | by_agent_slot "$work/install.json")"
   else
     fail "$(basename "$case"): reinstall created or removed documents"
   fi
   config_apply_accepts "$(basename "$case")" "$home"
 
-  "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json"
-  expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed' "$work/remove.json")"
+  if "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json" 2>"$work/remove.err"; then
+    expect_set "$(basename "$case"): remove deletes" "$want" \
+      "$(jq -c '.removed.removed' "$work/remove.json" | by_agent_slot "$work/install.json")"
+  elif plugin_retirement_refused "$work/remove.err"; then
+    pass "$(basename "$case"): remove is refused whole, because gents cannot retire the pack's plugins"
+  else
+    fail "$(basename "$case"): gents config pack remove failed: $(grep -E '^Error' "$work/remove.err" | tail -1)"
+  fi
 }
 
 # `pack install` does not run `config apply`'s live checks (event-source
@@ -417,8 +442,13 @@ runtime_case() {
   pid=$!
   servers+=("$pid")
 
-  local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded=""
+  local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded="" schema="" sdl
   collection="$(jq -r '.runtime.seed.collection' "$case")"
+  # The operator command signs the seed against the pack's own SDL for its collection.
+  while read -r sdl; do
+    grep -qE "^type $collection([^A-Za-z0-9_]|\$)" "$dir/$sdl" && schema="$dir/$sdl"
+  done < <(jq -r '.schemas // [] | .[]' "$dir/manifest.json")
+  [[ -n "$schema" ]] || { fail "$name: no schema of the pack declares the seed collection $collection"; stop_server "$pid"; return; }
   first="$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")"
   # The callback engine logs nothing when it picks up its bindings, and a
   # document created before that is history it never processes. So a fresh
@@ -434,7 +464,7 @@ runtime_case() {
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
     # the collection; retried below.
-    "$gents" utils data document create "$collection" --home "$home" --graphql "$url" --json "$fields" \
+    "$gents" utils data document create "$collection" --home "$home" --graphql "$url" --schema "$schema" --json "$fields" \
       >/dev/null 2>"$work/$name-seed.err" && seeded=yes
     # An authorization refusal or a bad field can never succeed on retry.
     if [[ -z "$seeded" ]] && grep -qiE 'not authorized|permission denied|has no field|--json' "$work/$name-seed.err"; then
@@ -475,10 +505,17 @@ install_plugins() {
   "$gents" config pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
   expect_set "$name: reinstall keeps" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/reinstall.json")"
 
-  "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json"
-  expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
-  "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
-  expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  if "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json" 2>"$work/remove.err"; then
+    expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
+    "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
+    expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  elif plugin_retirement_refused "$work/remove.err"; then
+    "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
+    expect_set "$name: remove is refused whole, because gents cannot retire the pack's plugins" \
+      "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  else
+    fail "$name: gents config pack remove failed: $(grep -E '^Error' "$work/remove.err" | tail -1)"
+  fi
 }
 
 run_jq_case() {
