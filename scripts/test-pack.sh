@@ -443,7 +443,7 @@ runtime_case() {
   url="http://127.0.0.1:$port/api/v0/graphql"
   log="$work/$name-server.log"
   # A repository placement's host path "." is the server's working directory.
-  (cd "$repo" && NO_COLOR=1 exec "$gents" runtime server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) >"$log" 2>&1 &
+  (cd "$repo" && NO_COLOR=1 exec "$gents" runtime server --home "$home" --http-port "$port" --p2p-transport none) >"$log" 2>&1 &
   pid=$!
   servers+=("$pid")
 

@@ -1,6 +1,7 @@
 {
   "cli_flags": {
     "command": [
+      "utils",
       "eval",
       "init"
     ],

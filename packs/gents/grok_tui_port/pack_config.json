@@ -2413,8 +2413,7 @@
         },
         "files": {
           "mode": "ReadWrite"
-        },
-        "root": "."
+        }
       },
       "integrations": {
         "lsp": {
@@ -2447,8 +2446,7 @@
         },
         "files": {
           "mode": "ReadWrite"
-        },
-        "root": "."
+        }
       },
       "integrations": {
         "lsp": {
@@ -2493,8 +2491,7 @@
         },
         "files": {
           "mode": "ReadWrite"
-        },
-        "root": "."
+        }
       },
       "integrations": {
         "lsp": {
@@ -2556,8 +2553,7 @@
         },
         "files": {
           "mode": "ReadWrite"
-        },
-        "root": "."
+        }
       },
       "agents": {
         "enabled": true,
@@ -2620,8 +2616,7 @@
         },
         "files": {
           "mode": "ReadWrite"
-        },
-        "root": "."
+        }
       },
       "tools_id": "port-publish-tools"
     },
@@ -2710,8 +2705,7 @@
         },
         "files": {
           "mode": "ReadOnly"
-        },
-        "root": "."
+        }
       },
       "integrations": {
         "lsp": {
