@@ -124,11 +124,13 @@ jobs:
           GENTS_BUILD_GIT_SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           set -euo pipefail
-          # The hosted Linux arm64 runner is terminated partway through this
-          # build at full parallelism (exit 143, lost communication); two
-          # compiler jobs keep it inside the runner's memory.
+          # The hosted Linux arm64 and macOS runners do not finish this build
+          # at full parallelism: arm64 is terminated partway (exit 143, lost
+          # communication) and macOS runs past the job limit in the last
+          # workspace crates. Two compiler jobs keep both inside the
+          # runner's memory.
           jobs=""
-          if [ "$RUNNER_OS" = Linux ] && [ "$RUNNER_ARCH" = ARM64 ]; then jobs="-j 2"; fi
+          if [ "$RUNNER_OS" = macOS ] || [ "$RUNNER_ARCH" = ARM64 ]; then jobs="-j 2"; fi
           # shellcheck disable=SC2086
           cargo build -p gents-cli --release --locked $jobs
           mkdir -p ../gents-bin
