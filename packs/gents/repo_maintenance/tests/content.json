@@ -19,11 +19,11 @@
     },
     {
       "name": "publish prompt watches the job key to a terminal state",
-      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents job watch\") and contains(\"--until-terminal\") and contains(\"wait_process\") and contains(\"session_id:tool_call_id\")"
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents automation job watch\") and contains(\"--until-terminal\") and contains(\"wait_process\") and contains(\"session_id:tool_call_id\")"
     },
     {
       "name": "watch command takes the whole job key, not an angle-bracket placeholder",
-      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents job watch KEY \") and contains(\"gents job watch trigger-session:abc123:call456 \") and contains(\"gents job show KEY\") and (contains(\"gents job watch <key>\") | not) and (contains(\"gents job show <key>\") | not)"
+      "expr": ".assets[\"tasks/maintenance_publish_task/prompt.md\"] | contains(\"gents automation job watch KEY \") and contains(\"gents automation job watch trigger-session:abc123:call456 \") and contains(\"gents automation job show KEY\") and (contains(\"gents automation job watch <key>\") | not) and (contains(\"gents automation job show <key>\") | not)"
     },
     {
       "name": "publish prompt binds the watcher to the job's home and GraphQL endpoint",

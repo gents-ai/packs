@@ -6,7 +6,7 @@ ambiguous, invalid or concurrent histories. A person can ask the agent in the
 selected session to make a move. The agent has its own model slot.
 
 ```sh
-gents pack install ./packs/gents/tic_tac_toe --home <home> --inference-slot game_player=<profile-id>
+gents config pack install ./packs/gents/tic_tac_toe --home <home> --inference-slot game_player=<profile-id>
 ```
 
 Enable the Tic-tac-toe page in the desktop after installing the pack. The same
@@ -40,7 +40,7 @@ Cross-node delivery is not guaranteed by the pack itself.
 ## Checks
 
 ```sh
-gents pack check packs/gents/tic_tac_toe
+gents config pack check packs/gents/tic_tac_toe
 GENTS=<path-to-gents> make test-tic_tac_toe
 node --test packs/gents/tic_tac_toe/tests/game_test.mjs
 GENTS_DESKTOP_ROOT=<gents-checkout> node packs/gents/tic_tac_toe/tests/browser_check.mjs

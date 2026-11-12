@@ -1,13 +1,13 @@
 {
   "agents": [
     {
-      "agent_id": "background-parent",
+      "agent_slot": "background-parent",
       "context_id": "background-parent-context",
       "display_name": "Background delegation parent",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "agent_id": "background-worker",
+      "agent_slot": "background-worker",
       "context_id": "background-worker-context",
       "display_name": "Background worker",
       "inference_profile_id": "gents:inference-slot:worker"
@@ -39,7 +39,7 @@
   ],
   "agent_targets": [
     {
-      "agent_id": "background-worker",
+      "agent_did": "gents:agent-slot:background-worker",
       "description": "Returns one concise analysis result",
       "name": "worker",
       "target_node_did": "${GENTS_PACK_NODE_DID}",
@@ -48,7 +48,7 @@
   ],
   "tasks": [
     {
-      "agent_id": "background-parent",
+      "agent_did": "gents:agent-slot:background-parent",
       "display_name": "background-parent-task",
       "prompt_template": "./tasks/background_parent_task/prompt.md",
       "task_id": "background-parent-task"

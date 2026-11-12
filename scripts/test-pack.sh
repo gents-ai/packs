@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs one pack's self-contained suite:
-#   1. gents pack build, then the built .pack verified against its digest;
-#   2. gents pack test: the install-time check and every plugin's cases;
+#   1. gents config pack build, then the built .pack verified against its digest;
+#   2. gents config pack test: the install-time check and every plugin's cases;
 #   3. every case in <pack>/tests/*.json, each holding one expectation:
 #        {"install": {"documents": [...], "slots": [...], "dependencies": [...]}}
 #                            a documents pack installed from its directory
@@ -11,6 +11,8 @@
 #                            a reinstall creates nothing new, `config apply`
 #                            accepts the installed configuration, and a
 #                            remove deletes exactly what the install created
+#                            (an Agent is listed by its agent slot: the
+#                            install provisions its DID)
 #        {"install": {"assets": [...]}}
 #                            an assets pack installed into a fresh home
 #                            materializes exactly these files, and a
@@ -47,8 +49,8 @@
 #                            are copied into the repository before its commit,
 #                            and "access": "read_write" to let plugins write
 #                            to it (an allowed folder is read-only otherwise)
-# Every documents pack also gets the built-in checks: it declares
-# inference slots and authors no inference documents, no task sets a goal
+# Every documents pack also gets the built-in checks: packs with agents declare
+# inference slots and author no inference documents, no task sets a goal
 # token budget, and each dependency is a sibling pack whose manifest matches
 # and is pre-stored in the install's home.
 # Every variable the pack's config requires (`${VAR}`, or `${VAR:-}` so pack
@@ -117,6 +119,27 @@ set_diff() {
   jq -rn --argjson want "$1" --argjson got "$2" \
     '(($want - $got) | map("missing " + .)) + (($got - $want) | map("unexpected " + .)) | join(", ")'
 }
+# Rewrites each "Agent/<did>" of a JSON string array on stdin to
+# "Agent/<slot>", by the slot-to-DID map the install in $1 reported: an
+# install provisions every agent's DID, so a case names the agent by its slot.
+by_agent_slot() {
+  jq -c --slurpfile install "$1" \
+    '($install[0].apply.agents // {} | with_entries({key: ("Agent/" + .value), value: ("Agent/" + .key)})) as $slots
+      | map($slots[.] // .)'
+}
+# True when the removal whose stderr is $1 was refused because the pack or
+# one of its dependencies ships plugins: gents retires a plugin only with a
+# complete inventory of the Tools that reference it, which no reader can prove
+# under document ACP, so it refuses and leaves the pack installed
+# (PackRemovalError::ReferenceInventoryUnavailable).
+plugin_retirement_refused() {
+  local dep manifests=("$dir/manifest.json")
+  while read -r dep; do
+    manifests+=("$(dirname "$dir")/$dep/manifest.json")
+  done < <(jq -r '.dependencies // [] | .[] | split("/") | last' "$dir/manifest.json")
+  jq -es 'map(.plugins // [] | length) | add > 0' "${manifests[@]}" >/dev/null \
+    && grep -q 'plugin retirement requires a complete native configuration reference inventory' "$1"
+}
 expect_set() {
   local what="$1" want="$2" got="$3" diff
   diff="$(set_diff "$want" "$got")"
@@ -127,18 +150,18 @@ expect_set() {
 
 # Built first: pack check refuses a documents pack whose plugins
 # are not compiled yet.
-"$gents" pack build "$dir" --out "$work/built.pack" >"$work/build.json"
+"$gents" config pack build "$dir" --out "$work/built.pack" >"$work/build.json"
 built="$(jq -r '.digest' "$work/build.json")"
-if "$gents" pack verify "$work/built.pack" >"$work/verify.json"; then
-  pass "gents pack build and verify ($built)"
+if "$gents" config pack verify "$work/built.pack" >"$work/verify.json"; then
+  pass "gents config pack build and verify ($built)"
 else
-  fail "gents pack verify rejected the built pack"
+  fail "gents config pack verify rejected the built pack"
 fi
 
-if "$gents" pack test "$dir" >"$work/test.json"; then
-  pass "gents pack test"
+if "$gents" config pack test "$dir" >"$work/test.json"; then
+  pass "gents config pack test"
 else
-  fail "gents pack test failed"
+  fail "gents config pack test failed"
 fi
 digest="$(jq -r '.digest // empty' "$work/test.json")"
 [[ -z "$digest" || "$digest" == "$built" ]] || fail "test digest $digest differs from build digest $built"
@@ -183,7 +206,7 @@ show_document() {
   if [[ "$kind" == "plugins" ]]; then
     echo '{}' >"$work/show-config.json"
   else
-    "$gents" pack show "$dir" --config --home "$work/show" >"$work/show-config.json"
+    "$gents" config pack show "$dir" --config --home "$work/show" >"$work/show-config.json"
   fi
   : >"$names"
   while read -r path; do
@@ -205,8 +228,8 @@ show_document() {
 store_dependencies() {
   local home="$1" dep
   while read -r dep; do
-    "$gents" pack build "$(dirname "$dir")/$dep" --out "$work/dep-$dep.pack" >/dev/null \
-      && "$gents" pack fetch "$work/dep-$dep.pack" --store --home "$home" >/dev/null \
+    "$gents" config pack build "$(dirname "$dir")/$dep" --out "$work/dep-$dep.pack" >/dev/null \
+      && "$gents" config pack fetch "$work/dep-$dep.pack" --store --home "$home" >/dev/null \
       || fail "could not pre-store dependency $dep"
   done < <(jq -r '.dependencies // [] | .[] | split("/") | last' "$dir/manifest.json")
 }
@@ -216,8 +239,8 @@ builtin_checks() {
   local doc dep
   [[ "$kind" == "documents" ]] || return 0
   doc="$(show_document)"
-  jq -e '(.manifest.inference_slots // []) | length > 0' "$doc" >/dev/null \
-    && pass "declares inference slots" || fail "declares no inference slots"
+  jq -e '((.config.agents // []) | length == 0) or ((.manifest.inference_slots // []) | length > 0)' "$doc" >/dev/null \
+    && pass "authored agents declare inference slots" || fail "authors agents without inference slots"
   jq -e '[.config.inference_backends, .config.inference_profiles, .config.inference_sampling,
           .config.inference_execution, .config.inference_retry_policies] | all((. // []) | length == 0)' "$doc" >/dev/null \
     && pass "authors no inference documents" || fail "authors inference backends, profiles, sampling, execution or retry policies; slots bind them at install"
@@ -263,7 +286,7 @@ install_documents() {
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
 
-  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/install.json"
   expect_set "$(basename "$case"): inference slots" \
     "$(jq -c '.install.slots // []' "$case")" \
     "$(jq -c '.inference.bindings | keys' "$work/install.json")"
@@ -272,23 +295,30 @@ install_documents() {
     "$(jq -c '[.dependencies[] | if type == "object" then .name else . end]' "$work/install.json")"
   local want
   want="$(jq -c '.install.documents' "$case")"
-  expect_set "$(basename "$case"): install creates" "$want" "$(jq -c '.apply.created' "$work/install.json")"
+  expect_set "$(basename "$case"): install creates" "$want" \
+    "$(jq -c '.apply.created' "$work/install.json" | by_agent_slot "$work/install.json")"
   if jq -e '.install | has("plugins")' "$case" >/dev/null; then
     expect_set "$(basename "$case"): install registers plugins" \
       "$(jq -c '.install.plugins' "$case")" "$(jq -c '[.apply.plugins[].name]' "$work/install.json")"
   fi
 
-  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/reinstall.json"
   if jq -e '.apply.created == [] and .apply.removed == []' "$work/reinstall.json" >/dev/null; then
     expect_set "$(basename "$case"): reinstall keeps" "$want" \
-      "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json")"
+      "$(jq -c '.apply | .replaced + .kept + .adopted' "$work/reinstall.json" | by_agent_slot "$work/install.json")"
   else
     fail "$(basename "$case"): reinstall created or removed documents"
   fi
   config_apply_accepts "$(basename "$case")" "$home"
 
-  "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
-  expect_set "$(basename "$case"): remove deletes" "$want" "$(jq -c '.removed.removed' "$work/remove.json")"
+  if "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json" 2>"$work/remove.err"; then
+    expect_set "$(basename "$case"): remove deletes" "$want" \
+      "$(jq -c '.removed.removed' "$work/remove.json" | by_agent_slot "$work/install.json")"
+  elif plugin_retirement_refused "$work/remove.err"; then
+    pass "$(basename "$case"): remove is refused whole, because gents cannot retire the pack's plugins"
+  else
+    fail "$(basename "$case"): gents config pack remove failed: $(grep -E '^Error' "$work/remove.err" | tail -1)"
+  fi
 }
 
 # `pack install` does not run `config apply`'s live checks (event-source
@@ -327,21 +357,21 @@ register_services() {
 install_assets() {
   local case="$1" home root
   home="$(fresh_home "$(basename "$case" .json)")"
-  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   root="$(jq -r '.installed_assets' "$work/install.json")"
   expect_set "$(basename "$case"): install materializes" \
     "$(jq -c '.install.assets' "$case")" \
     "$(cd "$root" && find . -type f ! -name '.*' | sed 's|^\./||' | jq -Rsc 'split("\n") | map(select(. != ""))')"
 
-  if "$gents" pack remove "$pack" --home "$home" >"$work/remove.json" && [[ ! -e "$root" ]]; then
+  if "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json" && [[ ! -e "$root" ]]; then
     pass "$(basename "$case"): remove releases the assets"
   else
-    fail "$(basename "$case"): gents pack remove did not release $root"
+    fail "$(basename "$case"): gents config pack remove did not release $root"
   fi
 }
 
 # Polls the live runtime until one expectation's rows include one whose
-# fields match; prints the last response. The read goes through `gents query`
+# fields match; prints the last response. The read goes through `gents utils data query`
 # as the home's node: the GraphQL endpoint shows anonymous readers no
 # documents. Waits with a deadline and backoff, so a fast machine finishes at
 # once and a slow one still passes.
@@ -351,7 +381,7 @@ await_rows() {
   want="$(jq -c '.fields // {}' <<<"$expect")"
   while read -r arg; do args+=("$arg"); done < <(expectation_args "$expect")
   while :; do
-    response="$("$gents" query find --home "$home" --graphql "$url" --limit 1000 "${args[@]}" 2>"$work/query.err" || true)"
+    response="$("$gents" utils data query find --home "$home" --graphql "$url" --limit 1000 "${args[@]}" 2>"$work/query.err" || true)"
     if jq -e --argjson want "$want" \
       '[.results[]? | select(. as $row | $want | to_entries | all(.value == $row[.key]))] | length > 0' \
       <<<"$response" >/dev/null 2>&1; then
@@ -367,7 +397,7 @@ await_rows() {
   done
 }
 
-# The `gents query find` arguments for one runtime expectation, one per line:
+# The `gents utils data query find` arguments for one runtime expectation, one per line:
 # its collection, filtered by `filter`, selecting the fields it expects.
 expectation_args() {
   jq -r '"--collection", .collection,
@@ -380,8 +410,8 @@ runtime_case() {
   local case="$1" name repo home port url log pid args=() arg base path
   name="$(basename "$case" .json)"
   # Runtime cases seed through the operator document command; fail at once on a gents without it.
-  "$gents" document create --help >/dev/null 2>&1 \
-    || { fail "$name: this gents has no 'document create' command; set GENTS to a gents build that includes it"; return; }
+  "$gents" utils data document create --help >/dev/null 2>&1 \
+    || { fail "$name: this gents has no 'data document create' command; set GENTS to a gents build that includes it"; return; }
   repo="$work/repo-$name"
   mkdir -p "$repo"
   while read -r path; do mkdir -p "$repo/$path"; done < <(jq -r '.runtime.repository.dirs // [] | .[]' "$case")
@@ -404,21 +434,32 @@ runtime_case() {
   export_required "$repo"
   local access
   access="$(jq -r '.runtime.repository.access // empty' "$case")"
-  "$gents" plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
+  "$gents" config pack plugin dirs add "$repo" --home "$home" ${access:+--access "$access"} >"$work/$name-allowed.json"
   while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
   store_dependencies "$home"
-  "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
 
   port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
   url="http://127.0.0.1:$port/api/v0/graphql"
   log="$work/$name-server.log"
   # A repository placement's host path "." is the server's working directory.
-  (cd "$repo" && NO_COLOR=1 exec "$gents" server --home "$home" --http-port "$port" --p2p-transport none --no-codex-shim) >"$log" 2>&1 &
+  (cd "$repo" && NO_COLOR=1 exec "$gents" runtime server --home "$home" --http-port "$port" --p2p-transport none) >"$log" 2>&1 &
   pid=$!
   servers+=("$pid")
 
-  local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded=""
+  local collection fields attempt=0 deadline=$((SECONDS + 240)) first seeded="" schema="" sdl
   collection="$(jq -r '.runtime.seed.collection' "$case")"
+  # The operator command signs the seed against the pack's own SDL for its
+  # collection, and takes a schema that declares that one collection only.
+  for sdl in "$dir"/schemas/*.graphql; do
+    grep -qE "^type $collection([^A-Za-z0-9_]|\$)" "$sdl" || continue
+    schema="$work/$name-seed.graphql"
+    awk -v type="$collection" '
+      !found && $1 == "type" && $2 == type { found = 1 }
+      found { print }
+      found && /^}/ { exit }' "$sdl" >"$schema"
+  done
+  [[ -n "$schema" ]] || { fail "$name: no schema of the pack declares the seed collection $collection"; stop_server "$pid"; return; }
   first="$(jq -c '.runtime.taken // .runtime.expect[0]' "$case")"
   # The callback engine logs nothing when it picks up its bindings, and a
   # document created before that is history it never processes. So a fresh
@@ -434,7 +475,7 @@ runtime_case() {
     # A served home admits writes only from its own principal, so the seed is
     # created by the operator command. Refused until the runtime has registered
     # the collection; retried below.
-    "$gents" document create "$collection" --home "$home" --graphql "$url" --json "$fields" \
+    "$gents" utils data document create "$collection" --home "$home" --graphql "$url" --schema "$schema" --json "$fields" \
       >/dev/null 2>"$work/$name-seed.err" && seeded=yes
     # An authorization refusal or a bad field can never succeed on retry.
     if [[ -z "$seeded" ]] && grep -qiE 'not authorized|permission denied|has no field|--json' "$work/$name-seed.err"; then
@@ -467,18 +508,25 @@ install_plugins() {
   name="$(basename "$case")"
   home="$(fresh_home "$(basename "$case" .json)")"
   want="$(jq -c '.install.plugins' "$case")"
-  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority >"$work/install.json"
   expect_set "$name: install registers" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/install.json")"
-  "$gents" plugin list --home "$home" >"$work/plugins.json"
+  "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
   expect_set "$name: plugin list after install" "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
 
-  "$gents" pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
+  "$gents" config pack install "$dir" --home "$home" --grant-authority >"$work/reinstall.json"
   expect_set "$name: reinstall keeps" "$want" "$(jq -c '[.installed_plugins[].name]' "$work/reinstall.json")"
 
-  "$gents" pack remove "$pack" --home "$home" >"$work/remove.json"
-  expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
-  "$gents" plugin list --home "$home" >"$work/plugins.json"
-  expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  if "$gents" config pack remove "$pack" --home "$home" >"$work/remove.json" 2>"$work/remove.err"; then
+    expect_set "$name: remove releases" "$want" "$(jq -c '[.removed.plugins[].name]' "$work/remove.json")"
+    "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
+    expect_set "$name: plugin list after remove" "[]" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  elif plugin_retirement_refused "$work/remove.err"; then
+    "$gents" config pack plugin list --home "$home" >"$work/plugins.json"
+    expect_set "$name: remove is refused whole, because gents cannot retire the pack's plugins" \
+      "$want" "$(jq -c '[.plugins[].name]' "$work/plugins.json")"
+  else
+    fail "$name: gents config pack remove failed: $(grep -E '^Error' "$work/remove.err" | tail -1)"
+  fi
 }
 
 run_jq_case() {
@@ -508,7 +556,7 @@ eval_case() {
     fenced { print }' "$dir/$asset")"
   if [[ -z "$example" ]]; then
     fail "$(basename "$case"): no json block after '$after' in $asset"
-  elif printf '%s' "$example" | "$gents" eval checks --validate-case - >"$work/eval-case.json" 2>&1; then
+  elif printf '%s' "$example" | "$gents" utils eval checks --validate-case - >"$work/eval-case.json" 2>&1; then
     pass "$(basename "$case"): the example in $asset names only registered checks with valid params"
   else
     fail "$(basename "$case"): $(tr '\n' ' ' <"$work/eval-case.json" | cut -c1-300)"
@@ -591,7 +639,7 @@ wasm_checks() {
     args=()
     while read -r arg; do args+=("$arg"); done < <(slot_args "$home")
     store_dependencies "$home"
-    "$gents" pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
+    "$gents" config pack install "$dir" --home "$home" --grant-authority ${args[@]+"${args[@]}"} >"$work/$name-install.json"
     if GENTS="$gents" PACK_HOME="$home" python3 "$check" >"$work/$name.log" 2>&1; then
       pass "plugin $plugin: wasm checks ($(tail -n 2 "$work/$name.log" | head -n 1))"
     else

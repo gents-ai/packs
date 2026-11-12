@@ -2,7 +2,7 @@
   "node": {},
   "agents": [
     {
-      "agent_id": "docs-editor",
+      "agent_slot": "docs-editor",
       "context_id": "docs-editor-context",
       "display_name": "Document editor",
       "inference_profile_id": "gents:inference-slot:docs_editor"

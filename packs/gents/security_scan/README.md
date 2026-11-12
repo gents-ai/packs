@@ -15,17 +15,17 @@ documents in that bundle define all four stages.
 ## Installation
 
 ```sh
-gents pack install ./packs/gents/security_scan --home <home> \
+gents config pack install ./packs/gents/security_scan --home <home> \
   --inference-slot coordinator=<profile_id> \
   --inference-slot scanner=<profile_id> \
   --inference-slot verifier=<profile_id>
-gents pack install gents/security_scan --home <home> \
+gents config pack install gents/security_scan --home <home> \
   --inference-slot coordinator=<profile_id> \
   --inference-slot scanner=<profile_id> \
   --inference-slot verifier=<profile_id>   # once published to the registry
 ```
 
-Exercise the scenario directly with `gents pack scenario run security_scan`
+Exercise the scenario directly with `gents config pack scenario run security_scan`
 (see Run it below).
 
 ## Bindings and prerequisites
@@ -133,9 +133,9 @@ is 86400 (24h).
 ## Validation
 
 ```sh
-gents pack check ./packs/gents/security_scan
-gents pack build ./packs/gents/security_scan
-gents pack test ./packs/gents/security_scan
+gents config pack check ./packs/gents/security_scan
+gents config pack build ./packs/gents/security_scan
+gents config pack test ./packs/gents/security_scan
 make test-security_scan        # from the repository root
 (cd packs/gents/security_scan/plugins/secscan && cargo test)
 ```
@@ -143,7 +143,7 @@ make test-security_scan        # from the repository root
 `tests/install.json` pins the `coordinator`, `scanner`, `verifier` slots and
 the 29 documents an install creates, reinstalls without change and removes.
 `plugins/secscan/tests/*.json` are plain `{"input", "expect"}` cases run by
-`gents pack test`; one of them (`bind-scans-a-directory.json`) also sets
+`gents config pack test`; one of them (`bind-scans-a-directory.json`) also sets
 `"bind": "fixtures/tree"`, exercising `root` mode end to end through the
 same `call_bound` path the scenario's `prepare` step uses, scoped to the
 small fixture tree checked in alongside it. `cargo test` in the plugin
@@ -180,7 +180,7 @@ as an overflow count in the same document.
 
 The pre-scan is a Rust port of deepsec's regex matcher registry, shipped as
 this pack's own `secscan` plugin (`plugins/secscan/source/`), which runs as
-a `prepare` step before the seed: `gents pack scenario run` binds
+a `prepare` step before the seed: `gents config pack scenario run` binds
 `${GENTS_SCAN_ROOT:-.}` read-only for that one call and maps the plugin's
 own output onto five seed fields (`experiment.json`'s
 `prepare[0].seed_fields`): `candidates` (`/payload`), `candidate_total`
@@ -254,7 +254,7 @@ tells investigators to treat violations as real findings.
 ## Run it
 
 ```bash
-gents pack scenario run security_scan
+gents config pack scenario run security_scan
 ```
 
 Everything a run produces lands under `packs/gents/security_scan/runs/<job_id>/`:

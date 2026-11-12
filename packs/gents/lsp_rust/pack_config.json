@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "agent_id": "lsp-coder",
+      "agent_slot": "lsp-coder",
       "context_id": "lsp-coder-context",
       "display_name": "LSP rust-analyzer coder",
       "inference_profile_id": "gents:inference-slot:coder"
@@ -27,7 +27,7 @@
   ],
   "tasks": [
     {
-      "agent_id": "lsp-coder",
+      "agent_did": "gents:agent-slot:lsp-coder",
       "display_name": "lsp-hover-task",
       "prompt_template": "./tasks/lsp_hover_task/prompt.md",
       "task_id": "lsp-hover-task"

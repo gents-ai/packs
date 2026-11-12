@@ -11,7 +11,7 @@
   ],
   "tasks": [
     {
-      "agent_id": "chart-maker",
+      "agent_did": "gents:agent-slot:gents/charts#chart-maker",
       "display_name": "charts-live-task",
       "prompt_template": "./tasks/live_task/prompt.md",
       "task_id": "charts-live-task"

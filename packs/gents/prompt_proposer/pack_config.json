@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "agent_id": "prompt-proposer",
+      "agent_slot": "prompt-proposer",
       "context_id": "prompt-proposer-context",
       "description": "Rewrites one agent's system instruction from a training run's feedback.",
       "display_name": "Prompt proposer",

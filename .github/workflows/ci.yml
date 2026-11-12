@@ -124,12 +124,20 @@ jobs:
           GENTS_BUILD_GIT_SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           set -euo pipefail
-          cargo build -p gents-cli --release --locked
+          # The hosted Linux arm64 and macOS runners do not finish this build
+          # at full parallelism: arm64 is terminated partway (exit 143, lost
+          # communication) and macOS runs past the job limit in the last
+          # workspace crates. Two compiler jobs keep both inside the
+          # runner's memory.
+          jobs=""
+          if [ "$RUNNER_OS" = macOS ] || [ "$RUNNER_ARCH" = ARM64 ]; then jobs="-j 2"; fi
+          # shellcheck disable=SC2086
+          cargo build -p gents-cli --release --locked $jobs
           mkdir -p ../gents-bin
           cp target/release/gents ../gents-bin/gents
 
       - name: Report gents version
-        run: gents-bin/gents version
+        run: gents-bin/gents runtime version
 
       - uses: actions/upload-artifact@v7
         with:
@@ -150,11 +158,11 @@ jobs:
           name: gents-cli-${{ runner.os }}-${{ runner.arch }}
           path: gents-bin
 
-      - name: gents pack check scenarios/*_live
+      - name: gents config pack check scenarios/*_live
         run: |
           set -euo pipefail
           chmod +x gents-bin/gents
-          gents-bin/gents pack check scenarios/*_live
+          gents-bin/gents config pack check scenarios/*_live
 
   pack:
     name: ${{ matrix.pack }} (${{ matrix.os }})
@@ -196,7 +204,7 @@ jobs:
         run: |
           python3 -m unittest discover -s packs/gents/web/worker/tests
           python3 -m unittest discover -s packs/gents/web/evals -p 'test_*.py'
-          gents-bin/gents pack check packs/gents/web/evals packs/gents/web/evals/subject
+          gents-bin/gents config pack check packs/gents/web/evals packs/gents/web/evals/subject
 
       # The .pack to publish: built here, where the toolchain and paths are
       # fixed, so a plugin-bearing pack keeps one digest across builds.
@@ -206,8 +214,8 @@ jobs:
           GENTS: ${{ github.workspace }}/gents-bin/gents
         run: |
           mkdir -p dist
-          "$GENTS" pack build packs/gents/${{ matrix.pack }} --out "dist/gents.${{ matrix.pack }}.pack"
-          "$GENTS" pack verify "dist/gents.${{ matrix.pack }}.pack"
+          "$GENTS" config pack build packs/gents/${{ matrix.pack }} --out "dist/gents.${{ matrix.pack }}.pack"
+          "$GENTS" config pack verify "dist/gents.${{ matrix.pack }}.pack"
 
       - uses: actions/upload-artifact@v7
         if: matrix.os == 'ubuntu-latest'

@@ -19,7 +19,7 @@ Install into an initialized Gents home and bind the slot to an existing
 inference profile:
 
 ```sh
-gents pack install ./packs/gents/docs --home <home> --inference-slot docs_editor=<profile_id>
+gents config pack install ./packs/gents/docs --home <home> --inference-slot docs_editor=<profile_id>
 ```
 
 The pack does not configure a provider or create an inference profile. Bind the
@@ -53,12 +53,12 @@ A node operator can create a revision with the headless CLI. For example,
 generate fresh IDs in real use:
 
 ```sh
-gents document create DocsRevision --home <home> --json '{"document_id":"document-123","revision_id":"revision-123","title":"Agreement","content":"# Agreement\n\nDraft terms."}'
+gents utils data document create DocsRevision --home <home> --schema ./packs/gents/docs/schemas/docs_revision.graphql --json '{"document_id":"document-123","revision_id":"revision-123","title":"Agreement","content":"# Agreement\n\nDraft terms."}'
 ```
 
 With the same Gents home and the `docs-editor` agent selected, ask the agent
 to read the supplied document ID and revision ID and suggest a change. For
-example, use `gents chat --home <home> --agent-id docs-editor` and ask it to review
+example, use `gents --home <home> --agent <agent-did>` (the DID the install printed for `docs-editor` under `apply.agents`) and ask it to review
 `document-123` at `revision-123`, providing a fresh suggestion ID. The agent
 should read the revision before creating a suggestion. A client may read the
 suggestion through the same authorized datastore API:
@@ -111,7 +111,7 @@ revision. Separate proposals and forks may coexist and need review.
 ## Validation
 
 ```sh
-gents pack check ./packs/gents/docs
+gents config pack check ./packs/gents/docs
 GENTS=<path-to-gents> make test-docs
 ```
 

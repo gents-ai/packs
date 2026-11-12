@@ -149,7 +149,7 @@ fn run(input: &str) -> Result<PluginOutput, String> {
 
 #[cfg(test)]
 mod tests {
-    //! Bad-input coverage. The `gents pack test` fixture format
+    //! Bad-input coverage. The `gents config pack test` fixture format
     //! (`{"input": ..., "expect": ...}`) can only assert a call succeeds; it
     //! has no way to express "this input must fail", so every malformed-input
     //! case lives here instead, run with `cargo test`.

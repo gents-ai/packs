@@ -1,28 +1,28 @@
 {
   "agents": [
     {
-      "agent_id": "review-recon",
+      "agent_slot": "review-recon",
       "context_id": "review-recon-context",
       "description": "Pins a git change: resolves base and head commits and trees and returns the git outputs.",
       "display_name": "Review reconnaissance",
       "inference_profile_id": "gents:inference-slot:coordinator"
     },
     {
-      "agent_id": "review-scan",
+      "agent_slot": "review-scan",
       "context_id": "review-scan-context",
       "description": "Reviews a pinned git change through one lens and reports candidate defects.",
       "display_name": "Review area scanner",
       "inference_profile_id": "gents:inference-slot:worker"
     },
     {
-      "agent_id": "review-verify",
+      "agent_slot": "review-verify",
       "context_id": "review-verify-context",
       "description": "Refutes or confirms every candidate against freshly read code.",
       "display_name": "Adversarial review verification",
       "inference_profile_id": "gents:inference-slot:verifier"
     },
     {
-      "agent_id": "review-triage",
+      "agent_slot": "review-triage",
       "context_id": "review-triage-context",
       "description": "Ranks verified findings and writes the final report.",
       "display_name": "Review triage",
@@ -147,28 +147,28 @@
   ],
   "agent_targets": [
     {
-      "agent_id": "review-recon",
+      "agent_did": "gents:agent-slot:review-recon",
       "description": "Pins a git change: resolves base and head commits and trees and returns the git outputs.",
       "name": "code-review-recon",
       "target_id": "code-review-recon",
       "target_node_did": "${GENTS_PACK_NODE_DID}"
     },
     {
-      "agent_id": "review-scan",
+      "agent_did": "gents:agent-slot:review-scan",
       "description": "Reviews a pinned git change through one lens and reports candidate defects.",
       "name": "code-review-scan",
       "target_id": "code-review-scan",
       "target_node_did": "${GENTS_PACK_NODE_DID}"
     },
     {
-      "agent_id": "review-verify",
+      "agent_did": "gents:agent-slot:review-verify",
       "description": "Refutes or confirms every candidate against freshly read code.",
       "name": "code-review-verify",
       "target_id": "code-review-verify",
       "target_node_did": "${GENTS_PACK_NODE_DID}"
     },
     {
-      "agent_id": "review-triage",
+      "agent_did": "gents:agent-slot:review-triage",
       "description": "Ranks verified findings and writes the final report.",
       "name": "code-review-triage",
       "target_id": "code-review-triage",

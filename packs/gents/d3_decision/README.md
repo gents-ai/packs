@@ -16,9 +16,9 @@ through the host.
 ## Use it from the CLI
 
 ```sh
-gents pack install ./packs/gents/d3_decision --home <home> --preview
-gents pack install ./packs/gents/d3_decision --home <home> --grant-authority
-gents plugin run gents/d3_decision --home <home> --input '{
+gents config pack install ./packs/gents/d3_decision --home <home> --preview
+gents config pack install ./packs/gents/d3_decision --home <home> --grant-authority
+gents config pack plugin run gents/d3_decision --home <home> --input '{
   "context": "The order arrived damaged and the customer has a receipt.",
   "questions": {
     "receipt": {"type": "noul", "instructions": "Does the customer have a receipt?"},
@@ -107,8 +107,8 @@ endpoints implicitly, and a wake gate should see that its server is down.
 
 ```sh
 cargo test --manifest-path packs/gents/d3_decision/plugins/d3_decision/Cargo.toml
-gents pack check packs/gents/d3_decision
-gents pack test packs/gents/d3_decision
+gents config pack check packs/gents/d3_decision
+gents config pack test packs/gents/d3_decision
 GENTS=gents scripts/test-pack.sh packs/gents/d3_decision
 ```
 
@@ -119,7 +119,7 @@ mistyped answers). Check a live server by hand with semantic assertions, not
 exact floats, since probabilities differ slightly between calls and servers:
 
 ```sh
-gents plugin run gents/d3_decision --home <home> --input '{"context": "The customer has a receipt.",
+gents config pack plugin run gents/d3_decision --home <home> --input '{"context": "The customer has a receipt.",
   "questions": {"receipt": {"type": "noul", "instructions": "Does the customer have a receipt?"}}}' \
   | jq -e '.ok and .answers.receipt.type == "noul" and .answers.receipt.noul > 0.9'
 ```

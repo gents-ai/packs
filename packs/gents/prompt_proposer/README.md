@@ -1,6 +1,6 @@
 # Prompt proposer
 
-The prompt proposer is the model side of `gents optimization run`. It is a
+The prompt proposer is the model side of `gents utils optimization run`. It is a
 single agent, `prompt-proposer`, with a fixed system prompt and no tools:
 it cannot read or write documents, files or configuration. Each round it
 receives one agent's current system instruction and the feedback a
@@ -11,11 +11,11 @@ proposer, decides whether the candidate is worth a validation run.
 ## Installation
 
 ```bash
-gents pack install ./packs/gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>
-gents pack install gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>   # once published to the registry
+gents config pack install ./packs/gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>
+gents config pack install gents/prompt_proposer --home <home> --inference-slot proposer=<profile_id>   # once published to the registry
 ```
 
-`gents optimization run` installs the pack into the operator's home once,
+`gents utils optimization run` installs the pack into the operator's home once,
 idempotently, and binds that slot to `--proposer-profile` or the home's
 default profile.
 
@@ -36,7 +36,7 @@ self-config tools.
 ## Inputs and outputs
 
 ```
-gents optimization run <definition_id> --subject <pack>[:<agent>] --proposer agent:prompt_proposer[:<agent>] [--proposer-profile <profile_id>]
+gents utils optimization run <definition_id> --subject <pack>[:<agent>] --proposer agent:prompt_proposer[:<agent>] [--proposer-profile <profile_id>]
 ```
 
 The command opens a fresh session against the served home, sends the
@@ -60,8 +60,8 @@ the proposer, enforces the byte cap and the no-repeat rule.
 ## Validation
 
 ```bash
-gents pack check ./packs/gents/prompt_proposer
-gents pack test ./packs/gents/prompt_proposer
+gents config pack check ./packs/gents/prompt_proposer
+gents config pack test ./packs/gents/prompt_proposer
 make test-prompt_proposer
 ```
 

@@ -89,7 +89,7 @@ jobs:
           chmod +x gents-bin/gents
           for pack in $PACK_NAMES; do
             gh run download "$CI_RUN_ID" --name "pack-$pack-Linux" --dir dist
-            gents-bin/gents pack verify "dist/gents.$pack.pack"
+            gents-bin/gents config pack verify "dist/gents.$pack.pack"
           done
 
       - name: Publish unpublished versions
@@ -111,7 +111,7 @@ jobs:
           publish_with_retry() {
             local pack="$1" version="$2" file="$3" waits=0 out wait
             while true; do
-              if out="$(gents-bin/gents pack publish "$file" --registry "$REGISTRY" 2>&1)"; then
+              if out="$(gents-bin/gents config pack publish "$file" --registry "$REGISTRY" 2>&1)"; then
                 printf '%s\n' "$out"
                 return 0
               fi
@@ -155,7 +155,7 @@ jobs:
           fi
 
       # Every gents pack comes from this repo, so one the registry still
-      # offers but master no longer has is yanked (undo: gents pack yank --undo).
+      # offers but master no longer has is yanked (undo: gents config pack yank --undo).
       - name: Yank packs deleted from the repo
         if: steps.source.outputs.stale != 'true'
         env:
@@ -172,6 +172,6 @@ jobs:
           for pack in $(sort -u registry-packs.txt); do
             [[ " $BUILT_PACKS " == *" $pack "* ]] && continue
             for version in $(curl -fsS "$REGISTRY/api/v1/packs/gents/$pack" | jq -r '.versions[] | select(.yanked | not) | .version'); do
-              gents-bin/gents pack yank "gents/$pack@$version" --registry "$REGISTRY"
+              gents-bin/gents config pack yank "gents/$pack@$version" --registry "$REGISTRY"
             done
           done

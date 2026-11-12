@@ -137,15 +137,18 @@ def main():
         prompt_file.write_text(prompt)
         cmd = [
             gents,
-            "chat",
+            "utils",
+            "debug",
+            "request",
+            "submit",
             "--home",
             str(home),
             "--graphql",
             graphql,
-            "--message-file",
+            "--content-file",
             str(prompt_file),
-            "--output",
-            "json",
+            "--valid-until",
+            "none",
             "--timeout-secs",
             str(args.timeout_secs),
         ]
@@ -158,6 +161,8 @@ def main():
         subprocess.run(
             [
                 gents,
+                "utils",
+                "debug",
                 "trace",
                 "export",
                 "--home",
@@ -250,7 +255,7 @@ print(json.dumps(observations))
         with open(root / "build.log", "w") as log:
             if not args.pack_archive:
                 subprocess.run(
-                    [gents, "pack", "build", str(pack), "--out", str(archive)],
+                    [gents, "config", "pack", "build", str(pack), "--out", str(archive)],
                     check=True,
                     stdout=log,
                     stderr=log,
@@ -297,6 +302,7 @@ print(json.dumps(observations))
         run(
             [
                 gents,
+                "config",
                 "pack",
                 "install",
                 str(archive),

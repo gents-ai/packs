@@ -1,7 +1,7 @@
 {
   "agents": [
     {
-      "agent_id": "document-reader",
+      "agent_slot": "document-reader",
       "context_id": "document-reader-context",
       "display_name": "Document reader",
       "inference_profile_id": "gents:inference-slot:document_reader"
@@ -10,6 +10,7 @@
   "node": {},
   "callback_bindings": [
     {
+      "agent_did": "gents:agent-slot:document-reader",
       "binding_id": "ocr-plan",
       "callback_id": "ocr-plan",
       "event_source_id": "ocr-plan",
@@ -25,6 +26,7 @@
       ]
     },
     {
+      "agent_did": "gents:agent-slot:document-reader",
       "binding_id": "ocr-extract",
       "callback_id": "ocr-extract",
       "event_source_id": "ocr-extract",

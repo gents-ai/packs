@@ -6,8 +6,8 @@
       "expr": "[.assets[]] | all(length > 0)"
     },
     {
-      "name": "the manifest is a 2.0.0 documents pack with no graph or schema and exactly one plugin",
-      "expr": ".manifest | .version == \"2.0.0\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (.plugins | length == 1) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
+      "name": "the manifest is a 2.0.1 documents pack with no graph or schema and exactly one plugin",
+      "expr": ".manifest | .version == \"2.0.1\" and .kind == \"documents\" and (has(\"schemas\") | not) and (has(\"compiler_version\") | not) and (.plugins | length == 1) and (.tags | type == \"array\" and index(\"graph\") == null) and .dependencies == []"
     },
     {
       "name": "no graph, datastore, stage task, schema, .rhai or workflows asset remains",
@@ -47,7 +47,7 @@
     },
     {
       "name": "every agent_targets row has target_id == name and names an existing agent",
-      "expr": ". as $d | $d.config.agent_targets | length == 4 and all(.target_id == .name and .name == \"code-review-\" + (.agent_id | ltrimstr(\"review-\")) and (.agent_id as $a | any($d.config.agents[]; .agent_id == $a)))"
+      "expr": ". as $d | $d.config.agent_targets | length == 4 and all(.target_id == .name and .name == \"code-review-\" + (.agent_did | ltrimstr(\"gents:agent-slot:review-\")) and (.agent_did as $a | any($d.config.agents[]; \"gents:agent-slot:\" + .agent_slot == $a)))"
     },
     {
       "name": "recon max_output_chars >= 1000000 so a large diff listing is not cut",

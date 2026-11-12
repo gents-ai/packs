@@ -1,1 +1,0 @@
-{"runtime":{"repository":{},"seed":{"collection":"TicTacToeGame","fields":{"game_id":"game-1","title":"Friendly match"}},"expect":[{"collection":"TicTacToeGame","filter":{"game_id":"game-1"},"fields":{"game_id":"game-1","title":"Friendly match"}}]}}
