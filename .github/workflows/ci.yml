@@ -127,9 +127,10 @@ jobs:
           # The hosted Linux arm64 runner is terminated partway through this
           # build at full parallelism (exit 143, lost communication); two
           # compiler jobs keep it inside the runner's memory.
-          jobs=()
-          if [ "$RUNNER_OS" = Linux ] && [ "$RUNNER_ARCH" = ARM64 ]; then jobs=(-j 2); fi
-          cargo build -p gents-cli --release --locked "${jobs[@]}"
+          jobs=""
+          if [ "$RUNNER_OS" = Linux ] && [ "$RUNNER_ARCH" = ARM64 ]; then jobs="-j 2"; fi
+          # shellcheck disable=SC2086
+          cargo build -p gents-cli --release --locked $jobs
           mkdir -p ../gents-bin
           cp target/release/gents ../gents-bin/gents
 
