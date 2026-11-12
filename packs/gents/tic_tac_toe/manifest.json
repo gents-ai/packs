@@ -36,9 +36,7 @@
     "tests/install.json",
     "tests/contract.json",
     "tests/game_test.mjs",
-    "tests/browser_check.mjs",
-    "tests/runtime_game.json",
-    "tests/runtime_move.json"
+    "tests/browser_check.mjs"
   ],
   "ux": [
     {
