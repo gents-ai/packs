@@ -1,0 +1,32 @@
+{
+  "node": {},
+  "event_sources": [
+    {
+      "display_name": "claim-graph-live",
+      "event_kind": "created",
+      "event_source_id": "claim-graph-live",
+      "source_collection": "ResearchReceipt",
+      "correlation_field": "request_id"
+    }
+  ],
+  "tasks": [
+    {
+      "agent_id": "claim-sme",
+      "display_name": "claim-graph-live-task",
+      "prompt_template": "./tasks/live_task/prompt.md",
+      "task_id": "claim-graph-live-task"
+    }
+  ],
+  "triggers": [
+    {
+      "concurrency": "serial",
+      "display_name": "claim-graph-live",
+      "source": {
+        "event_source_id": "claim-graph-live",
+        "kind": "event"
+      },
+      "task_id": "claim-graph-live-task",
+      "trigger_id": "claim-graph-live"
+    }
+  ]
+}

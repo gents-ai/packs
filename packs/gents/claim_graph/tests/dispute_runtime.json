@@ -1,0 +1,52 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ClaimBatch",
+      "fields": {
+        "batch_id": "rt-dispute-${ATTEMPT}",
+        "graph_id": "rt-dispute-${ATTEMPT}",
+        "section": "rt-fixture",
+        "extractor": "test",
+        "profile": "{\"display_name\":\"Runtime fixture\",\"kinds\":[\"fact\",\"number\",\"date\",\"rule\",\"mapping\",\"interpretation\",\"position\",\"quote\",\"question\",\"challenge\",\"review\"],\"confidence_classes\":[\"sourced\",\"memory\",\"inferred\"],\"edge_types\":[\"supports\",\"contradicts\",\"supersedes\",\"retracts\",\"answers\",\"maps-to\",\"said-first\",\"depends-on\",\"challenges\",\"reviews\",\"resolves\"],\"mapping_targets\":[\"defradb\",\"fefra\"],\"mapping_fits\":[\"native\",\"partial\",\"gap\",\"convention\"],\"review_verdicts\":[\"sustains\",\"weakens\",\"unclear\"],\"resolver_perspectives\":[\"p:rt-author\"],\"question_entity\":\"e:open-question\",\"default_asker\":\"p:rt-author\",\"questions_from_prefix\":\"graph/claims/questions.jsonl\",\"claim_id_pattern\":\"^c:[a-z0-9-]+:[0-9]{3}$\",\"text_max_words\":40,\"note\":\"\"}",
+        "claims": "{\"id\":\"c:rt:001\",\"text\":\"The fixture device holds one grant for three bands.\",\"quote\":\"The fixture device holds one grant for three bands.\",\"from\":\"notes/narrative.md#the-fixture\",\"sources\":[],\"entities\":[\"e:rt-device\"],\"kind\":\"fact\",\"by\":\"p:rt-author\",\"asserted\":\"2026-10-29\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\"}\n{\"id\":\"c:ch:001\",\"text\":\"The grant record lists two bands, not three.\",\"quote\":\"The grant record lists two bands, not three.\",\"from\":\"graph/claims/questions.jsonl#challenges\",\"sources\":[],\"entities\":[\"e:rt-device\"],\"kind\":\"challenge\",\"by\":\"p:rt-critic\",\"asserted\":\"2026-10-29\",\"status\":\"live\",\"confidence\":\"inferred\",\"note\":\"\"}\n",
+        "edges": "{\"from\":\"c:ch:001\",\"to\":\"c:rt:001\",\"type\":\"challenges\",\"by\":\"p:rt-critic\",\"date\":\"2026-10-29\",\"note\":\"\"}\n",
+        "entities": "{\"id\":\"e:rt-device\",\"type\":\"system\",\"name\":\"Example Device\",\"aliases\":[\"Device\"],\"note\":\"\"}\n",
+        "perspectives": "{\"id\":\"p:rt-author\",\"name\":\"The fixture author\",\"kind\":\"person\",\"note\":\"\"}\n{\"id\":\"p:rt-critic\",\"name\":\"The fixture critic\",\"kind\":\"critic\",\"note\":\"\"}\n",
+        "submitted_at": "2026-10-29T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "GateReceipt"
+    },
+    "expect": [
+      {
+        "collection": "GateReceipt",
+        "fields": {
+          "verdict": "pass",
+          "claims_admitted": 2,
+          "edges_admitted": 1,
+          "entities_admitted": 1,
+          "perspectives_admitted": 2,
+          "profile_version": 1
+        }
+      },
+      {
+        "collection": "Claim",
+        "fields": {
+          "claim_id": "c:ch:001",
+          "kind": "challenge",
+          "by": "p:rt-critic"
+        }
+      },
+      {
+        "collection": "Edge",
+        "fields": {
+          "from_claim": "c:ch:001",
+          "to_claim": "c:rt:001",
+          "edge_type": "challenges",
+          "edge_key": "c:ch:001|challenges|c:rt:001"
+        }
+      }
+    ]
+  }
+}

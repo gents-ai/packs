@@ -1,0 +1,39 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://www.ecfr.gov/api/renderer/v1/content/title-47/part-15.txt",
+    "http_calls": true,
+    "http_results": {
+      "fetch": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain; charset=utf-8"
+        },
+        "body": "§ 15.15 General technical requirements.\n(a) An intentional or unintentional radiator shall be constructed in accordance with good engineering design.\n"
+      }
+    }
+  },
+  "expect": {
+    "source_id": "s:d85905d3fb14a2bb",
+    "graph_id": "flipper-fcc",
+    "url": "https://www.ecfr.gov/api/renderer/v1/content/title-47/part-15.txt",
+    "final_url": "https://www.ecfr.gov/api/renderer/v1/content/title-47/part-15.txt",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "ok",
+    "error": null,
+    "http_status": 200,
+    "content_type": "text/plain; charset=utf-8",
+    "content_hash": "sha256:f092bede8842216085b626e334a32d163798844093c49fc347aa31260ee1f8c7",
+    "text": "§ 15.15 General technical requirements.\n(a) An intentional or unintentional radiator shall be constructed in accordance with good engineering design.\n",
+    "text_chars": 150,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

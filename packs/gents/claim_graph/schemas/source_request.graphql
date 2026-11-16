@@ -1,0 +1,8 @@
+type SourceRequest {
+  request_id: String @index(unique: true) @immutable
+  graph_id: String @index @immutable
+  url: String @immutable
+  confidential: Boolean @immutable
+  note: String @immutable
+  submitted_at: String @immutable
+}

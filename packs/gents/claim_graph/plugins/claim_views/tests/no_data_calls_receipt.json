@@ -1,0 +1,21 @@
+{
+  "input": {
+    "request_id": "req-nocalls",
+    "graph_id": "demo",
+    "view": "status",
+    "out_dir": "",
+    "dry_run": true,
+    "view_now": "2026-10-29T12:00:00Z"
+  },
+  "expect": {
+    "receipt_id": "view-req-nocalls",
+    "graph_id": "demo",
+    "view": "status",
+    "ok": false,
+    "error": "the host offers this plugin no data calls; install the pack with its data grant",
+    "rows": 0,
+    "markdown": "",
+    "file": "",
+    "generated_at": "2026-10-29T12:00:00Z"
+  }
+}

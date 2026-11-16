@@ -1,0 +1,21 @@
+[workspace]
+
+[package]
+name = "claim_export"
+version = "0.3.0"
+edition = "2024"
+rust-version = "1.92"
+
+[[bin]]
+name = "claim_export"
+path = "source/main.rs"
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

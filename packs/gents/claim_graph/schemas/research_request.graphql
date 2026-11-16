@@ -1,0 +1,10 @@
+type ResearchRequest {
+  request_id: String @index(unique: true) @immutable
+  graph_id: String @index @immutable
+  topic: String @immutable
+  brief: String @immutable
+  max_sources: Int @immutable
+  create_graph: Boolean @immutable
+  note: String @immutable
+  submitted_at: String @immutable
+}

@@ -1,0 +1,39 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "http_calls": true,
+    "data_calls": true
+  },
+  "expect": {
+    "data_calls": {
+      "requests": [
+        {
+          "id": "existing",
+          "query": {
+            "collection": "Source",
+            "filter": {
+              "graph_id": {
+                "_eq": "flipper-fcc"
+              },
+              "source_id": {
+                "_eq": "s:e9c4f2716857a1e6"
+              }
+            },
+            "limit": 1,
+            "fields": [
+              "source_id",
+              "status",
+              "fetched_at"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

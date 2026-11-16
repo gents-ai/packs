@@ -1,0 +1,9 @@
+type Perspective @index(fields: ["graph_id", "perspective_id"], unique: true) {
+  graph_id: String @index @immutable
+  perspective_id: String @index @immutable
+  name: String @immutable
+  kind: String @index @immutable
+  note: String @immutable
+  did: String @immutable
+  batch_id: String @index @immutable
+}

@@ -1,0 +1,11 @@
+type Edge @index(fields: ["graph_id", "edge_key"], unique: true) {
+  graph_id: String @index @immutable
+  edge_key: String @index @immutable
+  from_claim: String @index @immutable
+  to_claim: String @index @immutable
+  edge_type: String @index @immutable
+  by: String @immutable
+  date: String @immutable
+  note: String @immutable
+  batch_id: String @index @immutable
+}

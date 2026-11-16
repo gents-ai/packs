@@ -1,0 +1,29 @@
+{
+  "runtime": {
+    "seed": {
+      "collection": "ViewRequest",
+      "fields": {
+        "request_id": "rt-view-${ATTEMPT}",
+        "graph_id": "rt-empty",
+        "view": "status",
+        "dry_run": true,
+        "note": "status of a graph with no rows",
+        "submitted_at": "2026-10-29T00:00:00Z"
+      }
+    },
+    "taken": {
+      "collection": "ViewReceipt"
+    },
+    "expect": [
+      {
+        "collection": "ViewReceipt",
+        "fields": {
+          "ok": true,
+          "rows": 0,
+          "view": "status",
+          "graph_id": "rt-empty"
+        }
+      }
+    ]
+  }
+}

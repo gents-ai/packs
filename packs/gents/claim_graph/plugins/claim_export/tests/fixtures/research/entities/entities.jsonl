@@ -1,0 +1,6 @@
+{"id": "e:flipper-zero", "type": "system", "name": "Flipper Zero", "aliases": ["Flipper"], "note": "Multi-tool radio device; FCC ID 2A2V6-FZ"}
+{"id": "e:flipper-devices", "type": "organisation", "name": "Flipper Devices Inc", "aliases": [], "note": "Grantee"}
+{"id": "e:fcc", "type": "organisation", "name": "Federal Communications Commission", "aliases": ["FCC"], "note": ""}
+{"id": "e:fcc-tcb", "type": "concept", "name": "Telecommunication Certification Body", "aliases": ["TCB"], "note": "FCC-recognised body that issues certification grants"}
+{"id": "e:red-reconfigurable-radio-initiative", "type": "milestone", "name": "RED reconfigurable-radio initiative", "aliases": [], "note": "2018–2026, abandoned 20 Jan 2026"}
+{"id": "e:champagne", "type": "person", "name": "François-Philippe Champagne", "aliases": ["Minister Champagne"], "note": "Canadian minister, ISED, 2024"}

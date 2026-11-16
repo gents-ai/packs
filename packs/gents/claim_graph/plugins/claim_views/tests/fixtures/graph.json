@@ -1,0 +1,232 @@
+{
+  "graph_id": "demo",
+  "claims": [
+    {
+      "claim_id": "c:demo:001",
+      "text": "The registry publishes a signed list of approved devices every week, and every device on the list carries a certificate from an accredited laboratory.",
+      "kind": "fact",
+      "by": "p:alice",
+      "asserted": "2026-10-01",
+      "confidence": "sourced",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:002",
+      "text": "The approved-device list is updated daily.",
+      "kind": "fact",
+      "by": "p:alice",
+      "asserted": "2026-10-01",
+      "confidence": "memory",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:003",
+      "text": "The list is updated weekly, not daily; c:demo:002 misread the schedule.",
+      "kind": "fact",
+      "by": "p:alice",
+      "asserted": "2026-10-05",
+      "confidence": "sourced",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:004",
+      "text": "A device may stay on the list for two years without a new test.",
+      "kind": "rule",
+      "by": "p:bob",
+      "asserted": "2026-10-02",
+      "confidence": "inferred",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:005",
+      "text": "A device must be retested every year to stay on the list.",
+      "kind": "rule",
+      "by": "p:bob",
+      "asserted": "2026-10-06",
+      "confidence": "sourced",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:006",
+      "text": "Laboratories are accredited by the registry itself.",
+      "kind": "position",
+      "by": "p:bob",
+      "asserted": "2026-10-03",
+      "confidence": "memory",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:007",
+      "text": "Laboratories are accredited by a national body, not the registry.",
+      "kind": "interpretation",
+      "by": "p:critic",
+      "asserted": "2026-10-04",
+      "confidence": "inferred",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:010",
+      "text": "Is the weekly list really signed? The sample | list we saw had no signature.",
+      "kind": "challenge",
+      "by": "p:critic",
+      "asserted": "2026-10-19",
+      "confidence": "memory",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:011",
+      "text": "The yearly retest rule has exceptions for low-power devices.",
+      "kind": "challenge",
+      "by": "p:critic",
+      "asserted": "2026-10-08",
+      "confidence": "memory",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:012",
+      "text": "The exceptions apply to labelling only, not to retesting.",
+      "kind": "fact",
+      "by": "p:alice",
+      "asserted": "2026-10-09",
+      "confidence": "sourced",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:013",
+      "text": "The weekly schedule changed in 2025.",
+      "kind": "challenge",
+      "by": "p:bob",
+      "asserted": "2026-10-10",
+      "confidence": "memory",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:014",
+      "text": "The schedule has been weekly since 2019; the challenge is closed.",
+      "kind": "fact",
+      "by": "p:judge",
+      "asserted": "2026-10-12",
+      "confidence": "sourced",
+      "verdict": null
+    },
+    {
+      "claim_id": "c:demo:020",
+      "text": "The signed weekly list matches the registry's published procedure.",
+      "kind": "review",
+      "by": "p:bob",
+      "asserted": "2026-10-20",
+      "confidence": "inferred",
+      "verdict": "sustains"
+    },
+    {
+      "claim_id": "c:demo:021",
+      "text": "Only one sample list was checked, so the claim is weakly supported.",
+      "kind": "review",
+      "by": "p:critic",
+      "asserted": "2026-10-21",
+      "confidence": "inferred",
+      "verdict": "weakens"
+    }
+  ],
+  "edges": [
+    {
+      "edge_key": "c:demo:003|retracts|c:demo:002",
+      "from_claim": "c:demo:003",
+      "to_claim": "c:demo:002",
+      "edge_type": "retracts",
+      "by": "p:alice"
+    },
+    {
+      "edge_key": "c:demo:005|supersedes|c:demo:004",
+      "from_claim": "c:demo:005",
+      "to_claim": "c:demo:004",
+      "edge_type": "supersedes",
+      "by": "p:bob"
+    },
+    {
+      "edge_key": "c:demo:005|supports|c:demo:001",
+      "from_claim": "c:demo:005",
+      "to_claim": "c:demo:001",
+      "edge_type": "supports",
+      "by": "p:bob"
+    },
+    {
+      "edge_key": "c:demo:006|contradicts|c:demo:007",
+      "from_claim": "c:demo:006",
+      "to_claim": "c:demo:007",
+      "edge_type": "contradicts",
+      "by": "p:critic"
+    },
+    {
+      "edge_key": "c:demo:010|challenges|c:demo:001",
+      "from_claim": "c:demo:010",
+      "to_claim": "c:demo:001",
+      "edge_type": "challenges",
+      "by": "p:critic"
+    },
+    {
+      "edge_key": "c:demo:011|challenges|c:demo:005",
+      "from_claim": "c:demo:011",
+      "to_claim": "c:demo:005",
+      "edge_type": "challenges",
+      "by": "p:critic"
+    },
+    {
+      "edge_key": "c:demo:012|answers|c:demo:011",
+      "from_claim": "c:demo:012",
+      "to_claim": "c:demo:011",
+      "edge_type": "answers",
+      "by": "p:alice"
+    },
+    {
+      "edge_key": "c:demo:013|challenges|c:demo:003",
+      "from_claim": "c:demo:013",
+      "to_claim": "c:demo:003",
+      "edge_type": "challenges",
+      "by": "p:bob"
+    },
+    {
+      "edge_key": "c:demo:014|resolves|c:demo:013",
+      "from_claim": "c:demo:014",
+      "to_claim": "c:demo:013",
+      "edge_type": "resolves",
+      "by": "p:judge"
+    },
+    {
+      "edge_key": "c:demo:020|reviews|c:demo:001",
+      "from_claim": "c:demo:020",
+      "to_claim": "c:demo:001",
+      "edge_type": "reviews",
+      "by": "p:bob"
+    },
+    {
+      "edge_key": "c:demo:021|reviews|c:demo:001",
+      "from_claim": "c:demo:021",
+      "to_claim": "c:demo:001",
+      "edge_type": "reviews",
+      "by": "p:critic"
+    }
+  ],
+  "perspectives": [
+    {
+      "perspective_id": "p:alice",
+      "name": "Alice"
+    },
+    {
+      "perspective_id": "p:bob",
+      "name": "Bob"
+    },
+    {
+      "perspective_id": "p:critic",
+      "name": "Critic"
+    },
+    {
+      "perspective_id": "p:judge",
+      "name": "Judge"
+    },
+    {
+      "perspective_id": "p:quiet",
+      "name": "Quiet"
+    }
+  ]
+}

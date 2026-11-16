@@ -1,0 +1,22 @@
+{
+  "input": {
+    "request_id": "req-bad",
+    "graph_id": "demo",
+    "view": "summary",
+    "out_dir": "",
+    "dry_run": true,
+    "view_now": "2026-10-29T12:00:00Z",
+    "data_calls": true
+  },
+  "expect": {
+    "receipt_id": "view-req-bad",
+    "graph_id": "demo",
+    "view": "summary",
+    "ok": false,
+    "error": "view must be one of status, disputes and reputation",
+    "rows": 0,
+    "markdown": "",
+    "file": "",
+    "generated_at": "2026-10-29T12:00:00Z"
+  }
+}

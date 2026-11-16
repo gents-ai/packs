@@ -1,0 +1,13 @@
+type ResearchReceipt {
+  receipt_id: String @index(unique: true) @immutable
+  request_id: String @index @immutable
+  graph_id: String @index @immutable
+  summary: String @immutable
+  sources_fetched: Int @immutable
+  sources_failed: Int @immutable
+  batches_filed: Int @immutable
+  claims_admitted: Int @immutable
+  claims_memory: Int @immutable
+  open_questions: String @immutable
+  finished_at: String @immutable
+}

@@ -1,0 +1,16 @@
+{
+  "display_name": "Government attestation research",
+  "kinds": ["fact", "number", "date", "rule", "mapping", "interpretation", "position", "quote", "question", "challenge", "review"],
+  "confidence_classes": ["sourced", "memory", "inferred"],
+  "edge_types": ["supports", "contradicts", "supersedes", "retracts", "answers", "maps-to", "said-first", "depends-on", "challenges", "reviews", "resolves"],
+  "mapping_targets": ["defradb", "fefra"],
+  "mapping_fits": ["native", "partial", "gap", "convention"],
+  "review_verdicts": ["sustains", "weakens", "unclear"],
+  "resolver_perspectives": ["p:mike"],
+  "question_entity": "e:open-question",
+  "default_asker": "p:mike",
+  "questions_from_prefix": "graph/claims/questions.jsonl",
+  "claim_id_pattern": "^c:[a-z0-9-]+:[0-9]{3}$",
+  "text_max_words": 40,
+  "note": "The research graph's vocabulary (graph/SCHEMA.md) plus the dispute kinds and edges."
+}

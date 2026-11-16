@@ -1,0 +1,39 @@
+{
+  "input": {
+    "request_id": "sr-flipper-1",
+    "graph_id": "flipper-fcc",
+    "confidential": false,
+    "note": "FCC grant listing",
+    "submitted_at": "2026-10-30T11:59:00Z",
+    "fetch_now": "2026-10-30T12:00:00Z",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "http_calls": true,
+    "http_results": {
+      "fetch": {
+        "status": 404,
+        "headers": {
+          "content-type": "text/html"
+        },
+        "body": "<h1>Not Found</h1>"
+      }
+    }
+  },
+  "expect": {
+    "source_id": "s:e9c4f2716857a1e6-bf7c1a27",
+    "graph_id": "flipper-fcc",
+    "url": "https://fccid.io/2A2V6-FZ",
+    "final_url": "https://fccid.io/2A2V6-FZ",
+    "title": null,
+    "fetched_at": "2026-10-30T12:00:00Z",
+    "status": "failed",
+    "error": "the server answered HTTP 404; the page is not there, check the address",
+    "http_status": 404,
+    "content_type": "text/html",
+    "content_hash": "sha256:67a84dd28e5b6288ef934643ad2f0d8af1145b6da9707d430fa1506a778459c0",
+    "text": null,
+    "text_chars": 0,
+    "truncated": false,
+    "confidential": false,
+    "note": "FCC grant listing"
+  }
+}

@@ -1,0 +1,9 @@
+type ViewRequest {
+  request_id: String @index(unique: true) @immutable
+  graph_id: String @index @immutable
+  view: String @immutable
+  out_dir: String @immutable
+  dry_run: Boolean @immutable
+  note: String @immutable
+  submitted_at: String @immutable
+}

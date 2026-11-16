@@ -1,0 +1,47 @@
+{
+  "install": {
+    "documents": [
+      "Agent/claim-researcher",
+      "Agent/claim-reviewer",
+      "Agent/claim-sme",
+      "AgentContext/claim-researcher-context",
+      "AgentContext/claim-reviewer-context",
+      "AgentContext/claim-sme-context",
+      "Callback/claim-export",
+      "Callback/claim-gate",
+      "Callback/claim-sources",
+      "Callback/claim-views",
+      "CallbackBinding/claim-export",
+      "CallbackBinding/claim-gate",
+      "CallbackBinding/claim-sources",
+      "CallbackBinding/claim-views",
+      "DatastoreToolSurface/claim-graph-writes",
+      "DatastoreToolSurface/claim-researcher-writes",
+      "DatastoreToolSurface/claim-reviewer-writes",
+      "EventSource/claim-batch",
+      "EventSource/export-request",
+      "EventSource/research-receipt",
+      "EventSource/research-request",
+      "EventSource/source-request",
+      "EventSource/view-request",
+      "Task/claim-research-task",
+      "Task/claim-review-task",
+      "Tools/claim-researcher-tools",
+      "Tools/claim-reviewer-tools",
+      "Tools/claim-sme-tools",
+      "Trigger/research-receipt",
+      "Trigger/research-request"
+    ],
+    "plugins": [
+      "claim_export",
+      "claim_gate",
+      "claim_sources",
+      "claim_views"
+    ],
+    "slots": [
+      "researcher",
+      "reviewer",
+      "sme"
+    ]
+  }
+}
