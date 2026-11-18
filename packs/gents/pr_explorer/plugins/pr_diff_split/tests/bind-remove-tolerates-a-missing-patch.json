@@ -1,0 +1,13 @@
+{
+  "input": {
+    "patch": "absent.patch",
+    "analysis_id": "fixture-1",
+    "remove_patch": true
+  },
+  "bind": "fixtures/.pr-explorer/patches",
+  "expect": {
+    "analysis_id": "fixture-1",
+    "patch": "absent.patch",
+    "removed": false
+  }
+}

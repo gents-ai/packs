@@ -1,0 +1,11 @@
+{
+  "install": {
+    "assets": [
+      "README.md",
+      "manifest.json",
+      "tests/install.json",
+      "ux/pr_explorer/plugin.css",
+      "ux/pr_explorer/plugin.js"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "install": {
+    "documents": [
+      "Agent/pr-explorer",
+      "AgentContext/pr-explorer-context",
+      "DatastoreToolSurface/pr_explorer",
+      "Tools/pr-explorer-tools"
+    ],
+    "slots": ["analyzer"],
+    "plugins": ["pr_diff_split"]
+  }
+}

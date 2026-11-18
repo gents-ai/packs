@@ -1,0 +1,15 @@
+# The head of one analysis, written last by the pr-explorer agent: its
+# presence marks the files and units of `analysis_id` complete.
+# `repository` is the repo path relative to GENTS_PR_EXPLORER_ROOT.
+type PrExplorerAnalysis {
+  analysis_id: String
+  repository: String
+  pr_ref: String
+  base_ref: String
+  head_ref: String
+  base_sha: String
+  head_sha: String
+  file_count: Int
+  unit_count: Int
+  created_at: String
+}

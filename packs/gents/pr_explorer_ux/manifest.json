@@ -1,0 +1,50 @@
+{
+  "manifest_version": 1,
+  "name": "pr_explorer_ux",
+  "namespace": "gents",
+  "version": "0.2.0",
+  "description": "PR Explorer's page: a nav row, a page that shows an analysis as logical units with a per-file unified diff, and a ::pr-explorer chip. Reads the pr_explorer surface that ../pr_explorer installs on the node.",
+  "authors": [
+    "gents contributors"
+  ],
+  "tags": [
+    "code-review",
+    "diff",
+    "ux"
+  ],
+  "kind": "assets",
+  "assets": [
+    "README.md",
+    "tests/install.json",
+    "ux/pr_explorer/plugin.css",
+    "ux/pr_explorer/plugin.js"
+  ],
+  "ux": [
+    {
+      "name": "pr_explorer",
+      "description": "A PR Explorer page of its own (units on the left, the selected file's diff on the right), a nav row that opens it, and a ::pr-explorer{analysis=...} chip.",
+      "entry": "ux/pr_explorer/plugin.js",
+      "css": "ux/pr_explorer/plugin.css",
+      "contributes": {
+        "areas": [
+          "nav",
+          "plugin.pages",
+          "transcript.directives"
+        ],
+        "directives": [
+          "pr-explorer"
+        ]
+      },
+      "data": [
+        {
+          "surface": "pr_explorer",
+          "tools": [
+            "pr_list_analyses",
+            "pr_list_units",
+            "pr_list_files"
+          ]
+        }
+      ]
+    }
+  ]
+}

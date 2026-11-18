@@ -1,0 +1,20 @@
+[workspace]
+
+[package]
+name = "pr_diff_split"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "pr_diff_split"
+path = "source/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
