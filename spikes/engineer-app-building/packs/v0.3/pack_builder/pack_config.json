@@ -1,0 +1,63 @@
+{
+  "agents": [],
+  "contexts": [],
+  "node": {},
+  "skills": [
+    {
+      "description": "Load first when asked to build or automate an app for people. Sets the checks and build order.",
+      "instructions": "./skills/plan_work/SKILL.md",
+      "name": "plan-work",
+      "skill_id": "plan-work"
+    },
+    {
+      "description": "Load before creating or changing collections: records, keys, and what is stored or derived.",
+      "instructions": "./skills/model_data/SKILL.md",
+      "name": "model-data",
+      "skill_id": "model-data"
+    },
+    {
+      "description": "Load when an app needs data from outside this node. Picks the route and makes imports repeatable.",
+      "instructions": "./skills/connect_data/SKILL.md",
+      "name": "connect-data",
+      "skill_id": "connect-data"
+    },
+    {
+      "description": "Load before schedules, event sources, triggers or tasks. Routes events to one consumer and stops loops.",
+      "instructions": "./skills/automate/SKILL.md",
+      "name": "automate",
+      "skill_id": "automate"
+    },
+    {
+      "description": "Load before writing or changing an app page: SDK blocks, theme tokens, layout, preview check.",
+      "instructions": "./skills/design_page/SKILL.md",
+      "name": "design-page",
+      "skill_id": "design-page"
+    },
+    {
+      "description": "Load when deciding who sees or changes app data, or when sharing an app. Says what the node enforces.",
+      "instructions": "./skills/control_access/SKILL.md",
+      "name": "control-access",
+      "skill_id": "control-access"
+    },
+    {
+      "description": "Load when making an app installable or changing an installed pack. Layout, check, install, versions.",
+      "instructions": "./skills/package_pack/SKILL.md",
+      "name": "package-pack",
+      "skill_id": "package-pack"
+    },
+    {
+      "description": "Load when a trigger, tool, request or session didn't work as expected. Gives the order of checks.",
+      "instructions": "./skills/diagnose_node/SKILL.md",
+      "name": "diagnose-node",
+      "skill_id": "diagnose-node"
+    },
+    {
+      "description": "Load when compiled rules must be exact and queries or tools can't express them. Contract, data, tests.",
+      "instructions": "./skills/write_plugin/SKILL.md",
+      "name": "write-plugin",
+      "skill_id": "write-plugin"
+    }
+  ],
+  "tasks": [],
+  "tools": []
+}

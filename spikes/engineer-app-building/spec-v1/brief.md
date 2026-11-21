@@ -1,0 +1,1 @@
+Build the game described in SPEC.md in your workspace as a pack on this node. I want three AI players to play it against each other, and to watch from a page in the app. When it's built, start one game with max_rounds 1 and check that it reaches a winner. I won't be available, so decide the details yourself, and tell me at the end what works and what doesn't.

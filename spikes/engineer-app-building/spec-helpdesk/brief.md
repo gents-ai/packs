@@ -1,0 +1,1 @@
+Build the help desk described in SPEC.md in your workspace on this node, from tickets.csv. When it works, package it so I can install it on my other node. I won't be available, so decide the details yourself, and tell me at the end what works and what doesn't.
