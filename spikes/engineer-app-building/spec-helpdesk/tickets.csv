@@ -1,0 +1,13 @@
+ticket_id,customer_id,customer_name,subject,body,opened_at,status
+T-1001,C-01,Harbor Bakery,Card reader offline,"The card reader at the front till has shown offline since this morning and we cannot take payments.",2026-11-03T08:12:00Z,open
+T-1002,C-01,Harbor Bakery,Invoice copy,"Could you send a copy of the October invoice for our accountant? No rush.",2026-11-04T10:30:00Z,closed
+T-1003,C-02,Lumen Dental,Appointment reminders not sending,"Patients have not received text reminders for two days. Several missed their appointments.",2026-11-07T14:05:00Z,open
+T-1004,C-02,Lumen Dental,Change billing contact,"Please change our billing contact to the new office manager next month.",2026-11-08T09:00:00Z,open
+T-1005,C-03,Tern Cycles,Stock count wrong after sync,"After last night's sync the stock count for helmets is negative. We are overselling online right now.",2026-11-08T22:41:00Z,open
+T-1006,C-03,Tern Cycles,Feature idea: barcode labels,"It would be nice to print barcode labels from the product page.",2026-11-01T16:20:00Z,open
+T-1007,C-04,Quill & Co,Password reset loop,"One staff member is stuck in a password reset loop and cannot log in. Others are fine.",2026-11-09T07:55:00Z,open
+T-1008,C-04,Quill & Co,Export to spreadsheet,"How do we export last quarter's orders to a spreadsheet?",2026-11-06T11:11:00Z,closed
+T-1009,C-05,Marrow Kitchen,Kitchen printer prints blank tickets,"Since the update the kitchen printer prints blank tickets. Dinner service starts at five and orders are being lost.",2026-11-09T13:30:00Z,open
+T-1010,C-05,Marrow Kitchen,Logo on receipts,"Can our logo be a bit larger on receipts?",2026-11-02T12:00:00Z,open
+T-1011,C-01,Harbor Bakery,Double charge on a customer,"A customer was charged twice for one order yesterday and wants a refund today.",2026-11-09T09:45:00Z,open
+T-1012,C-02,Lumen Dental,Thanks,"Just a note to say the new calendar view is great.",2026-11-05T15:00:00Z,closed
